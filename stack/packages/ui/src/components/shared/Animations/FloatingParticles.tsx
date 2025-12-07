@@ -10,6 +10,8 @@ interface Particle {
   vy: number;
   size: number;
   opacity: number;
+  baseVx: number;
+  baseVy: number;
 }
 
 interface FloatingParticlesProps {
@@ -32,6 +34,7 @@ export const FloatingParticles = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | undefined>(undefined);
+  const pointerRef = useRef<{ x: number; y: number; active: boolean }>({ x: -1000, y: -1000, active: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,19 +51,75 @@ export const FloatingParticles = ({
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    particlesRef.current = Array.from({ length: count }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * speed,
-      vy: (Math.random() - 0.5) * speed,
-      size: minSize + Math.random() * (maxSize - minSize),
-      opacity: 0.2 + Math.random() * 0.5,
-    }));
+    particlesRef.current = Array.from({ length: count }, () => {
+      const vx = (Math.random() - 0.5) * speed;
+      const vy = (Math.random() - 0.5) * speed;
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx,
+        vy,
+        baseVx: vx,
+        baseVy: vy,
+        size: minSize + Math.random() * (maxSize - minSize),
+        opacity: 0.2 + Math.random() * 0.5,
+      };
+    });
+
+    const updatePointer = (clientX: number, clientY: number) => {
+      pointerRef.current = { x: clientX, y: clientY, active: true };
+    };
+
+    const handleMouseMove = (e: MouseEvent) => updatePointer(e.clientX, e.clientY);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        if (touch) updatePointer(touch.clientX, touch.clientY);
+      }
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        if (touch) updatePointer(touch.clientX, touch.clientY);
+      }
+    };
+    const handlePointerLeave = () => {
+      pointerRef.current.active = false;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("mouseleave", handlePointerLeave);
+    window.addEventListener("touchend", handlePointerLeave);
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const pointer = pointerRef.current;
+      const interactionRadius = 100;
 
       particlesRef.current.forEach((particle) => {
+        // Add interaction with pointer (mouse/touch)
+        if (pointer.active) {
+          const dx = particle.x - pointer.x;
+          const dy = particle.y - pointer.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < interactionRadius && distance > 0) {
+            const force = (interactionRadius - distance) / interactionRadius;
+            const angle = Math.atan2(dy, dx);
+            particle.vx = particle.baseVx + Math.cos(angle) * force * 2;
+            particle.vy = particle.baseVy + Math.sin(angle) * force * 2;
+          } else {
+            // Gradually return to base velocity
+            particle.vx += (particle.baseVx - particle.vx) * 0.05;
+            particle.vy += (particle.baseVy - particle.vy) * 0.05;
+          }
+        } else {
+          particle.vx += (particle.baseVx - particle.vx) * 0.05;
+          particle.vy += (particle.baseVy - particle.vy) * 0.05;
+        }
+
         particle.x += particle.vx;
         particle.y += particle.vy;
 
@@ -82,6 +141,11 @@ export const FloatingParticles = ({
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("mouseleave", handlePointerLeave);
+      window.removeEventListener("touchend", handlePointerLeave);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }

@@ -355,6 +355,27 @@ export function DragDropGrid({
           background: rgba(113, 113, 122, 0.15);
           border: 1px solid rgba(161, 161, 170, 0.3);
         }
+        /* Touch support styles */
+        .drag-drop-grid .drag-handle {
+          touch-action: none;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        .drag-drop-grid .react-grid-item {
+          touch-action: auto;
+        }
+        .drag-drop-grid .react-grid-item.react-draggable-dragging {
+          touch-action: none;
+        }
+        /* Prevent text selection during drag on touch */
+        @media (pointer: coarse) {
+          .drag-drop-grid .react-grid-item {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+          }
+        }
       `}</style>
     </DragDropGridContext.Provider>
   );
@@ -405,9 +426,10 @@ export function GridItem({
       {showDragHandle && isEditing && (
         <div
           className={cn(
-            "drag-handle absolute top-2 left-2 z-10 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing",
+            "drag-handle absolute top-2 left-2 z-10 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing",
             isDark ? "bg-zinc-800/80" : "bg-zinc-200/80"
           )}
+          style={{ touchAction: "none" }}
           title="Drag to reorder"
         >
           <BsGripVertical className={cn("w-3.5 h-3.5 pointer-events-none", isDark ? "text-zinc-400" : "text-zinc-600")} />
@@ -418,8 +440,12 @@ export function GridItem({
       {showRemoveHandle && isEditing && (
         <button
           onClick={handleRemove}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleRemove(e as unknown as React.MouseEvent);
+          }}
           className={cn(
-            "absolute top-2 left-10 z-20 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
+            "absolute top-2 left-10 z-20 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer",
             isDark ? "bg-red-900/80 hover:bg-red-800" : "bg-red-100 hover:bg-red-200"
           )}
           title="Remove card"
@@ -433,8 +459,12 @@ export function GridItem({
       {showResizeHandle && isResizable && isEditing && (
         <button
           onClick={handleResize}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleResize(e as unknown as React.MouseEvent);
+          }}
           className={cn(
-            "absolute top-2 right-2 z-20 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
+            "absolute top-2 right-2 z-20 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer",
             isDark ? "bg-zinc-800/80 hover:bg-zinc-700" : "bg-zinc-200/80 hover:bg-zinc-300"
           )}
           title={`Size: ${size.toUpperCase()} (click to cycle)`}

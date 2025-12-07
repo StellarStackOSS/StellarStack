@@ -10,7 +10,8 @@
       "Bash(Get-ChildItem -Path \"C:\\Users\\marqu\\StellarStack-REPO\" -Name \"package.json\" -Recurse -Depth 3)",
       "Bash(Where-Object { $_ -notmatch \"node_modules\" })",
       "Bash(pnpm update:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []

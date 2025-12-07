@@ -157,27 +157,61 @@ export const AnimatedBackground = ({
     updateSize();
     window.addEventListener("resize", updateSize);
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const updatePosition = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: clientX - rect.left,
+        y: clientY - rect.top,
       };
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        if (touch) {
+          updatePosition(touch.clientX, touch.clientY);
+        }
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        if (touch) {
+          updatePosition(touch.clientX, touch.clientY);
+        }
+      }
     };
 
     const handleMouseLeave = () => {
       mouseRef.current = { x: -1000, y: -1000 };
     };
 
+    const handleTouchEnd = () => {
+      mouseRef.current = { x: -1000, y: -1000 };
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
     canvas.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("touchend", handleTouchEnd);
+    window.addEventListener("touchcancel", handleTouchEnd);
 
     animationRef.current = requestAnimationFrame(draw);
 
     return () => {
       window.removeEventListener("resize", updateSize);
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchstart", handleTouchStart);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
