@@ -426,7 +426,7 @@ export function GridItem({
       {showDragHandle && isEditing && (
         <div
           className={cn(
-            "drag-handle absolute top-2 left-2 z-10 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing",
+            "drag-handle absolute top-2 left-2 z-10 p-1.5 rounded cursor-grab active:cursor-grabbing",
             isDark ? "bg-zinc-800/80" : "bg-zinc-200/80"
           )}
           style={{ touchAction: "none" }}
@@ -445,7 +445,7 @@ export function GridItem({
             handleRemove(e as unknown as React.MouseEvent);
           }}
           className={cn(
-            "absolute top-2 left-10 z-20 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer",
+            "absolute top-2 left-10 z-20 p-1.5 rounded cursor-pointer",
             isDark ? "bg-red-900/80 hover:bg-red-800" : "bg-red-100 hover:bg-red-200"
           )}
           title="Remove card"
@@ -464,7 +464,7 @@ export function GridItem({
             handleResize(e as unknown as React.MouseEvent);
           }}
           className={cn(
-            "absolute top-2 right-2 z-20 p-1.5 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer",
+            "absolute top-2 right-2 z-20 p-1.5 rounded cursor-pointer",
             isDark ? "bg-zinc-800/80 hover:bg-zinc-700" : "bg-zinc-200/80 hover:bg-zinc-300"
           )}
           title={`Size: ${size.toUpperCase()} (click to cycle)`}
