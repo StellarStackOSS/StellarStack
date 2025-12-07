@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type JSX } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
@@ -22,7 +22,6 @@ interface ServerSettings {
 
 const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
-  const router = useRouter();
   const serverId = params.id as string;
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
