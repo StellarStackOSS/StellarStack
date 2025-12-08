@@ -167,7 +167,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-xs font-medium bg-transparent",
+                    "text-xs font-medium bg-transparent uppercase",
                     isOffline && "border-red-500 text-red-500",
                     !isOffline && server.status === "running" && "border-green-500 text-green-500",
                     !isOffline && server.status === "stopped" && "border-zinc-500 text-zinc-500",
