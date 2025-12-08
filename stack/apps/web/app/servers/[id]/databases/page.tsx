@@ -50,7 +50,7 @@ const DatabasesPage = (): JSX.Element | null => {
 
   return (
     <div className={cn(
-      "min-h-svh transition-colors relative",
+      "min-h-full transition-colors relative",
       isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
     )}>
       <AnimatedBackground isDark={isDark} />

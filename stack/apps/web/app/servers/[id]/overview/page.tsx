@@ -79,7 +79,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
   return (
     <ThemeContext.Provider value={{ isDark }}>
       <div className={cn(
-        "min-h-svh transition-colors relative",
+        "min-h-full transition-colors relative",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
         <AnimatedBackground isDark={isDark} />
