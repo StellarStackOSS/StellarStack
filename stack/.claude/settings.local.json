@@ -11,7 +11,9 @@
       "Bash(tree:*)",
       "WebFetch(domain:www.better-auth.com)",
       "Bash(move \"C:\\Users\\marqu\\StellarStack-REPO\\stack\\apps\\web\\app\\servers\\[id]\\files\\page.tsx\" \"C:\\Users\\marqu\\StellarStack-REPO\\stack\\apps\\web\\app\\servers\\[id]\\files\\[[...path]]\\page.tsx\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm remove:*)"
     ],
     "deny": [],
     "ask": []
