@@ -267,24 +267,28 @@ const LandingPage = (): JSX.Element | null => {
         return {
           ...prev,
           cpu: {
+            ...prev.cpu,
             usage: {
               percentage: Math.round(newCpu),
               history: [...prev.cpu.usage.history.slice(1), Math.round(newCpu)],
             },
           },
           memory: {
+            ...prev.memory,
             usage: {
               percentage: Math.round(newRam),
               history: [...prev.memory.usage.history.slice(1), Math.round(newRam)],
             },
           },
           disk: {
+            ...prev.disk,
             usage: {
               percentage: Math.round(newDisk),
               history: [...prev.disk.usage.history.slice(1), Math.round(newDisk)],
             },
           },
           network: {
+            ...prev.network,
             download: Math.round(newDownload),
             upload: Math.round(newUpload),
             downloadHistory: [...prev.network.downloadHistory.slice(1), Math.round(newDownload)],
@@ -295,7 +299,7 @@ const LandingPage = (): JSX.Element | null => {
 
       // Add a new console line randomly
       if (Math.random() > 0.3) {
-        const randomMessage = sampleConsoleMessages[Math.floor(Math.random() * sampleConsoleMessages.length)];
+        const randomMessage = sampleConsoleMessages[Math.floor(Math.random() * sampleConsoleMessages.length)] ?? "Server tick completed";
         const newLine: ConsoleLine = {
           id: String(lineIdRef.current++),
           timestamp: Date.now(),
