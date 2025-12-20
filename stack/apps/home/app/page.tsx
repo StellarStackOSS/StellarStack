@@ -17,6 +17,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/ui/components/tooltip";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { LiquidMetal } from "@paper-design/shaders-react";
 import {
   CpuCard,
   UsageMetricCard,
@@ -37,6 +38,7 @@ import {
   BsTwitterX,
   BsArrowRight,
   BsCheckCircle,
+  BsCheck,
   BsTerminal,
   BsDatabase,
   BsHddNetwork,
@@ -483,19 +485,42 @@ const LandingPage = (): JSX.Element | null => {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
             >
+              {/* Liquid Metal Border Button - Docs */}
               <a href="https://docs.stellarstack.app" target="_blank" rel="noopener noreferrer">
-                <Button
-                  className={cn(
-                    "text-sm uppercase tracking-wider px-8 py-6 gap-2 transition-all hover:scale-[1.02]",
-                    isDark
-                      ? "bg-zinc-100 text-zinc-900 hover:bg-white"
-                      : "bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
-                  )}
-                >
-                  Read the Docs
-                  <BsArrowRight className="w-4 h-4" />
-                </Button>
+                <div className="relative group transition-all hover:scale-[1.02] w-[220px] h-[56px]">
+                  {/* Liquid Metal Border */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <LiquidMetal
+                      width={220}
+                      height={56}
+                      colorBack="#aaaaac00"
+                      colorTint="#ffffff"
+                      shape="none"
+                      repetition={2}
+                      softness={0.1}
+                      shiftRed={0}
+                      shiftBlue={0}
+                      distortion={0.07}
+                      contour={0.4}
+                      angle={70}
+                      speed={0.2}
+                      scale={5}
+                      rotation={0}
+                      fit="contain"
+                    />
+                  </div>
+                  {/* Inner Button */}
+                  <div className={cn(
+                    "absolute inset-[2px] flex items-center justify-center gap-2 text-sm uppercase tracking-wider font-medium",
+                    isDark ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] text-zinc-100" : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 text-zinc-900"
+                  )}>
+                    Read the Docs
+                    <BsArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
               </a>
+
+              {/* Regular Outline Button - GitHub */}
               <a
                 href="https://github.com/stellarstack/stellarstack"
                 target="_blank"
@@ -531,12 +556,12 @@ const LandingPage = (): JSX.Element | null => {
                   transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
                   className={cn(
                     "flex items-center gap-2 text-sm",
-                    isDark ? "text-zinc-500" : "text-zinc-500"
+                    isDark ? "text-zinc-100" : "text-zinc-800"
                   )}
                 >
-                  <BsCheckCircle className={cn(
+                  <BsCheck className={cn(
                     "w-4 h-4",
-                    isDark ? "text-green-500" : "text-green-600"
+                    isDark ? "text-zinc-100" : "text-zinc-800"
                   )} />
                   {highlight}
                 </motion.div>

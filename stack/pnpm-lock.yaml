@@ -26,6 +26,9 @@ importers:
 
   apps/home:
     dependencies:
+      '@paper-design/shaders-react':
+        specifier: ^0.0.68
+        version: 0.0.68(@types/react@19.1.9)(react@19.2.1)
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -635,6 +638,18 @@ packages:
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
+
+  '@paper-design/shaders-react@0.0.68':
+    resolution: {integrity: sha512-RaL/OCfaPVyVcPHJnemRuobfgseq1Pb5d4ktjclCmKprUe5Ac5WsexFuJBHpIfrMdYC/bV2ADJj24+dnthTpig==}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  '@paper-design/shaders@0.0.68':
+    resolution: {integrity: sha512-HWDb/mYfIDcwRGYjwTFEoupw4PgdmuoNONJ6TIXBaXWj3zdhS38iNehbAWQxWa1NHtOanOeQkbdG0wvaNKhvEw==}
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -3519,6 +3534,15 @@ snapshots:
       number-flow: 0.5.8
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
+
+  '@paper-design/shaders-react@0.0.68(@types/react@19.1.9)(react@19.2.1)':
+    dependencies:
+      '@paper-design/shaders': 0.0.68
+      react: 19.2.1
+    optionalDependencies:
+      '@types/react': 19.1.9
+
+  '@paper-design/shaders@0.0.68': {}
 
   '@radix-ui/number@1.1.1': {}
 

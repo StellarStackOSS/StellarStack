@@ -14,7 +14,8 @@
       "Bash(dir:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm remove:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "WebFetch(domain:shaders.paper.design)"
     ],
     "deny": [],
     "ask": []
