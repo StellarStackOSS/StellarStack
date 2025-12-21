@@ -15,7 +15,10 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm remove:*)",
       "Bash(findstr:*)",
-      "WebFetch(domain:shaders.paper.design)"
+      "WebFetch(domain:shaders.paper.design)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": []

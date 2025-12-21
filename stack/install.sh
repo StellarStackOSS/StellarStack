@@ -70,7 +70,7 @@ clear_screen() {
 EOF
     echo -e "${NC}"
     echo -e "${MUTED}  ════════════════════════════════════════════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${SECONDARY}  INTERFACE 2037 // WEYLAND-YUTANI CORP // GAME SERVER MANAGEMENT SYSTEM${NC}"
+    echo -e "${SECONDARY}  INTERFACE 2037 // STELLARSTACK INC // GAME SERVER MANAGEMENT SYSTEM${NC}"
     echo -e "${MUTED}  ════════════════════════════════════════════════════════════════════════════════════════════════════════${NC}"
     echo ""
 }

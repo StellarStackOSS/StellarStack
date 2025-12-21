@@ -125,15 +125,6 @@ const features = [
   },
 ];
 
-const highlights = [
-  "Open Source & Self-Hosted",
-  "Docker-based Isolation",
-  "Automated Backups",
-  "Custom Blueprints",
-  "REST API & Webhooks",
-  "White-label Ready",
-];
-
 // Target users
 const targetUsers = [
   {
@@ -415,24 +406,50 @@ const LandingPage = (): JSX.Element | null => {
       <section className="relative pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Badge - Git Commit Hash */}
-            <motion.a
-              href="https://github.com/stellarstack/stellarstack/commit/6170dde"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Badges */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className={cn(
-                "inline-flex items-center gap-2 px-4 py-2 border mb-8 transition-colors",
-                isDark
-                  ? "border-zinc-700 bg-zinc-900/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
-                  : "border-zinc-300 bg-white/50 text-zinc-600 hover:border-zinc-400 hover:text-zinc-700"
-              )}
+              className="flex flex-wrap items-center justify-center gap-3 mb-8"
             >
-              <BsGithub className="w-4 h-4" />
-              <span className="text-xs font-mono tracking-wider">6170dde</span>
-            </motion.a>
+              {/* GitHub Stars Badge */}
+              <a
+                href="https://github.com/stellarstack/stellarstack"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 border transition-colors",
+                  isDark
+                    ? "border-zinc-700 bg-zinc-900/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                    : "border-zinc-300 bg-white/50 text-zinc-600 hover:border-zinc-400 hover:text-zinc-700"
+                )}
+              >
+                <BsGithub className="w-4 h-4" />
+                <span className="text-xs font-medium">Star on GitHub</span>
+                <span className={cn(
+                  "text-xs font-mono px-1.5 py-0.5",
+                  isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-700"
+                )}>
+                  1.2k
+                </span>
+              </a>
+
+              {/* Commit Badge */}
+              <a
+                href="https://github.com/stellarstack/stellarstack/commit/6170dde"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 border transition-colors",
+                  isDark
+                    ? "border-zinc-700 bg-zinc-900/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                    : "border-zinc-300 bg-white/50 text-zinc-600 hover:border-zinc-400 hover:text-zinc-700"
+                )}
+              >
+                <span className="text-xs font-mono tracking-wider">6170dde</span>
+              </a>
+            </motion.div>
 
             {/* Main Heading */}
             <motion.h1
@@ -539,33 +556,6 @@ const LandingPage = (): JSX.Element | null => {
                   View on GitHub
                 </Button>
               </a>
-            </motion.div>
-
-            {/* Highlights */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3"
-            >
-              {highlights.map((highlight, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.5 + i * 0.05 }}
-                  className={cn(
-                    "flex items-center gap-2 text-sm",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )}
-                >
-                  <BsCheck className={cn(
-                    "w-4 h-4",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )} />
-                  {highlight}
-                </motion.div>
-              ))}
             </motion.div>
           </div>
 
@@ -822,6 +812,38 @@ const LandingPage = (): JSX.Element | null => {
                   {feature.description}
                 </p>
               </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className={cn(
+        "relative py-20 px-6 border-y",
+        isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
+      )}>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { value: "100%", label: "Open Source" },
+              { value: "50+", label: "Game Templates" },
+              { value: "MIT", label: "Licensed" },
+              { value: "∞", label: "Self-Hosted" },
+            ].map((stat, i) => (
+              <AnimatedSection key={i} delay={i * 0.1} className="text-center">
+                <div className={cn(
+                  "text-4xl md:text-5xl font-light mb-2",
+                  isDark ? "text-zinc-100" : "text-zinc-900"
+                )}>
+                  {stat.value}
+                </div>
+                <div className={cn(
+                  "text-sm uppercase tracking-wider",
+                  isDark ? "text-zinc-500" : "text-zinc-500"
+                )}>
+                  {stat.label}
+                </div>
               </AnimatedSection>
             ))}
           </div>
@@ -1282,8 +1304,99 @@ const LandingPage = (): JSX.Element | null => {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Comparison Section */}
       <section className="relative py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <AnimatedSection className="text-center mb-16">
+            <h2 className={cn(
+              "text-3xl md:text-5xl font-extralight tracking-tight mb-4",
+              isDark ? "text-zinc-100" : "text-zinc-900"
+            )}>
+              Why StellarStack?
+            </h2>
+            <p className={cn(
+              "text-lg max-w-2xl mx-auto",
+              isDark ? "text-zinc-400" : "text-zinc-600"
+            )}>
+              See how we compare to other game server management solutions.
+            </p>
+          </AnimatedSection>
+
+          <AnimatedSection delay={0.2}>
+            <div className={cn(
+              "border overflow-x-auto",
+              isDark ? "border-zinc-800" : "border-zinc-200"
+            )}>
+              {/* Table Header */}
+              <div className={cn(
+                "grid grid-cols-[2fr_repeat(6,1fr)] gap-0 border-b font-medium text-xs",
+                isDark ? "bg-zinc-900/50 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
+              )}>
+                <div className={cn("p-4 border-r", isDark ? "border-zinc-800" : "border-zinc-200")}>Feature</div>
+                <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800 bg-green-900/20" : "border-zinc-200 bg-green-50")}>StellarStack</div>
+                <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800" : "border-zinc-200")}>Pterodactyl</div>
+                <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800" : "border-zinc-200")}>Pelican</div>
+                <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800" : "border-zinc-200")}>PufferPanel</div>
+                <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800" : "border-zinc-200")}>Crafty</div>
+                <div className="p-4 text-center">AMP</div>
+              </div>
+
+              {/* Table Rows */}
+              {[
+                { feature: "Free & Open Source", stellar: true, ptero: true, pelican: true, puffer: true, crafty: true, amp: false },
+                { feature: "File Manager", stellar: true, ptero: true, pelican: true, puffer: true, crafty: true, amp: true },
+                { feature: "Scheduled Tasks", stellar: true, ptero: true, pelican: true, puffer: false, crafty: true, amp: true },
+                { feature: "Database Management", stellar: true, ptero: true, pelican: true, puffer: false, crafty: false, amp: true },
+                { feature: "OAuth / SSO", stellar: true, ptero: false, pelican: true, puffer: true, crafty: true, amp: true },
+                { feature: "Webhooks", stellar: true, ptero: false, pelican: true, puffer: false, crafty: true, amp: true },
+                { feature: "Roles & Permissions", stellar: true, ptero: false, pelican: true, puffer: false, crafty: true, amp: true },
+                { feature: "Remote Backups", stellar: true, ptero: true, pelican: true, puffer: false, crafty: false, amp: true },
+                { feature: "One-Command Install", stellar: true, ptero: false, pelican: false, puffer: false, crafty: false, amp: false },
+                { feature: "Modern Stack (Next.js)", stellar: true, ptero: false, pelican: false, puffer: false, crafty: false, amp: false },
+                { feature: "Rust Daemon", stellar: true, ptero: false, pelican: false, puffer: false, crafty: false, amp: false },
+                { feature: "Built-in Monitoring", stellar: true, ptero: false, pelican: false, puffer: false, crafty: false, amp: false },
+              ].map((row, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "grid grid-cols-[2fr_repeat(6,1fr)] gap-0 border-b last:border-b-0 text-xs",
+                    isDark ? "border-zinc-800" : "border-zinc-200",
+                    i % 2 === 0
+                      ? isDark ? "bg-zinc-900/30" : "bg-white"
+                      : isDark ? "bg-zinc-900/10" : "bg-zinc-50/50"
+                  )}
+                >
+                  <div className={cn("p-4 border-r", isDark ? "text-zinc-300 border-zinc-800" : "text-zinc-700 border-zinc-200")}>
+                    {row.feature}
+                  </div>
+                  <div className={cn("p-4 text-center border-r", isDark ? "border-zinc-800 bg-green-900/10" : "border-zinc-200 bg-green-50/50")}>
+                    {row.stellar ? (
+                      <BsCheck className={cn("w-5 h-5 mx-auto", isDark ? "text-green-500" : "text-green-600")} />
+                    ) : (
+                      <span className={isDark ? "text-zinc-600" : "text-zinc-400"}>—</span>
+                    )}
+                  </div>
+                  {[row.ptero, row.pelican, row.puffer, row.crafty, row.amp].map((val, j) => (
+                    <div key={j} className={cn("p-4 text-center border-r last:border-r-0", isDark ? "border-zinc-800" : "border-zinc-200")}>
+                      {val ? (
+                        <BsCheck className={cn("w-5 h-5 mx-auto", isDark ? "text-zinc-500" : "text-zinc-400")} />
+                      ) : (
+                        <span className={isDark ? "text-zinc-600" : "text-zinc-400"}>—</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className={cn(
+        "relative py-32 px-6 border-t",
+        isDark ? "border-zinc-800" : "border-zinc-200"
+      )}>
         <AnimatedSection className="max-w-4xl mx-auto text-center">
           <h2 className={cn(
             "text-3xl md:text-5xl font-extralight tracking-tight mb-6",
