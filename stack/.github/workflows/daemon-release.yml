@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'daemon-v*'
+  release:
+    types: [created]
   workflow_dispatch:
     inputs:
       version:
@@ -119,13 +121,41 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "tag=daemon-v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION=${TAG#daemon-v}
+            VERSION=${VERSION#v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
           else
             VERSION=${GITHUB_REF#refs/tags/daemon-v}
+            VERSION=${VERSION#refs/tags/v}
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "tag=daemon-v$VERSION" >> $GITHUB_OUTPUT
           fi
 
+      - name: Upload to existing release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            release/*
+          append_body: true
+          body: |
+
+            ---
+            ### Binary Downloads
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Linux | x86_64 | [stellar-daemon-linux-x86_64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellar-daemon-linux-x86_64) |
+            | Linux | ARM64 | [stellar-daemon-linux-aarch64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellar-daemon-linux-aarch64) |
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
+        if: github.event_name != 'release'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.tag }}
