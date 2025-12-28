@@ -19,12 +19,13 @@ tower-http = { version = "0.5", features = ["cors", "trace", "request-id", "time
 bollard = "0.17"
 
 # HTTP client for API communication
-reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_yaml = "0.9"
+serde_yaml = "0.9"  # For parsing YAML config files (Pterodactyl eggs, etc.)
+toml = "0.8"        # For daemon config
 
 # WebSocket
 tokio-tungstenite = "0.24"
@@ -42,9 +43,6 @@ clap = { version = "4", features = ["derive", "env"] }
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-
-# Configuration
-config = "0.14"
 
 # Database for state persistence
 rusqlite = { version = "0.32", features = ["bundled"] }
@@ -113,6 +111,12 @@ shell-words = "1"
 
 # XML parsing (for config files)
 quick-xml = { version = "0.37", features = ["serialize"] }
+
+# Redis for pub/sub
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# Directory walking
+walkdir = "2"
 
 # INI parsing
 rust-ini = "0.21"

@@ -53,7 +53,7 @@ export const NetworkInfoCard = ({ itemId, isDark, networkInfo, labels }: Network
             <div className={cn(labelColor, "mb-0.5", isXs ? "text-[9px]" : "text-xs")}>{isXs ? labels.publicIpShort : labels.publicIp}</div>
             <div className={cn(valueColor, "font-mono", isXs && "text-[10px]")}>{networkInfo.publicIp}</div>
           </div>
-          {!isXs && !isCompact && (
+          {!isXs && !isCompact && networkInfo.privateIp && (
             <div>
               <div className={cn(labelColor, "text-xs mb-0.5")}>{labels.privateIp}</div>
               <div className={cn(valueColor, "font-mono")}>{networkInfo.privateIp}</div>
@@ -80,7 +80,7 @@ export const NetworkInfoCard = ({ itemId, isDark, networkInfo, labels }: Network
               <div className={cn(valueColor, "font-mono text-[10px]")}>{portsString}</div>
             </div>
           )}
-          {isLarge && (
+          {isLarge && networkInfo.macAddress && (
             <div>
               <div className={cn(labelColor, "text-xs mb-0.5")}>{labels.macAddress}</div>
               <div className={cn(valueColor, "font-mono")}>{networkInfo.macAddress}</div>

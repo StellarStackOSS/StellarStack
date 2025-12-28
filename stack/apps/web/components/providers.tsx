@@ -3,6 +3,8 @@
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { AuthProvider } from "./auth-provider"
+import { QueryProvider } from "./query-provider"
+import { CommandPalette } from "./command-palette"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,9 +15,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <AuthProvider>
-        {children}
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          {children}
+          <CommandPalette />
+        </AuthProvider>
+      </QueryProvider>
     </NextThemesProvider>
   )
 }

@@ -39,7 +39,11 @@
       "Bash(pnpm --filter=api exec prisma db push:*)",
       "Bash(xargs:*)",
       "Bash(wc:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(pnpm exec prisma:*)",
+      "Bash(curl:*)",
+      "Bash(cargo doc:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

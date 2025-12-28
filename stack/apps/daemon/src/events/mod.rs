@@ -4,5 +4,7 @@
 //! like state changes, stats updates, and installation progress.
 
 mod bus;
+mod redis;
 
 pub use bus::{EventBus, Event, ProcessState, Stats, NetworkStats};
+pub use redis::RedisPublisher;

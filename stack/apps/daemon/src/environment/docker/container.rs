@@ -149,14 +149,13 @@ pub async fn create_container(env: &DockerEnvironment) -> EnvironmentResult<()> 
             ..Default::default()
         }),
 
-        // Log driver
+        // Log driver - use json-file which is universally supported
         log_config: Some(bollard::models::HostConfigLogConfig {
-            typ: Some("local".to_string()),
+            typ: Some("json-file".to_string()),
             config: Some({
                 let mut cfg = HashMap::new();
                 cfg.insert("max-size".to_string(), "5m".to_string());
                 cfg.insert("max-file".to_string(), "1".to_string());
-                cfg.insert("compress".to_string(), "false".to_string());
                 cfg
             }),
         }),

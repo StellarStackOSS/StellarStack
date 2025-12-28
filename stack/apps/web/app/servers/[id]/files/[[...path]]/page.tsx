@@ -63,6 +63,8 @@ import {
 import { servers } from "@/lib/api";
 import type { FileInfo } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
 
 interface FileItem {
@@ -77,12 +79,48 @@ interface FileItem {
 
 const EDITABLE_EXTENSIONS = [".yml", ".yaml", ".json", ".txt", ".properties", ".conf", ".cfg", ".ini", ".log", ".md", ".sh", ".bat", ".toml"];
 
+// Helper to parse daemon error messages
+const parseDaemonError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const message = error.message;
+    // Try to parse JSON error from daemon
+    try {
+      // Check if the message contains JSON
+      const jsonMatch = message.match(/\{.*"error".*"message".*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.error === "Conflict" && parsed.message) {
+          // Extract the name from "Already exists: name"
+          const existsMatch = parsed.message.match(/Already exists:\s*(.+)/);
+          if (existsMatch) {
+            return `"${existsMatch[1]}" already exists`;
+          }
+          return parsed.message;
+        }
+        return parsed.message || message;
+      }
+    } catch {
+      // If parsing fails, try simpler extraction
+      if (message.includes("Already exists")) {
+        const match = message.match(/Already exists:\s*([^"}\]]+)/);
+        if (match) {
+          return `"${match[1].trim()}" already exists`;
+        }
+        return "File or folder already exists";
+      }
+    }
+    return message;
+  }
+  return "An unknown error occurred";
+};
+
 const FilesPage = (): JSX.Element | null => {
   const params = useParams();
   const router = useRouter();
   const serverId = params.id as string;
   const pathSegments = params.path as string[] | undefined;
-  const { server } = useServer();
+  const { server, isInstalling } = useServer();
+  const { playSound } = useSoundEffects();
 
   // Derive current path from URL params
   const currentPath = pathSegments && pathSegments.length > 0
@@ -107,11 +145,6 @@ const FilesPage = (): JSX.Element | null => {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderModalOpen, setNewFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [editorModalOpen, setEditorModalOpen] = useState(false);
-  const [fileToEdit, setFileToEdit] = useState<FileItem | null>(null);
-  const [fileContent, setFileContent] = useState("");
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -280,7 +313,7 @@ const FilesPage = (): JSX.Element | null => {
       // Refresh disk usage
       fetchDiskUsage();
     } catch (error) {
-      toast.error("Failed to upload files", { id: toastId });
+      toast.error(parseDaemonError(error), { id: toastId });
     } finally {
       setIsUploading(false);
     }
@@ -383,7 +416,7 @@ const FilesPage = (): JSX.Element | null => {
       ));
       toast.success("File renamed");
     } catch (error) {
-      toast.error("Failed to rename file");
+      toast.error(parseDaemonError(error));
     } finally {
       setRenameModalOpen(false);
       setFileToRename(null);
@@ -414,44 +447,19 @@ const FilesPage = (): JSX.Element | null => {
         modified: new Date().toLocaleString(),
         path: folderPath,
       }]);
+      playSound("copy");
       toast.success("Folder created");
     } catch (error) {
-      toast.error("Failed to create folder");
+      toast.error(parseDaemonError(error));
     } finally {
       setNewFolderModalOpen(false);
       setNewFolderName("");
     }
   };
 
-  const handleEdit = async (file: FileItem) => {
-    setFileToEdit(file);
-    setIsLoadingContent(true);
-    setEditorModalOpen(true);
-    try {
-      const content = await servers.files.read(serverId, file.path);
-      setFileContent(typeof content === "string" ? content : JSON.stringify(content, null, 2));
-    } catch (error) {
-      toast.error("Failed to load file content");
-      setFileContent("");
-    } finally {
-      setIsLoadingContent(false);
-    }
-  };
-
-  const confirmSaveFile = async () => {
-    if (!fileToEdit) return;
-    setIsSaving(true);
-    try {
-      await servers.files.write(serverId, fileToEdit.path, fileContent);
-      toast.success("File saved");
-      setEditorModalOpen(false);
-      setFileToEdit(null);
-      setFileContent("");
-    } catch (error) {
-      toast.error("Failed to save file");
-    } finally {
-      setIsSaving(false);
-    }
+  const handleEdit = (file: FileItem) => {
+    // Navigate to the dedicated file edit page
+    router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(file.path)}`);
   };
 
   const handleUploadClick = () => {
@@ -505,12 +513,13 @@ const FilesPage = (): JSX.Element | null => {
           return [...prev, ...uniqueNewFiles];
         });
       }
+      playSound("copy");
       toast.success(`Uploaded ${uploadFiles.length} file(s)`);
       setUploadModalOpen(false);
       setUploadFiles([]);
       fetchDiskUsage();
     } catch (error) {
-      toast.error("Failed to upload files");
+      toast.error(parseDaemonError(error));
     } finally {
       setIsUploading(false);
     }
@@ -753,6 +762,18 @@ const FilesPage = (): JSX.Element | null => {
 
   if (!mounted) return null;
 
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "min-h-svh transition-colors relative",
@@ -967,11 +988,15 @@ const FilesPage = (): JSX.Element | null => {
               ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
               : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
           )}>
-            <div className={cn("absolute top-0 left-0 w-3 h-3 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-3 h-3 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute top-0 left-0 w-3 h-3 border-t border-l z-10", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute top-0 right-0 w-3 h-3 border-t border-r z-10", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l z-10", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r z-10", isDark ? "border-zinc-500" : "border-zinc-400")} />
 
+            <div className={cn(
+              "max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin",
+              isDark ? "scrollbar-thumb-zinc-700 scrollbar-track-transparent" : "scrollbar-thumb-zinc-400 scrollbar-track-transparent"
+            )}>
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -1063,6 +1088,7 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
 
           {/* Footer */}
@@ -1202,45 +1228,6 @@ const FilesPage = (): JSX.Element | null => {
               : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400 placeholder:text-zinc-400"
           )}
         />
-      </FormModal>
-
-      {/* File Editor Modal */}
-      <FormModal
-        open={editorModalOpen}
-        onOpenChange={(open) => {
-          if (!isSaving) {
-            setEditorModalOpen(open);
-            if (!open) {
-              setFileToEdit(null);
-              setFileContent("");
-            }
-          }
-        }}
-        title={`Edit: ${fileToEdit?.name || ""}`}
-        submitLabel={isSaving ? "Saving..." : "Save"}
-        onSubmit={confirmSaveFile}
-        isDark={isDark}
-        size="xl"
-        isValid={!isLoadingContent && !isSaving}
-      >
-        {isLoadingContent ? (
-          <div className="flex items-center justify-center py-12">
-            <Spinner className="w-6 h-6" />
-          </div>
-        ) : (
-          <textarea
-            value={fileContent}
-            onChange={(e) => setFileContent(e.target.value)}
-            rows={20}
-            spellCheck={false}
-            className={cn(
-              "w-full px-3 py-2 text-sm font-mono border outline-none transition-colors resize-none",
-              isDark
-                ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500"
-                : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400"
-            )}
-          />
-        )}
       </FormModal>
 
       {/* Upload Modal */}

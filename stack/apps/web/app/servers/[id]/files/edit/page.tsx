@@ -1,0 +1,234 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { ArrowLeft, Save, Loader2, File } from "lucide-react";
+import { cn } from "@workspace/ui/lib/utils";
+import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
+import { FadeIn } from "@workspace/ui/components/shared/Animations/FadeIn";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { CodeEditor, detectLanguage } from "@/components/code-editor";
+import { useFileContent, useFileMutations } from "@/hooks/queries";
+import { useServer } from "@/components/server-provider";
+
+export default function FileEditPage() {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  const serverId = params.id as string;
+  const filePath = searchParams.get("path") || "";
+  const fileName = filePath.split("/").pop() || "file";
+
+  const { server } = useServer();
+
+  // Fetch file content
+  const { data: originalContent, isLoading, error } = useFileContent(serverId, filePath);
+
+  // File mutations
+  const { write } = useFileMutations(serverId);
+
+  // Local state for editing
+  const [content, setContent] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Set initial content when loaded
+  useEffect(() => {
+    if (originalContent !== undefined) {
+      setContent(originalContent);
+      setHasChanges(false);
+    }
+  }, [originalContent]);
+
+  // Track changes
+  const handleContentChange = useCallback((newContent: string) => {
+    setContent(newContent);
+    setHasChanges(newContent !== originalContent);
+  }, [originalContent]);
+
+  // Handle save
+  const handleSave = async () => {
+    try {
+      await write.mutateAsync({ path: filePath, content });
+      setHasChanges(false);
+      toast.success("File saved successfully");
+    } catch (err) {
+      toast.error("Failed to save file");
+      console.error("Save error:", err);
+    }
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    if (hasChanges) {
+      const confirmed = window.confirm("You have unsaved changes. Are you sure you want to leave?");
+      if (!confirmed) return;
+    }
+
+    // Navigate back to files page
+    const parentPath = filePath.split("/").slice(0, -1).join("/");
+    router.push(`/servers/${serverId}/files${parentPath ? `/${parentPath}` : ""}`);
+  };
+
+  // Warn on page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
+  const isDark = mounted ? resolvedTheme === "dark" : true;
+  const language = detectLanguage(fileName);
+
+  if (!mounted) {
+    return null;
+  }
+
+  return (
+    <div className={cn("min-h-screen relative", isDark ? "bg-black" : "bg-zinc-50")}>
+      <AnimatedBackground isDark={isDark} />
+
+      <div className="relative z-10 h-screen flex flex-col">
+        {/* Header */}
+        <FadeIn>
+          <header
+            className={cn(
+              "border-b px-6 py-4 flex items-center justify-between",
+              isDark ? "border-zinc-800 bg-black/50" : "border-zinc-200 bg-white/50"
+            )}
+          >
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleBack}
+                className={cn(
+                  "p-2 rounded-md transition-colors",
+                  isDark
+                    ? "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    : "hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900"
+                )}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "p-2 rounded-lg",
+                    isDark ? "bg-zinc-800" : "bg-zinc-100"
+                  )}
+                >
+                  <File className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-600")} />
+                </div>
+                <div>
+                  <h1 className={cn(
+                    "text-lg font-medium",
+                    isDark ? "text-white" : "text-zinc-900"
+                  )}>
+                    {fileName}
+                  </h1>
+                  <p className={cn(
+                    "text-xs",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
+                  )}>
+                    {filePath}
+                  </p>
+                </div>
+              </div>
+
+              {hasChanges && (
+                <span className={cn(
+                  "px-2 py-1 text-xs rounded",
+                  isDark
+                    ? "bg-amber-900/30 text-amber-400"
+                    : "bg-amber-100 text-amber-700"
+                )}>
+                  Unsaved changes
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className={cn(
+                "text-xs px-2 py-1 rounded uppercase tracking-wider",
+                isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-600"
+              )}>
+                {language}
+              </span>
+
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges || write.isPending}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                  hasChanges && !write.isPending
+                    ? isDark
+                      ? "bg-white text-black hover:bg-zinc-200"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                    : isDark
+                      ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                      : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                )}
+              >
+                {write.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save
+              </button>
+            </div>
+          </header>
+        </FadeIn>
+
+        {/* Editor */}
+        <div className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner className="w-8 h-8" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <p className={cn("text-lg", isDark ? "text-red-400" : "text-red-600")}>
+                Failed to load file
+              </p>
+              <button
+                onClick={handleBack}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm",
+                  isDark
+                    ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                )}
+              >
+                Go back
+              </button>
+            </div>
+          ) : (
+            <CodeEditor
+              value={content}
+              onChange={handleContentChange}
+              filename={fileName}
+              isDark={isDark}
+              height="100%"
+              className="h-full rounded-none border-0"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -243,14 +243,26 @@ pub async fn power_action(
     Extension(server): Extension<Arc<Server>>,
     Json(request): Json<PowerActionRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    tracing::info!("Power action request: {:?} for server {}", request.action, server.uuid());
+
     let action = PowerAction::from_str(&request.action)
         .ok_or_else(|| ApiError::bad_request(format!("Invalid action: {}", request.action)))?;
 
-    server.handle_power_action(action, request.wait_for_lock).await?;
+    tracing::info!("Executing power action: {:?}, is_installing: {}, is_busy: {}",
+        action, server.is_installing(), server.is_busy());
 
-    Ok(Json(serde_json::json!({
-        "success": true
-    })))
+    match server.handle_power_action(action, request.wait_for_lock).await {
+        Ok(_) => {
+            tracing::info!("Power action {:?} succeeded for {}", action, server.uuid());
+            Ok(Json(serde_json::json!({
+                "success": true
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Power action {:?} failed for {}: {}", action, server.uuid(), e);
+            Err(e.into())
+        }
+    }
 }
 
 /// Send command request
@@ -264,11 +276,20 @@ pub async fn send_command(
     Extension(server): Extension<Arc<Server>>,
     Json(request): Json<SendCommandRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    server.send_command(&request.command).await?;
+    tracing::info!("Sending command to server {}: {}", server.uuid(), request.command);
 
-    Ok(Json(serde_json::json!({
-        "success": true
-    })))
+    match server.send_command(&request.command).await {
+        Ok(_) => {
+            tracing::info!("Command sent successfully to {}", server.uuid());
+            Ok(Json(serde_json::json!({
+                "success": true
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to send command to {}: {}", server.uuid(), e);
+            Err(e.into())
+        }
+    }
 }
 
 /// Get server logs

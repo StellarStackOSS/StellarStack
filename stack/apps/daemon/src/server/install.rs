@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use bollard::container::{
     Config, CreateContainerOptions, RemoveContainerOptions,
-    AttachContainerOptions, AttachContainerResults, WaitContainerOptions,
+    AttachContainerOptions, AttachContainerResults,
 };
 use bollard::models::{HostConfig, Mount, MountTypeEnum};
 use bollard::image::CreateImageOptions;
@@ -156,9 +156,11 @@ impl InstallationProcess {
         // Create install directory
         tokio::fs::create_dir_all(&self.install_dir).await?;
 
-        // Write installation script
+        // Write installation script with Unix line endings (LF, not CRLF)
+        // This is critical on Windows where files are written with CRLF by default
         let script_path = self.install_dir.join("install.sh");
-        tokio::fs::write(&script_path, &self.script.script).await?;
+        let script_content = self.script.script.replace("\r\n", "\n").replace('\r', "\n");
+        tokio::fs::write(&script_path, script_content).await?;
 
         #[cfg(unix)]
         {
@@ -167,6 +169,31 @@ impl InstallationProcess {
         }
 
         debug!("Wrote install script to {:?}", script_path);
+        debug!("Script content (first 200 chars): {:?}", &self.script.script.chars().take(200).collect::<String>());
+        info!("Install image: {}, entrypoint: {}", self.script.container_image, self.script.entrypoint);
+        info!("Server dir mount: {:?}", self.server_dir);
+        info!("Install dir mount: {:?}", self.install_dir);
+
+        // Verify paths exist
+        if !self.server_dir.exists() {
+            error!("Server directory does not exist: {:?}", self.server_dir);
+            return Err(InstallError::Other(format!("Server directory does not exist: {:?}", self.server_dir)));
+        }
+
+        // On non-Windows, verify install script mount paths
+        #[cfg(not(windows))]
+        {
+            if !self.install_dir.exists() {
+                error!("Install directory does not exist: {:?}", self.install_dir);
+                return Err(InstallError::Other(format!("Install directory does not exist: {:?}", self.install_dir)));
+            }
+            let script_path_check = self.install_dir.join("install.sh");
+            if !script_path_check.exists() {
+                error!("Install script does not exist: {:?}", script_path_check);
+                return Err(InstallError::Other(format!("Install script does not exist: {:?}", script_path_check)));
+            }
+        }
+        info!("All paths verified successfully");
 
         // Pull installation image
         self.pull_image(&self.script.container_image).await?;
@@ -192,12 +219,37 @@ impl InstallationProcess {
         let env_vars = self.build_env_vars();
 
         // Build container config
+        // Note: On Windows, we use -c to pass the script inline instead of mounting
+        // because Windows bind mounts can be unreliable with file permissions
+        #[cfg(windows)]
+        let (entrypoint, cmd) = {
+            // Normalize line endings for shell
+            let normalized_script = self.script.script
+                .replace("\r\n", "\n")
+                .replace('\r', "\n");
+            info!("Windows: passing script inline ({} chars)", normalized_script.len());
+            debug!("Script to execute: {}", normalized_script);
+            (
+                vec![self.script.entrypoint.clone(), "-c".to_string()],
+                vec![normalized_script],
+            )
+        };
+
+        #[cfg(not(windows))]
+        let (entrypoint, cmd) = {
+            info!("Unix: using mounted script at /mnt/install/install.sh");
+            (
+                vec![self.script.entrypoint.clone()],
+                vec!["/mnt/install/install.sh".to_string()],
+            )
+        };
+
         let config = Config {
             hostname: Some("installer".to_string()),
             image: Some(self.script.container_image.clone()),
             env: Some(env_vars),
-            entrypoint: Some(vec![self.script.entrypoint.clone()]),
-            cmd: Some(vec!["/mnt/install/install.sh".to_string()]),
+            entrypoint: Some(entrypoint),
+            cmd: Some(cmd),
             attach_stdout: Some(true),
             attach_stderr: Some(true),
             open_stdin: Some(true),
@@ -205,24 +257,31 @@ impl InstallationProcess {
             working_dir: Some("/mnt/server".to_string()),
             user: Some("root".to_string()), // Installer runs as root
             host_config: Some(HostConfig {
-                mounts: Some(vec![
-                    // Server data volume
-                    Mount {
-                        target: Some("/mnt/server".to_string()),
-                        source: Some(self.server_dir.to_string_lossy().to_string()),
-                        typ: Some(MountTypeEnum::BIND),
-                        read_only: Some(false),
-                        ..Default::default()
-                    },
-                    // Install script directory
-                    Mount {
+                mounts: Some({
+                    #[allow(unused_mut)]
+                    let mut mounts = vec![
+                        // Server data volume
+                        Mount {
+                            target: Some("/mnt/server".to_string()),
+                            source: Some(self.server_dir.to_string_lossy().to_string()),
+                            typ: Some(MountTypeEnum::BIND),
+                            read_only: Some(false),
+                            ..Default::default()
+                        },
+                    ];
+
+                    // On non-Windows, also mount the install script directory
+                    #[cfg(not(windows))]
+                    mounts.push(Mount {
                         target: Some("/mnt/install".to_string()),
                         source: Some(self.install_dir.to_string_lossy().to_string()),
                         typ: Some(MountTypeEnum::BIND),
                         read_only: Some(true),
                         ..Default::default()
-                    },
-                ]),
+                    });
+
+                    mounts
+                }),
                 // Resource limits
                 memory: Some(self.memory_limit as i64),
                 cpu_quota: Some((self.cpu_limit * 1000) as i64),
@@ -267,12 +326,16 @@ impl InstallationProcess {
 
         // Stream output
         let sink = self.install_sink.clone();
+        let server_uuid = self.server_uuid.clone();
         let output_handle = tokio::spawn(async move {
             while let Some(result) = output.next().await {
                 match result {
                     Ok(log) => {
                         let bytes = log.into_bytes();
                         if !bytes.is_empty() {
+                            // Log the output for debugging
+                            let output_str = String::from_utf8_lossy(&bytes);
+                            debug!("[{}] Install output: {}", server_uuid, output_str.trim());
                             sink.push(bytes.to_vec());
                         }
                     }
@@ -284,23 +347,37 @@ impl InstallationProcess {
             }
         });
 
-        // Wait for completion
-        let wait_options = WaitContainerOptions {
-            condition: "not-running",
-        };
-
-        let mut wait_stream = self.docker.wait_container(&container_name, Some(wait_options));
-
+        // Wait for completion using polling (more reliable on Windows)
         let exit_code = loop {
-            match wait_stream.next().await {
-                Some(Ok(result)) => {
-                    break result.status_code;
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+            match self.docker.inspect_container(&container_name, None).await {
+                Ok(info) => {
+                    if let Some(state) = info.state {
+                        let running = state.running.unwrap_or(false);
+                        if !running {
+                            let code = state.exit_code.unwrap_or(0);
+                            let status = state.status.map(|s| format!("{:?}", s)).unwrap_or_else(|| "unknown".to_string());
+                            info!("Container {} exited with code {} (status: {})", container_name, code, status);
+
+                            if let Some(err) = state.error.as_ref().filter(|e| !e.is_empty()) {
+                                error!("Container error message: {}", err);
+                            }
+
+                            // Log OOMKilled status
+                            if state.oom_killed.unwrap_or(false) {
+                                error!("Container was killed due to out of memory");
+                            }
+
+                            break code;
+                        }
+                    }
                 }
-                Some(Err(e)) => {
-                    return Err(InstallError::Docker(e));
-                }
-                None => {
-                    return Err(InstallError::Other("Wait stream ended unexpectedly".into()));
+                Err(e) => {
+                    // Container might not exist anymore - check if it completed
+                    error!("Failed to inspect container: {}", e);
+                    // Assume it finished with error
+                    break 1;
                 }
             }
         };
@@ -379,12 +456,21 @@ impl InstallationProcess {
 
     /// Build environment variables for installer
     fn build_env_vars(&self) -> Vec<String> {
-        vec![
+        let mut env_vars = vec![
             format!("SERVER_UUID={}", self.server_uuid),
             "CONTAINER_HOME=/mnt/server".to_string(),
             "HOME=/mnt/server".to_string(),
             "TERM=xterm-256color".to_string(),
-        ]
+        ];
+
+        // Add environment variables from the installation script
+        for (key, value) in &self.script.environment {
+            env_vars.push(format!("{}={}", key, value));
+            debug!("Install env: {}={}", key, value);
+        }
+
+        info!("Install container will have {} environment variables", env_vars.len());
+        env_vars
     }
 }
 
@@ -400,6 +486,7 @@ mod tests {
                 container_image: "test".to_string(),
                 entrypoint: "/bin/bash".to_string(),
                 script: "echo test".to_string(),
+                environment: std::collections::HashMap::new(),
             },
             docker: Docker::connect_with_local_defaults().unwrap(),
             server_dir: PathBuf::from("/tmp/server"),

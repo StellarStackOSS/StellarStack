@@ -5,16 +5,17 @@ import type { ConsoleInfo, ServerStats } from "@/lib/api";
 
 const MAX_HISTORY_LENGTH = 60; // Keep last 60 data points (1 minute at 1/sec)
 
-interface StatsWithHistory {
+export interface StatsWithHistory {
   current: ServerStats | null;
   cpuHistory: number[];
   memoryHistory: number[];
-  diskReadHistory: number[];
-  diskWriteHistory: number[];
+  memoryPercentHistory: number[];
   networkRxHistory: number[]; // Rate in bytes/sec
   networkTxHistory: number[]; // Rate in bytes/sec
   networkRxRate: number; // Current rate in bytes/sec
   networkTxRate: number; // Current rate in bytes/sec
+  diskHistory: number[]; // Disk usage in bytes
+  diskPercentHistory: number[]; // Disk usage as percentage
 }
 
 interface UseStatsWebSocketOptions {
@@ -27,6 +28,12 @@ interface UseStatsWebSocketResult {
   isConnected: boolean;
 }
 
+/**
+ * WebSocket hook for receiving stats from the Rust daemon
+ *
+ * The daemon sends stats through the console WebSocket with format:
+ * { event: "stats", args: [{ memory_bytes, memory_limit_bytes, cpu_absolute, network: { rx_bytes, tx_bytes }, uptime }] }
+ */
 export function useStatsWebSocket({
   consoleInfo,
   enabled = true,
@@ -36,12 +43,13 @@ export function useStatsWebSocket({
     current: null,
     cpuHistory: [],
     memoryHistory: [],
-    diskReadHistory: [],
-    diskWriteHistory: [],
+    memoryPercentHistory: [],
     networkRxHistory: [],
     networkTxHistory: [],
     networkRxRate: 0,
     networkTxRate: 0,
+    diskHistory: [],
+    diskPercentHistory: [],
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -52,15 +60,21 @@ export function useStatsWebSocket({
   const connect = useCallback(() => {
     if (!consoleInfo || !enabled) return;
 
-    // Build stats WebSocket URL (replace /console with /stats/ws in the path)
-    const wsUrl = consoleInfo.websocketUrl.replace("/console", "/stats/ws");
+    // Close existing connection
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
 
     try {
-      const ws = new WebSocket(wsUrl);
+      // Use the same WebSocket URL as console, append token
+      const url = new URL(consoleInfo.websocketUrl);
+      url.searchParams.set("token", consoleInfo.token);
+
+      const ws = new WebSocket(url.toString());
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setIsConnected(true);
         prevNetworkRef.current = null; // Reset on new connection
       };
 
@@ -68,51 +82,97 @@ export function useStatsWebSocket({
         try {
           const message = JSON.parse(event.data);
 
-          if (message.type === "stats" && message.data) {
-            const newStats: ServerStats = message.data;
-            const now = Date.now();
+          // Handle daemon message format: { event: "...", args: [...] }
+          if (message.event && Array.isArray(message.args)) {
+            const eventType = message.event;
+            const data = message.args[0] || {};
 
-            setStats((prev) => {
-              const cpuPercent = newStats.cpu?.usage_percent ?? 0;
-              const memoryPercent = newStats.memory?.usage_percent ?? 0;
-              const diskRead = newStats.block_io?.read_bytes ?? 0;
-              const diskWrite = newStats.block_io?.write_bytes ?? 0;
-              const networkRxTotal = newStats.network?.rx_bytes ?? 0;
-              const networkTxTotal = newStats.network?.tx_bytes ?? 0;
+            switch (eventType) {
+              case "auth success":
+                setIsConnected(true);
+                break;
 
-              // Calculate network rate (bytes per second)
-              let rxRate = 0;
-              let txRate = 0;
+              case "stats": {
+                const now = Date.now();
 
-              if (prevNetworkRef.current) {
-                const timeDelta = (now - prevNetworkRef.current.timestamp) / 1000; // seconds
-                if (timeDelta > 0) {
-                  const rxDelta = networkRxTotal - prevNetworkRef.current.rx;
-                  const txDelta = networkTxTotal - prevNetworkRef.current.tx;
+                // New daemon stats format
+                const newStats: ServerStats = {
+                  memory_bytes: data.memory_bytes ?? 0,
+                  memory_limit_bytes: data.memory_limit_bytes ?? 0,
+                  cpu_absolute: data.cpu_absolute ?? 0,
+                  network: {
+                    rx_bytes: data.network?.rx_bytes ?? 0,
+                    tx_bytes: data.network?.tx_bytes ?? 0,
+                  },
+                  uptime: data.uptime ?? 0,
+                  state: data.state ?? "unknown",
+                  disk_bytes: data.disk_bytes ?? 0,
+                  disk_limit_bytes: data.disk_limit_bytes ?? 0,
+                };
 
-                  // Only calculate rate if values are increasing (not a reset)
-                  if (rxDelta >= 0 && txDelta >= 0) {
-                    rxRate = rxDelta / timeDelta;
-                    txRate = txDelta / timeDelta;
+                setStats((prev) => {
+                  const cpuPercent = newStats.cpu_absolute;
+                  const memoryBytes = newStats.memory_bytes;
+                  const memoryLimitBytes = newStats.memory_limit_bytes;
+                  const memoryPercent = memoryLimitBytes > 0
+                    ? (memoryBytes / memoryLimitBytes) * 100
+                    : 0;
+
+                  const networkRxTotal = newStats.network.rx_bytes;
+                  const networkTxTotal = newStats.network.tx_bytes;
+
+                  // Calculate disk usage
+                  const diskBytes = newStats.disk_bytes;
+                  const diskLimitBytes = newStats.disk_limit_bytes;
+                  const diskPercent = diskLimitBytes > 0
+                    ? (diskBytes / diskLimitBytes) * 100
+                    : 0;
+
+                  // Calculate network rate (bytes per second)
+                  let rxRate = 0;
+                  let txRate = 0;
+
+                  if (prevNetworkRef.current) {
+                    const timeDelta = (now - prevNetworkRef.current.timestamp) / 1000; // seconds
+                    if (timeDelta > 0) {
+                      const rxDelta = networkRxTotal - prevNetworkRef.current.rx;
+                      const txDelta = networkTxTotal - prevNetworkRef.current.tx;
+
+                      // Only calculate rate if values are increasing (not a reset)
+                      if (rxDelta >= 0 && txDelta >= 0) {
+                        rxRate = rxDelta / timeDelta;
+                        txRate = txDelta / timeDelta;
+                      }
+                    }
                   }
-                }
+
+                  // Update previous values
+                  prevNetworkRef.current = { rx: networkRxTotal, tx: networkTxTotal, timestamp: now };
+
+                  return {
+                    current: newStats,
+                    cpuHistory: [...prev.cpuHistory, cpuPercent].slice(-MAX_HISTORY_LENGTH),
+                    memoryHistory: [...prev.memoryHistory, memoryBytes].slice(-MAX_HISTORY_LENGTH),
+                    memoryPercentHistory: [...prev.memoryPercentHistory, memoryPercent].slice(-MAX_HISTORY_LENGTH),
+                    networkRxHistory: [...prev.networkRxHistory, rxRate].slice(-MAX_HISTORY_LENGTH),
+                    networkTxHistory: [...prev.networkTxHistory, txRate].slice(-MAX_HISTORY_LENGTH),
+                    networkRxRate: rxRate,
+                    networkTxRate: txRate,
+                    diskHistory: [...prev.diskHistory, diskBytes].slice(-MAX_HISTORY_LENGTH),
+                    diskPercentHistory: [...prev.diskPercentHistory, diskPercent].slice(-MAX_HISTORY_LENGTH),
+                  };
+                });
+                break;
               }
 
-              // Update previous values
-              prevNetworkRef.current = { rx: networkRxTotal, tx: networkTxTotal, timestamp: now };
+              case "jwt error":
+                console.error("Stats WebSocket JWT error:", data.message);
+                break;
 
-              return {
-                current: newStats,
-                cpuHistory: [...prev.cpuHistory, cpuPercent].slice(-MAX_HISTORY_LENGTH),
-                memoryHistory: [...prev.memoryHistory, memoryPercent].slice(-MAX_HISTORY_LENGTH),
-                diskReadHistory: [...prev.diskReadHistory, diskRead].slice(-MAX_HISTORY_LENGTH),
-                diskWriteHistory: [...prev.diskWriteHistory, diskWrite].slice(-MAX_HISTORY_LENGTH),
-                networkRxHistory: [...prev.networkRxHistory, rxRate].slice(-MAX_HISTORY_LENGTH),
-                networkTxHistory: [...prev.networkTxHistory, txRate].slice(-MAX_HISTORY_LENGTH),
-                networkRxRate: rxRate,
-                networkTxRate: txRate,
-              };
-            });
+              // Ignore other events (console output, status, etc.)
+              default:
+                break;
+            }
           }
         } catch (err) {
           console.error("Failed to parse stats message:", err);
@@ -160,12 +220,13 @@ export function useStatsWebSocket({
         current: null,
         cpuHistory: [],
         memoryHistory: [],
-        diskReadHistory: [],
-        diskWriteHistory: [],
+        memoryPercentHistory: [],
         networkRxHistory: [],
         networkTxHistory: [],
         networkRxRate: 0,
         networkTxRate: 0,
+        diskHistory: [],
+        diskPercentHistory: [],
       });
       setIsConnected(false);
       prevNetworkRef.current = null;

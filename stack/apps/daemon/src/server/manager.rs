@@ -60,7 +60,7 @@ impl Manager {
             handles.push(tokio::spawn(async move {
                 let _permit = permit;
 
-                let server_config = ServerConfig::from_api(&data.settings);
+                let server_config = ServerConfig::from_api(&data);
                 let uuid = server_config.uuid.clone();
 
                 match Server::new(
@@ -68,6 +68,7 @@ impl Manager {
                     &config.system,
                     &config.docker,
                     api_client,
+                    Some(&config.redis),
                 ) {
                     Ok(server) => {
                         debug!("Initialized server {}", uuid);
@@ -132,6 +133,7 @@ impl Manager {
             &self.config.system,
             &self.config.docker,
             self.api_client.clone(),
+            Some(&self.config.redis),
         ).map_err(|e| ManagerError::Server(e.to_string()))?;
 
         let server = Arc::new(server);
@@ -163,6 +165,25 @@ impl Manager {
                 warn!("Failed to sync server {}: {}", server.uuid(), e);
             }
         }
+    }
+
+    /// Start Redis publishers for all servers
+    pub async fn start_redis_publishers(&self) {
+        if !self.config.redis.enabled {
+            info!("Redis publishing disabled");
+            return;
+        }
+
+        info!("Starting Redis publishers for all servers");
+        let redis_url = &self.config.redis.url;
+
+        for server in self.all() {
+            if let Err(e) = server.start_redis_publisher(redis_url).await {
+                warn!("Failed to start Redis publisher for {}: {}", server.uuid(), e);
+            }
+        }
+
+        info!("Redis publishers started for {} servers", self.count());
     }
 
     /// Reload server configuration

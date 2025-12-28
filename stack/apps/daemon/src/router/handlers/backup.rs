@@ -3,12 +3,14 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     Extension, Json,
 };
 use serde::{Deserialize, Serialize};
+use tracing::{error, info};
 
-use crate::server::Server;
+use crate::router::AppState;
+use crate::server::{self, Server};
 use super::ApiError;
 
 /// Backup list response
@@ -21,18 +23,36 @@ pub struct BackupListResponse {
 #[derive(Debug, Serialize)]
 pub struct BackupInfo {
     pub uuid: String,
-    pub name: String,
     pub size: u64,
-    pub checksum: String,
-    pub created_at: String,
+    pub created_at: u64,
 }
 
 /// List backups
 pub async fn list_backups(
-    Extension(_server): Extension<Arc<Server>>,
-) -> Json<BackupListResponse> {
-    // TODO: Implement backup listing from disk/database
-    Json(BackupListResponse { backups: vec![] })
+    State(state): State<AppState>,
+    Extension(server): Extension<Arc<Server>>,
+) -> Result<Json<BackupListResponse>, ApiError> {
+    let backup_dir = state.config.system.backup_directory.join(server.uuid());
+
+    match server::list_backups(&backup_dir) {
+        Ok(backups) => {
+            let response = BackupListResponse {
+                backups: backups
+                    .into_iter()
+                    .map(|b| BackupInfo {
+                        uuid: b.uuid,
+                        size: b.size,
+                        created_at: b.created_at,
+                    })
+                    .collect(),
+            };
+            Ok(Json(response))
+        }
+        Err(e) => {
+            error!("Failed to list backups: {}", e);
+            Err(ApiError::internal(e.to_string()))
+        }
+    }
 }
 
 /// Create backup request
@@ -43,21 +63,50 @@ pub struct CreateBackupRequest {
     pub ignore: Vec<String>,
 }
 
+/// Create backup response
+#[derive(Debug, Serialize)]
+pub struct CreateBackupResponse {
+    pub success: bool,
+    pub checksum: Option<String>,
+    pub size: u64,
+}
+
 /// Create a backup
 pub async fn create_backup(
-    Extension(_server): Extension<Arc<Server>>,
-    Json(_request): Json<CreateBackupRequest>,
-) -> Result<Json<serde_json::Value>, ApiError> {
-    // TODO: Implement backup creation
-    // 1. Create tar.gz of server data (excluding ignored files)
-    // 2. Calculate checksum
-    // 3. Report to panel
-    // 4. Upload if S3 is configured
+    State(state): State<AppState>,
+    Extension(server): Extension<Arc<Server>>,
+    Json(request): Json<CreateBackupRequest>,
+) -> Result<Json<CreateBackupResponse>, ApiError> {
+    let server_uuid = server.uuid();
+    let backup_uuid = request.uuid;
+    let data_dir = server.data_dir();
+    let backup_dir = state.config.system.backup_directory.join(&server_uuid);
+    let event_bus = server.events();
 
-    Ok(Json(serde_json::json!({
-        "success": true,
-        "message": "Backup creation started"
-    })))
+    info!("Creating backup {} for server {}", backup_uuid, server_uuid);
+
+    // Run backup creation in background
+    let result = server::create_backup(
+        &server_uuid,
+        &backup_uuid,
+        data_dir,
+        &backup_dir,
+        &request.ignore,
+        event_bus,
+    )
+    .await;
+
+    match result {
+        Ok(backup_result) => Ok(Json(CreateBackupResponse {
+            success: true,
+            checksum: Some(backup_result.checksum),
+            size: backup_result.size,
+        })),
+        Err(e) => {
+            error!("Backup creation failed: {}", e);
+            Err(ApiError::internal(e.to_string()))
+        }
+    }
 }
 
 /// Restore backup request
@@ -70,32 +119,70 @@ pub struct RestoreBackupRequest {
 
 /// Restore from backup
 pub async fn restore_backup(
-    Extension(_server): Extension<Arc<Server>>,
-    Json(_request): Json<RestoreBackupRequest>,
+    State(state): State<AppState>,
+    Extension(server): Extension<Arc<Server>>,
+    Json(request): Json<RestoreBackupRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    // TODO: Implement backup restoration
-    // 1. Check server is not running
-    // 2. Optionally truncate server data
-    // 3. Extract backup archive
-    // 4. Report to panel
+    // Check if server is running
+    if server.process_state() != crate::events::ProcessState::Offline {
+        return Err(ApiError::bad_request(
+            "Server must be stopped before restoring a backup",
+        ));
+    }
 
-    Ok(Json(serde_json::json!({
-        "success": true,
-        "message": "Backup restoration started"
-    })))
+    let server_uuid = server.uuid();
+    let backup_uuid = &request.uuid;
+    let backup_path = state
+        .config
+        .system
+        .backup_directory
+        .join(&server_uuid)
+        .join(format!("{}.tar.gz", backup_uuid));
+    let data_dir = server.data_dir();
+    let event_bus = server.events();
+
+    info!("Restoring backup {} for server {}", backup_uuid, server_uuid);
+
+    let result = server::restore_backup(
+        &server_uuid,
+        backup_uuid,
+        &backup_path,
+        data_dir,
+        request.truncate,
+        event_bus,
+    )
+    .await;
+
+    match result {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "success": true,
+            "message": "Backup restored successfully"
+        }))),
+        Err(e) => {
+            error!("Backup restoration failed: {}", e);
+            Err(ApiError::internal(e.to_string()))
+        }
+    }
 }
 
 /// Delete a backup
 pub async fn delete_backup(
-    Extension(_server): Extension<Arc<Server>>,
-    Path(_backup_id): Path<String>,
+    State(state): State<AppState>,
+    Extension(server): Extension<Arc<Server>>,
+    Path((_server_id, backup_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    // TODO: Implement backup deletion
-    // 1. Delete local backup file
-    // 2. Delete from S3 if applicable
-    // 3. Report to panel
+    let server_uuid = server.uuid();
+    let backup_dir = state.config.system.backup_directory.join(&server_uuid);
 
-    Ok(Json(serde_json::json!({
-        "success": true
-    })))
+    info!("Deleting backup {} for server {}", backup_id, server_uuid);
+
+    match server::delete_backup(&backup_dir, &backup_id) {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "success": true
+        }))),
+        Err(e) => {
+            error!("Backup deletion failed: {}", e);
+            Err(ApiError::internal(e.to_string()))
+        }
+    }
 }

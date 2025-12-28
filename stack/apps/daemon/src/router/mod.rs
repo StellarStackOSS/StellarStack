@@ -41,6 +41,13 @@ pub struct AppState {
 
 /// Build the HTTP router with all routes
 pub fn build_router(state: AppState) -> Router {
+    // Server-specific routes with server extraction middleware
+    let server_routes_with_middleware = server_routes()
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            middleware::server::extract_server,
+        ));
+
     let api_routes = Router::new()
         // System routes
         .route("/system", get(handlers::system::system_info))
@@ -49,8 +56,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/servers", get(handlers::servers::list_servers))
         .route("/servers", post(handlers::servers::create_server))
 
-        // Individual server routes
-        .nest("/servers/:server_id", server_routes())
+        // Individual server routes (with server extraction middleware)
+        .nest("/servers/:server_id", server_routes_with_middleware)
 
         // Apply auth middleware to all API routes
         .layer(axum::middleware::from_fn_with_state(
@@ -109,7 +116,6 @@ fn server_routes() -> Router<AppState> {
 
         // Backup routes
         .nest("/backup", backup_routes())
-        // Note: Server extraction is handled in individual handlers via Path
 }
 
 /// Routes for file operations

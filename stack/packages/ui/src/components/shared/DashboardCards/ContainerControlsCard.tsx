@@ -27,8 +27,9 @@ export const ContainerControlsCard = ({
   labels,
 }: ContainerControlsCardProps): JSX.Element => {
   const isRunning = status === "running";
+  const isStarting = status === "starting";
   const isStopped = status === "stopped";
-  const isTransitioning = status === "starting" || status === "stopping";
+  const isStopping = status === "stopping";
 
   const buttonBase = "px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors border bg-transparent";
   const buttonColors = isDark
@@ -38,11 +39,14 @@ export const ContainerControlsCard = ({
     ? "border-zinc-800 text-zinc-600"
     : "border-zinc-200 text-zinc-400";
 
-  // Start button should be enabled when stopped (even if isOffline is true due to stopped state)
-  const startDisabled = isRunning || isTransitioning;
-  const stopDisabled = isStopped || isTransitioning || isOffline;
+  // Start: disabled when running, starting, or stopping
+  const startDisabled = isRunning || isStarting || isStopping;
+  // Stop: enabled when running or starting (can stop a starting server)
+  const stopDisabled = isStopped || isStopping || isOffline;
+  // Kill: always available when not stopped (force kill even during transitions)
   const killDisabled = isStopped || isOffline;
-  const restartDisabled = isStopped || isTransitioning || isOffline;
+  // Restart: disabled during transitions
+  const restartDisabled = isStopped || isStarting || isStopping || isOffline;
 
   return (
     <UsageCard isDark={isDark} className="h-full flex items-center justify-center px-8">

@@ -50,6 +50,9 @@ export async function requireAdmin(c: Context, next: Next) {
 }
 
 // Middleware for daemon authentication (using node token)
+// Supports both formats:
+// - "Bearer {token}" (legacy)
+// - "Bearer {token_id}.{token}" (new format from Rust daemon)
 export async function requireDaemon(c: Context, next: Next) {
   const authHeader = c.req.header("Authorization");
 
@@ -57,13 +60,25 @@ export async function requireDaemon(c: Context, next: Next) {
     return c.json({ error: "Missing daemon token" }, 401);
   }
 
-  const token = authHeader.slice(7);
+  const tokenPart = authHeader.slice(7);
 
-  // Find node by token
+  let nodeId: string | null = null;
+  let token: string;
+
+  // Check if token is in "token_id.token" format
+  if (tokenPart.includes(".")) {
+    const dotIndex = tokenPart.indexOf(".");
+    nodeId = tokenPart.slice(0, dotIndex);
+    token = tokenPart.slice(dotIndex + 1);
+  } else {
+    token = tokenPart;
+  }
+
+  // Find node by token (and optionally by ID)
   const node = await db.node.findFirst({
-    where: {
-      token: token,
-    },
+    where: nodeId
+      ? { id: nodeId, token: token }
+      : { token: token },
   });
 
   if (!node) {

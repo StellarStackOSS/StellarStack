@@ -55,6 +55,10 @@ pub struct Stats {
     pub network: NetworkStats,
     /// Server uptime in milliseconds
     pub uptime: i64,
+    /// Current disk usage in bytes
+    pub disk_bytes: u64,
+    /// Disk limit in bytes
+    pub disk_limit_bytes: u64,
 }
 
 /// Events that can be published through the event bus
@@ -259,6 +263,8 @@ mod tests {
                 tx_bytes: 2000,
             },
             uptime: 60000,
+            disk_bytes: 1024 * 1024 * 50, // 50MB
+            disk_limit_bytes: 1024 * 1024 * 1024, // 1GB
         };
 
         bus.publish_stats(stats.clone());

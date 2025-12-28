@@ -13,11 +13,14 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { BsSun, BsMoon, BsInfoCircle, BsCheckCircle, BsArrowRepeat } from "react-icons/bs";
 import { servers } from "@/lib/api";
 import type { StartupVariable, DockerImageOption } from "@/lib/api";
+import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { toast } from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +71,18 @@ const StartupPage = (): JSX.Element | null => {
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const handleVariableChange = (envVariable: string, value: string) => {
     setVariables(prev => prev.map(v =>

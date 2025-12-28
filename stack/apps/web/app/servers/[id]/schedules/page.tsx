@@ -17,6 +17,7 @@ import { BsSun, BsMoon, BsPlus, BsTrash, BsPencil, BsPlayFill, BsStopFill, BsArr
 import { servers } from "@/lib/api";
 import type { Schedule, ScheduleTask, CreateScheduleData } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { toast } from "sonner";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
@@ -40,7 +41,7 @@ const actionOptions: { value: ActionType; label: string; icon: JSX.Element }[] =
 const SchedulesPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
-  const { server } = useServer();
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -81,6 +82,18 @@ const SchedulesPage = (): JSX.Element | null => {
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const resetForm = () => {
     setFormName("");

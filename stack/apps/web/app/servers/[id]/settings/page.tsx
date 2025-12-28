@@ -21,6 +21,8 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Slider } from "@workspace/ui/components/slider";
 import { BsSun, BsMoon, BsExclamationTriangle, BsCheckCircle, BsGlobe, BsGeoAlt, BsCheck, BsLayers } from "react-icons/bs";
 import { servers } from "@/lib/api";
+import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { toast } from "sonner";
 
 interface ServerSettings {
@@ -138,6 +140,7 @@ const serverTypesByCategory = serverTypes.reduce<Record<string, ServerTypeOption
 const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [settings, setSettings] = useState<ServerSettings>(defaultSettings);
@@ -277,6 +280,18 @@ const SettingsPage = (): JSX.Element | null => {
   }, {});
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const handleSettingChange = <K extends keyof ServerSettings>(key: K, value: ServerSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -501,225 +516,9 @@ const SettingsPage = (): JSX.Element | null => {
             </div>
           </div>
 
-          {/* Resource Limits */}
-          <div className={cn(
-            "relative p-6 border mb-6",
-            isDark
-              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
-          )}>
-            <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-
-            <h2 className={cn(
-              "text-sm font-medium uppercase tracking-wider mb-6",
-              isDark ? "text-zinc-300" : "text-zinc-700"
-            )}>
-              Resource Limits
-            </h2>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className={cn(
-                  "text-[10px] font-medium uppercase tracking-wider",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
-                )}>
-                  CPU Limit (%)
-                </label>
-                <input
-                  type="number"
-                  value={settings.cpuLimit}
-                  onChange={(e) => handleSettingChange("cpuLimit", parseInt(e.target.value))}
-                  className={cn(
-                    "w-full mt-2 px-3 py-2 text-sm border outline-none transition-colors",
-                    isDark
-                      ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500"
-                      : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400"
-                  )}
-                />
-              </div>
-              <div>
-                <label className={cn(
-                  "text-[10px] font-medium uppercase tracking-wider",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
-                )}>
-                  Memory (MB)
-                </label>
-                <input
-                  type="number"
-                  value={settings.memoryLimit}
-                  onChange={(e) => handleSettingChange("memoryLimit", parseInt(e.target.value))}
-                  className={cn(
-                    "w-full mt-2 px-3 py-2 text-sm border outline-none transition-colors",
-                    isDark
-                      ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500"
-                      : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400"
-                  )}
-                />
-              </div>
-              <div>
-                <label className={cn(
-                  "text-[10px] font-medium uppercase tracking-wider",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
-                )}>
-                  Disk (MB)
-                </label>
-                <input
-                  type="number"
-                  value={settings.diskLimit}
-                  onChange={(e) => handleSettingChange("diskLimit", parseInt(e.target.value))}
-                  className={cn(
-                    "w-full mt-2 px-3 py-2 text-sm border outline-none transition-colors",
-                    isDark
-                      ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500"
-                      : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400"
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.oomDisabled}
-                  onChange={(e) => handleSettingChange("oomDisabled", e.target.checked)}
-                  className={cn(
-                    "w-4 h-4 border appearance-none cursor-pointer checked:bg-zinc-500",
-                    isDark ? "border-zinc-600 bg-zinc-800" : "border-zinc-400 bg-white"
-                  )}
-                />
-                <span className={cn(
-                  "text-sm",
-                  isDark ? "text-zinc-300" : "text-zinc-700"
-                )}>
-                  Disable OOM Killer
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Server Location */}
-          <div className={cn(
-            "relative p-6 border mb-6",
-            isDark
-              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
-          )}>
-            <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-
-            <h2 className={cn(
-              "text-sm font-medium uppercase tracking-wider mb-6",
-              isDark ? "text-zinc-300" : "text-zinc-700"
-            )}>
-              Server Location
-            </h2>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 flex items-center justify-center border",
-                  isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
-                )}>
-                  <BsGlobe className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-500")} />
-                </div>
-                <div>
-                  <p className={cn(
-                    "text-sm font-medium",
-                    isDark ? "text-zinc-200" : "text-zinc-700"
-                  )}>
-                    {locations.find(l => l.id === currentLocation)?.flag}{" "}
-                    {locations.find(l => l.id === currentLocation)?.city},{" "}
-                    {locations.find(l => l.id === currentLocation)?.country}
-                  </p>
-                  <p className={cn(
-                    "text-xs",
-                    isDark ? "text-zinc-500" : "text-zinc-400"
-                  )}>
-                    {locations.find(l => l.id === currentLocation)?.region}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTransferModalOpen(true)}
-                className={cn(
-                  "transition-all gap-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-                )}
-              >
-                <BsGeoAlt className="w-3 h-3" />
-                <span className="text-xs uppercase tracking-wider">Transfer</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Server Splitting */}
-          <div className={cn(
-            "relative p-6 border mb-6",
-            isDark
-              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
-          )}>
-            <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-
-            <h2 className={cn(
-              "text-sm font-medium uppercase tracking-wider mb-6",
-              isDark ? "text-zinc-300" : "text-zinc-700"
-            )}>
-              Server Splitting
-            </h2>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 flex items-center justify-center border",
-                  isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
-                )}>
-                  <BsLayers className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-500")} />
-                </div>
-                <div>
-                  <p className={cn(
-                    "text-sm font-medium",
-                    isDark ? "text-zinc-200" : "text-zinc-700"
-                  )}>
-                    Split Server Resources
-                  </p>
-                  <p className={cn(
-                    "text-xs",
-                    isDark ? "text-zinc-500" : "text-zinc-400"
-                  )}>
-                    Divide this server into two separate instances
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSplitModalOpen(true)}
-                className={cn(
-                  "transition-all gap-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-                )}
-              >
-                <BsLayers className="w-3 h-3" />
-                <span className="text-xs uppercase tracking-wider">Split Server</span>
-              </Button>
-            </div>
-          </div>
+          {/* Resource Limits - DISABLED: User cannot modify resource limits from settings */}
+          {/* Server Location - DISABLED: Server transfer feature is not yet implemented */}
+          {/* Server Splitting - DISABLED: Server splitting feature is not yet implemented */}
 
           {/* Danger Zone */}
           <div className={cn(

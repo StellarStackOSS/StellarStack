@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession, signOut as authSignOut } from "@/lib/auth-client";
+import { playSoundEffect } from "@/hooks/useSoundEffects";
 
 interface User {
   id: string;
@@ -51,11 +52,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const wasAuthenticatedRef = useRef(false);
+  const hasPlayedStartupSoundRef = useRef(false);
 
   // Cast session user to our User type (role comes from database via API)
   const user = session?.user ? (session.user as unknown as User) : null;
   const isAuthenticated = !!user;
   const isAdmin = user?.role === "admin";
+
+  // Play startup sound when user first signs in
+  useEffect(() => {
+    if (!isPending && isAuthenticated && !wasAuthenticatedRef.current && !hasPlayedStartupSoundRef.current) {
+      playSoundEffect("startup");
+      hasPlayedStartupSoundRef.current = true;
+    }
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, isPending]);
 
   useEffect(() => {
     if (isPending || isRedirecting) return;

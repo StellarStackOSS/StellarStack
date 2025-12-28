@@ -216,6 +216,7 @@ model Server {
   // Docker container info
   containerId  String?
   status       ServerStatus @default(INSTALLING)
+  suspended    Boolean      @default(false)
 
   // Resource allocation
   memory       BigInt   // Memory limit in MiB
@@ -255,6 +256,8 @@ model Server {
   updatedAt    DateTime @updatedAt
 
   allocations Allocation[]
+  backups     Backup[]
+  activityLogs ActivityLog[]
 
   @@map("servers")
 }
@@ -266,4 +269,74 @@ enum ServerStatus {
   STOPPING
   STOPPED
   ERROR
+}
+
+// ============================================
+// Backup Table
+// ============================================
+
+model Backup {
+  id           String       @id @default(uuid())
+  name         String
+
+  // Backup details
+  size         BigInt       @default(0)  // Size in bytes
+  checksum     String?                   // SHA256 checksum
+  checksumType String       @default("sha256")
+
+  // Status
+  status       BackupStatus @default(IN_PROGRESS)
+  isLocked     Boolean      @default(false)
+
+  // Storage
+  storagePath  String?      // Local path or S3 key
+  uploadId     String?      // S3 multipart upload ID
+
+  // Relations
+  serverId     String
+  server       Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  ignoredFiles Json?        // Files/patterns excluded from backup
+
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("backups")
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RESTORING
+}
+
+// ============================================
+// Activity Log Table
+// ============================================
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+
+  // Event details
+  event      String   // e.g., "server:console.command", "server:power.start"
+
+  // Context
+  ip         String?
+  metadata   Json?
+
+  // Relations
+  serverId   String?
+  server     Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  userId     String?
+
+  timestamp  DateTime @default(now())
+
+  @@index([serverId])
+  @@index([event])
+  @@index([timestamp])
+  @@map("activity_logs")
 }

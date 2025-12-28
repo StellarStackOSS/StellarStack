@@ -15,11 +15,26 @@ use super::super::AppState;
 /// Require authentication for API routes
 ///
 /// Validates the Bearer token against the configured node token.
+/// For WebSocket routes, authentication is handled by the WebSocket handler itself.
 pub async fn require_auth(
     State(state): State<AppState>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
+    // Skip auth for WebSocket upgrade requests - they handle their own JWT auth
+    let is_websocket = request
+        .headers()
+        .get("Upgrade")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v.eq_ignore_ascii_case("websocket"))
+        .unwrap_or(false);
+
+    if is_websocket {
+        // WebSocket connections authenticate via JWT token in query params
+        // This is handled by the WebSocket handler itself
+        return next.run(request).await;
+    }
+
     // Get authorization header
     let auth_header = request
         .headers()

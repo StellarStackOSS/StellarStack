@@ -158,6 +158,7 @@ export interface LogEntry {
 
 export interface NodeData {
   id: string;
+  shortId?: string;
   name: string;
   location: string;
   region: string;
@@ -167,9 +168,9 @@ export interface NodeData {
 
 export interface NetworkInfoData {
   publicIp: string;
-  privateIp: string;
+  privateIp?: string;
   openPorts: PortInfo[];
-  macAddress: string;
+  macAddress?: string;
 }
 
 export interface PortInfo {

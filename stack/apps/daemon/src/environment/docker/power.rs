@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use bollard::container::{
     AttachContainerOptions, AttachContainerResults, KillContainerOptions,
-    StartContainerOptions, StopContainerOptions, WaitContainerOptions,
+    StartContainerOptions, StatsOptions, StopContainerOptions, WaitContainerOptions,
 };
 use futures_util::StreamExt;
 use tokio::io::AsyncWriteExt;
@@ -12,7 +12,7 @@ use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
 
-use crate::events::ProcessState;
+use crate::events::{Event, NetworkStats, ProcessState, Stats};
 use super::environment::DockerEnvironment;
 use super::super::traits::{EnvironmentError, EnvironmentResult, ProcessEnvironment, StopConfig};
 
@@ -30,6 +30,8 @@ pub async fn start_container(
         // Re-attach if not already attached
         if !env.is_attached() {
             attach_container(env, ctx).await?;
+            // Start stats polling for already running container
+            start_stats_poller(env);
         }
 
         return Ok(());
@@ -53,10 +55,169 @@ pub async fn start_container(
             EnvironmentError::Docker(e)
         })?;
 
-    env.set_state(ProcessState::Running);
+    // Keep state as Starting - the server will set it to Running when startup is detected
     info!("Started container {}", container_name);
 
+    // Start stats polling
+    start_stats_poller(env);
+
+    // Start exit watcher to update state when container exits unexpectedly
+    start_exit_watcher(env);
+
     Ok(())
+}
+
+/// Start a background task to poll container stats
+fn start_stats_poller(env: &DockerEnvironment) {
+    let container_name = env.container_name().to_string();
+    let docker = env.docker().clone();
+    let event_bus = env.events().clone();
+    let config = env.config().clone();
+
+    tokio::spawn(async move {
+        let options = StatsOptions {
+            stream: true,
+            one_shot: false,
+        };
+
+        let mut stream = docker.stats(&container_name, Some(options));
+
+        let mut prev_cpu: Option<u64> = None;
+        let mut prev_system: Option<u64> = None;
+
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(docker_stats) => {
+                    // Calculate memory usage
+                    let memory = docker_stats.memory_stats.usage.unwrap_or(0);
+                    let memory_limit = docker_stats.memory_stats.limit.unwrap_or(0);
+
+                    // Calculate CPU percentage
+                    let current_cpu = docker_stats.cpu_stats.cpu_usage.total_usage;
+                    let current_system = docker_stats.cpu_stats.system_cpu_usage.unwrap_or(0);
+                    let num_cpus = docker_stats.cpu_stats.online_cpus.unwrap_or(1) as f64;
+
+                    let cpu = if let (Some(prev_c), Some(prev_s)) = (prev_cpu, prev_system) {
+                        let cpu_delta = current_cpu.saturating_sub(prev_c);
+                        let system_delta = current_system.saturating_sub(prev_s);
+
+                        if system_delta > 0 && cpu_delta > 0 {
+                            let raw_cpu = (cpu_delta as f64 / system_delta as f64) * 100.0 * num_cpus;
+                            // Cap CPU at 100% per core * number of cores
+                            raw_cpu.min(100.0 * num_cpus)
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        0.0
+                    };
+
+                    prev_cpu = Some(current_cpu);
+                    prev_system = Some(current_system);
+
+                    // Calculate network stats
+                    let mut rx_bytes = 0u64;
+                    let mut tx_bytes = 0u64;
+                    if let Some(nets) = &docker_stats.networks {
+                        for (_name, stats) in nets {
+                            rx_bytes += stats.rx_bytes;
+                            tx_bytes += stats.tx_bytes;
+                        }
+                    }
+
+                    // Get uptime from container start time
+                    let uptime = 0i64; // Will be calculated from container inspect if needed
+
+                    // Disk usage - get from config limits (actual usage would require directory scan)
+                    let disk_limit_bytes = config.limits.disk_space;
+
+                    let stats = Stats {
+                        memory_bytes: memory,
+                        memory_limit_bytes: memory_limit,
+                        cpu_absolute: cpu,
+                        network: NetworkStats { rx_bytes, tx_bytes },
+                        uptime,
+                        disk_bytes: 0, // TODO: Calculate from server data directory
+                        disk_limit_bytes,
+                    };
+
+                    event_bus.publish(Event::Stats(stats));
+                }
+                Err(e) => {
+                    // Container might have stopped - check various error conditions
+                    let error_str = e.to_string();
+                    let is_stopped = matches!(
+                        &e,
+                        bollard::errors::Error::DockerResponseServerError { status_code: 404, .. } |
+                        bollard::errors::Error::DockerResponseServerError { status_code: 409, .. }
+                    ) || error_str.contains("container is stopped")
+                      || error_str.contains("not running")
+                      || error_str.contains("No such container");
+
+                    if is_stopped {
+                        debug!("Container {} stopped, ending stats poller", container_name);
+                        break;
+                    }
+                    warn!("Stats error for {}: {}", container_name, e);
+                }
+            }
+        }
+
+        debug!("Stats poller ended for {}", container_name);
+    });
+}
+
+/// Start a background task to watch for container exit
+fn start_exit_watcher(env: &DockerEnvironment) {
+    let container_name = env.container_name().to_string();
+    let docker = env.docker().clone();
+    let event_bus = env.events().clone();
+
+    tokio::spawn(async move {
+        let options = WaitContainerOptions {
+            condition: "not-running",
+        };
+
+        let mut stream = docker.wait_container(&container_name, Some(options));
+
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(response) => {
+                    let exit_code = response.status_code;
+                    info!(
+                        "Container {} exited with code {} - publishing state change",
+                        container_name,
+                        exit_code
+                    );
+
+                    // Publish offline state through event bus
+                    event_bus.publish_state(crate::events::ProcessState::Offline);
+
+                    // Log if it was an OOM kill or error
+                    if exit_code != 0 {
+                        if exit_code == 137 {
+                            warn!("Container {} was killed (SIGKILL/OOM)", container_name);
+                        } else {
+                            warn!("Container {} exited with error code {}", container_name, exit_code);
+                        }
+                    }
+                    break;
+                }
+                Err(e) => {
+                    // Container might have been removed or doesn't exist
+                    let error_str = e.to_string();
+                    if error_str.contains("No such container") || error_str.contains("404") {
+                        debug!("Container {} no longer exists, ending exit watcher", container_name);
+                    } else {
+                        warn!("Error watching container {}: {}", container_name, e);
+                    }
+                    break;
+                }
+            }
+        }
+
+        debug!("Exit watcher ended for {}", container_name);
+    });
 }
 
 /// Stop the container gracefully

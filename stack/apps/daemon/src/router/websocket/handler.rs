@@ -104,7 +104,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
     )).await;
 
     // Subscribe to events
-    let mut console_rx = server.console_sink().subscribe();
+    // Note: Console output comes via events, not console_sink
     let mut install_rx = server.install_sink().subscribe();
     let mut events_rx = server.events().subscribe();
 
@@ -147,13 +147,6 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
                     }
                     _ => {}
                 }
-            }
-
-            // Forward console output
-            Ok(data) = console_rx.recv() => {
-                let line = String::from_utf8_lossy(&data).to_string();
-                let msg = WsOutgoing::new("console output", json!({ "line": line }));
-                let _ = sender.send(Message::Text(msg.to_json())).await;
             }
 
             // Forward install output (if permitted)
@@ -256,11 +249,25 @@ impl WebsocketHandler {
         None
     }
 
-    /// Handle send logs request
+    /// Handle send logs request - returns recent container logs
     async fn handle_send_logs(&self) -> Option<WsOutgoing> {
-        // This would need to read recent logs from the container
-        // For now, just acknowledge the request
-        None
+        use crate::events::ProcessState;
+
+        // Only return logs if server is running or starting
+        let state = self.server.process_state();
+        if state == ProcessState::Offline || state == ProcessState::Stopping {
+            return None;
+        }
+
+        match self.server.read_logs(100).await {
+            Ok(lines) => {
+                Some(WsOutgoing::new("console history", json!({ "lines": lines })))
+            }
+            Err(e) => {
+                debug!("Failed to read logs: {}", e);
+                None
+            }
+        }
     }
 
     /// Convert a server event to WebSocket message
@@ -282,12 +289,14 @@ impl WebsocketHandler {
                         "tx_bytes": stats.network.tx_bytes,
                     },
                     "uptime": stats.uptime,
+                    "disk_bytes": stats.disk_bytes,
+                    "disk_limit_bytes": stats.disk_limit_bytes,
                 })))
             }
 
-            Event::ConsoleOutput(_) => {
-                // Handled separately via console_sink
-                None
+            Event::ConsoleOutput(data) => {
+                let line = String::from_utf8_lossy(&data).to_string();
+                Some(WsOutgoing::new("console output", json!({ "line": line })))
             }
 
             Event::InstallStarted => {

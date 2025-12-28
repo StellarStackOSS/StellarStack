@@ -226,6 +226,10 @@ pub struct InstallationScript {
 
     /// Installation script content
     pub script: String,
+
+    /// Environment variables for the install script
+    #[serde(default)]
+    pub environment: HashMap<String, String>,
 }
 
 // ============================================================================

@@ -19,7 +19,7 @@ struct Cli {
     command: Option<cmd::Commands>,
 
     /// Path to configuration file
-    #[arg(short, long, default_value = "config.yml")]
+    #[arg(short, long, default_value = "config.toml")]
     config: String,
 
     /// Enable debug logging

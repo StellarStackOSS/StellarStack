@@ -12,7 +12,9 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Switch } from "@workspace/ui/components/switch";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
-import { BsSun, BsMoon, BsPlus, BsTrash, BsGlobe, BsHddNetwork } from "react-icons/bs";
+import { BsSun, BsMoon, BsPlus, BsTrash, BsGlobe, BsHddNetwork, BsKey } from "react-icons/bs";
+import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 
 interface PortAllocation {
   id: string;
@@ -57,6 +59,9 @@ const NetworkPage = (): JSX.Element | null => {
   const [ports, setPorts] = useState<PortAllocation[]>(mockPorts);
   const [subdomains, setSubdomains] = useState<Subdomain[]>(mockSubdomains);
 
+  // Get server data for SFTP details
+  const { server, consoleInfo, isInstalling } = useServer();
+
   // Modal states
   const [addPortModalOpen, setAddPortModalOpen] = useState(false);
   const [deletePortModalOpen, setDeletePortModalOpen] = useState(false);
@@ -81,6 +86,18 @@ const NetworkPage = (): JSX.Element | null => {
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   // Generate a random port between 30000 and 40000 for demo purposes
   const generateRandomPort = () => {
@@ -401,6 +418,128 @@ const NetworkPage = (): JSX.Element | null => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* SFTP Connection Details Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BsKey className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-600")} />
+                <h2 className={cn(
+                  "text-sm font-medium uppercase tracking-wider",
+                  isDark ? "text-zinc-300" : "text-zinc-700"
+                )}>
+                  SFTP Connection
+                </h2>
+              </div>
+            </div>
+
+            <div className={cn(
+              "relative p-6 border transition-all",
+              isDark
+                ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
+                : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+            )}>
+              {/* Corner decorations */}
+              <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+              <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+              <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+              <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className={cn(
+                    "text-xs uppercase tracking-wider mb-1 block",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
+                  )}>
+                    Host
+                  </label>
+                  <div className={cn(
+                    "text-sm font-mono",
+                    isDark ? "text-zinc-100" : "text-zinc-800"
+                  )}>
+                    {server?.node?.host || "—"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={cn(
+                    "text-xs uppercase tracking-wider mb-1 block",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
+                  )}>
+                    Port
+                  </label>
+                  <div className={cn(
+                    "text-sm font-mono",
+                    isDark ? "text-zinc-100" : "text-zinc-800"
+                  )}>
+                    {server?.node?.sftpPort || 2022}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={cn(
+                    "text-xs uppercase tracking-wider mb-1 block",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
+                  )}>
+                    Username
+                  </label>
+                  <div className={cn(
+                    "text-sm font-mono",
+                    isDark ? "text-zinc-100" : "text-zinc-800"
+                  )}>
+                    {server?.shortId || serverId}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const host = server?.node?.host || "localhost";
+                    const port = server?.node?.sftpPort || 2022;
+                    const username = server?.shortId || serverId;
+                    // Try to open SFTP URL - this will work if user has an SFTP handler installed
+                    window.open(`sftp://${username}@${host}:${port}`, "_blank");
+                  }}
+                  className={cn(
+                    "transition-all gap-2",
+                    isDark
+                      ? "border-purple-900/50 text-purple-400 hover:text-purple-300 hover:border-purple-700 hover:bg-purple-900/20"
+                      : "border-purple-300 text-purple-600 hover:text-purple-700 hover:border-purple-400 hover:bg-purple-50"
+                  )}
+                >
+                  <BsKey className="w-4 h-4" />
+                  <span className="text-xs uppercase tracking-wider">Connect via SFTP</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const host = server?.node?.host || "localhost";
+                    const port = server?.node?.sftpPort || 2022;
+                    const username = server?.shortId || serverId;
+                    navigator.clipboard.writeText(`sftp://${username}@${host}:${port}`);
+                  }}
+                  className={cn(
+                    "transition-all gap-2",
+                    isDark
+                      ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                      : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                  )}
+                >
+                  <span className="text-xs uppercase tracking-wider">Copy Connection URL</span>
+                </Button>
+              </div>
+
+              <p className={cn(
+                "text-xs mt-4",
+                isDark ? "text-zinc-600" : "text-zinc-400"
+              )}>
+                Use your account password to authenticate via SFTP.
+              </p>
             </div>
           </div>
         </div>

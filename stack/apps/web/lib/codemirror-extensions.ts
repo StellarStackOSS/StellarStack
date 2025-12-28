@@ -1,0 +1,143 @@
+import { Extension } from "@codemirror/state";
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentOnInput } from "@codemirror/language";
+import { json } from "@codemirror/lang-json";
+import { yaml } from "@codemirror/lang-yaml";
+import { markdown } from "@codemirror/lang-markdown";
+import { oneDark } from "@codemirror/theme-one-dark";
+
+export type SupportedLanguage = "json" | "yaml" | "markdown" | "shell" | "properties" | "text";
+
+/**
+ * Detect language from file extension
+ */
+export function detectLanguage(filename: string): SupportedLanguage {
+  const ext = filename.toLowerCase().split(".").pop() || "";
+
+  switch (ext) {
+    case "json":
+      return "json";
+    case "yml":
+    case "yaml":
+      return "yaml";
+    case "md":
+    case "markdown":
+      return "markdown";
+    case "sh":
+    case "bash":
+    case "bat":
+    case "cmd":
+      return "shell";
+    case "properties":
+    case "conf":
+    case "cfg":
+    case "ini":
+    case "toml":
+      return "properties";
+    default:
+      return "text";
+  }
+}
+
+/**
+ * Get language extension based on language type
+ */
+export function getLanguageExtension(language: SupportedLanguage): Extension | null {
+  switch (language) {
+    case "json":
+      return json();
+    case "yaml":
+      return yaml();
+    case "markdown":
+      return markdown();
+    case "shell":
+    case "properties":
+    case "text":
+    default:
+      return null;
+  }
+}
+
+/**
+ * Dark theme for CodeMirror
+ */
+export const darkTheme = oneDark;
+
+/**
+ * Light theme for CodeMirror
+ */
+export const lightTheme = EditorView.theme({
+  "&": {
+    backgroundColor: "#ffffff",
+    color: "#24292e",
+  },
+  ".cm-content": {
+    caretColor: "#24292e",
+  },
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "#24292e",
+  },
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
+    backgroundColor: "#b3d4fc",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "#f6f8fa",
+  },
+  ".cm-activeLineGutter": {
+    backgroundColor: "#f6f8fa",
+  },
+  ".cm-gutters": {
+    backgroundColor: "#f6f8fa",
+    color: "#6e7781",
+    border: "none",
+    borderRight: "1px solid #d0d7de",
+  },
+  ".cm-lineNumbers .cm-gutterElement": {
+    padding: "0 8px 0 16px",
+  },
+});
+
+/**
+ * Base extensions for all editor instances
+ */
+export function getBaseExtensions(isDark: boolean, readOnly: boolean = false): Extension[] {
+  const extensions: Extension[] = [
+    lineNumbers(),
+    highlightActiveLine(),
+    highlightActiveLineGutter(),
+    history(),
+    foldGutter(),
+    bracketMatching(),
+    indentOnInput(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    keymap.of([...defaultKeymap, ...historyKeymap]),
+    isDark ? darkTheme : lightTheme,
+    EditorView.lineWrapping,
+  ];
+
+  if (readOnly) {
+    extensions.push(EditorView.editable.of(false));
+  }
+
+  return extensions;
+}
+
+/**
+ * Get all extensions for a file
+ */
+export function getExtensionsForFile(
+  filename: string,
+  isDark: boolean,
+  readOnly: boolean = false
+): Extension[] {
+  const language = detectLanguage(filename);
+  const extensions = getBaseExtensions(isDark, readOnly);
+
+  const langExt = getLanguageExtension(language);
+  if (langExt) {
+    extensions.push(langExt);
+  }
+
+  return extensions;
+}

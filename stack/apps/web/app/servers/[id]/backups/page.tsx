@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type JSX } from "react";
+import { useState, useEffect, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,20 +14,22 @@ import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationM
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { BsSun, BsMoon, BsCloudDownload, BsDownload, BsTrash, BsPlus, BsCheckCircle, BsLock, BsUnlock } from "react-icons/bs";
-import { servers } from "@/lib/api";
+import { useBackups, useBackupMutations } from "@/hooks/queries";
 import type { Backup } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { toast } from "sonner";
 
 const BackupsPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
-  const { server } = useServer();
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
-  const [backups, setBackups] = useState<Backup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+
+  // React Query hooks
+  const { data: backups = [], isLoading } = useBackups(serverId);
+  const { create, remove, restore, lock, getDownloadToken } = useBackupMutations(serverId);
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -50,24 +52,21 @@ const BackupsPage = (): JSX.Element | null => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
-  const fetchBackups = useCallback(async () => {
-    try {
-      const data = await servers.backups.list(serverId);
-      setBackups(data);
-    } catch (error) {
-      toast.error("Failed to fetch backups");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [serverId]);
-
-  useEffect(() => {
-    fetchBackups();
-  }, [fetchBackups]);
-
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const openCreateModal = () => {
     setBackupName("");
@@ -85,30 +84,30 @@ const BackupsPage = (): JSX.Element | null => {
   };
 
   const handleCreate = async () => {
-    setIsCreating(true);
+    // Close modal immediately
+    setCreateModalOpen(false);
+    const name = backupName || `Backup ${new Date().toLocaleDateString()}`;
+    setBackupName("");
+
+    toast.loading("Creating backup...", { id: "backup-create" });
+
     try {
-      await servers.backups.create(serverId, {
-        name: backupName || undefined,
+      await create.mutateAsync({
+        name: name,
       });
-      toast.success("Backup created");
-      setCreateModalOpen(false);
-      setBackupName("");
-      fetchBackups();
+      toast.success("Backup created", { id: "backup-create" });
     } catch (error) {
-      toast.error("Failed to create backup");
-    } finally {
-      setIsCreating(false);
+      toast.error("Failed to create backup", { id: "backup-create" });
     }
   };
 
   const handleDelete = async () => {
     if (!selectedBackup) return;
     try {
-      await servers.backups.delete(serverId, selectedBackup.id);
+      await remove.mutateAsync(selectedBackup.id);
       toast.success("Backup deleted");
       setDeleteModalOpen(false);
       setSelectedBackup(null);
-      fetchBackups();
     } catch (error) {
       toast.error("Failed to delete backup");
     }
@@ -117,7 +116,7 @@ const BackupsPage = (): JSX.Element | null => {
   const handleRestore = async () => {
     if (!selectedBackup) return;
     try {
-      await servers.backups.restore(serverId, selectedBackup.id);
+      await restore.mutateAsync(selectedBackup.id);
       toast.success("Backup restored");
       setRestoreModalOpen(false);
       setSelectedBackup(null);
@@ -128,11 +127,34 @@ const BackupsPage = (): JSX.Element | null => {
 
   const handleToggleLock = async (backup: Backup) => {
     try {
-      await servers.backups.lock(serverId, backup.id, !backup.locked);
-      toast.success(backup.locked ? "Backup unlocked" : "Backup locked");
-      fetchBackups();
+      await lock.mutateAsync({ backupId: backup.id, locked: !backup.isLocked });
+      toast.success(backup.isLocked ? "Backup unlocked" : "Backup locked");
     } catch (error) {
       toast.error("Failed to update backup");
+    }
+  };
+
+  const handleDownload = async (backup: Backup) => {
+    try {
+      const { downloadUrl } = await getDownloadToken.mutateAsync(backup.id);
+      window.open(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`, "_blank");
+    } catch (error) {
+      toast.error("Failed to generate download link");
+    }
+  };
+
+  const getStatusIcon = (status: Backup["status"]) => {
+    switch (status) {
+      case "COMPLETED":
+        return <BsCheckCircle className="w-4 h-4 text-green-500" />;
+      case "IN_PROGRESS":
+        return <Spinner className="w-4 h-4" />;
+      case "RESTORING":
+        return <BsCloudDownload className="w-4 h-4 text-amber-500" />;
+      case "FAILED":
+        return <BsTrash className="w-4 h-4 text-red-500" />;
+      default:
+        return <BsCheckCircle className="w-4 h-4 text-green-500" />;
     }
   };
 
@@ -241,7 +263,7 @@ const BackupsPage = (): JSX.Element | null => {
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <BsCheckCircle className="w-4 h-4 text-green-500" />
+                        {getStatusIcon(backup.status)}
                         <div>
                           <div className="flex items-center gap-3">
                             <h3 className={cn(
@@ -250,13 +272,23 @@ const BackupsPage = (): JSX.Element | null => {
                             )}>
                               {backup.name}
                             </h3>
-                            {backup.locked && (
+                            {backup.isLocked && (
                               <span className={cn(
                                 "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border flex items-center gap-1",
                                 isDark ? "border-amber-500/50 text-amber-400" : "border-amber-400 text-amber-600"
                               )}>
                                 <BsLock className="w-3 h-3" />
                                 Locked
+                              </span>
+                            )}
+                            {backup.status !== "COMPLETED" && (
+                              <span className={cn(
+                                "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
+                                backup.status === "IN_PROGRESS" && (isDark ? "border-blue-500/50 text-blue-400" : "border-blue-400 text-blue-600"),
+                                backup.status === "RESTORING" && (isDark ? "border-amber-500/50 text-amber-400" : "border-amber-400 text-amber-600"),
+                                backup.status === "FAILED" && (isDark ? "border-red-500/50 text-red-400" : "border-red-400 text-red-600")
+                              )}>
+                                {backup.status.replace("_", " ")}
                               </span>
                             )}
                           </div>
@@ -266,7 +298,7 @@ const BackupsPage = (): JSX.Element | null => {
                           )}>
                             <span>{formatFileSize(backup.size)}</span>
                             <span>-</span>
-                            <span>{new Date(backup.created_at).toLocaleString()}</span>
+                            <span>{new Date(backup.createdAt).toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -275,27 +307,22 @@ const BackupsPage = (): JSX.Element | null => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleLock(backup)}
+                          disabled={lock.isPending}
                           className={cn(
                             "transition-all p-2",
                             isDark
                               ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
                               : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
                           )}
-                          title={backup.locked ? "Unlock backup" : "Lock backup"}
+                          title={backup.isLocked ? "Unlock backup" : "Lock backup"}
                         >
-                          {backup.locked ? <BsUnlock className="w-4 h-4" /> : <BsLock className="w-4 h-4" />}
+                          {backup.isLocked ? <BsUnlock className="w-4 h-4" /> : <BsLock className="w-4 h-4" />}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={async () => {
-                            try {
-                              const { downloadUrl } = await servers.backups.getDownloadToken(serverId, backup.id);
-                              window.open(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`, "_blank");
-                            } catch (error) {
-                              toast.error("Failed to generate download link");
-                            }
-                          }}
+                          onClick={() => handleDownload(backup)}
+                          disabled={getDownloadToken.isPending}
                           className={cn(
                             "transition-all gap-2",
                             isDark
@@ -324,11 +351,11 @@ const BackupsPage = (): JSX.Element | null => {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={backup.locked}
+                          disabled={backup.isLocked}
                           onClick={() => openDeleteModal(backup)}
                           className={cn(
                             "transition-all p-2",
-                            backup.locked
+                            backup.isLocked
                               ? "opacity-30 cursor-not-allowed"
                               : isDark
                                 ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
@@ -350,13 +377,14 @@ const BackupsPage = (): JSX.Element | null => {
       {/* Create Backup Modal */}
       <FormModal
         open={createModalOpen}
-        onOpenChange={(open) => !isCreating && setCreateModalOpen(open)}
+        onOpenChange={(open) => !create.isPending && setCreateModalOpen(open)}
         title="Create Backup"
         description="Create a new manual backup of your server."
         onSubmit={handleCreate}
-        submitLabel={isCreating ? "Creating..." : "Create Backup"}
+        submitLabel={create.isPending ? "Creating..." : "Create Backup"}
         isDark={isDark}
-        isValid={!isCreating}
+        isValid={!create.isPending}
+        isLoading={create.isPending}
       >
         <div className="space-y-4">
           <div>
@@ -370,7 +398,7 @@ const BackupsPage = (): JSX.Element | null => {
               value={backupName}
               onChange={(e) => setBackupName(e.target.value)}
               placeholder="e.g., Pre-Update Backup"
-              disabled={isCreating}
+              disabled={create.isPending}
               className={cn(
                 "transition-all",
                 isDark
@@ -398,6 +426,7 @@ const BackupsPage = (): JSX.Element | null => {
         confirmLabel="Restore"
         variant="danger"
         isDark={isDark}
+        isLoading={restore.isPending}
       />
 
       {/* Delete Backup Modal */}
@@ -410,6 +439,7 @@ const BackupsPage = (): JSX.Element | null => {
         confirmLabel="Delete"
         variant="danger"
         isDark={isDark}
+        isLoading={remove.isPending}
       />
     </div>
   );

@@ -9,7 +9,9 @@ import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { BsSun, BsMoon, BsPlayFill, BsStopFill, BsArrowRepeat, BsPersonFill, BsGear, BsFileEarmark, BsDatabase, BsChevronDown, BsArrowReturnRight } from "react-icons/bs";
+import { BsSun, BsMoon, BsPlayFill, BsStopFill, BsArrowRepeat, BsPersonFill, BsGear, BsFileEarmark, BsDatabase, BsChevronDown, BsArrowReturnRight, BsExclamationTriangle } from "react-icons/bs";
+import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 
 type ActivityType = "server_start" | "server_stop" | "server_restart" | "user_login" | "file_change" | "setting_change" | "backup_created" | "database_query";
 
@@ -110,6 +112,7 @@ const mockActivity: ActivityLog[] = [
 const ActivityPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -133,6 +136,18 @@ const ActivityPage = (): JSX.Element | null => {
   };
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
@@ -200,6 +215,22 @@ const ActivityPage = (): JSX.Element | null => {
             >
               {isDark ? <BsSun className="w-4 h-4" /> : <BsMoon className="w-4 h-4" />}
             </Button>
+          </div>
+
+          {/* Development Notice */}
+          <div className={cn(
+            "mb-6 p-4 border flex items-center gap-3",
+            isDark
+              ? "bg-amber-950/20 border-amber-700/30 text-amber-200/80"
+              : "bg-amber-50 border-amber-200 text-amber-800"
+          )}>
+            <BsExclamationTriangle className="w-5 h-5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Under Development</p>
+              <p className={cn("text-xs mt-0.5", isDark ? "text-amber-200/60" : "text-amber-600")}>
+                Activity logging is not yet connected to the API. The data shown below is for demonstration purposes only.
+              </p>
+            </div>
           </div>
 
           {/* Activity Timeline */}

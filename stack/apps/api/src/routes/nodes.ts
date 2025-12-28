@@ -7,10 +7,26 @@ import type { Variables } from "../types";
 
 const nodes = new Hono<{ Variables: Variables }>();
 
+// Heartbeat timeout in milliseconds (45 seconds - allows 1 missed heartbeat at 30s interval)
+const HEARTBEAT_TIMEOUT_MS = 45 * 1000;
+
 // Helper to convert BigInt fields to Number for JSON serialization
+// Also checks if node is actually online based on heartbeat
 function serializeNode(node: any) {
+  // Check if heartbeat is stale (older than timeout)
+  let isOnline = node.isOnline;
+  if (isOnline && node.lastHeartbeat) {
+    const lastHeartbeat = new Date(node.lastHeartbeat).getTime();
+    const now = Date.now();
+    isOnline = (now - lastHeartbeat) < HEARTBEAT_TIMEOUT_MS;
+  } else if (isOnline && !node.lastHeartbeat) {
+    // No heartbeat recorded yet, consider offline
+    isOnline = false;
+  }
+
   return {
     ...node,
+    isOnline,
     memoryLimit: Number(node.memoryLimit),
     diskLimit: Number(node.diskLimit),
     uploadLimit: Number(node.uploadLimit),
@@ -137,14 +153,11 @@ nodes.post("/", requireAdmin, async (c) => {
   // Return token ONLY on creation - store it securely!
   return c.json(
     {
-      id: node.id,
-      displayName: node.displayName,
-      host: node.host,
-      port: node.port,
-      protocol: node.protocol,
-      location: node.location,
-      token: token, // Only returned on creation!
-      message: "Store this token securely. It will not be shown again.",
+      node: serializeNode({ ...node, token: undefined, tokenHash: undefined }),
+      // Daemon config values - use these in config.toml
+      token_id: node.id,
+      token: token,
+      message: "Store token_id and token securely for your daemon config.toml. They will not be shown again.",
     },
     201
   );
@@ -173,8 +186,9 @@ nodes.post("/:id/regenerate-token", requireAdmin, async (c) => {
   });
 
   return c.json({
+    token_id: id,
     token,
-    message: "Store this token securely. It will not be shown again.",
+    message: "Store token_id and token securely for your daemon config.toml. They will not be shown again.",
   });
 });
 

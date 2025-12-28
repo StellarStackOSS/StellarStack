@@ -10,9 +10,9 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 
 use crate::api::HttpClient;
-use crate::config::{DockerConfiguration, SystemConfiguration};
+use crate::config::{DockerConfiguration, RedisConfiguration, SystemConfiguration};
 use crate::environment::{DockerEnvironment, EnvironmentConfiguration, ProcessEnvironment};
-use crate::events::{Event, EventBus, ProcessState};
+use crate::events::{Event, EventBus, ProcessState, RedisPublisher};
 use crate::system::{Locker, SinkPool};
 
 use super::configuration::ServerConfig;
@@ -58,6 +58,9 @@ pub struct Server {
 
     /// API client for panel communication
     api_client: Arc<HttpClient>,
+
+    /// Redis publisher for event broadcasting
+    redis_publisher: Option<RedisPublisher>,
 }
 
 impl Server {
@@ -67,6 +70,7 @@ impl Server {
         system_config: &SystemConfiguration,
         docker_config: &DockerConfiguration,
         api_client: Arc<HttpClient>,
+        redis_config: Option<&RedisConfiguration>,
     ) -> Result<Self, ServerError> {
         let uuid = config.uuid.clone();
         let data_dir = system_config.data_directory.join(&uuid);
@@ -85,6 +89,11 @@ impl Server {
 
         let event_bus = environment.events().clone();
 
+        // Create Redis publisher if enabled
+        let redis_publisher = redis_config
+            .filter(|c| c.enabled)
+            .map(|c| RedisPublisher::new(uuid.clone(), c.prefix.clone(), true));
+
         Ok(Self {
             config: RwLock::new(config),
             environment: Arc::new(environment),
@@ -98,6 +107,7 @@ impl Server {
             data_dir,
             tmp_dir,
             api_client,
+            redis_publisher,
         })
     }
 
@@ -209,6 +219,50 @@ impl Server {
         &self.data_dir
     }
 
+    /// Read recent log lines from the container
+    pub async fn read_logs(&self, lines: u32) -> Result<Vec<String>, ServerError> {
+        self.environment
+            .read_log(lines)
+            .await
+            .map_err(|e| ServerError::Environment(e.to_string()))
+    }
+
+    /// Get the Redis publisher if enabled
+    pub fn redis_publisher(&self) -> Option<&RedisPublisher> {
+        self.redis_publisher.as_ref()
+    }
+
+    /// Connect to Redis and start the event publisher
+    pub async fn start_redis_publisher(&self, redis_url: &str) -> Result<(), ServerError> {
+        if let Some(publisher) = &self.redis_publisher {
+            // Connect to Redis
+            publisher.connect(redis_url).await
+                .map_err(|e| ServerError::Other(format!("Redis connection failed: {}", e)))?;
+
+            // Start event forwarding task
+            self.start_redis_event_forwarder();
+        }
+        Ok(())
+    }
+
+    /// Start a background task that forwards events to Redis
+    fn start_redis_event_forwarder(&self) {
+        if let Some(publisher) = self.redis_publisher.clone() {
+            let mut events_rx = self.event_bus.subscribe();
+            let uuid = self.uuid();
+
+            tokio::spawn(async move {
+                info!("Starting Redis event forwarder for server {}", uuid);
+
+                while let Ok(event) = events_rx.recv().await {
+                    publisher.publish(&event).await;
+                }
+
+                info!("Redis event forwarder ended for server {}", uuid);
+            });
+        }
+    }
+
     // ========================================================================
     // State Checks
     // ========================================================================
@@ -282,24 +336,116 @@ impl Server {
 
     /// Start the server
     async fn start(&self) -> Result<(), PowerError> {
+        info!("Starting server {}", self.uuid());
+
         // Check if already running
         if self.environment.is_running().await.unwrap_or(false) {
+            info!("Server {} is already running", self.uuid());
             return Err(PowerError::AlreadyRunning);
         }
 
         // Pre-boot checks
+        info!("Running pre-boot checks for {}", self.uuid());
         self.on_before_start().await?;
 
         // Record start for crash detection
         self.crash_handler.record_start();
 
-        // Start environment
+        // Start environment (state will be Starting)
+        info!("Starting container for {}", self.uuid());
         self.environment.start(self.ctx.clone()).await?;
 
-        // Report status to panel
-        let _ = self.api_client.set_server_status(&self.uuid(), "running").await;
+        // Start startup detection watcher
+        self.start_startup_detector();
+
+        // Start state change watcher to sync with panel
+        self.start_state_watcher();
+
+        // Report status to panel as starting
+        info!("Server {} container started, waiting for startup detection", self.uuid());
+        let _ = self.api_client.set_server_status(&self.uuid(), "starting").await;
 
         Ok(())
+    }
+
+    /// Start watching console output for startup completion
+    fn start_startup_detector(&self) {
+        let done_patterns = self.config.read().process.startup.done.clone();
+
+        // If no patterns, immediately mark as running
+        if done_patterns.is_empty() {
+            info!("No startup patterns configured, marking as running immediately");
+            self.environment.set_state(crate::events::ProcessState::Running);
+            let api_client = self.api_client.clone();
+            let uuid = self.uuid();
+            tokio::spawn(async move {
+                let _ = api_client.set_server_status(&uuid, "running").await;
+            });
+            return;
+        }
+
+        let mut events_rx = self.event_bus.subscribe();
+        let environment = self.environment.clone();
+        let api_client = self.api_client.clone();
+        let uuid = self.uuid();
+
+        tokio::spawn(async move {
+            while let Ok(event) = events_rx.recv().await {
+                if let Event::ConsoleOutput(data) = event {
+                    let line = String::from_utf8_lossy(&data);
+
+                    // Check if any "done" pattern matches
+                    for pattern in &done_patterns {
+                        if line.contains(pattern) {
+                            info!("Startup detection matched pattern '{}' for server {}", pattern, uuid);
+                            environment.set_state(crate::events::ProcessState::Running);
+                            let _ = api_client.set_server_status(&uuid, "running").await;
+                            return;
+                        }
+                    }
+                }
+
+                // Stop watching if server is no longer starting
+                if environment.state() != crate::events::ProcessState::Starting {
+                    return;
+                }
+            }
+        });
+    }
+
+    /// Start watching for state changes to sync with panel
+    fn start_state_watcher(&self) {
+        let mut events_rx = self.event_bus.subscribe();
+        let environment = self.environment.clone();
+        let api_client = self.api_client.clone();
+        let uuid = self.uuid();
+
+        tokio::spawn(async move {
+            while let Ok(event) = events_rx.recv().await {
+                if let Event::StateChange(new_state) = event {
+                    // Update the environment's internal state
+                    environment.set_state(new_state);
+
+                    // Map state to API status string
+                    let status = match new_state {
+                        ProcessState::Offline => "offline",
+                        ProcessState::Starting => "starting",
+                        ProcessState::Running => "running",
+                        ProcessState::Stopping => "stopping",
+                    };
+
+                    // Report to panel
+                    info!("Server {} state changed to {} - syncing with panel", uuid, status);
+                    let _ = api_client.set_server_status(&uuid, status).await;
+
+                    // If server went offline, we can stop watching
+                    if new_state == ProcessState::Offline {
+                        info!("Server {} is offline, stopping state watcher", uuid);
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     /// Stop the server
@@ -352,6 +498,7 @@ impl Server {
     /// Pre-boot checks and preparation
     async fn on_before_start(&self) -> Result<(), PowerError> {
         let config = self.config.read().clone();
+        info!("Pre-boot checks: suspended={}, invocation={}", config.suspended, config.invocation);
 
         // Check if suspended
         if config.suspended {
@@ -363,9 +510,17 @@ impl Server {
         // TODO: Fix permissions if needed
 
         // Recreate container with latest config
-        self.environment.on_before_start(self.ctx.clone()).await?;
-
-        Ok(())
+        info!("Recreating container for {}", self.uuid());
+        match self.environment.on_before_start(self.ctx.clone()).await {
+            Ok(_) => {
+                info!("Container recreated successfully for {}", self.uuid());
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to recreate container for {}: {}", self.uuid(), e);
+                Err(PowerError::Environment(e))
+            }
+        }
     }
 
     /// Send a command to the server console
@@ -438,8 +593,8 @@ impl Server {
         let api_config = self.api_client.get_server_configuration(&uuid).await
             .map_err(|e| ServerError::Api(e.to_string()))?;
 
-        let new_config = ServerConfig::from_api(&api_config);
-        self.update_config(new_config);
+        // Update config in place (keeps existing process config with startup patterns)
+        self.config.write().update_from_api(&api_config);
 
         self.event_bus.publish(Event::ServerSynced);
 

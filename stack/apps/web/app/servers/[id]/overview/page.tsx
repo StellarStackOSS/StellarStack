@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { DragDropGrid, GridItem } from "@workspace/ui/components/shared/DragDropGrid";
 import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
-import { InfoRow } from "@workspace/ui/components/shared/InfoTooltip";
 import { Console } from "@workspace/ui/components/shared/Console";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -13,6 +12,7 @@ import { BsSun, BsMoon, BsGrid } from "react-icons/bs";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { Badge } from "@workspace/ui/components/badge";
+import { BsExclamationTriangle } from "react-icons/bs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@workspace/ui/components/sheet";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -33,36 +33,35 @@ import { ThemeContext } from "../../../../contexts/ThemeContext";
 import { useLabels } from "../../../../hooks";
 import { defaultGridItems, defaultHiddenCards } from "../../../../constants";
 import { useServer } from "@/components/server-provider";
-import { useConsoleWebSocket } from "@/hooks/useConsoleWebSocket";
-import { useStatsWebSocket } from "@/hooks/useStatsWebSocket";
-import type { ServerStats } from "@/lib/api";
-
-interface StatsWithHistory {
-  current: ServerStats | null;
-  cpuHistory: number[];
-  memoryHistory: number[];
-  diskReadHistory: number[];
-  diskWriteHistory: number[];
-  networkRxHistory: number[];
-  networkTxHistory: number[];
-  networkRxRate: number;
-  networkTxRate: number;
-}
+import { useServerWebSocket, type StatsWithHistory } from "@/hooks/useServerWebSocket";
+import { EulaExtension } from "../extensions/eula";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 
 // Build display data from real server and stats (with history)
 function buildDisplayData(server: any, statsData: StatsWithHistory) {
   const stats = statsData.current;
-  const cpuPercent = stats?.cpu?.usage_percent ?? 0;
-  const memUsed = stats?.memory?.usage ? stats.memory.usage / (1024 * 1024 * 1024) : 0;
-  const memLimit = stats?.memory?.limit ? stats.memory.limit / (1024 * 1024 * 1024) : (server?.memory ? server.memory / 1024 : 1);
-  const memPercent = stats?.memory?.usage_percent ?? 0;
-  const diskUsed = 0; // Disk usage not provided by container stats
-  const diskLimit = server?.disk ? server.disk / 1024 : 10;
+
+  // New daemon stats format: memory_bytes, memory_limit_bytes, cpu_absolute, disk_bytes, disk_limit_bytes
+  const cpuPercent = stats?.cpu_absolute ?? 0;
+  const memUsed = stats?.memory_bytes ? stats.memory_bytes / (1024 * 1024 * 1024) : 0;
+  const memLimit = stats?.memory_limit_bytes
+    ? stats.memory_limit_bytes / (1024 * 1024 * 1024)
+    : (server?.memory ? server.memory / 1024 : 1);
+  const memPercent = memLimit > 0 ? (memUsed / memLimit) * 100 : 0;
+
+  // Disk usage from daemon stats (in bytes, convert to GB)
+  const diskUsed = stats?.disk_bytes ? stats.disk_bytes / (1024 * 1024 * 1024) : 0;
+  const diskLimit = stats?.disk_limit_bytes
+    ? stats.disk_limit_bytes / (1024 * 1024 * 1024)
+    : (server?.disk ? server.disk / 1024 : 10);
   const diskPercent = diskLimit > 0 ? (diskUsed / diskLimit) * 100 : 0;
 
   // Use network rate from statsData (bytes/sec)
   const netRxRate = statsData.networkRxRate ?? 0;
   const netTxRate = statsData.networkTxRate ?? 0;
+
+  // Uptime from daemon (in seconds)
+  const uptime = stats?.uptime ?? 0;
 
   // Build location string from node's location
   const getLocationString = () => {
@@ -79,7 +78,7 @@ function buildDisplayData(server: any, statsData: StatsWithHistory) {
     status: server?.status?.toLowerCase() || "stopped",
     cpu: {
       usage: { percentage: cpuPercent, history: statsData.cpuHistory },
-      cores: stats?.cpu?.online_cpus ?? 4,
+      cores: Math.ceil((server?.cpu ?? 100) / 100), // CPU limit as percentage (100 = 1 core)
       frequency: 3.5,
       model: "CPU",
       architecture: "x86_64",
@@ -90,7 +89,7 @@ function buildDisplayData(server: any, statsData: StatsWithHistory) {
       coreUsage: [] as { id: number; percentage: number; frequency: number }[],
     },
     memory: {
-      usage: { percentage: memPercent, history: statsData.memoryHistory },
+      usage: { percentage: memPercent, history: statsData.memoryPercentHistory },
       used: parseFloat(memUsed.toFixed(2)),
       total: parseFloat(memLimit.toFixed(2)),
       type: "DDR4",
@@ -100,7 +99,7 @@ function buildDisplayData(server: any, statsData: StatsWithHistory) {
       timings: "16-18-18-36",
     },
     disk: {
-      usage: { percentage: diskPercent, history: [] as number[] },
+      usage: { percentage: diskPercent, history: statsData.diskPercentHistory },
       used: parseFloat(diskUsed.toFixed(1)),
       total: parseFloat(diskLimit.toFixed(1)),
       type: "NVMe SSD",
@@ -135,15 +134,18 @@ function buildDisplayData(server: any, statsData: StatsWithHistory) {
     },
     node: server?.node ? {
       id: server.node.id || "unknown",
+      shortId: server.node.shortId || server.node.id?.substring(0, 8) || "unknown",
       name: server.node.displayName || "Node",
       location: getLocationString(),
+      region: server.node.location?.country || "Unknown",
+      zone: server.node.location?.city || "Unknown",
       provider: "StellarStack",
     } : null,
     gameServer: {
       players: [] as { id: string; name: string; joinedAt: number }[],
       maxPlayers: 20,
     },
-    containerUptime: 0, // Could calculate from container start time
+    containerUptime: uptime, // Uptime in seconds from daemon stats
     recentLogs: [] as { level: string; message: string; time: string }[],
   };
 }
@@ -158,18 +160,22 @@ const ServerOverviewPage = (): JSX.Element | null => {
   const [mounted, setMounted] = useState(false);
   const labels = useLabels();
 
-  const { server, consoleInfo, isLoading, start, stop, restart, kill, refetch } = useServer();
+  const { server, consoleInfo, isLoading, isInstalling, start, stop, restart, kill, refetch } = useServer();
 
-  // Connect to daemon WebSocket for console streaming
-  const { lines: rawConsoleLines, isConnected: consoleConnected, sendCommand: sendConsoleCommand } = useConsoleWebSocket({
-    consoleInfo,
-    enabled: server?.status === "RUNNING",
-  });
+  // Enable WebSocket if we have consoleInfo - this means the API approved the connection
+  // The daemon will report the actual server state via WebSocket events
+  const wsEnabled = !!consoleInfo;
 
-  // Connect to daemon WebSocket for stats streaming
-  const { stats: statsData, isConnected: statsConnected } = useStatsWebSocket({
+  // Combined WebSocket for console + stats (single connection)
+  const {
+    lines: rawConsoleLines,
+    stats: statsData,
+    isConnected: wsConnected,
+    isConnecting: wsConnecting,
+    sendCommand: sendConsoleCommand,
+  } = useServerWebSocket({
     consoleInfo,
-    enabled: server?.status === "RUNNING",
+    enabled: wsEnabled,
   });
 
   // Transform console lines to the format expected by Console component
@@ -236,7 +242,21 @@ const ServerOverviewPage = (): JSX.Element | null => {
     return null;
   }
 
-  if (isLoading) {
+  // Show installing placeholder if server is being installed
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  // Show loading spinner only if loading AND not connected to WebSocket
+  if (isLoading && !wsConnected) {
     return (
       <div className={cn(
         "min-h-svh flex items-center justify-center",
@@ -260,6 +280,19 @@ const ServerOverviewPage = (): JSX.Element | null => {
       )}>
         <AnimatedBackground isDark={isDark} />
         <FloatingDots isDark={isDark} count={15} />
+
+        {/* Connection error banner */}
+        {wsEnabled && !wsConnected && !wsConnecting && (
+          <div className={cn(
+            "relative z-10 px-4 py-3 flex items-center justify-center gap-2 text-sm",
+            isDark
+              ? "bg-amber-500/10 border-b border-amber-500/20 text-amber-400"
+              : "bg-amber-50 border-b border-amber-200 text-amber-700"
+          )}>
+            <BsExclamationTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>Unable to connect to daemon. Server controls may not work until connection is restored.</span>
+          </div>
+        )}
 
         <div className="relative p-8">
           <FadeIn delay={0}>
@@ -470,9 +503,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     isDark={isDark}
                     networkInfo={{
                       publicIp: displayData.networkConfig.publicIp || "",
-                      privateIp: displayData.networkConfig.privateIp || "",
                       openPorts: displayData.networkConfig.openPorts,
-                      macAddress: displayData.networkConfig.macAddress || "",
                     }}
                     labels={labels.networkInfo}
                   />
@@ -492,16 +523,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.cpu}
-                    tooltipContent={
-                      <>
-                        <InfoRow label={labels.tooltip.cpu.model} value={displayData.cpu.model || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.cpu.architecture} value={displayData.cpu.architecture || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.cpu.baseClock} value={`${displayData.cpu.baseFrequency || 0} GHz`} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.cpu.boostClock} value={`${displayData.cpu.boostFrequency || 0} GHz`} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.cpu.tdp} value={`${displayData.cpu.tdp || 0}W`} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.cpu.cache} value={displayData.cpu.cache || ""} isDark={isDark} />
-                      </>
-                    }
                   />
                 </GridItem>
               </div>
@@ -518,15 +539,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.ram}
-                    tooltipContent={
-                      <>
-                        <InfoRow label={labels.tooltip.ram.type} value={displayData.memory.type || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.ram.speed} value={`${displayData.memory.speed || 0} MT/s`} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.ram.channels} value={displayData.memory.channels || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.ram.slotsUsed} value={displayData.memory.slots || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.ram.timings} value={displayData.memory.timings || ""} isDark={isDark} />
-                      </>
-                    }
                   />
                 </GridItem>
               </div>
@@ -543,15 +555,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.disk}
-                    tooltipContent={
-                      <>
-                        <InfoRow label={labels.tooltip.disk.model} value={displayData.disk.model || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.disk.interface} value={displayData.disk.interface || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.disk.readSpeed} value={displayData.disk.readSpeed || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.disk.writeSpeed} value={displayData.disk.writeSpeed || ""} isDark={isDark} />
-                        <InfoRow label={labels.tooltip.disk.health} value={`${displayData.disk.health || 0}%`} isDark={isDark} />
-                      </>
-                    }
                   />
                 </GridItem>
               </div>
@@ -569,14 +572,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.network}
-                    tooltipData={displayData.networkConfig.interface ? {
-                      interface: displayData.networkConfig.interface,
-                      adapter: displayData.networkConfig.adapter || "",
-                      speed: displayData.networkConfig.speed || "",
-                      ipv4: displayData.networkConfig.ipAddress,
-                      gateway: displayData.networkConfig.gateway || "",
-                      dns: displayData.networkConfig.dns || "",
-                    } : undefined}
                   />
                 </GridItem>
               </div>
@@ -636,6 +631,13 @@ const ServerOverviewPage = (): JSX.Element | null => {
             )}
           </DragDropGrid>
         </div>
+
+        {/* Extensions */}
+        <EulaExtension
+          serverId={serverId}
+          lines={rawConsoleLines}
+          onRestart={restart}
+        />
       </div>
     </ThemeContext.Provider>
   );

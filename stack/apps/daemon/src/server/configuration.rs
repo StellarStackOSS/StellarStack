@@ -319,8 +319,10 @@ pub struct ConfigReplacement {
 }
 
 impl ServerConfig {
-    /// Convert API server configuration to internal format
-    pub fn from_api(api_config: &crate::api::ServerConfiguration) -> Self {
+    /// Convert API server data to internal format
+    pub fn from_api(raw_data: &crate::api::RawServerData) -> Self {
+        let api_config = &raw_data.settings;
+        let process_config = &raw_data.process_configuration;
         let mut environment = HashMap::new();
 
         // Build standard environment variables
@@ -366,9 +368,65 @@ impl ServerConfig {
                 target: m.target.clone(),
                 read_only: m.read_only,
             }).collect(),
-            process: ProcessConfig::default(), // Will be filled from process_configuration
+            process: ProcessConfig {
+                startup: StartupConfig {
+                    done: process_config.startup.done.clone(),
+                    user_interaction: process_config.startup.user_interaction.clone(),
+                    strip_ansi: process_config.startup.strip_ansi,
+                },
+                stop: match &process_config.stop {
+                    crate::api::StopConfiguration::Signal { value } => StopConfig::Signal { value: value.clone() },
+                    crate::api::StopConfiguration::Command { value } => StopConfig::Command { value: value.clone() },
+                    crate::api::StopConfiguration::None => StopConfig::None,
+                },
+                configs: Vec::new(), // Config files parsed separately
+            },
             environment,
         }
+    }
+
+    /// Update configuration from API (keeps existing process config)
+    pub fn update_from_api(&mut self, api_config: &crate::api::ServerConfiguration) {
+        self.name = api_config.name.clone();
+        self.suspended = api_config.suspended;
+        self.invocation = api_config.invocation.clone();
+        self.skip_egg_scripts = api_config.skip_egg_scripts;
+        self.build = BuildConfig {
+            memory_limit: api_config.build.memory_limit,
+            swap: api_config.build.swap,
+            io_weight: api_config.build.io_weight,
+            cpu_limit: api_config.build.cpu_limit,
+            threads: api_config.build.threads.clone(),
+            disk_space: api_config.build.disk_space,
+            oom_disabled: api_config.build.oom_disabled,
+        };
+        self.container = ContainerConfig {
+            image: api_config.container.image.clone(),
+            oom_disabled: api_config.container.oom_disabled,
+            requires_rebuild: api_config.container.requires_rebuild,
+        };
+        self.allocations = AllocationsConfig {
+            default: Allocation {
+                ip: api_config.allocations.default.ip.clone(),
+                port: api_config.allocations.default.port,
+            },
+            mappings: api_config.allocations.mappings.clone(),
+        };
+        self.egg = EggConfig {
+            id: api_config.egg.id.clone(),
+            file_denylist: api_config.egg.file_denylist.clone(),
+            fix_permissions: false,
+        };
+        self.mounts = api_config.mounts.iter().map(|m| MountConfig {
+            source: m.source.clone(),
+            target: m.target.clone(),
+            read_only: m.read_only,
+        }).collect();
+
+        // Update environment
+        self.environment.insert("STARTUP".to_string(), api_config.invocation.clone());
+        self.environment.insert("SERVER_IP".to_string(), api_config.allocations.default.ip.clone());
+        self.environment.insert("SERVER_PORT".to_string(), api_config.allocations.default.port.to_string());
     }
 
     /// Get all port bindings as (container_port, (host_ip, host_port))

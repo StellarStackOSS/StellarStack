@@ -141,6 +141,8 @@ export const servers = {
     `/api/servers/${id}/reinstall`,
     { method: "POST" }
   ),
+  setStatus: (id: string, status: string) =>
+    request<Server>(`/api/servers/${id}/status`, { method: "PATCH", body: { status } }),
 
   // Stats & Logs
   stats: (id: string) => request<ServerStats>(`/api/servers/${id}/stats`),
@@ -196,6 +198,19 @@ export const servers = {
         method: "POST",
         body: { id: backupId },
       }),
+  },
+
+  // Allocations
+  allocations: {
+    list: (serverId: string) => request<Allocation[]>(`/api/servers/${serverId}/allocations`),
+    available: (serverId: string) => request<Allocation[]>(`/api/servers/${serverId}/allocations/available`),
+    add: (serverId: string, allocationId: string) =>
+      request<Allocation>(`/api/servers/${serverId}/allocations`, {
+        method: "POST",
+        body: { allocationId },
+      }),
+    remove: (serverId: string, allocationId: string) =>
+      request(`/api/servers/${serverId}/allocations/${allocationId}`, { method: "DELETE" }),
   },
 
   // Schedules
@@ -403,6 +418,7 @@ export interface Server {
   description?: string;
   containerId?: string;
   status: "INSTALLING" | "STARTING" | "RUNNING" | "STOPPING" | "STOPPED" | "ERROR";
+  suspended: boolean;
   memory: number; // MiB
   disk: number; // MiB
   cpu: number; // Percentage (100 = 1 thread)
@@ -411,6 +427,8 @@ export interface Server {
   oomKillDisable: boolean;
   backupLimit: number;
   config?: Record<string, unknown>;
+  variables?: Record<string, string>;
+  dockerImage?: string;
   nodeId: string;
   node?: Node;
   blueprintId: string;
@@ -418,6 +436,7 @@ export interface Server {
   ownerId: string;
   owner?: User;
   allocations?: Allocation[];
+  backups?: Backup[];
   createdAt: string;
   updatedAt: string;
 }
@@ -441,15 +460,19 @@ export interface CreateServerData {
   dockerImage?: string; // Selected docker image from blueprint
 }
 
+// Server stats from daemon WebSocket (sent via "stats" event)
 export interface ServerStats {
-  id: string;
-  name: string;
-  cpu: { usage_percent: number; online_cpus: number };
-  memory: { usage: number; limit: number; usage_percent: number };
-  network: { rx_bytes: number; tx_bytes: number };
-  block_io: { read_bytes: number; write_bytes: number };
-  pids: number;
-  timestamp: string;
+  memory_bytes: number;
+  memory_limit_bytes: number;
+  cpu_absolute: number; // CPU usage as percentage (100 = 1 core)
+  network: {
+    rx_bytes: number;
+    tx_bytes: number;
+  };
+  uptime: number; // Seconds
+  state: string; // Server state: "running", "offline", etc.
+  disk_bytes: number; // Current disk usage in bytes
+  disk_limit_bytes: number; // Disk limit in bytes
 }
 
 export interface LogEntry {
@@ -479,13 +502,18 @@ export interface FileInfo {
 
 export interface Backup {
   id: string;
-  container_id: string;
   name: string;
-  size: number;
-  hash: string;
-  created_at: string;
-  storage: string;
-  locked: boolean;
+  size: number; // bytes
+  checksum?: string;
+  checksumType: string;
+  status: "IN_PROGRESS" | "COMPLETED" | "FAILED" | "RESTORING";
+  isLocked: boolean;
+  storagePath?: string;
+  serverId: string;
+  ignoredFiles?: string[];
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ScheduleTask {

@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "./auth-provider";
+import { WaveText } from "./wave-text";
 
 // Navigation items - href will be prefixed with /servers/[id]
 const navItems = [
@@ -274,7 +275,11 @@ export function AppSidebar({ isDark = true }: AppSidebarProps) {
 
         {/* Version */}
         <div className={cn("text-[10px] uppercase tracking-wider mt-3 text-center", isDark ? "text-zinc-600" : "text-zinc-400")}>
-          StellarStack v{process.env.NEXT_PUBLIC_GIT_COMMIT_HASH?.slice(0, 7) || "dev"}-alpha
+          <WaveText
+            text={`StellarStack v${process.env.NEXT_PUBLIC_GIT_COMMIT_HASH?.slice(0, 7) || "dev"}-alpha`}
+            baseClassName={isDark ? "text-zinc-600" : "text-zinc-400"}
+            highlightClassName={isDark ? "text-zinc-100" : "text-zinc-800"}
+          />
         </div>
       </SidebarFooter>
     </Sidebar>

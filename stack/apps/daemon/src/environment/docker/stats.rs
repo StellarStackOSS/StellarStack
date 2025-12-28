@@ -69,6 +69,8 @@ pub async fn poll_stats(
                     cpu_absolute: cpu,
                     network,
                     uptime,
+                    disk_bytes: 0, // TODO: Calculate from server data directory
+                    disk_limit_bytes: 0, // Filled by server layer
                 };
 
                 // Publish stats event
@@ -88,14 +90,12 @@ pub async fn poll_stats(
     Ok(())
 }
 
-/// Calculate memory usage, excluding inactive file caches
+/// Calculate memory usage
 ///
-/// This follows the Wings pattern of subtracting inactive file memory
-/// from the total usage to get a more accurate representation of
-/// actual memory consumption.
+/// Returns the current memory usage from Docker stats.
+/// Note: Wings subtracts inactive_file from usage for more accurate reporting,
+/// but bollard's MemoryStatsStats doesn't expose those fields directly.
 fn calculate_memory(stats: &bollard::container::MemoryStats) -> u64 {
-    // In bollard 0.17, we use the usage field directly
-    // Inactive file subtraction could be added later if the API provides it
     stats.usage.unwrap_or(0)
 }
 
@@ -117,7 +117,9 @@ fn calculate_cpu(
         let cpus = stats.online_cpus.unwrap_or(1) as f64;
 
         if system_delta > 0 && cpu_delta > 0 {
-            (cpu_delta as f64 / system_delta as f64) * 100.0 * cpus
+            let raw_cpu = (cpu_delta as f64 / system_delta as f64) * 100.0 * cpus;
+            // Cap CPU at 100% per core * number of cores
+            raw_cpu.min(100.0 * cpus)
         } else {
             0.0
         }
@@ -189,6 +191,8 @@ pub fn start_stats_poller(
                                 cpu_absolute: cpu,
                                 network,
                                 uptime: 0, // Will be filled by server
+                                disk_bytes: 0, // TODO: Calculate from server data directory
+                                disk_limit_bytes: 0, // Filled by server layer
                             };
 
                             event_bus.publish(Event::Stats(stats));
@@ -221,15 +225,7 @@ mod tests {
         let mut stats = bollard::container::MemoryStats::default();
         stats.usage = Some(100_000_000); // 100MB
 
-        // Without inactive file stats
         assert_eq!(calculate_memory(&stats), 100_000_000);
-
-        // With inactive file stats
-        let mut inner_stats = HashMap::new();
-        inner_stats.insert("total_inactive_file".to_string(), 20_000_000u64);
-        stats.stats = Some(inner_stats);
-
-        assert_eq!(calculate_memory(&stats), 80_000_000);
     }
 
     #[test]

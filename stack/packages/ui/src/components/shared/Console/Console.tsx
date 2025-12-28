@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@workspace/ui/lib/utils";
-import { Spinner } from "@workspace/ui/components/spinner";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import { TimestampColumnTooltip } from "./TimestampTooltip";
 import { ScrollContext } from "./ScrollContext";
@@ -182,11 +181,13 @@ export function Console({
       {/* Console output */}
       <ScrollContext.Provider value={scrollSignal}>
         <div className="relative flex-1 overflow-hidden">
-          {/* Offline spinner overlay */}
+          {/* Offline overlay - shows message instead of spinner when server is off */}
           {isOffline && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
               <div className="flex flex-col items-center gap-2">
-                <Spinner className={cn("size-6", isDark ? "text-zinc-400" : "text-zinc-500")} />
+                <span className={cn("text-xs uppercase tracking-wider", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                  Server is offline
+                </span>
               </div>
             </div>
           )}

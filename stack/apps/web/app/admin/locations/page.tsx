@@ -1,25 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
-import { MapPinIcon, PlusIcon, TrashIcon, EditIcon, ArrowLeftIcon } from "lucide-react";
-import { locations } from "@/lib/api";
+import { FormModal } from "@workspace/ui/components/shared/FormModal";
+import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
+import { MapPinIcon, PlusIcon, TrashIcon, EditIcon, ArrowLeftIcon, SearchIcon } from "lucide-react";
+import { useLocations, useLocationMutations } from "@/hooks/queries";
+import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
 import type { Location, CreateLocationData } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function LocationsPage() {
   const router = useRouter();
-  const { resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
-  const [locationsList, setLocationsList] = useState<Location[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { mounted, isDark, inputClasses, labelClasses } = useAdminTheme();
+
+  // React Query hooks
+  const { data: locationsList = [], isLoading } = useLocations();
+  const { create, update, remove } = useLocationMutations();
+
+  // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [deleteConfirmLocation, setDeleteConfirmLocation] = useState<Location | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<CreateLocationData>({
@@ -28,27 +36,6 @@ export default function LocationsPage() {
     country: "",
     city: "",
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const data = await locations.list();
-      setLocationsList(data);
-    } catch (error) {
-      toast.error("Failed to fetch locations");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   const resetForm = () => {
     setFormData({
@@ -60,19 +47,17 @@ export default function LocationsPage() {
     setEditingLocation(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     try {
       if (editingLocation) {
-        await locations.update(editingLocation.id, formData);
+        await update.mutateAsync({ id: editingLocation.id, data: formData });
         toast.success("Location updated successfully");
       } else {
-        await locations.create(formData);
+        await create.mutateAsync(formData);
         toast.success("Location created successfully");
       }
       setIsModalOpen(false);
       resetForm();
-      fetchData();
     } catch (error) {
       toast.error(editingLocation ? "Failed to update location" : "Failed to create location");
     }
@@ -89,28 +74,30 @@ export default function LocationsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (location: Location) => {
-    if (!confirm(`Are you sure you want to delete "${location.name}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteConfirmLocation) return;
     try {
-      await locations.delete(location.id);
+      await remove.mutateAsync(deleteConfirmLocation.id);
       toast.success("Location deleted successfully");
-      fetchData();
+      setDeleteConfirmLocation(null);
     } catch (error) {
       toast.error("Failed to delete location");
     }
   };
 
-  const inputClasses = cn(
-    "w-full px-3 py-2 border text-sm transition-colors focus:outline-none",
-    isDark
-      ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500"
-      : "bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400"
-  );
+  // Filter locations based on search query
+  const filteredLocations = useMemo(() => {
+    if (!searchQuery) return locationsList;
+    const query = searchQuery.toLowerCase();
+    return locationsList.filter((location) =>
+      location.name.toLowerCase().includes(query) ||
+      location.country?.toLowerCase().includes(query) ||
+      location.city?.toLowerCase().includes(query) ||
+      location.description?.toLowerCase().includes(query)
+    );
+  }, [locationsList, searchQuery]);
 
-  const labelClasses = cn(
-    "block text-xs font-medium uppercase tracking-wider mb-1",
-    isDark ? "text-zinc-400" : "text-zinc-600"
-  );
+  if (!mounted) return null;
 
   return (
     <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
@@ -162,90 +149,106 @@ export default function LocationsPage() {
                 Add Location
               </Button>
             </div>
+
+            {/* Search Bar */}
+            <div className="relative mb-6">
+              <SearchIcon className={cn(
+                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+                isDark ? "text-zinc-500" : "text-zinc-400"
+              )} />
+              <input
+                type="text"
+                placeholder="Search locations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn(
+                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none rounded-lg",
+                  isDark
+                    ? "bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
+                    : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
+                )}
+              />
+            </div>
           </FadeIn>
 
           {/* Locations Grid */}
           <FadeIn delay={0.1}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          <div className={cn("col-span-full text-center py-12 text-sm", isDark ? "text-zinc-500" : "text-zinc-400")}>
-            Loading...
-          </div>
-        ) : locationsList.length === 0 ? (
-          <div className={cn(
-            "col-span-full text-center py-12 border",
-            isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
-          )}>
-            No locations configured. Add your first location.
-          </div>
-        ) : (
-          locationsList.map((location) => (
-            <div
-              key={location.id}
-              className={cn(
-                "relative p-4 border transition-colors",
-                isDark
-                  ? "bg-zinc-900/50 border-zinc-700/50"
-                  : "bg-white border-zinc-200"
-              )}
-            >
-              {/* Corner accents */}
-              <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-blue-600" : "border-blue-400")} />
-              <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-blue-600" : "border-blue-400")} />
-              <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-blue-600" : "border-blue-400")} />
-              <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-blue-600" : "border-blue-400")} />
+              {isLoading ? (
+                <div className="col-span-full flex justify-center py-12">
+                  <Spinner className="w-6 h-6" />
+                </div>
+              ) : filteredLocations.length === 0 ? (
+                <div className={cn(
+                  "col-span-full text-center py-12 border rounded-lg",
+                  isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+                )}>
+                  {searchQuery ? "No locations match your search." : "No locations configured. Add your first location."}
+                </div>
+              ) : (
+                filteredLocations.map((location) => (
+                  <div
+                    key={location.id}
+                    className={cn(
+                      "relative p-4 border transition-colors rounded-lg",
+                      isDark
+                        ? "bg-zinc-900/50 border-zinc-700/50 hover:border-zinc-600"
+                        : "bg-white border-zinc-200 hover:border-zinc-300"
+                    )}
+                  >
+                    <CornerAccents isDark={isDark} size="sm" color="blue" />
 
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <MapPinIcon className={cn("w-6 h-6 mt-0.5", isDark ? "text-blue-400" : "text-blue-600")} />
-                  <div>
-                    <div className={cn("font-medium", isDark ? "text-zinc-100" : "text-zinc-800")}>
-                      {location.name}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <MapPinIcon className={cn("w-6 h-6 mt-0.5", isDark ? "text-blue-400" : "text-blue-600")} />
+                        <div>
+                          <div className={cn("font-medium", isDark ? "text-zinc-100" : "text-zinc-800")}>
+                            {location.name}
+                          </div>
+                          {(location.city || location.country) && (
+                            <div className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                              {[location.city, location.country].filter(Boolean).join(", ")}
+                            </div>
+                          )}
+                          {location.description && (
+                            <div className={cn("text-xs mt-2", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                              {location.description}
+                            </div>
+                          )}
+                          {location.nodes && location.nodes.length > 0 && (
+                            <div className={cn("text-xs mt-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                              {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(location)}
+                          className={cn(
+                            "text-xs p-1.5",
+                            isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                          )}
+                        >
+                          <EditIcon className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDeleteConfirmLocation(location)}
+                          className={cn(
+                            "text-xs p-1.5",
+                            isDark ? "border-red-900/50 text-red-400 hover:bg-red-900/20" : "border-red-200 text-red-600 hover:bg-red-50"
+                          )}
+                        >
+                          <TrashIcon className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
-                    {(location.city || location.country) && (
-                      <div className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                        {[location.city, location.country].filter(Boolean).join(", ")}
-                      </div>
-                    )}
-                    {location.description && (
-                      <div className={cn("text-xs mt-2", isDark ? "text-zinc-600" : "text-zinc-400")}>
-                        {location.description}
-                      </div>
-                    )}
-                    {location.nodes && location.nodes.length > 0 && (
-                      <div className={cn("text-xs mt-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                        {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
-                      </div>
-                    )}
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(location)}
-                    className={cn(
-                      "text-xs p-1.5",
-                      isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
-                    )}
-                  >
-                    <EditIcon className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(location)}
-                    className={cn(
-                      "text-xs p-1.5",
-                      isDark ? "border-red-900/50 text-red-400 hover:bg-red-900/20" : "border-red-200 text-red-600 hover:bg-red-50"
-                    )}
-                  >
-                    <TrashIcon className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))
+                ))
               )}
             </div>
           </FadeIn>
@@ -253,102 +256,80 @@ export default function LocationsPage() {
       </div>
 
       {/* Create/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className={cn(
-            "relative w-full max-w-md mx-4 p-6 border",
-            isDark
-              ? "bg-[#0f0f0f] border-zinc-700"
-              : "bg-white border-zinc-300"
-          )}>
-            {/* Corner accents */}
-            <div className={cn("absolute top-0 left-0 w-3 h-3 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-3 h-3 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+      <FormModal
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) resetForm();
+        }}
+        title={editingLocation ? "Edit Location" : "Create Location"}
+        submitLabel={editingLocation ? "Update" : "Create"}
+        onSubmit={handleSubmit}
+        isDark={isDark}
+        isLoading={create.isPending || update.isPending}
+        isValid={formData.name.length > 0}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className={labelClasses}>Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="US West"
+              className={inputClasses}
+              required
+            />
+          </div>
 
-            <h2 className={cn(
-              "text-lg font-light tracking-wider mb-6",
-              isDark ? "text-zinc-100" : "text-zinc-800"
-            )}>
-              {editingLocation ? "Edit Location" : "Create Location"}
-            </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClasses}>Country</label>
+              <input
+                type="text"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                placeholder="US"
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label className={labelClasses}>City</label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="Los Angeles"
+                className={inputClasses}
+              />
+            </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className={labelClasses}>Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="US West"
-                  className={inputClasses}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClasses}>Country</label>
-                  <input
-                    type="text"
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="US"
-                    className={inputClasses}
-                  />
-                </div>
-                <div>
-                  <label className={labelClasses}>City</label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Los Angeles"
-                    className={inputClasses}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClasses}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Optional description..."
-                  rows={3}
-                  className={inputClasses}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => { setIsModalOpen(false); resetForm(); }}
-                  className={cn(
-                    "text-xs uppercase tracking-wider",
-                    isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
-                  )}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className={cn(
-                    "text-xs uppercase tracking-wider",
-                    isDark
-                      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                      : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-                  )}
-                >
-                  {editingLocation ? "Update" : "Create"}
-                </Button>
-              </div>
-            </form>
+          <div>
+            <label className={labelClasses}>Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Optional description..."
+              rows={3}
+              className={cn(inputClasses, "resize-none")}
+            />
           </div>
         </div>
-      )}
+      </FormModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        open={!!deleteConfirmLocation}
+        onOpenChange={(open) => !open && setDeleteConfirmLocation(null)}
+        title="Delete Location"
+        description={`Are you sure you want to delete "${deleteConfirmLocation?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        isDark={isDark}
+        variant="danger"
+        isLoading={remove.isPending}
+      />
     </div>
   );
 }

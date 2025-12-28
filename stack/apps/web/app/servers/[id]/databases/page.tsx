@@ -11,7 +11,9 @@ import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
-import { BsSun, BsMoon, BsPlus, BsTrash, BsEye, BsEyeSlash, BsClipboard } from "react-icons/bs";
+import { BsSun, BsMoon, BsPlus, BsTrash, BsEye, BsEyeSlash, BsClipboard, BsExclamationTriangle } from "react-icons/bs";
+import { useServer } from "@/components/server-provider";
+import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 
 interface Database {
   id: string;
@@ -38,6 +40,7 @@ const generatePassword = () => {
 const DatabasesPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
+  const { server, isInstalling } = useServer();
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [databases, setDatabases] = useState<Database[]>(mockDatabases);
@@ -58,6 +61,18 @@ const DatabasesPage = (): JSX.Element | null => {
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className={cn(
+        "min-h-svh",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}>
+        <AnimatedBackground isDark={isDark} />
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
 
   const openCreateModal = () => {
     setFormName("");
@@ -165,6 +180,22 @@ const DatabasesPage = (): JSX.Element | null => {
               >
                 {isDark ? <BsSun className="w-4 h-4" /> : <BsMoon className="w-4 h-4" />}
               </Button>
+            </div>
+          </div>
+
+          {/* Development Notice */}
+          <div className={cn(
+            "mb-6 p-4 border flex items-center gap-3",
+            isDark
+              ? "bg-amber-950/20 border-amber-700/30 text-amber-200/80"
+              : "bg-amber-50 border-amber-200 text-amber-800"
+          )}>
+            <BsExclamationTriangle className="w-5 h-5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Under Development</p>
+              <p className={cn("text-xs mt-0.5", isDark ? "text-amber-200/60" : "text-amber-600")}>
+                Database management is not yet connected to the API. The data shown below is for demonstration purposes only.
+              </p>
             </div>
           </div>
 

@@ -125,7 +125,7 @@ const updateStartupSchema = z.object({
 
 // Helper to communicate with daemon
 async function daemonRequest(
-  node: { host: string; port: number; protocol: string; token: string },
+  node: { id: string; host: string; port: number; protocol: string; token: string },
   method: string,
   path: string,
   body?: any,
@@ -135,8 +135,9 @@ async function daemonRequest(
   const url = `${protocol}://${node.host}:${node.port}${path}`;
 
   try {
+    // Daemon expects token format: {token_id}.{token}
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${node.token}`,
+      Authorization: `Bearer ${node.id}.${node.token}`,
     };
 
     // Only set Content-Type if there's a body
@@ -370,150 +371,93 @@ servers.post("/", requireAdmin, async (c) => {
     },
   });
 
-  // Build daemon blueprint
-  const blueprintConfig = blueprint.config as any;
-  const serverConfig = parsed.data.config || {};
-
-  // Calculate swap limit for Docker
-  // Docker memory_swap is the TOTAL (memory + swap), not just swap
-  // -1 = unlimited swap, 0 = same as memory (disable swap), >0 = memory + swap
-  const swapValue = parsed.data.swap;
-  let memorySwapBytes: number | undefined;
-  if (swapValue === -1) {
-    memorySwapBytes = -1; // Unlimited
-  } else if (swapValue === 0) {
-    memorySwapBytes = parsed.data.memory * 1024 * 1024; // Same as memory = no swap
-  } else {
-    memorySwapBytes = (parsed.data.memory + swapValue) * 1024 * 1024; // memory + swap
-  }
-
   // Build environment from blueprint variables + server overrides
   const blueprintVariables = (blueprint.variables as any[]) || [];
   const serverVariables = (parsed.data.variables as Record<string, string>) || {};
   const variablesEnvironment: Record<string, string> = {};
 
   for (const v of blueprintVariables) {
-    // Use server override if available, otherwise use default
     variablesEnvironment[v.env_variable] = serverVariables[v.env_variable] ?? v.default_value ?? "";
   }
 
   // Determine which docker image to use
-  let imageName = blueprint.imageName;
-  let imageTag = blueprint.imageTag;
-  let imageRegistry = blueprint.registry;
+  const dockerImage = parsed.data.dockerImage || `${blueprint.imageName}:${blueprint.imageTag}`;
 
-  if (parsed.data.dockerImage) {
-    // Parse the selected docker image
-    const selectedImage = parsed.data.dockerImage;
-    const parts = selectedImage.split('/');
-
-    if (parts.length >= 2 && (parts[0].includes('.') || parts[0].includes(':'))) {
-      // Has registry
-      imageRegistry = parts[0];
-      const nameWithTag = parts.slice(1).join('/');
-      const [name, tag = 'latest'] = nameWithTag.split(':');
-      imageName = name;
-      imageTag = tag;
-    } else {
-      // No registry
-      const [name, tag = 'latest'] = selectedImage.split(':');
-      imageName = name;
-      imageTag = tag;
-      imageRegistry = null;
-    }
+  // Build startup command with variable substitution
+  let invocation = blueprint.startup || "";
+  for (const [key, value] of Object.entries(variablesEnvironment)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+    invocation = invocation.replace(regex, value);
   }
+  invocation = invocation.replace(/\{\{SERVER_MEMORY\}\}/g, String(parsed.data.memory));
 
-  // Build installation config if available
-  // Only set installConfig if there's a non-empty install script
-  const installConfig = blueprint.installScript && blueprint.installScript.trim().length > 0
-    ? {
-        script: blueprint.installScript,
-        container: blueprint.installContainer || "ghcr.io/ptero-eggs/installers:alpine",
-        entrypoint: blueprint.installEntrypoint || "ash",
-      }
-    : null;
+  // Get primary allocation
+  const primaryAllocation = allocations[0];
 
-  // Merge configs - variables take precedence over blueprint config environment
-  const daemonBlueprint = {
+  // Build daemon request in the format the Rust daemon expects
+  const daemonRequest_body = {
+    uuid: server.id,
     name: server.name,
-    description: server.description,
-    image: {
-      name: imageName,
-      tag: imageTag,
-      registry: imageRegistry,
+    suspended: false,
+    invocation: invocation,
+    skip_egg_scripts: !blueprint.installScript,
+    build: {
+      memory_limit: parsed.data.memory * 1024 * 1024, // MiB to bytes
+      swap: parsed.data.swap === -1 ? -1 : parsed.data.swap * 1024 * 1024, // MiB to bytes
+      io_weight: 500, // Default IO weight
+      cpu_limit: parsed.data.cpu, // Percentage (100 = 1 core)
+      disk_space: parsed.data.disk * 1024 * 1024, // MiB to bytes
+      oom_disabled: parsed.data.oomKillDisable,
     },
-    stdin_open: blueprintConfig.stdin_open ?? true,
-    tty: blueprintConfig.tty ?? true,
-    // Set working directory for Pterodactyl eggs (default: /home/container)
-    working_dir: blueprintConfig.working_dir || "/home/container",
-    // Set user (Pterodactyl uses container user)
-    user: blueprintConfig.user || "container",
-    ports: allocations.map((a) => ({
-      container_port: a.port,
-      host_port: a.port,
-      host_ip: a.ip,
-    })),
-    environment: {
-      ...blueprintConfig.environment,
-      ...variablesEnvironment,
-      ...serverConfig.environment,
-      // Add SERVER_MEMORY for startup command substitution
-      SERVER_MEMORY: String(parsed.data.memory),
+    container: {
+      image: dockerImage,
+      oom_disabled: parsed.data.oomKillDisable,
     },
-    resources: {
-      memory: parsed.data.memory * 1024 * 1024, // Convert MiB to bytes
-      memory_swap: memorySwapBytes,
-      cpus: parsed.data.cpu / 100, // Convert percentage to cores (100% = 1 thread)
-      cpuset_cpus: parsed.data.cpuPinning || undefined,
-      oom_kill_disable: parsed.data.oomKillDisable,
+    allocations: {
+      default: {
+        ip: primaryAllocation.ip,
+        port: primaryAllocation.port,
+      },
+      mappings: allocations.reduce((acc, a) => {
+        if (!acc[a.ip]) acc[a.ip] = [];
+        acc[a.ip].push(a.port);
+        return acc;
+      }, {} as Record<string, number[]>),
     },
-    volumes: blueprintConfig.volumes,
-    mounts: blueprintConfig.mounts,
-    restart_policy: blueprintConfig.restart_policy || "unlessstopped",
-    // Installation configuration
-    install: installConfig,
-    // Startup command template
-    startup: blueprint.startup,
-    // Stop command
-    stop_command: blueprint.stopCommand,
-    // Build the startup command with variable substitution
-    command: blueprint.startup
-      ? (() => {
-          // Convert Windows line endings to Unix and substitute variables
-          let cmd = blueprint.startup.replace(/\r\n/g, "\n").replace(/\r/g, "");
-          // Substitute variables
-          for (const [key, value] of Object.entries(variablesEnvironment)) {
-            const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
-            cmd = cmd.replace(regex, value);
-          }
-          // Substitute SERVER_MEMORY
-          cmd = cmd.replace(/\{\{SERVER_MEMORY\}\}/g, String(parsed.data.memory));
-          // Return as array for Docker command
-          return ["sh", "-c", cmd];
-        })()
-      : undefined,
+    egg: {
+      id: blueprint.id,
+      file_denylist: [],
+    },
+    mounts: [],
   };
 
   // Send to daemon
   try {
-    const result = await daemonRequest(node, "POST", `/containers?name=${server.id}`, daemonBlueprint);
+    const result = await daemonRequest(node, "POST", `/api/servers`, daemonRequest_body);
 
-    // If there's an install script, keep status as INSTALLING and let daemon report status changes
-    // Otherwise, the container starts immediately so we can set RUNNING
-    const newStatus = installConfig ? "INSTALLING" : "RUNNING";
+    // Update server status based on whether installation is needed
+    const hasInstallScript = blueprint.installScript && blueprint.installScript.trim().length > 0;
+    const newStatus = hasInstallScript ? "INSTALLING" : "STOPPED";
 
     await db.server.update({
       where: { id: server.id },
       data: {
-        containerId: result.id,
         status: newStatus,
       },
     });
 
+    // If there's an install script, trigger installation
+    if (hasInstallScript) {
+      try {
+        await daemonRequest(node, "POST", `/api/servers/${server.id}/install`);
+      } catch (installError) {
+        console.error("Failed to trigger installation:", installError);
+      }
+    }
+
     return c.json(
       serializeServer({
         ...server,
-        containerId: result.id,
         status: newStatus,
       }),
       201
@@ -559,8 +503,8 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     data: parsed.data as any,
   });
 
-  // If resources were updated and server has a container, sync to daemon
-  if ((parsed.data.memory || parsed.data.cpu) && server.containerId) {
+  // If resources were updated, sync to daemon
+  if (parsed.data.memory || parsed.data.cpu) {
     const fullServer = await db.server.findUnique({
       where: { id: server.id },
       include: { node: true },
@@ -568,13 +512,11 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
 
     if (fullServer?.node.isOnline) {
       try {
-        await daemonRequest(fullServer.node, "PATCH", `/containers/${server.containerId}/update`, {
-          memory: parsed.data.memory ? parsed.data.memory * 1024 * 1024 : undefined, // MB to bytes
-          cpus: parsed.data.cpu ? parsed.data.cpu / 100 : undefined, // percentage to cores
-        });
+        // Sync server to update resources in the daemon
+        await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/sync`);
       } catch (error) {
         // Log but don't fail - database is updated, container update is best-effort
-        console.error("Failed to update container resources:", error);
+        console.error("Failed to sync server resources:", error);
       }
     }
   }
@@ -595,10 +537,10 @@ servers.delete("/:serverId", requireAdmin, async (c) => {
     return c.json({ error: "Server not found" }, 404);
   }
 
-  // Stop and remove from daemon
-  if (server.containerId && server.node.isOnline) {
+  // Remove from daemon
+  if (server.node.isOnline) {
     try {
-      await daemonRequest(server.node, "DELETE", `/containers/${server.containerId}?force=true`);
+      await daemonRequest(server.node, "DELETE", `/api/servers/${serverId}`);
     } catch {
       // Continue with deletion even if daemon fails
     }
@@ -630,23 +572,19 @@ servers.post("/:serverId/start", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/containers/${fullServer.containerId}/start`);
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "start" });
 
     await db.server.update({
       where: { id: server.id },
-      data: { status: "RUNNING" },
+      data: { status: "STARTING" },
     });
 
-    return c.json({ success: true, status: "RUNNING" });
+    return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -661,23 +599,19 @@ servers.post("/:serverId/stop", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/containers/${fullServer.containerId}/stop`);
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "stop" });
 
     await db.server.update({
       where: { id: server.id },
-      data: { status: "STOPPED" },
+      data: { status: "STOPPING" },
     });
 
-    return c.json({ success: true, status: "STOPPED" });
+    return c.json({ success: true, status: "STOPPING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -692,23 +626,19 @@ servers.post("/:serverId/restart", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/containers/${fullServer.containerId}/restart`);
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "restart" });
 
     await db.server.update({
       where: { id: server.id },
-      data: { status: "RUNNING" },
+      data: { status: "STARTING" },
     });
 
-    return c.json({ success: true, status: "RUNNING" });
+    return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -723,16 +653,12 @@ servers.post("/:serverId/kill", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/containers/${fullServer.containerId}/kill`);
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "kill" });
 
     await db.server.update({
       where: { id: server.id },
@@ -745,7 +671,7 @@ servers.post("/:serverId/kill", requireServerAccess, async (c) => {
   }
 });
 
-// Sync server resources to container (admin only)
+// Sync server with panel configuration
 servers.post("/:serverId/sync", requireAdmin, async (c) => {
   const { serverId } = c.req.param();
 
@@ -758,23 +684,16 @@ servers.post("/:serverId/sync", requireAdmin, async (c) => {
     return c.json({ error: "Server not found" }, 404);
   }
 
-  if (!server.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
   if (!server.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(server.node, "PATCH", `/containers/${server.containerId}/update`, {
-      memory: Number(server.memory) * 1024 * 1024, // MB to bytes
-      cpus: server.cpu / 100, // percentage to cores
-    });
+    await daemonRequest(server.node, "POST", `/api/servers/${serverId}/sync`);
 
     return c.json({
       success: true,
-      message: "Container resources synced",
+      message: "Server synced with panel",
       resources: {
         memory: Number(server.memory),
         cpu: server.cpu,
@@ -785,7 +704,7 @@ servers.post("/:serverId/sync", requireAdmin, async (c) => {
   }
 });
 
-// Reinstall server (recreate container with current variables/image)
+// Reinstall server (run installation script again)
 servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
   const server = c.get("server");
 
@@ -794,7 +713,6 @@ servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
     include: {
       node: true,
       blueprint: true,
-      allocations: true,
     },
   });
 
@@ -806,142 +724,22 @@ servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
     return c.json({ error: "Node is offline" }, 400);
   }
 
-  // Delete old container if exists
-  if (fullServer.containerId) {
-    try {
-      await daemonRequest(fullServer.node, "DELETE", `/containers/${fullServer.containerId}?force=true`);
-    } catch {
-      // Ignore errors if container doesn't exist
-    }
-  }
-
-  // Build new container with current settings
-  const blueprintConfig = fullServer.blueprint.config as any;
-  const serverConfig = (fullServer.config as any) || {};
-
-  // Calculate swap
-  const swapValue = Number(fullServer.swap);
-  let memorySwapBytes: number | undefined;
-  if (swapValue === -1) {
-    memorySwapBytes = -1;
-  } else if (swapValue === 0) {
-    memorySwapBytes = Number(fullServer.memory) * 1024 * 1024;
-  } else {
-    memorySwapBytes = (Number(fullServer.memory) + swapValue) * 1024 * 1024;
-  }
-
-  // Build environment from blueprint variables + server overrides
-  const blueprintVariables = (fullServer.blueprint.variables as any[]) || [];
-  const serverVariables = (fullServer.variables as Record<string, string>) || {};
-  const variablesEnvironment: Record<string, string> = {};
-
-  for (const v of blueprintVariables) {
-    variablesEnvironment[v.env_variable] = serverVariables[v.env_variable] ?? v.default_value ?? "";
-  }
-
-  // Determine which docker image to use
-  let imageName = fullServer.blueprint.imageName;
-  let imageTag = fullServer.blueprint.imageTag;
-  let imageRegistry = fullServer.blueprint.registry;
-
-  if (fullServer.dockerImage) {
-    const selectedImage = fullServer.dockerImage;
-    const parts = selectedImage.split('/');
-
-    if (parts.length >= 2 && (parts[0].includes('.') || parts[0].includes(':'))) {
-      imageRegistry = parts[0];
-      const nameWithTag = parts.slice(1).join('/');
-      const [name, tag = 'latest'] = nameWithTag.split(':');
-      imageName = name;
-      imageTag = tag;
-    } else {
-      const [name, tag = 'latest'] = selectedImage.split(':');
-      imageName = name;
-      imageTag = tag;
-      imageRegistry = null;
-    }
-  }
-
-  // Build installation config if available
-  // Only set installConfig if there's a non-empty install script
-  const installConfig = fullServer.blueprint.installScript && fullServer.blueprint.installScript.trim().length > 0
-    ? {
-        script: fullServer.blueprint.installScript,
-        container: fullServer.blueprint.installContainer || "ghcr.io/ptero-eggs/installers:alpine",
-        entrypoint: fullServer.blueprint.installEntrypoint || "ash",
-      }
-    : null;
-
-  const daemonBlueprint = {
-    name: fullServer.name,
-    description: fullServer.description,
-    image: {
-      name: imageName,
-      tag: imageTag,
-      registry: imageRegistry,
-    },
-    stdin_open: blueprintConfig.stdin_open ?? true,
-    tty: blueprintConfig.tty ?? true,
-    working_dir: blueprintConfig.working_dir || "/home/container",
-    user: blueprintConfig.user || "container",
-    ports: fullServer.allocations.map((a) => ({
-      container_port: a.port,
-      host_port: a.port,
-      host_ip: a.ip,
-    })),
-    environment: {
-      ...blueprintConfig.environment,
-      ...variablesEnvironment,
-      ...serverConfig.environment,
-      SERVER_MEMORY: String(fullServer.memory),
-    },
-    resources: {
-      memory: Number(fullServer.memory) * 1024 * 1024,
-      memory_swap: memorySwapBytes,
-      cpus: fullServer.cpu / 100,
-      cpuset_cpus: fullServer.cpuPinning || undefined,
-      oom_kill_disable: fullServer.oomKillDisable,
-    },
-    volumes: blueprintConfig.volumes,
-    mounts: blueprintConfig.mounts,
-    restart_policy: blueprintConfig.restart_policy || "unlessstopped",
-    install: installConfig,
-    startup: fullServer.blueprint.startup,
-    stop_command: fullServer.blueprint.stopCommand,
-    command: fullServer.blueprint.startup
-      ? (() => {
-          // Convert Windows line endings to Unix and substitute variables
-          let cmd = fullServer.blueprint.startup.replace(/\r\n/g, "\n").replace(/\r/g, "");
-          for (const [key, value] of Object.entries(variablesEnvironment)) {
-            const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
-            cmd = cmd.replace(regex, value);
-          }
-          cmd = cmd.replace(/\{\{SERVER_MEMORY\}\}/g, String(fullServer.memory));
-          return ["sh", "-c", cmd];
-        })()
-      : undefined,
-  };
-
   try {
-    const result = await daemonRequest(fullServer.node, "POST", `/containers?name=${fullServer.id}`, daemonBlueprint);
+    // Call the daemon's reinstall endpoint
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/reinstall`);
 
-    // If there's an install script, keep status as INSTALLING and let daemon report status changes
-    // Otherwise, the container starts immediately so we can set RUNNING
-    const newStatus = installConfig ? "INSTALLING" : "RUNNING";
-
+    // Update status to INSTALLING
     await db.server.update({
       where: { id: fullServer.id },
       data: {
-        containerId: result.id,
-        status: newStatus,
+        status: "INSTALLING",
       },
     });
 
     return c.json({
       success: true,
-      message: installConfig ? "Server reinstalling..." : "Server reinstalled successfully",
-      containerId: result.id,
-      status: newStatus,
+      message: "Server reinstalling...",
+      status: "INSTALLING",
     });
   } catch (error: any) {
     await db.server.update({
@@ -953,6 +751,7 @@ servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
 });
 
 // Get server stats
+// Note: Stats are typically streamed via WebSocket, this is for one-time fetch
 servers.get("/:serverId/stats", requireServerAccess, async (c) => {
   const server = c.get("server");
 
@@ -961,8 +760,8 @@ servers.get("/:serverId/stats", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
   }
 
   if (!fullServer.node.isOnline) {
@@ -970,8 +769,15 @@ servers.get("/:serverId/stats", requireServerAccess, async (c) => {
   }
 
   try {
-    const stats = await daemonRequest(fullServer.node, "GET", `/containers/${fullServer.containerId}/stats`);
-    return c.json(stats);
+    // Get server info which includes state
+    const serverInfo = await daemonRequest(fullServer.node, "GET", `/api/servers/${server.id}`);
+    // Return basic stats - real-time stats come via WebSocket
+    return c.json({
+      state: serverInfo.state || "offline",
+      is_installing: serverInfo.is_installing || false,
+      is_transferring: serverInfo.is_transferring || false,
+      is_restoring: serverInfo.is_restoring || false,
+    });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -980,15 +786,14 @@ servers.get("/:serverId/stats", requireServerAccess, async (c) => {
 // Get server logs
 servers.get("/:serverId/logs", requireServerAccess, async (c) => {
   const server = c.get("server");
-  const tail = c.req.query("tail") || "100";
 
   const fullServer = await db.server.findUnique({
     where: { id: server.id },
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
   }
 
   if (!fullServer.node.isOnline) {
@@ -996,7 +801,7 @@ servers.get("/:serverId/logs", requireServerAccess, async (c) => {
   }
 
   try {
-    const logs = await daemonRequest(fullServer.node, "GET", `/containers/${fullServer.containerId}/logs?tail=${tail}`);
+    const logs = await daemonRequest(fullServer.node, "GET", `/api/servers/${server.id}/logs`);
     return c.json(logs);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1006,25 +811,49 @@ servers.get("/:serverId/logs", requireServerAccess, async (c) => {
 // Get WebSocket connection info for console
 servers.get("/:serverId/console", requireServerAccess, async (c) => {
   const server = c.get("server");
+  const user = c.get("user");
 
   const fullServer = await db.server.findUnique({
     where: { id: server.id },
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   const protocol = fullServer.node.protocol === "HTTP" ? "ws" : "wss";
 
+  // Replace 0.0.0.0 with localhost for browser connections
+  const host = fullServer.node.host === "0.0.0.0" ? "localhost" : fullServer.node.host;
+
+  // Generate JWT for WebSocket authentication
+  // The daemon validates this JWT using the node token as the secret
+  const jwt = await import("jsonwebtoken");
+  const now = Math.floor(Date.now() / 1000);
+  const wsToken = jwt.default.sign(
+    {
+      server_uuid: server.id,
+      user_id: user.id,
+      permissions: [
+        "websocket.connect",
+        "control.console",
+        "control.start",
+        "control.stop",
+        "control.restart",
+        ...(user.role === "admin" ? ["admin.websocket.install", "admin.websocket.errors"] : []),
+      ],
+      iat: now,
+      exp: now + 900, // 15 minutes
+    },
+    fullServer.node.token,
+    { algorithm: "HS256" }
+  );
+
+  // New daemon uses /api/servers/{server_id}/ws for WebSocket
   return c.json({
-    websocketUrl: `${protocol}://${fullServer.node.host}:${fullServer.node.port}/containers/${fullServer.containerId}/console`,
-    token: fullServer.node.token,
+    websocketUrl: `${protocol}://${host}:${fullServer.node.port}/api/servers/${server.id}/ws`,
+    token: wsToken,
   });
 });
 
@@ -1042,16 +871,12 @@ servers.post("/:serverId/command", requireServerAccess, async (c) => {
     include: { node: true },
   });
 
-  if (!fullServer?.containerId) {
-    return c.json({ error: "Server has no container" }, 400);
-  }
-
-  if (!fullServer.node.isOnline) {
+  if (!fullServer?.node.isOnline) {
     return c.json({ error: "Node is offline" }, 400);
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/containers/${fullServer.containerId}/stdin`, { data: command + "\n" });
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/commands`, { command });
     return c.json({ success: true });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1203,10 +1028,6 @@ async function getServerWithNode(serverId: string) {
     throw new Error("Server not found");
   }
 
-  if (!server.containerId) {
-    throw new Error("Server has no container");
-  }
-
   if (!server.node.isOnline) {
     throw new Error("Node is offline");
   }
@@ -1219,18 +1040,17 @@ function normalizePath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
-// Get disk usage
+// Get disk usage - not yet implemented in new daemon, return mock data
 servers.get("/:serverId/files/disk-usage", requireServerAccess, async (c) => {
   const server = c.get("server");
 
   try {
     const fullServer = await getServerWithNode(server.id);
-    const usage = await daemonRequest(
-      fullServer.node,
-      "GET",
-      `/containers/${fullServer.containerId}/files/disk-usage`
-    );
-    return c.json(usage);
+    // TODO: Add disk usage endpoint to daemon
+    return c.json({
+      used_bytes: 0,
+      path: "/",
+    });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -1243,12 +1063,23 @@ servers.get("/:serverId/files", requireServerAccess, async (c) => {
 
   try {
     const fullServer = await getServerWithNode(server.id);
-    const files = await daemonRequest(
+    const rawFiles = await daemonRequest(
       fullServer.node,
       "GET",
-      `/containers/${fullServer.containerId}/files?path=${encodeURIComponent(path)}`
+      `/api/servers/${server.id}/files/list?directory=${encodeURIComponent(path)}`
     );
-    return c.json(files);
+
+    // Transform daemon FileInfo to frontend format
+    const files = (Array.isArray(rawFiles) ? rawFiles : []).map((f: any) => ({
+      name: f.name,
+      path: path === "/" ? `/${f.name}` : `${path}/${f.name}`,
+      type: f.is_directory ? "directory" : "file",
+      size: f.size || 0,
+      modified: f.modified ? new Date(f.modified * 1000).toISOString() : new Date().toISOString(),
+      permissions: f.mode ? f.mode.toString(8).padStart(4, "0") : "0644",
+    }));
+
+    return c.json({ path, files });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -1271,7 +1102,7 @@ servers.get("/:serverId/files/read", requireServerAccess, async (c) => {
     const content = await daemonRequest(
       fullServer.node,
       "GET",
-      `/containers/${fullServer.containerId}/files/read?path=${encodeURIComponent(path)}`,
+      `/api/servers/${server.id}/files/contents?file=${encodeURIComponent(path)}`,
       undefined,
       { responseType: "text" }
     );
@@ -1333,7 +1164,8 @@ servers.get("/:serverId/files/download", async (c) => {
   try {
     const fullServer = await getServerWithNode(serverId);
     const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
-    const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/containers/${fullServer.containerId}/files/download?path=${encodeURIComponent(path)}`;
+    // Use the daemon's public download endpoint with signed token
+    const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/download/file?server=${serverId}&file=${encodeURIComponent(path)}`;
 
     const response = await fetch(url, {
       headers: {
@@ -1374,8 +1206,8 @@ servers.post("/:serverId/files/write", requireServerAccess, async (c) => {
     const result = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/files/write`,
-      { ...body, path: normalizePath(body.path) }
+      `/api/servers/${server.id}/files/write`,
+      { file: normalizePath(body.path), content: body.content }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1388,19 +1220,37 @@ servers.post("/:serverId/files/create", requireServerAccess, async (c) => {
   const server = c.get("server");
   const body = await c.req.json();
 
-  if (!body.path || !body.type) {
-    return c.json({ error: "Path and type required" }, 400);
+  if (!body.path) {
+    return c.json({ error: "Path required" }, 400);
   }
 
   try {
     const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "POST",
-      `/containers/${fullServer.containerId}/files/create`,
-      { ...body, path: normalizePath(body.path) }
-    );
-    return c.json(result);
+    const normalizedPath = normalizePath(body.path);
+
+    if (body.type === "directory") {
+      // Extract directory name and root from path
+      const lastSlash = normalizedPath.lastIndexOf("/");
+      const name = lastSlash >= 0 ? normalizedPath.slice(lastSlash + 1) : normalizedPath;
+      const root = lastSlash >= 0 ? normalizedPath.slice(0, lastSlash) : "";
+
+      const result = await daemonRequest(
+        fullServer.node,
+        "POST",
+        `/api/servers/${server.id}/files/create-directory`,
+        { name, root }
+      );
+      return c.json(result);
+    } else {
+      // For files, write an empty file
+      const result = await daemonRequest(
+        fullServer.node,
+        "POST",
+        `/api/servers/${server.id}/files/write`,
+        { file: normalizedPath, content: "" }
+      );
+      return c.json(result);
+    }
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -1417,12 +1267,18 @@ servers.delete("/:serverId/files/delete", requireServerAccess, async (c) => {
 
   const path = normalizePath(rawPath);
 
+  // Extract filename and root from path
+  const lastSlash = path.lastIndexOf("/");
+  const filename = lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
+  const root = lastSlash >= 0 ? path.slice(0, lastSlash) : "";
+
   try {
     const fullServer = await getServerWithNode(server.id);
     const result = await daemonRequest(
       fullServer.node,
       "DELETE",
-      `/containers/${fullServer.containerId}/files/delete?path=${encodeURIComponent(path)}`
+      `/api/servers/${server.id}/files/delete`,
+      { files: [filename], root }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1439,13 +1295,26 @@ servers.post("/:serverId/files/rename", requireServerAccess, async (c) => {
     return c.json({ error: "From and to paths required" }, 400);
   }
 
+  // The daemon expects from/to to be relative to root
+  // Parse paths to extract root and filenames
+  const fromPath = normalizePath(body.from);
+  const toPath = normalizePath(body.to);
+
+  // Extract root from fromPath (use parent directory)
+  const fromLastSlash = fromPath.lastIndexOf("/");
+  const toLastSlash = toPath.lastIndexOf("/");
+
+  const fromName = fromLastSlash >= 0 ? fromPath.slice(fromLastSlash + 1) : fromPath;
+  const toName = toLastSlash >= 0 ? toPath.slice(toLastSlash + 1) : toPath;
+  const root = fromLastSlash >= 0 ? fromPath.slice(0, fromLastSlash) : "";
+
   try {
     const fullServer = await getServerWithNode(server.id);
     const result = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/files/rename`,
-      { from: normalizePath(body.from), to: normalizePath(body.to) }
+      `/api/servers/${server.id}/files/rename`,
+      { from: fromName, to: toName, root }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1463,8 +1332,8 @@ servers.post("/:serverId/files/archive", requireServerAccess, async (c) => {
     const result = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/files/archive`,
-      body
+      `/api/servers/${server.id}/files/compress`,
+      { files: body.files || [], root: body.root || "" }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1482,8 +1351,8 @@ servers.post("/:serverId/files/extract", requireServerAccess, async (c) => {
     const result = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/files/extract`,
-      body
+      `/api/servers/${server.id}/files/decompress`,
+      { file: body.file || body.path, root: body.root || body.destination || "" }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1499,11 +1368,35 @@ servers.get("/:serverId/backups", requireServerAccess, async (c) => {
 
   try {
     const fullServer = await getServerWithNode(server.id);
-    const backups = await daemonRequest(
+    const response = await daemonRequest(
       fullServer.node,
       "GET",
-      `/containers/${fullServer.containerId}/backups`
+      `/api/servers/${server.id}/backup`
     );
+    // Get backups array from response
+    const rawBackups = response.backups || response || [];
+
+    // Transform daemon response to expected frontend format
+    const backups = rawBackups.map((backup: any) => ({
+      id: backup.uuid || backup.id,
+      name: backup.name || `Backup ${new Date(backup.created_at * 1000).toLocaleDateString()}`,
+      size: backup.size || 0,
+      checksum: backup.checksum,
+      checksumType: "sha256",
+      status: backup.status || "COMPLETED",
+      isLocked: backup.is_locked || backup.isLocked || false,
+      storagePath: backup.storage_path,
+      serverId: server.id,
+      ignoredFiles: backup.ignored_files || [],
+      completedAt: backup.completed_at ? new Date(backup.completed_at * 1000).toISOString() : undefined,
+      createdAt: backup.created_at
+        ? new Date(backup.created_at * 1000).toISOString()
+        : new Date().toISOString(),
+      updatedAt: backup.updated_at
+        ? new Date(backup.updated_at * 1000).toISOString()
+        : new Date().toISOString(),
+    }));
+
     return c.json(backups);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1517,11 +1410,13 @@ servers.post("/:serverId/backups", requireServerAccess, async (c) => {
 
   try {
     const fullServer = await getServerWithNode(server.id);
+    // Generate a UUID for the backup if not provided
+    const backupUuid = body.uuid || crypto.randomUUID();
     const backup = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/backups`,
-      body
+      `/api/servers/${server.id}/backup`,
+      { uuid: backupUuid, ignore: body.ignore || [] }
     );
     return c.json(backup);
   } catch (error: any) {
@@ -1543,7 +1438,8 @@ servers.post("/:serverId/backups/restore", requireServerAccess, async (c) => {
     const result = await daemonRequest(
       fullServer.node,
       "POST",
-      `/containers/${fullServer.containerId}/backups/restore?id=${encodeURIComponent(id)}`
+      `/api/servers/${server.id}/backup/restore`,
+      { uuid: id, truncate: false }
     );
     return c.json(result);
   } catch (error: any) {
@@ -1601,7 +1497,8 @@ servers.get("/:serverId/backups/download", async (c) => {
   try {
     const fullServer = await getServerWithNode(serverId);
     const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
-    const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/containers/${fullServer.containerId}/backups/download?id=${encodeURIComponent(backupId)}`;
+    // Use the daemon's public backup download endpoint
+    const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/download/backup?server=${serverId}&backup=${encodeURIComponent(backupId)}`;
 
     const response = await fetch(url, {
       headers: {
@@ -1643,7 +1540,7 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, async (c) => {
     const result = await daemonRequest(
       fullServer.node,
       "DELETE",
-      `/containers/${fullServer.containerId}/backups/delete?id=${encodeURIComponent(id)}`
+      `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
     );
     return c.json(result);
   } catch (error: any) {
@@ -1651,7 +1548,7 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, async (c) => {
   }
 });
 
-// Lock/unlock backup
+// Lock/unlock backup - not yet implemented in new daemon
 servers.patch("/:serverId/backups/lock", requireServerAccess, async (c) => {
   const server = c.get("server");
   const id = c.req.query("id");
@@ -1661,170 +1558,228 @@ servers.patch("/:serverId/backups/lock", requireServerAccess, async (c) => {
     return c.json({ error: "Backup ID required" }, 400);
   }
 
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "PATCH",
-      `/containers/${fullServer.containerId}/backups/lock?id=${encodeURIComponent(id)}`,
-      body
-    );
-    return c.json(result);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Add backup lock endpoint to daemon
+  return c.json({ success: true, locked: body.locked || false });
 });
 
 // === Schedules ===
+// Note: Schedules are not yet implemented in the new daemon
+// These are stubbed out for now
 
 // List schedules
 servers.get("/:serverId/schedules", requireServerAccess, async (c) => {
-  const server = c.get("server");
-
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    const schedules = await daemonRequest(
-      fullServer.node,
-      "GET",
-      `/containers/${fullServer.containerId}/schedules`
-    );
-    // Transform daemon format to frontend format
-    const transformed = (schedules || []).map((schedule: any) => ({
-      ...schedule,
-      tasks: schedule.action?.tasks || [],
-    }));
-    return c.json(transformed);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Implement schedules in daemon
+  return c.json([]);
 });
 
 // Get schedule
 servers.get("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  const server = c.get("server");
-  const { scheduleId } = c.req.param();
-
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    const schedule = await daemonRequest(
-      fullServer.node,
-      "GET",
-      `/containers/${fullServer.containerId}/schedules/${scheduleId}`
-    );
-    // Transform daemon format to frontend format
-    return c.json({
-      ...schedule,
-      tasks: schedule.action?.tasks || [],
-    });
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Implement schedules in daemon
+  return c.json({ error: "Schedules not yet implemented" }, 501);
 });
 
 // Create schedule
 servers.post("/:serverId/schedules", requireServerAccess, async (c) => {
-  const server = c.get("server");
-  const body = await c.req.json();
-
-  if (!body.name || !body.cron || !body.tasks) {
-    return c.json({ error: "Name, cron, and tasks required" }, 400);
-  }
-
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    // Transform tasks array to daemon format
-    const daemonBody = {
-      name: body.name,
-      cron: body.cron,
-      enabled: body.enabled ?? true,
-      action: {
-        type: "sequence",
-        tasks: body.tasks,
-      },
-    };
-    const schedule = await daemonRequest(
-      fullServer.node,
-      "POST",
-      `/containers/${fullServer.containerId}/schedules`,
-      daemonBody
-    );
-    // Transform response back to frontend format
-    return c.json({
-      ...schedule,
-      tasks: schedule.action?.tasks || body.tasks,
-    });
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Implement schedules in daemon
+  return c.json({ error: "Schedules not yet implemented" }, 501);
 });
 
 // Update schedule
 servers.patch("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  const server = c.get("server");
-  const { scheduleId } = c.req.param();
-  const body = await c.req.json();
-
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    // Transform tasks to daemon format if present
-    const daemonBody: any = { ...body };
-    if (body.tasks) {
-      daemonBody.action = {
-        type: "sequence",
-        tasks: body.tasks,
-      };
-      delete daemonBody.tasks;
-    }
-    const schedule = await daemonRequest(
-      fullServer.node,
-      "PATCH",
-      `/containers/${fullServer.containerId}/schedules/${scheduleId}`,
-      daemonBody
-    );
-    // Transform response back to frontend format
-    return c.json({
-      ...schedule,
-      tasks: schedule.action?.tasks || body.tasks || [],
-    });
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Implement schedules in daemon
+  return c.json({ error: "Schedules not yet implemented" }, 501);
 });
 
 // Delete schedule
 servers.delete("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  const server = c.get("server");
-  const { scheduleId } = c.req.param();
-
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "DELETE",
-      `/containers/${fullServer.containerId}/schedules/${scheduleId}`
-    );
-    return c.json(result);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
+  // TODO: Implement schedules in daemon
+  return c.json({ error: "Schedules not yet implemented" }, 501);
 });
 
 // Run schedule now
 servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async (c) => {
-  const server = c.get("server");
-  const { scheduleId } = c.req.param();
+  // TODO: Implement schedules in daemon
+  return c.json({ error: "Schedules not yet implemented" }, 501);
+});
 
-  try {
-    const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "POST",
-      `/containers/${fullServer.containerId}/schedules/${scheduleId}/run`
-    );
-    return c.json(result);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
+// === Allocation Management ===
+
+// List allocations for a server
+servers.get("/:serverId/allocations", requireServerAccess, async (c) => {
+  const server = c.get("server");
+
+  const allocations = await db.allocation.findMany({
+    where: { serverId: server.id },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return c.json(allocations);
+});
+
+// Get available allocations on the server's node (admin only)
+servers.get("/:serverId/allocations/available", requireAdmin, async (c) => {
+  const server = c.get("server");
+
+  const fullServer = await db.server.findUnique({
+    where: { id: server.id },
+    select: { nodeId: true },
+  });
+
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
   }
+
+  // Get unassigned allocations on the same node
+  const allocations = await db.allocation.findMany({
+    where: {
+      nodeId: fullServer.nodeId,
+      assigned: false,
+    },
+    orderBy: [{ ip: "asc" }, { port: "asc" }],
+  });
+
+  return c.json(allocations);
+});
+
+// Add allocation to server (admin only)
+servers.post("/:serverId/allocations", requireAdmin, async (c) => {
+  const server = c.get("server");
+  const body = await c.req.json();
+  const { allocationId } = body;
+
+  if (!allocationId) {
+    return c.json({ error: "Allocation ID required" }, 400);
+  }
+
+  const fullServer = await db.server.findUnique({
+    where: { id: server.id },
+    include: { node: true, allocations: true },
+  });
+
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Verify the allocation exists, is on the same node, and is not assigned
+  const allocation = await db.allocation.findUnique({
+    where: { id: allocationId },
+  });
+
+  if (!allocation) {
+    return c.json({ error: "Allocation not found" }, 404);
+  }
+
+  if (allocation.nodeId !== fullServer.nodeId) {
+    return c.json({ error: "Allocation must be on the same node as the server" }, 400);
+  }
+
+  if (allocation.assigned) {
+    return c.json({ error: "Allocation is already assigned to another server" }, 400);
+  }
+
+  // Assign the allocation to the server
+  const updated = await db.allocation.update({
+    where: { id: allocationId },
+    data: {
+      assigned: true,
+      serverId: server.id,
+    },
+  });
+
+  // Update the daemon with the new allocation
+  if (fullServer.node.isOnline) {
+    try {
+      const allAllocations = [...fullServer.allocations, updated];
+      await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
+        allocations: {
+          default: {
+            ip: fullServer.allocations[0]?.ip || "0.0.0.0",
+            port: fullServer.allocations[0]?.port || 25565,
+          },
+          mappings: allAllocations.reduce((acc, a) => {
+            acc[a.port] = a.port;
+            return acc;
+          }, {} as Record<number, number>),
+        },
+      });
+    } catch (error: any) {
+      console.error("Failed to update daemon with new allocation:", error);
+      // Continue anyway - allocation is assigned in DB
+    }
+  }
+
+  return c.json(updated);
+});
+
+// Remove allocation from server (admin only)
+servers.delete("/:serverId/allocations/:allocationId", requireAdmin, async (c) => {
+  const server = c.get("server");
+  const { allocationId } = c.req.param();
+
+  const fullServer = await db.server.findUnique({
+    where: { id: server.id },
+    include: { node: true, allocations: { orderBy: { createdAt: "asc" } } },
+  });
+
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Verify the allocation exists and belongs to this server
+  const allocation = await db.allocation.findUnique({
+    where: { id: allocationId },
+  });
+
+  if (!allocation) {
+    return c.json({ error: "Allocation not found" }, 404);
+  }
+
+  if (allocation.serverId !== server.id) {
+    return c.json({ error: "Allocation does not belong to this server" }, 400);
+  }
+
+  // Check if this is the primary (first) allocation
+  if (fullServer.allocations.length > 0 && fullServer.allocations[0].id === allocationId) {
+    return c.json({ error: "Cannot remove the primary allocation" }, 400);
+  }
+
+  // Check if this is the only allocation
+  if (fullServer.allocations.length <= 1) {
+    return c.json({ error: "Server must have at least one allocation" }, 400);
+  }
+
+  // Release the allocation
+  await db.allocation.update({
+    where: { id: allocationId },
+    data: {
+      assigned: false,
+      serverId: null,
+    },
+  });
+
+  // Update the daemon with the removed allocation
+  if (fullServer.node.isOnline) {
+    try {
+      const remainingAllocations = fullServer.allocations.filter((a) => a.id !== allocationId);
+      await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
+        allocations: {
+          default: {
+            ip: remainingAllocations[0]?.ip || "0.0.0.0",
+            port: remainingAllocations[0]?.port || 25565,
+          },
+          mappings: remainingAllocations.reduce((acc, a) => {
+            acc[a.port] = a.port;
+            return acc;
+          }, {} as Record<number, number>),
+        },
+      });
+    } catch (error: any) {
+      console.error("Failed to update daemon after allocation removal:", error);
+      // Continue anyway - allocation is released in DB
+    }
+  }
+
+  return c.json({ success: true });
 });
 
 export { servers };

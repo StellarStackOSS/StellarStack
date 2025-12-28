@@ -24,7 +24,8 @@ export const SystemInformationCard = ({ itemId, isDark, nodeData, labels }: Syst
   const labelColor = isDark ? "text-zinc-500" : "text-zinc-500";
   const valueColor = isDark ? "text-zinc-200" : "text-zinc-800";
 
-  const shortId = nodeData.id.slice(-4);
+  // Use shortId from nodeData if available, otherwise slice from full id
+  const shortId = nodeData.shortId || nodeData.id.slice(-4);
   const shortLocation = nodeData.location.split(" ")[0] + " " + (nodeData.location.split(" ")[1] || "");
 
   if (isXxs) {

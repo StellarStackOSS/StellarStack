@@ -1,14 +1,16 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { servers as serversApi } from "@/lib/api";
+import { createContext, useContext, useCallback, useMemo, useEffect, useRef } from "react";
+import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries";
 import type { Server, ConsoleInfo } from "@/lib/api";
+import { playSoundEffect } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
 
 interface ServerContextType {
   server: Server | null;
   consoleInfo: ConsoleInfo | null;
   isLoading: boolean;
+  isInstalling: boolean;
   error: string | null;
   refetch: () => Promise<void>;
   refreshConsoleInfo: () => Promise<void>;
@@ -37,123 +39,117 @@ interface ServerProviderProps {
 }
 
 export function ServerProvider({ serverId, children }: ServerProviderProps) {
-  const [server, setServer] = useState<Server | null>(null);
-  const [consoleInfo, setConsoleInfo] = useState<ConsoleInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const {
+    data: server = null,
+    isLoading,
+    error: serverError,
+    refetch: refetchServer,
+  } = useServerQuery(serverId);
 
-  const fetchServer = useCallback(async () => {
-    try {
-      const data = await serversApi.get(serverId);
-      setServer(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch server");
-      console.error("Failed to fetch server:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [serverId]);
+  // Only fetch console info when server exists and is not suspended
+  const {
+    data: consoleInfo = null,
+    refetch: refetchConsoleInfo,
+  } = useServerConsole(server && !server.suspended ? serverId : undefined);
 
+  const mutations = useServerMutations();
 
-  const fetchConsoleInfo = useCallback(async () => {
-    if (!server || !server.containerId) {
-      setConsoleInfo(null);
-      return;
-    }
+  // Convert React Query error to string
+  const error = serverError ? "Failed to fetch server" : null;
 
-    try {
-      const data = await serversApi.console(serverId);
-      setConsoleInfo(data);
-    } catch (err) {
-      // Console info may fail if container isn't ready
-      console.error("Failed to fetch console info:", err);
-      setConsoleInfo(null);
-    }
-  }, [serverId, server?.containerId]);
+  // Check if server is currently installing
+  const isInstalling = server?.status === "INSTALLING";
 
-  // Initial fetch
+  // Track previous status to detect when installation completes
+  const prevStatusRef = useRef<string | null>(null);
+
+  // Play sound when server finishes installing
   useEffect(() => {
-    fetchServer();
-  }, [fetchServer]);
-
-  // Fetch console info when server has a container
-  useEffect(() => {
-    if (server?.containerId) {
-      fetchConsoleInfo();
+    if (server?.status) {
+      // If previous status was INSTALLING and new status is not INSTALLING, installation completed
+      if (prevStatusRef.current === "INSTALLING" && server.status !== "INSTALLING") {
+        playSoundEffect("jobDone");
+        toast.success("Server installation complete!");
+      }
+      prevStatusRef.current = server.status;
     }
-  }, [server?.containerId, fetchConsoleInfo]);
+  }, [server?.status]);
+
+  const refetch = useCallback(async () => {
+    await refetchServer();
+  }, [refetchServer]);
+
+  const refreshConsoleInfo = useCallback(async () => {
+    await refetchConsoleInfo();
+  }, [refetchConsoleInfo]);
 
   const start = useCallback(async () => {
     try {
-      await serversApi.start(serverId);
+      await mutations.start.mutateAsync(serverId);
       toast.success("Server starting...");
-      // Refetch server to get updated status
-      setTimeout(fetchServer, 1000);
     } catch (err) {
       toast.error("Failed to start server");
       throw err;
     }
-  }, [serverId, fetchServer]);
+  }, [serverId, mutations.start]);
 
   const stop = useCallback(async () => {
     try {
-      await serversApi.stop(serverId);
+      await mutations.stop.mutateAsync(serverId);
       toast.success("Server stopping...");
-      setTimeout(fetchServer, 1000);
     } catch (err) {
       toast.error("Failed to stop server");
       throw err;
     }
-  }, [serverId, fetchServer]);
+  }, [serverId, mutations.stop]);
 
   const restart = useCallback(async () => {
     try {
-      await serversApi.restart(serverId);
+      await mutations.restart.mutateAsync(serverId);
       toast.success("Server restarting...");
-      setTimeout(fetchServer, 1000);
     } catch (err) {
       toast.error("Failed to restart server");
       throw err;
     }
-  }, [serverId, fetchServer]);
+  }, [serverId, mutations.restart]);
 
   const kill = useCallback(async () => {
     try {
-      await serversApi.kill(serverId);
+      await mutations.kill.mutateAsync(serverId);
       toast.success("Server killed");
-      setTimeout(fetchServer, 500);
     } catch (err) {
       toast.error("Failed to kill server");
       throw err;
     }
-  }, [serverId, fetchServer]);
+  }, [serverId, mutations.kill]);
 
   const sendCommand = useCallback(async (command: string) => {
     try {
-      await serversApi.command(serverId, command);
+      await mutations.sendCommand.mutateAsync({ id: serverId, command });
     } catch (err) {
       toast.error("Failed to send command");
       throw err;
     }
-  }, [serverId]);
+  }, [serverId, mutations.sendCommand]);
+
+  const value = useMemo<ServerContextType>(() => ({
+    server,
+    consoleInfo,
+    isLoading,
+    isInstalling,
+    error,
+    refetch,
+    refreshConsoleInfo,
+    start,
+    stop,
+    restart,
+    kill,
+    sendCommand,
+  }), [server, consoleInfo, isLoading, isInstalling, error, refetch, refreshConsoleInfo, start, stop, restart, kill, sendCommand]);
 
   return (
-    <ServerContext.Provider
-      value={{
-        server,
-        consoleInfo,
-        isLoading,
-        error,
-        refetch: fetchServer,
-        refreshConsoleInfo: fetchConsoleInfo,
-        start,
-        stop,
-        restart,
-        kill,
-        sendCommand,
-      }}
-    >
+    <ServerContext.Provider value={value}>
       {children}
     </ServerContext.Provider>
   );

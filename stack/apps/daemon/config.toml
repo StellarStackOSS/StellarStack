@@ -1,0 +1,61 @@
+# StellarStack Daemon Configuration (Local Development)
+
+debug = true
+
+[api]
+host = "0.0.0.0"
+port = 8080
+upload_limit = 100  # MB
+trusted_proxies = []
+
+[api.ssl]
+enabled = false
+cert = ""
+key = ""
+
+[system]
+root_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar"
+data_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar/volumes"
+backup_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar/backups"
+archive_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar/archives"
+tmp_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar/tmp"
+log_directory = "C:/Users/marqu/StellarStack-REPO/stack/.stellar/logs"
+username = "stellar"
+timezone = "UTC"
+disk_check_interval = 60
+
+[system.user]
+uid = 1000
+gid = 1000
+
+[docker]
+socket = "npipe:////./pipe/docker_engine"  # Windows Docker Desktop
+tmpfs_size = 100  # MB
+container_pid_limit = 512
+dns = ["1.1.1.1", "1.0.0.1"]
+
+[docker.network]
+name = "bridge"
+interface = "172.17.0.1"
+driver = "bridge"
+is_internal = false
+
+[docker.installer_limits]
+memory = 1024  # MB
+cpu = 100      # 100% = 1 core
+
+[docker.overhead]
+default = 0
+
+[remote]
+url = "http://localhost:3001"
+token_id = "cmjokl4xs0001ll0g2es2cu55"
+token = "04f37f4e95fdb76447aa9027e71eda33894160a282ad7681a0e34d24d66c0d306ac7c33937c2a3f2ad7d091a96dbe59a"
+timeout = 30
+boot_servers_per_page = 50
+
+[sftp]
+enabled = false
+bind_address = "0.0.0.0"
+bind_port = 2022
+read_only = false

@@ -26,15 +26,19 @@ pub struct Configuration {
 
     /// SFTP server configuration
     pub sftp: SftpConfiguration,
+
+    /// Redis configuration for pub/sub
+    #[serde(default)]
+    pub redis: RedisConfiguration,
 }
 
 impl Configuration {
-    /// Load configuration from a YAML file
+    /// Load configuration from a TOML file
     pub fn load(path: &str) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read config file: {}", path))?;
 
-        let config: Configuration = serde_yaml::from_str(&content)
+        let config: Configuration = toml::from_str(&content)
             .with_context(|| "Failed to parse configuration")?;
 
         // Ensure directories exist
@@ -265,7 +269,7 @@ pub struct NetworkConfiguration {
 }
 
 fn default_network_name() -> String {
-    "stellar".into()
+    "bridge".into()
 }
 
 fn default_network_interface() -> String {
@@ -367,4 +371,38 @@ fn default_sftp_bind_address() -> String {
 
 fn default_sftp_bind_port() -> u16 {
     2022
+}
+
+/// Redis configuration for pub/sub messaging
+#[derive(Debug, Clone, Deserialize)]
+pub struct RedisConfiguration {
+    /// Enable Redis pub/sub
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Redis server URL
+    #[serde(default = "default_redis_url")]
+    pub url: String,
+
+    /// Channel prefix for pub/sub messages
+    #[serde(default = "default_redis_prefix")]
+    pub prefix: String,
+}
+
+impl Default for RedisConfiguration {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            url: default_redis_url(),
+            prefix: default_redis_prefix(),
+        }
+    }
+}
+
+fn default_redis_url() -> String {
+    "redis://127.0.0.1:6379".into()
+}
+
+fn default_redis_prefix() -> String {
+    "stellar".into()
 }

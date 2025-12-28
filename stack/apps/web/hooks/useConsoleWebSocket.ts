@@ -26,6 +26,7 @@ interface UseConsoleWebSocketOptions {
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: Event) => void;
+  onStatusChange?: (state: string) => void;
 }
 
 interface UseConsoleWebSocketResult {
@@ -33,10 +34,24 @@ interface UseConsoleWebSocketResult {
   isConnected: boolean;
   isConnecting: boolean;
   sendCommand: (command: string) => void;
+  sendPowerAction: (action: "start" | "stop" | "restart" | "kill") => void;
   clearLines: () => void;
   reconnect: () => void;
 }
 
+/**
+ * WebSocket hook for connecting to the Rust daemon console
+ *
+ * The daemon sends messages in format: { event: "...", args: [...] }
+ * Events:
+ * - "auth success" - Authentication successful
+ * - "status" - Server state change: { state: "running" | "offline" | ... }
+ * - "console output" - Console line: { line: "..." }
+ * - "install output" - Install line: { line: "..." }
+ * - "stats" - Statistics update
+ * - "jwt error" - Authentication error
+ * - "error" - General error
+ */
 export function useConsoleWebSocket({
   consoleInfo,
   enabled = true,
@@ -44,6 +59,7 @@ export function useConsoleWebSocket({
   onConnect,
   onDisconnect,
   onError,
+  onStatusChange,
 }: UseConsoleWebSocketOptions): UseConsoleWebSocketResult {
   const [lines, setLines] = useState<ConsoleLine[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -69,12 +85,16 @@ export function useConsoleWebSocket({
   }, []);
 
   const connect = useCallback(() => {
+    console.log("[WebSocket] connect() called, consoleInfo:", consoleInfo, "enabled:", enabled);
+
     if (!consoleInfo || !enabled) {
+      console.log("[WebSocket] Aborting connect - missing consoleInfo or not enabled");
       return;
     }
 
     // Close existing connection
     if (wsRef.current) {
+      console.log("[WebSocket] Closing existing connection");
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -86,39 +106,120 @@ export function useConsoleWebSocket({
       const url = new URL(consoleInfo.websocketUrl);
       url.searchParams.set("token", consoleInfo.token);
 
+      console.log("[WebSocket] Creating WebSocket connection to:", url.toString());
       const ws = new WebSocket(url.toString());
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setIsConnected(true);
         setIsConnecting(false);
         reconnectAttemptsRef.current = 0;
-        addLine({
-          text: "Connected to console",
-          type: "info",
-          timestamp: new Date(),
-        });
-        onConnect?.();
+        // Don't set connected until we receive auth success
       };
 
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          // Handle daemon log messages: { type: "log", data: { type: "stdout", data: "...", timestamp: "..." } }
-          if (message.type === "log" && message.data) {
+          // Handle daemon message format: { event: "...", args: [...] }
+          if (message.event && Array.isArray(message.args)) {
+            const eventType = message.event;
+            const data = message.args[0] || {};
+
+            switch (eventType) {
+              case "auth success":
+                setIsConnected(true);
+                addLine({
+                  text: "Connected to console",
+                  type: "info",
+                  timestamp: new Date(),
+                });
+                onConnect?.();
+                break;
+
+              case "jwt error":
+                addLine({
+                  text: `Authentication error: ${data.message || "Invalid token"}`,
+                  type: "error",
+                  timestamp: new Date(),
+                });
+                break;
+
+              case "error":
+                addLine({
+                  text: data.message || "Unknown error",
+                  type: "error",
+                  timestamp: new Date(),
+                });
+                break;
+
+              case "status":
+                if (data.state) {
+                  addLine({
+                    text: `Server status: ${data.state}`,
+                    type: "info",
+                    timestamp: new Date(),
+                  });
+                  onStatusChange?.(data.state);
+                }
+                break;
+
+              case "console output":
+                if (data.line) {
+                  let text = stripAnsi(data.line);
+                  // Remove trailing newlines
+                  text = text.replace(/\r?\n$/, "");
+                  if (text.trim()) {
+                    addLine({
+                      text,
+                      type: "stdout",
+                      timestamp: new Date(),
+                    });
+                  }
+                }
+                break;
+
+              case "install output":
+                if (data.line) {
+                  let text = stripAnsi(data.line);
+                  text = text.replace(/\r?\n$/, "");
+                  if (text.trim()) {
+                    addLine({
+                      text: `[install] ${text}`,
+                      type: "stdout",
+                      timestamp: new Date(),
+                    });
+                  }
+                }
+                break;
+
+              case "install started":
+                addLine({
+                  text: "Installation started...",
+                  type: "info",
+                  timestamp: new Date(),
+                });
+                break;
+
+              case "install completed":
+                addLine({
+                  text: data.successful ? "Installation completed successfully" : "Installation failed",
+                  type: data.successful ? "info" : "error",
+                  timestamp: new Date(),
+                });
+                break;
+
+              default:
+                // Unknown event - log for debugging
+                console.log("Unknown WebSocket event:", eventType, data);
+            }
+          }
+          // Legacy format support: { type: "log", data: { ... } }
+          else if (message.type === "log" && message.data) {
             const logData = message.data;
-            const msgType = (logData.type || logData.msg_type || "stdout").toLowerCase();
+            const msgType = (logData.type || "stdout").toLowerCase();
             let text = logData.data || "";
-
-            // Strip ANSI escape codes (common in Pterodactyl eggs)
             text = stripAnsi(text);
-
-            // Remove trailing newlines
             text = text.replace(/\r?\n$/, "");
-
-            // Remove ISO timestamp prefix (e.g., "2025-12-27T00:27:29Z ")
-            text = text.replace(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\s*/, "");
 
             if (text.trim()) {
               addLine({
@@ -127,32 +228,6 @@ export function useConsoleWebSocket({
                 timestamp: logData.timestamp ? new Date(logData.timestamp) : new Date(),
               });
             }
-          }
-          // Handle connected message
-          else if (message.type === "connected") {
-            // Already handled in onopen
-          }
-          // Handle error messages
-          else if (message.type === "error") {
-            addLine({
-              text: message.data || message.message || "Unknown error",
-              type: "error",
-              timestamp: new Date(),
-            });
-          }
-          // Fallback for other message formats
-          else if (message.type === "output" || message.type === "stdout") {
-            addLine({
-              text: stripAnsi(message.data || message.message || ""),
-              type: "stdout",
-              timestamp: new Date(),
-            });
-          } else if (message.type === "stderr") {
-            addLine({
-              text: stripAnsi(message.data || message.message || ""),
-              type: "stderr",
-              timestamp: new Date(),
-            });
           }
         } catch {
           // Plain text message
@@ -210,7 +285,7 @@ export function useConsoleWebSocket({
         timestamp: new Date(),
       });
     }
-  }, [consoleInfo, enabled, addLine, onConnect, onDisconnect, onError]);
+  }, [consoleInfo, enabled, addLine, onConnect, onDisconnect, onError, onStatusChange]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -243,11 +318,10 @@ export function useConsoleWebSocket({
     }
 
     try {
-      // Send command to daemon - can be plain text or JSON formatted
-      // The daemon accepts both { type: "command", data: "..." } and plain text
+      // Send command to daemon in Wings format: { event: "send command", args: ["command"] }
       wsRef.current.send(JSON.stringify({
-        type: "command",
-        data: command,
+        event: "send command",
+        args: [command],
       }));
     } catch (err) {
       addLine({
@@ -258,22 +332,51 @@ export function useConsoleWebSocket({
     }
   }, [addLine]);
 
+  const sendPowerAction = useCallback((action: "start" | "stop" | "restart" | "kill") => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      addLine({
+        text: "Not connected to console",
+        type: "error",
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    try {
+      // Send power action to daemon: { event: "set state", args: ["start"] }
+      wsRef.current.send(JSON.stringify({
+        event: "set state",
+        args: [action],
+      }));
+    } catch (err) {
+      addLine({
+        text: `Failed to send power action: ${err}`,
+        type: "error",
+        timestamp: new Date(),
+      });
+    }
+  }, [addLine]);
+
   // Connect when consoleInfo becomes available
   useEffect(() => {
     if (consoleInfo && enabled) {
+      console.log("[WebSocket] Connecting to:", consoleInfo.websocketUrl);
       connect();
+    } else {
+      console.log("[WebSocket] Not connecting - consoleInfo:", !!consoleInfo, "enabled:", enabled);
     }
 
     return () => {
       disconnect();
     };
-  }, [consoleInfo?.websocketUrl, enabled]);
+  }, [consoleInfo, enabled, connect, disconnect]);
 
   return {
     lines,
     isConnected,
     isConnecting,
     sendCommand,
+    sendPowerAction,
     clearLines,
     reconnect,
   };
