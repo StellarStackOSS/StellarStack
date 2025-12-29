@@ -15,19 +15,17 @@ import { Button } from "@workspace/ui/components/button";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/ui/components/tooltip";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { LiquidMetal } from "@paper-design/shaders-react";
-import {
-  CpuCard,
-  UsageMetricCard,
-  NetworkUsageCard,
-  InstanceNameCard,
-  ContainerControlsCard,
-} from "@workspace/ui/components/shared/DashboardCards";
-import { Console } from "@workspace/ui/components/shared/Console";
-import { DragDropGrid, GridItem } from "@workspace/ui/components/shared/DragDropGrid";
-import type { GridItemConfig } from "@workspace/ui/components/shared/DragDropGrid";
+import { CpuCard } from "@workspace/ui/components/cpu-card";
+import { UsageMetricCard } from "@workspace/ui/components/usage-metric-card";
+import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
+import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
+import { ContainerControlsCard } from "@workspace/ui/components/container-controls-card";
+import { Console } from "@workspace/ui/components/console";
+import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
+import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
 import {
   BsServer,
   BsShieldCheck,

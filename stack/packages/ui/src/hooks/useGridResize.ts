@@ -24,9 +24,9 @@ export interface UseGridResizeReturn {
 const SIZE_ORDER: GridSize[] = ["sm", "md", "lg", "xl"];
 const DEFAULT_SIZE: GridSize = "md";
 
-export function useGridResize(
+export const useGridResize = (
   options: UseGridResizeOptions = {}
-): UseGridResizeReturn {
+): UseGridResizeReturn => {
   const { initialSizes = {}, onResize } = options;
 
   const [sizes, setSizes] = useState<Record<string, GridSize>>(initialSizes);
@@ -80,7 +80,7 @@ export function useGridResize(
     resetSize,
     resetAll,
   };
-}
+};
 
 // Grid size to CSS class mappings for a 12-column grid
 export const gridSizeConfig: Record<

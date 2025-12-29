@@ -29,9 +29,9 @@ export interface UseDragAndDropReturn {
   isDraggedOver: (slotId: string) => boolean;
 }
 
-export function useDragAndDrop(
+export const useDragAndDrop = (
   options: UseDragAndDropOptions = {}
-): UseDragAndDropReturn {
+): UseDragAndDropReturn => {
   const { onDragStart, onDragEnd, onDrop } = options;
 
   const [dragState, setDragState] = useState<DragState>({
@@ -176,4 +176,4 @@ export function useDragAndDrop(
     isBeingDragged,
     isDraggedOver,
   };
-}
+};

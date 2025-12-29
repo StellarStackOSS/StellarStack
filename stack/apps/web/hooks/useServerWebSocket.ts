@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { ConsoleInfo, ServerStats } from "@/lib/api";
 
 // Strip ANSI escape codes from text
-function stripAnsi(text: string): string {
+const stripAnsi = (text: string): string => {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07|\x1b\(B|\x1b\[\?.*?[hl]|\r/g, "");
-}
+};
 
 const MAX_HISTORY_LENGTH = 60;
 const MAX_CONSOLE_LINES = 500;
@@ -59,13 +59,13 @@ interface UseServerWebSocketResult {
  * Combined WebSocket hook for console and stats from the Rust daemon.
  * Uses a single WebSocket connection for both console output and statistics.
  */
-export function useServerWebSocket({
+export const useServerWebSocket = ({
   consoleInfo,
   enabled = true,
   onConnect,
   onDisconnect,
   onStatusChange,
-}: UseServerWebSocketOptions): UseServerWebSocketResult {
+}: UseServerWebSocketOptions): UseServerWebSocketResult => {
   const [lines, setLines] = useState<ConsoleLine[]>([]);
   const [stats, setStats] = useState<StatsWithHistory>({
     current: null,
@@ -453,4 +453,4 @@ export function useServerWebSocket({
     isConnecting,
     reconnect,
   };
-}
+};

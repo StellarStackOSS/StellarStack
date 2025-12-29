@@ -1,5 +1,9 @@
 import type { Context } from "hono";
 import { db } from "./db";
+import type { ActivityEvent, LogActivityOptions, ActivityLogQuery } from "./activity.types";
+
+// Re-export types for backwards compatibility
+export type { ActivityEvent, LogActivityOptions, ActivityLogQuery } from "./activity.types";
 
 /**
  * Activity event types for server operations
@@ -73,23 +77,10 @@ export const ActivityEvents = {
   WEBHOOK_DELETE: "server:webhook.delete",
 } as const;
 
-export type ActivityEvent = typeof ActivityEvents[keyof typeof ActivityEvents];
-
-/**
- * Options for logging an activity
- */
-export interface LogActivityOptions {
-  event: ActivityEvent | string;
-  serverId?: string;
-  userId?: string;
-  ip?: string;
-  metadata?: Record<string, any>;
-}
-
 /**
  * Log an activity to the database
  */
-export async function logActivity(options: LogActivityOptions): Promise<void> {
+export const logActivity = async (options: LogActivityOptions): Promise<void> => {
   try {
     await db.activityLog.create({
       data: {
@@ -104,12 +95,12 @@ export async function logActivity(options: LogActivityOptions): Promise<void> {
     // Don't let activity logging failures break the request
     console.error("Failed to log activity:", error);
   }
-}
+};
 
 /**
  * Get client IP address from request
  */
-export function getClientIp(c: Context): string | undefined {
+export const getClientIp = (c: Context): string | undefined => {
   // Check common proxy headers first
   const xForwardedFor = c.req.header("x-forwarded-for");
   if (xForwardedFor) {
@@ -128,20 +119,20 @@ export function getClientIp(c: Context): string | undefined {
   }
 
   return undefined;
-}
+};
 
 /**
  * Helper to log activity from a Hono context
  * Automatically extracts user ID and IP
  */
-export async function logActivityFromContext(
+export const logActivityFromContext = async (
   c: Context,
   event: ActivityEvent | string,
   options: {
     serverId?: string;
     metadata?: Record<string, any>;
   } = {}
-): Promise<void> {
+): Promise<void> => {
   const user = c.get("user");
   const server = c.get("server");
 
@@ -152,23 +143,12 @@ export async function logActivityFromContext(
     ip: getClientIp(c),
     metadata: options.metadata,
   });
-}
+};
 
 /**
  * Query activity logs with filtering and pagination
  */
-export interface ActivityLogQuery {
-  serverId?: string;
-  userId?: string;
-  event?: string;
-  eventPrefix?: string;
-  startDate?: Date;
-  endDate?: Date;
-  limit?: number;
-  offset?: number;
-}
-
-export async function queryActivityLogs(query: ActivityLogQuery) {
+export const queryActivityLogs = async (query: ActivityLogQuery) => {
   const where: any = {};
 
   if (query.serverId) {
@@ -210,4 +190,4 @@ export async function queryActivityLogs(query: ActivityLogQuery) {
   ]);
 
   return { logs, total };
-}
+};

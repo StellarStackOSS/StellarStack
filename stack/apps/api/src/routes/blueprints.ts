@@ -90,7 +90,7 @@ const pterodactylEggSchema = z.object({
 });
 
 // Helper to parse Pterodactyl docker image string
-function parseDockerImage(imageStr: string): { registry: string | undefined; name: string; tag: string } {
+const parseDockerImage = (imageStr: string): { registry: string | undefined; name: string; tag: string } => {
   // Remove escape sequences
   const cleaned = imageStr.replace(/\\\//g, '/');
 
@@ -110,7 +110,7 @@ function parseDockerImage(imageStr: string): { registry: string | undefined; nam
   const [name, tag = 'latest'] = nameWithTag.split(':');
 
   return { registry, name, tag };
-}
+};
 
 // List all public blueprints (or all if admin)
 blueprints.get("/", requireAuth, async (c) => {

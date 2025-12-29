@@ -32,7 +32,7 @@ interface EulaExtensionProps {
   onRestart: () => Promise<void>;
 }
 
-export function EulaExtension({ serverId, lines, onRestart }: EulaExtensionProps) {
+export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps) => {
   const [showDialog, setShowDialog] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
@@ -179,4 +179,4 @@ export function EulaExtension({ serverId, lines, onRestart }: EulaExtensionProps
       </DialogContent>
     </Dialog>
   );
-}
+};

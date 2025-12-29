@@ -3,26 +3,13 @@ import { auth } from "../lib/auth";
 import { db } from "../lib/db";
 import { verifyToken } from "../lib/crypto";
 import { hasPermission, Permission, PERMISSIONS } from "../lib/permissions";
+import type { SessionUser, ServerAccessContext } from "./auth.types";
 
-// User session type
-export type SessionUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-};
-
-// Server access context with permissions
-export type ServerAccessContext = {
-  server: any;
-  isOwner: boolean;
-  isAdmin: boolean;
-  isMember: boolean;
-  permissions: string[];
-};
+// Re-export types for backwards compatibility
+export type { SessionUser, ServerAccessContext } from "./auth.types";
 
 // Middleware to require authenticated user
-export async function requireAuth(c: Context, next: Next) {
+export const requireAuth = async (c: Context, next: Next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
@@ -35,10 +22,10 @@ export async function requireAuth(c: Context, next: Next) {
   c.set("session", session.session);
 
   return next();
-}
+};
 
 // Middleware to require admin role
-export async function requireAdmin(c: Context, next: Next) {
+export const requireAdmin = async (c: Context, next: Next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
@@ -57,13 +44,13 @@ export async function requireAdmin(c: Context, next: Next) {
   c.set("session", session.session);
 
   return next();
-}
+};
 
 // Middleware for daemon authentication (using node token)
 // Supports both formats:
 // - "Bearer {token}" (legacy)
 // - "Bearer {token_id}.{token}" (new format from Rust daemon)
-export async function requireDaemon(c: Context, next: Next) {
+export const requireDaemon = async (c: Context, next: Next) => {
   const authHeader = c.req.header("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -112,10 +99,10 @@ export async function requireDaemon(c: Context, next: Next) {
   c.set("node", node);
 
   return next();
-}
+};
 
 // Middleware to check server ownership or membership
-export async function requireServerAccess(c: Context, next: Next) {
+export const requireServerAccess = async (c: Context, next: Next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
@@ -183,10 +170,10 @@ export async function requireServerAccess(c: Context, next: Next) {
   } as ServerAccessContext);
 
   return next();
-}
+};
 
 // Factory function to create permission middleware
-export function requirePermission(...requiredPermissions: Permission[]) {
+export const requirePermission = (...requiredPermissions: Permission[]) => {
   return async (c: Context, next: Next) => {
     const serverAccess = c.get("serverAccess") as ServerAccessContext | undefined;
 
@@ -216,10 +203,10 @@ export function requirePermission(...requiredPermissions: Permission[]) {
 
     return next();
   };
-}
+};
 
 // Helper to check permission in route handlers
-export function checkPermission(c: Context, permission: Permission): boolean {
+export const checkPermission = (c: Context, permission: Permission): boolean => {
   const serverAccess = c.get("serverAccess") as ServerAccessContext | undefined;
 
   if (!serverAccess) {
@@ -231,4 +218,4 @@ export function checkPermission(c: Context, permission: Permission): boolean {
   }
 
   return hasPermission(serverAccess.permissions, permission);
-}
+};

@@ -12,7 +12,7 @@ export type SupportedLanguage = "json" | "yaml" | "markdown" | "shell" | "proper
 /**
  * Detect language from file extension
  */
-export function detectLanguage(filename: string): SupportedLanguage {
+export const detectLanguage = (filename: string): SupportedLanguage => {
   const ext = filename.toLowerCase().split(".").pop() || "";
 
   switch (ext) {
@@ -38,12 +38,12 @@ export function detectLanguage(filename: string): SupportedLanguage {
     default:
       return "text";
   }
-}
+};
 
 /**
  * Get language extension based on language type
  */
-export function getLanguageExtension(language: SupportedLanguage): Extension | null {
+export const getLanguageExtension = (language: SupportedLanguage): Extension | null => {
   switch (language) {
     case "json":
       return json();
@@ -57,7 +57,7 @@ export function getLanguageExtension(language: SupportedLanguage): Extension | n
     default:
       return null;
   }
-}
+};
 
 /**
  * Dark theme for CodeMirror
@@ -113,7 +113,7 @@ const scrollableTheme = EditorView.theme({
 /**
  * Base extensions for all editor instances
  */
-export function getBaseExtensions(isDark: boolean, readOnly: boolean = false): Extension[] {
+export const getBaseExtensions = (isDark: boolean, readOnly: boolean = false): Extension[] => {
   const extensions: Extension[] = [
     lineNumbers(),
     highlightActiveLine(),
@@ -134,16 +134,16 @@ export function getBaseExtensions(isDark: boolean, readOnly: boolean = false): E
   }
 
   return extensions;
-}
+};
 
 /**
  * Get all extensions for a file
  */
-export function getExtensionsForFile(
+export const getExtensionsForFile = (
   filename: string,
   isDark: boolean,
   readOnly: boolean = false
-): Extension[] {
+): Extension[] => {
   const language = detectLanguage(filename);
   const extensions = getBaseExtensions(isDark, readOnly);
 
@@ -153,4 +153,4 @@ export function getExtensionsForFile(
   }
 
   return extensions;
-}
+};

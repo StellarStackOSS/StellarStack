@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Loader2, File } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/shared/Animations/FadeIn";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { CodeEditor, detectLanguage } from "@/components/code-editor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";

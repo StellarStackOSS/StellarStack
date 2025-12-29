@@ -93,7 +93,7 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 export type PermissionCategory = (typeof PERMISSION_CATEGORIES)[keyof typeof PERMISSION_CATEGORIES];
 
 // Helper functions
-export function hasPermission(userPermissions: string[], permission: Permission): boolean {
+export const hasPermission = (userPermissions: string[], permission: Permission): boolean => {
   // Wildcard grants all permissions
   if (userPermissions.includes("*")) {
     return true;
@@ -111,15 +111,15 @@ export function hasPermission(userPermissions: string[], permission: Permission)
   }
 
   return false;
-}
+};
 
-export function hasAnyPermission(userPermissions: string[], permissions: Permission[]): boolean {
+export const hasAnyPermission = (userPermissions: string[], permissions: Permission[]): boolean => {
   return permissions.some((p) => hasPermission(userPermissions, p));
-}
+};
 
-export function hasAllPermissions(userPermissions: string[], permissions: Permission[]): boolean {
+export const hasAllPermissions = (userPermissions: string[], permissions: Permission[]): boolean => {
   return permissions.every((p) => hasPermission(userPermissions, p));
-}
+};
 
 // Preset permission sets
 export const PERMISSION_PRESETS = {

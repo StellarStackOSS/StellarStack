@@ -4,8 +4,8 @@ import { useState, useEffect, type JSX } from "react";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { BsSun, BsMoon, BsBell, BsCheck, BsCheckAll, BsExclamationTriangle, BsInfoCircle, BsServer, BsShieldExclamation } from "react-icons/bs";
 

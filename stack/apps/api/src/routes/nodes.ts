@@ -12,7 +12,7 @@ const HEARTBEAT_TIMEOUT_MS = 45 * 1000;
 
 // Helper to convert BigInt fields to Number for JSON serialization
 // Also checks if node is actually online based on heartbeat
-function serializeNode(node: any) {
+const serializeNode = (node: any) => {
   // Check if heartbeat is stale (older than timeout)
   let isOnline = node.isOnline;
   if (isOnline && node.lastHeartbeat) {
@@ -31,7 +31,7 @@ function serializeNode(node: any) {
     diskLimit: Number(node.diskLimit),
     uploadLimit: Number(node.uploadLimit),
   };
-}
+};
 
 // Validation schemas
 const createNodeSchema = z.object({

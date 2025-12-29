@@ -7,8 +7,8 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
-import { FormModal } from "@workspace/ui/components/shared/FormModal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
 import {
   BsSun,
   BsMoon,
@@ -26,13 +26,13 @@ import { ServerInstallingPlaceholder } from "@/components/server-installing-plac
 import { servers, type ChildServer } from "@/lib/api";
 import { toast } from "sonner";
 
-function formatBytes(bytes: number): string {
+const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
+};
 
 const SplitPage = (): JSX.Element | null => {
   const params = useParams();

@@ -6,24 +6,10 @@
  */
 
 import type { Context, Next } from "hono";
+import type { RateLimitEntry, RateLimitConfig } from "./rate-limit.types";
 
-interface RateLimitEntry {
-  tokens: number;
-  lastRefill: number;
-}
-
-interface RateLimitConfig {
-  /** Maximum number of requests in the window */
-  maxRequests: number;
-  /** Time window in milliseconds */
-  windowMs: number;
-  /** Message to return when rate limited */
-  message?: string;
-  /** Key generator function (defaults to IP) */
-  keyGenerator?: (c: Context) => string;
-  /** Skip rate limiting for certain requests */
-  skip?: (c: Context) => boolean;
-}
+// Re-export types for backwards compatibility
+export type { RateLimitEntry, RateLimitConfig } from "./rate-limit.types";
 
 // In-memory store for rate limiting (use Redis in production for distributed systems)
 const rateLimitStore = new Map<string, RateLimitEntry>();
@@ -42,7 +28,7 @@ setInterval(() => {
 /**
  * Get client IP address from request
  */
-function getClientIp(c: Context): string {
+const getClientIp = (c: Context): string => {
   // Check common headers for proxied requests
   const xForwardedFor = c.req.header("x-forwarded-for");
   if (xForwardedFor) {
@@ -62,12 +48,12 @@ function getClientIp(c: Context): string {
 
   // Fallback to connection info
   return "unknown";
-}
+};
 
 /**
  * Create a rate limiting middleware
  */
-export function rateLimit(config: RateLimitConfig) {
+export const rateLimit = (config: RateLimitConfig) => {
   const {
     maxRequests,
     windowMs,
@@ -123,7 +109,7 @@ export function rateLimit(config: RateLimitConfig) {
 
     return next();
   };
-}
+};
 
 // ============================================================================
 // Preset Rate Limiters

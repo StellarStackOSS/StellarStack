@@ -5,12 +5,13 @@ import { useRouter, useParams } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { ArrowLeftIcon, SaveIcon, RefreshCwIcon, PlusIcon, TrashIcon, NetworkIcon, SplitIcon, ExternalLinkIcon } from "lucide-react";
 import { useServer, useServerMutations } from "@/hooks/queries";
 import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { toast } from "sonner";
 import { servers, Allocation } from "@/lib/api";
 

@@ -10,14 +10,14 @@ export const serverKeys = {
   console: (id: string) => [...serverKeys.all, "console", id] as const,
 };
 
-export function useServers() {
+export const useServers = () => {
   return useQuery({
     queryKey: serverKeys.list(),
     queryFn: () => servers.list(),
   });
-}
+};
 
-export function useServer(id: string | undefined, options?: { refetchInterval?: number | false }) {
+export const useServer = (id: string | undefined, options?: { refetchInterval?: number | false }) => {
   return useQuery({
     queryKey: serverKeys.detail(id!),
     queryFn: () => servers.get(id!),
@@ -27,18 +27,18 @@ export function useServer(id: string | undefined, options?: { refetchInterval?: 
     // Only poll when the window is focused
     refetchIntervalInBackground: false,
   });
-}
+};
 
-export function useServerConsole(id: string | undefined) {
+export const useServerConsole = (id: string | undefined) => {
   return useQuery({
     queryKey: serverKeys.console(id!),
     queryFn: () => servers.console(id!),
     enabled: !!id,
     staleTime: 60 * 1000, // Console token valid for longer
   });
-}
+};
 
-export function useServerMutations() {
+export const useServerMutations = () => {
   const queryClient = useQueryClient();
 
   const invalidateServer = (id: string) => {
@@ -120,4 +120,4 @@ export function useServerMutations() {
     setStatus,
     sendCommand,
   };
-}
+};

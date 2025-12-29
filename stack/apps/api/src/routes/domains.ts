@@ -11,14 +11,14 @@ const domains = new Hono<{ Variables: Variables }>();
 const SUBDOMAIN_BASE = process.env.SUBDOMAIN_BASE || "stellarstack.io";
 
 // Generate a verification code for domain ownership
-function generateVerifyCode(): string {
+const generateVerifyCode = (): string => {
   return `stellarstack-verify-${crypto.randomBytes(16).toString("hex")}`;
-}
+};
 
 // Check if a subdomain is valid (alphanumeric, hyphens, 3-32 chars)
-function isValidSubdomain(subdomain: string): boolean {
+const isValidSubdomain = (subdomain: string): boolean => {
   return /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(subdomain);
-}
+};
 
 // Validation schemas
 const claimSubdomainSchema = z.object({

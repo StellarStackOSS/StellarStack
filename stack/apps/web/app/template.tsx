@@ -1,6 +1,6 @@
 "use client";
 
-import { PageTransition } from "@workspace/ui/components/shared/PageTransition";
+import { PageTransition } from "@workspace/ui/components/page-transition";
 
 export default function RootTemplate({
   children,

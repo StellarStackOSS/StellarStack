@@ -34,10 +34,10 @@ interface UseStatsWebSocketResult {
  * The daemon sends stats through the console WebSocket with format:
  * { event: "stats", args: [{ memory_bytes, memory_limit_bytes, cpu_absolute, network: { rx_bytes, tx_bytes }, uptime }] }
  */
-export function useStatsWebSocket({
+export const useStatsWebSocket = ({
   consoleInfo,
   enabled = true,
-}: UseStatsWebSocketOptions): UseStatsWebSocketResult {
+}: UseStatsWebSocketOptions): UseStatsWebSocketResult => {
   const [isConnected, setIsConnected] = useState(false);
   const [stats, setStats] = useState<StatsWithHistory>({
     current: null,
@@ -234,4 +234,4 @@ export function useStatsWebSocket({
   }, [enabled]);
 
   return { stats, isConnected };
-}
+};

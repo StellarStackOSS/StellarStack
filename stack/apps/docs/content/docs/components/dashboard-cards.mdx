@@ -26,9 +26,9 @@ StellarStack includes a collection of pre-built dashboard cards for displaying s
 ## Import
 
 ```tsx
-import { CpuCard } from '@workspace/ui/components/shared/DashboardCards/CpuCard';
-import { NetworkUsageCard } from '@workspace/ui/components/shared/DashboardCards/NetworkUsageCard';
-import { PlayersOnlineCard } from '@workspace/ui/components/shared/DashboardCards/PlayersOnlineCard';
+import { CpuCard } from '@workspace/ui/components/cpu-card';
+import { NetworkUsageCard } from '@workspace/ui/components/network-usage-card';
+import { PlayersOnlineCard } from '@workspace/ui/components/players-online-card';
 ```
 
 ## CpuCard
@@ -168,7 +168,7 @@ Server control buttons.
 Use with `DragDropGrid` for customizable layouts:
 
 ```tsx
-import { DragDropGrid } from '@workspace/ui/components/shared/DragDropGrid';
+import { DragDropGrid } from '@workspace/ui/components/drag-drop-grid';
 
 <DragDropGrid>
   <CpuCard usage={45} />

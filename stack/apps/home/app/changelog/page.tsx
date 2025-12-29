@@ -6,8 +6,8 @@ import { useTheme as useNextTheme } from "next-themes";
 import { motion, useInView } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import {
   BsGithub,
   BsArrowRight,

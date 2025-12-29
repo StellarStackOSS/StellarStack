@@ -3,31 +3,29 @@
 import { useState, useEffect, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
-import { DragDropGrid, GridItem } from "@workspace/ui/components/shared/DragDropGrid";
+import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
 import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
-import { Console } from "@workspace/ui/components/shared/Console";
+import { Console } from "@workspace/ui/components/console";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { BsSun, BsMoon, BsGrid } from "react-icons/bs";
-import { FadeIn } from "@workspace/ui/components/shared/Animations";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Badge } from "@workspace/ui/components/badge";
 import { BsExclamationTriangle } from "react-icons/bs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@workspace/ui/components/sheet";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Spinner } from "@workspace/ui/components/spinner";
-import {
-  CpuCard,
-  UsageMetricCard,
-  NetworkUsageCard,
-  SystemInformationCard,
-  NetworkInfoCard,
-  InstanceNameCard,
-  ContainerControlsCard,
-  ContainerUptimeCard,
-  PlayersOnlineCard,
-  RecentLogsCard,
-  CardPreview,
-} from "@workspace/ui/components/shared/DashboardCards";
+import { CpuCard } from "@workspace/ui/components/cpu-card";
+import { UsageMetricCard } from "@workspace/ui/components/usage-metric-card";
+import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
+import { SystemInformationCard } from "@workspace/ui/components/system-information-card";
+import { NetworkInfoCard } from "@workspace/ui/components/network-info-card";
+import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
+import { ContainerControlsCard } from "@workspace/ui/components/container-controls-card";
+import { ContainerUptimeCard } from "@workspace/ui/components/container-uptime-card";
+import { PlayersOnlineCard } from "@workspace/ui/components/players-online-card";
+import { RecentLogsCard } from "@workspace/ui/components/recent-logs-card";
+import { CardPreview } from "@workspace/ui/components/card-preview";
 import { ThemeContext } from "../../../../contexts/ThemeContext";
 import { useLabels } from "../../../../hooks";
 import { defaultGridItems, defaultHiddenCards } from "../../../../constants";
@@ -37,7 +35,7 @@ import { EulaExtension } from "../extensions/eula";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 
 // Build display data from real server and stats (with history)
-function buildDisplayData(server: any, statsData: StatsWithHistory) {
+const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
   const stats = statsData.current;
 
   // New daemon stats format: memory_bytes, memory_limit_bytes, cpu_absolute, disk_bytes, disk_limit_bytes
@@ -147,7 +145,7 @@ function buildDisplayData(server: any, statsData: StatsWithHistory) {
     containerUptime: uptime, // Uptime in seconds from daemon stats
     recentLogs: [] as { level: string; message: string; time: string }[],
   };
-}
+};
 
 const ServerOverviewPage = (): JSX.Element | null => {
   const params = useParams();

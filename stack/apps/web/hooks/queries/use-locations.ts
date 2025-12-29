@@ -9,22 +9,22 @@ export const locationKeys = {
   detail: (id: string) => [...locationKeys.details(), id] as const,
 };
 
-export function useLocations() {
+export const useLocations = () => {
   return useQuery({
     queryKey: locationKeys.list(),
     queryFn: () => locations.list(),
   });
-}
+};
 
-export function useLocation(id: string | undefined) {
+export const useLocation = (id: string | undefined) => {
   return useQuery({
     queryKey: locationKeys.detail(id!),
     queryFn: () => locations.get(id!),
     enabled: !!id,
   });
-}
+};
 
-export function useLocationMutations() {
+export const useLocationMutations = () => {
   const queryClient = useQueryClient();
 
   const invalidateLocations = () => {
@@ -48,4 +48,4 @@ export function useLocationMutations() {
   });
 
   return { create, update, remove };
-}
+};

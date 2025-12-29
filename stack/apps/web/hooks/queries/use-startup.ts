@@ -6,15 +6,15 @@ export const startupKeys = {
   config: (serverId: string) => [...startupKeys.all(serverId), "config"] as const,
 };
 
-export function useStartup(serverId: string | undefined) {
+export const useStartup = (serverId: string | undefined) => {
   return useQuery({
     queryKey: startupKeys.config(serverId!),
     queryFn: () => servers.startup.get(serverId!),
     enabled: !!serverId,
   });
-}
+};
 
-export function useStartupMutations(serverId: string) {
+export const useStartupMutations = (serverId: string) => {
   const queryClient = useQueryClient();
 
   const update = useMutation({
@@ -25,4 +25,4 @@ export function useStartupMutations(serverId: string) {
   });
 
   return { update };
-}
+};

@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { CpuIcon, MapPinIcon, ServerIcon, PackageIcon, UsersIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { nodes, locations, servers, blueprints, account } from "@/lib/api";
@@ -19,7 +20,7 @@ interface StatCardProps {
   color?: string;
 }
 
-function StatCard({ title, value, icon: Icon, href, isDark, color = "zinc" }: StatCardProps) {
+const StatCard = ({ title, value, icon: Icon, href, isDark, color = "zinc" }: StatCardProps) => {
   const colorClasses = {
     zinc: isDark ? "border-zinc-700/50 text-zinc-400" : "border-zinc-300 text-zinc-600",
     green: isDark ? "border-green-700/50 text-green-400" : "border-green-300 text-green-600",
@@ -65,7 +66,7 @@ function StatCard({ title, value, icon: Icon, href, isDark, color = "zinc" }: St
       </div>
     </Link>
   );
-}
+};
 
 export default function AdminOverviewPage() {
   const { resolvedTheme } = useNextTheme();

@@ -10,7 +10,7 @@ The Console component provides a terminal-like interface for viewing server outp
 ## Import
 
 ```tsx
-import { Console } from '@workspace/ui/components/shared/Console/Console';
+import { Console } from '@workspace/ui/components/console';
 ```
 
 ## Usage
@@ -69,11 +69,11 @@ Main console component with log display and input.
 Manages scroll state and auto-scroll behavior.
 
 ```tsx
-import { ScrollProvider, useScroll } from '@workspace/ui/components/shared/Console/ScrollContext';
+import { ScrollContext, useScrollSignal } from '@workspace/ui/components/console';
 
-<ScrollProvider>
+<ScrollContext.Provider value={0}>
   <Console logs={logs} />
-</ScrollProvider>
+</ScrollContext.Provider>
 ```
 
 ### TimestampTooltip

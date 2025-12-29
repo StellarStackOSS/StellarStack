@@ -6,7 +6,7 @@ import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { BsSun, BsMoon, BsInfoCircle, BsCheckCircle, BsArrowRepeat } from "react-icons/bs";
 import { servers } from "@/lib/api";

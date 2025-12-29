@@ -1,4 +1,4 @@
-import type { GridItemConfig } from "@workspace/ui/components/shared/DragDropGrid";
+import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
 
 export const defaultGridItems: GridItemConfig[] = [
   { i: "instance-name", size: "xxs-wide", minSize: "xxs-wide", maxSize: "xxs-wide" },
