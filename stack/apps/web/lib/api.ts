@@ -211,6 +211,11 @@ export const servers = {
       }),
     remove: (serverId: string, allocationId: string) =>
       request(`/api/servers/${serverId}/allocations/${allocationId}`, { method: "DELETE" }),
+    setPrimary: (serverId: string, allocationId: string) =>
+      request<{ success: boolean; allocation: Allocation }>(
+        `/api/servers/${serverId}/allocations/${allocationId}/primary`,
+        { method: "POST" }
+      ),
   },
 
   // Schedules
@@ -236,6 +241,20 @@ export const servers = {
         `/api/servers/${serverId}/startup`,
         { method: "PATCH", body: data }
       ),
+  },
+
+  // Activity logs
+  activity: {
+    list: (serverId: string, options?: { limit?: number; offset?: number; event?: string }) => {
+      const params = new URLSearchParams();
+      if (options?.limit) params.set("limit", options.limit.toString());
+      if (options?.offset) params.set("offset", options.offset.toString());
+      if (options?.event) params.set("event", options.event);
+      const queryString = params.toString();
+      return request<ActivityLogResponse>(
+        `/api/servers/${serverId}/activity${queryString ? `?${queryString}` : ""}`
+      );
+    },
   },
 };
 
@@ -437,6 +456,7 @@ export interface Server {
   owner?: User;
   allocations?: Allocation[];
   backups?: Backup[];
+  primaryAllocationId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -584,6 +604,23 @@ export interface DownloadToken {
   token: string;
   expiresAt: number;
   downloadUrl: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  event: string;
+  ip?: string;
+  metadata?: Record<string, unknown>;
+  serverId?: string;
+  userId?: string;
+  timestamp: string;
+}
+
+export interface ActivityLogResponse {
+  logs: ActivityLog[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export { ApiError };

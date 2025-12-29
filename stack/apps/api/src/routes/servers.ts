@@ -5,6 +5,8 @@ import { createHmac } from "crypto";
 import { db } from "../lib/db";
 import { requireAuth, requireAdmin, requireServerAccess } from "../middleware/auth";
 import type { Variables } from "../types";
+import { logActivityFromContext, ActivityEvents } from "../lib/activity";
+import { dispatchWebhook, WebhookEvents } from "../lib/webhooks";
 
 const servers = new Hono<{ Variables: Variables }>();
 
@@ -371,6 +373,12 @@ servers.post("/", requireAdmin, async (c) => {
     },
   });
 
+  // Set primary allocation to the first one
+  server = await db.server.update({
+    where: { id: server.id },
+    data: { primaryAllocationId: parsed.data.allocationIds[0] },
+  });
+
   // Build environment from blueprint variables + server overrides
   const blueprintVariables = (blueprint.variables as any[]) || [];
   const serverVariables = (parsed.data.variables as Record<string, string>) || {};
@@ -547,6 +555,11 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     }
   }
 
+  await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+    serverId: server.id,
+    metadata: { changes: Object.keys(parsed.data) },
+  });
+
   return c.json(serializeServer(updated));
 });
 
@@ -562,6 +575,11 @@ servers.delete("/:serverId", requireAdmin, async (c) => {
   if (!server) {
     return c.json({ error: "Server not found" }, 404);
   }
+
+  // Log activity before deletion (since we need the server to exist)
+  await logActivityFromContext(c, ActivityEvents.SERVER_DELETE, {
+    metadata: { serverId, serverName: server.name },
+  });
 
   // Remove from daemon
   if (server.node.isOnline) {
@@ -610,6 +628,11 @@ servers.post("/:serverId/start", requireServerAccess, async (c) => {
       data: { status: "STARTING" },
     });
 
+    await logActivityFromContext(c, ActivityEvents.SERVER_START, { serverId: server.id });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.SERVER_STARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -636,6 +659,11 @@ servers.post("/:serverId/stop", requireServerAccess, async (c) => {
       where: { id: server.id },
       data: { status: "STOPPING" },
     });
+
+    await logActivityFromContext(c, ActivityEvents.SERVER_STOP, { serverId: server.id });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.SERVER_STOPPED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
 
     return c.json({ success: true, status: "STOPPING" });
   } catch (error: any) {
@@ -664,6 +692,11 @@ servers.post("/:serverId/restart", requireServerAccess, async (c) => {
       data: { status: "STARTING" },
     });
 
+    await logActivityFromContext(c, ActivityEvents.SERVER_RESTART, { serverId: server.id });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.SERVER_RESTARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -690,6 +723,8 @@ servers.post("/:serverId/kill", requireServerAccess, async (c) => {
       where: { id: server.id },
       data: { status: "STOPPED" },
     });
+
+    await logActivityFromContext(c, ActivityEvents.SERVER_KILL, { serverId: server.id });
 
     return c.json({ success: true, status: "STOPPED" });
   } catch (error: any) {
@@ -761,6 +796,8 @@ servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
         status: "INSTALLING",
       },
     });
+
+    await logActivityFromContext(c, ActivityEvents.SERVER_REINSTALL, { serverId: server.id });
 
     return c.json({
       success: true,
@@ -903,6 +940,10 @@ servers.post("/:serverId/command", requireServerAccess, async (c) => {
 
   try {
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/commands`, { command });
+    await logActivityFromContext(c, ActivityEvents.CONSOLE_COMMAND, {
+      serverId: server.id,
+      metadata: { command },
+    });
     return c.json({ success: true });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1032,6 +1073,11 @@ servers.patch("/:serverId/startup", requireServerAccess, async (c) => {
   const updated = await db.server.update({
     where: { id: server.id },
     data: updateData,
+  });
+
+  await logActivityFromContext(c, ActivityEvents.STARTUP_UPDATE, {
+    serverId: server.id,
+    metadata: { changes: Object.keys(updateData) },
   });
 
   return c.json({
@@ -1230,12 +1276,17 @@ servers.post("/:serverId/files/write", requireServerAccess, async (c) => {
 
   try {
     const fullServer = await getServerWithNode(server.id);
+    const normalizedPath = normalizePath(body.path);
     const result = await daemonRequest(
       fullServer.node,
       "POST",
       `/api/servers/${server.id}/files/write`,
-      { file: normalizePath(body.path), content: body.content }
+      { file: normalizedPath, content: body.content }
     );
+    await logActivityFromContext(c, ActivityEvents.FILE_WRITE, {
+      serverId: server.id,
+      metadata: { path: normalizedPath },
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1267,6 +1318,10 @@ servers.post("/:serverId/files/create", requireServerAccess, async (c) => {
         `/api/servers/${server.id}/files/create-directory`,
         { name, root }
       );
+      await logActivityFromContext(c, ActivityEvents.DIRECTORY_CREATE, {
+        serverId: server.id,
+        metadata: { path: normalizedPath },
+      });
       return c.json(result);
     } else {
       // For files, write an empty file
@@ -1276,6 +1331,10 @@ servers.post("/:serverId/files/create", requireServerAccess, async (c) => {
         `/api/servers/${server.id}/files/write`,
         { file: normalizedPath, content: "" }
       );
+      await logActivityFromContext(c, ActivityEvents.FILE_WRITE, {
+        serverId: server.id,
+        metadata: { path: normalizedPath },
+      });
       return c.json(result);
     }
   } catch (error: any) {
@@ -1307,6 +1366,10 @@ servers.delete("/:serverId/files/delete", requireServerAccess, async (c) => {
       `/api/servers/${server.id}/files/delete`,
       { files: [filename], root }
     );
+    await logActivityFromContext(c, ActivityEvents.FILE_DELETE, {
+      serverId: server.id,
+      metadata: { path },
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1343,6 +1406,10 @@ servers.post("/:serverId/files/rename", requireServerAccess, async (c) => {
       `/api/servers/${server.id}/files/rename`,
       { from: fromName, to: toName, root }
     );
+    await logActivityFromContext(c, ActivityEvents.FILE_RENAME, {
+      serverId: server.id,
+      metadata: { from: fromPath, to: toPath },
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1362,6 +1429,10 @@ servers.post("/:serverId/files/archive", requireServerAccess, async (c) => {
       `/api/servers/${server.id}/files/compress`,
       { files: body.files || [], root: body.root || "" }
     );
+    await logActivityFromContext(c, ActivityEvents.FILE_COMPRESS, {
+      serverId: server.id,
+      metadata: { files: body.files || [], root: body.root || "" },
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1375,12 +1446,18 @@ servers.post("/:serverId/files/extract", requireServerAccess, async (c) => {
 
   try {
     const fullServer = await getServerWithNode(server.id);
+    const file = body.file || body.path;
+    const root = body.root || body.destination || "";
     const result = await daemonRequest(
       fullServer.node,
       "POST",
       `/api/servers/${server.id}/files/decompress`,
-      { file: body.file || body.path, root: body.root || body.destination || "" }
+      { file, root }
     );
+    await logActivityFromContext(c, ActivityEvents.FILE_DECOMPRESS, {
+      serverId: server.id,
+      metadata: { file, destination: root },
+    });
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1445,6 +1522,18 @@ servers.post("/:serverId/backups", requireServerAccess, async (c) => {
       `/api/servers/${server.id}/backup`,
       { uuid: backupUuid, ignore: body.ignore || [] }
     );
+    await logActivityFromContext(c, ActivityEvents.BACKUP_CREATE, {
+      serverId: server.id,
+      metadata: { backupId: backupUuid },
+    });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.BACKUP_CREATED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { backupId: backupUuid },
+    }).catch(() => {});
+
     return c.json(backup);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1468,6 +1557,18 @@ servers.post("/:serverId/backups/restore", requireServerAccess, async (c) => {
       `/api/servers/${server.id}/backup/restore`,
       { uuid: id, truncate: false }
     );
+    await logActivityFromContext(c, ActivityEvents.BACKUP_RESTORE, {
+      serverId: server.id,
+      metadata: { backupId: id },
+    });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.BACKUP_RESTORED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { backupId: id },
+    }).catch(() => {});
+
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1569,6 +1670,18 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, async (c) => {
       "DELETE",
       `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
     );
+    await logActivityFromContext(c, ActivityEvents.BACKUP_DELETE, {
+      serverId: server.id,
+      metadata: { backupId: id },
+    });
+
+    // Dispatch webhook (fire and forget)
+    dispatchWebhook(WebhookEvents.BACKUP_DELETED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { backupId: id },
+    }).catch(() => {});
+
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -1807,6 +1920,526 @@ servers.delete("/:serverId/allocations/:allocationId", requireAdmin, async (c) =
   }
 
   return c.json({ success: true });
+});
+
+// Set primary allocation for a server
+servers.post("/:serverId/allocations/:allocationId/primary", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const user = c.get("user");
+  const { allocationId } = c.req.param();
+
+  const fullServer = await db.server.findUnique({
+    where: { id: server.id },
+    include: { node: true, allocations: { orderBy: { createdAt: "asc" } } },
+  });
+
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Verify the allocation exists and belongs to this server
+  const allocation = fullServer.allocations.find((a) => a.id === allocationId);
+
+  if (!allocation) {
+    return c.json({ error: "Allocation not found or does not belong to this server" }, 404);
+  }
+
+  // Update the primary allocation
+  await db.server.update({
+    where: { id: server.id },
+    data: { primaryAllocationId: allocationId },
+  });
+
+  // Update the daemon with the new primary allocation
+  if (fullServer.node.isOnline) {
+    try {
+      await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
+        allocations: {
+          default: {
+            ip: allocation.ip,
+            port: allocation.port,
+          },
+          mappings: fullServer.allocations.reduce((acc, a) => {
+            acc[a.port] = a.port;
+            return acc;
+          }, {} as Record<number, number>),
+        },
+      });
+    } catch (error: any) {
+      console.error("Failed to update daemon with new primary allocation:", error);
+      // Continue anyway - primary is updated in DB
+    }
+  }
+
+  await logActivityFromContext(c, "server:allocation.set-primary", {
+    serverId: server.id,
+    metadata: { allocationId, ip: allocation.ip, port: allocation.port },
+  });
+
+  return c.json({ success: true, allocation });
+});
+
+// === Activity Logs ===
+
+// Get activity logs for a server
+servers.get("/:serverId/activity", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const limit = parseInt(c.req.query("limit") || "50", 10);
+  const offset = parseInt(c.req.query("offset") || "0", 10);
+  const event = c.req.query("event");
+
+  const where: any = { serverId: server.id };
+  if (event) {
+    where.event = { startsWith: event };
+  }
+
+  const [logs, total] = await Promise.all([
+    db.activityLog.findMany({
+      where,
+      orderBy: { timestamp: "desc" },
+      take: Math.min(limit, 100),
+      skip: offset,
+    }),
+    db.activityLog.count({ where }),
+  ]);
+
+  return c.json({ logs, total, limit, offset });
+});
+
+// === Server Splitting ===
+
+// Split validation schema
+const splitServerSchema = z.object({
+  name: z.string().min(1).max(100),
+  memoryPercent: z.number().min(10).max(90), // Percentage of parent's memory
+  diskPercent: z.number().min(10).max(90), // Percentage of parent's disk
+  cpuPercent: z.number().min(10).max(90), // Percentage of parent's CPU
+});
+
+// Split a server into a child server
+servers.post("/:serverId/split", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const user = c.get("user");
+  const body = await c.req.json();
+  const parsed = splitServerSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
+  }
+
+  const { name, memoryPercent, diskPercent, cpuPercent } = parsed.data;
+
+  // Verify the server is not already a child
+  if (server.parentServerId) {
+    return c.json({ error: "Cannot split a child server" }, 400);
+  }
+
+  // Get the full server with node info
+  const parentServer = await db.server.findUnique({
+    where: { id: server.id },
+    include: { node: true, allocations: true },
+  });
+
+  if (!parentServer) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  if (!parentServer.node.isOnline) {
+    return c.json({ error: "Node is offline" }, 400);
+  }
+
+  // Calculate resources for child
+  const childMemory = BigInt(Math.floor(Number(parentServer.memory) * (memoryPercent / 100)));
+  const childDisk = BigInt(Math.floor(Number(parentServer.disk) * (diskPercent / 100)));
+  const childCpu = parentServer.cpu * (cpuPercent / 100);
+
+  // Remaining resources for parent
+  const newParentMemory = parentServer.memory - childMemory;
+  const newParentDisk = parentServer.disk - childDisk;
+  const newParentCpu = parentServer.cpu - childCpu;
+
+  // Validate minimum resources (100MB memory, 500MB disk, 10% CPU)
+  if (childMemory < 100 || newParentMemory < 100) {
+    return c.json({ error: "Both servers must have at least 100 MiB of memory" }, 400);
+  }
+  if (childDisk < 500 || newParentDisk < 500) {
+    return c.json({ error: "Both servers must have at least 500 MiB of disk" }, 400);
+  }
+  if (childCpu < 10 || newParentCpu < 10) {
+    return c.json({ error: "Both servers must have at least 10% CPU" }, 400);
+  }
+
+  // Find an unassigned allocation on the same node
+  const allocation = await db.allocation.findFirst({
+    where: {
+      nodeId: parentServer.nodeId,
+      assigned: false,
+    },
+  });
+
+  if (!allocation) {
+    return c.json({ error: "No available allocations on this node" }, 400);
+  }
+
+  try {
+    // Create the child server
+    const childServer = await db.server.create({
+      data: {
+        name,
+        nodeId: parentServer.nodeId,
+        blueprintId: parentServer.blueprintId,
+        ownerId: parentServer.ownerId,
+        memory: childMemory,
+        disk: childDisk,
+        cpu: childCpu,
+        parentServerId: parentServer.id,
+        config: parentServer.config ?? undefined,
+        variables: parentServer.variables ?? undefined,
+        dockerImage: parentServer.dockerImage,
+        status: "INSTALLING",
+        primaryAllocationId: allocation.id,
+        allocations: {
+          connect: { id: allocation.id },
+        },
+      },
+      include: { node: true, allocations: true },
+    });
+
+    // Mark allocation as assigned
+    await db.allocation.update({
+      where: { id: allocation.id },
+      data: { assigned: true },
+    });
+
+    // Update parent server resources
+    await db.server.update({
+      where: { id: parentServer.id },
+      data: {
+        memory: newParentMemory,
+        disk: newParentDisk,
+        cpu: newParentCpu,
+      },
+    });
+
+    // Notify daemon to create the child container
+    await daemonRequest(
+      parentServer.node,
+      "POST",
+      "/api/servers",
+      {
+        uuid: childServer.id,
+        memory: Number(childMemory),
+        disk: Number(childDisk),
+        cpu: childCpu,
+        image: childServer.dockerImage || parentServer.dockerImage,
+        environment: childServer.variables || {},
+        allocations: [{
+          ip: allocation.ip,
+          port: allocation.port,
+        }],
+      }
+    );
+
+    await logActivityFromContext(c, "server:split", {
+      serverId: parentServer.id,
+      metadata: { childServerId: childServer.id, name },
+    });
+
+    return c.json({
+      success: true,
+      childServer: {
+        id: childServer.id,
+        name: childServer.name,
+        memory: Number(childServer.memory),
+        disk: Number(childServer.disk),
+        cpu: childServer.cpu,
+      },
+      parentServer: {
+        id: parentServer.id,
+        memory: Number(newParentMemory),
+        disk: Number(newParentDisk),
+        cpu: newParentCpu,
+      },
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Get child servers for a parent
+servers.get("/:serverId/children", requireServerAccess, async (c) => {
+  const server = c.get("server");
+
+  const children = await db.server.findMany({
+    where: { parentServerId: server.id },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      memory: true,
+      disk: true,
+      cpu: true,
+      createdAt: true,
+    },
+  });
+
+  return c.json(children.map((child) => ({
+    ...child,
+    memory: Number(child.memory),
+    disk: Number(child.disk),
+  })));
+});
+
+// === Server Transfer ===
+
+const transferServerSchema = z.object({
+  targetNodeId: z.string().uuid(),
+});
+
+// Initiate a server transfer
+servers.post("/:serverId/transfer", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const user = c.get("user");
+  const body = await c.req.json();
+  const parsed = transferServerSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
+  }
+
+  const { targetNodeId } = parsed.data;
+
+  // Get the full server with node info
+  const fullServer = await db.server.findUnique({
+    where: { id: server.id },
+    include: { node: true },
+  });
+
+  if (!fullServer) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  if (!fullServer.node.isOnline) {
+    return c.json({ error: "Source node is offline" }, 400);
+  }
+
+  // Cannot transfer a child server
+  if (fullServer.parentServerId) {
+    return c.json({ error: "Cannot transfer a child server" }, 400);
+  }
+
+  // Check for existing active transfer
+  const existingTransfer = await db.serverTransfer.findFirst({
+    where: {
+      serverId: server.id,
+      status: { notIn: ["COMPLETED", "FAILED"] },
+    },
+  });
+
+  if (existingTransfer) {
+    return c.json({ error: "A transfer is already in progress for this server" }, 400);
+  }
+
+  // Get target node
+  const targetNode = await db.node.findUnique({
+    where: { id: targetNodeId },
+  });
+
+  if (!targetNode) {
+    return c.json({ error: "Target node not found" }, 404);
+  }
+
+  if (!targetNode.isOnline) {
+    return c.json({ error: "Target node is offline" }, 400);
+  }
+
+  if (targetNode.id === fullServer.nodeId) {
+    return c.json({ error: "Server is already on this node" }, 400);
+  }
+
+  // Check if target node has enough resources
+  const serverMemory = Number(fullServer.memory);
+  const serverDisk = Number(fullServer.disk);
+  const nodeTotalMemory = Number(targetNode.memoryLimit);
+  const nodeTotalDisk = Number(targetNode.diskLimit);
+
+  // Get current usage on target node
+  const targetNodeServers = await db.server.aggregate({
+    where: { nodeId: targetNodeId },
+    _sum: {
+      memory: true,
+      disk: true,
+      cpu: true,
+    },
+  });
+
+  const usedMemory = Number(targetNodeServers._sum.memory || 0);
+  const usedDisk = Number(targetNodeServers._sum.disk || 0);
+
+  if (usedMemory + serverMemory > nodeTotalMemory) {
+    return c.json({ error: "Target node does not have enough memory" }, 400);
+  }
+
+  if (usedDisk + serverDisk > nodeTotalDisk) {
+    return c.json({ error: "Target node does not have enough disk space" }, 400);
+  }
+
+  // Find an available allocation on target node
+  const allocation = await db.allocation.findFirst({
+    where: {
+      nodeId: targetNodeId,
+      assigned: false,
+    },
+  });
+
+  if (!allocation) {
+    return c.json({ error: "No available allocations on target node" }, 400);
+  }
+
+  try {
+    // Create transfer record
+    const transfer = await db.serverTransfer.create({
+      data: {
+        serverId: server.id,
+        sourceNodeId: fullServer.nodeId,
+        targetNodeId,
+        status: "PENDING",
+      },
+    });
+
+    // Notify source daemon to start archiving
+    // The daemon will create an archive and update the transfer status
+    await daemonRequest(
+      fullServer.node,
+      "POST",
+      `/api/servers/${server.id}/transfer`,
+      {
+        transferId: transfer.id,
+        targetNodeHost: targetNode.host,
+        targetNodePort: targetNode.port,
+        targetNodeToken: targetNode.token,
+        targetAllocation: {
+          ip: allocation.ip,
+          port: allocation.port,
+        },
+      }
+    );
+
+    // Update transfer status
+    await db.serverTransfer.update({
+      where: { id: transfer.id },
+      data: { status: "ARCHIVING" },
+    });
+
+    // Dispatch webhook
+    dispatchWebhook(WebhookEvents.TRANSFER_STARTED, {
+      serverId: server.id,
+      userId: user.id,
+      data: { transferId: transfer.id, targetNodeId },
+    }).catch(() => {});
+
+    await logActivityFromContext(c, "server:transfer.start", {
+      serverId: server.id,
+      metadata: { transferId: transfer.id, targetNodeId },
+    });
+
+    return c.json({
+      success: true,
+      transfer: {
+        id: transfer.id,
+        status: "ARCHIVING",
+      },
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Get transfer status
+servers.get("/:serverId/transfer", requireServerAccess, async (c) => {
+  const server = c.get("server");
+
+  const transfer = await db.serverTransfer.findFirst({
+    where: {
+      serverId: server.id,
+      status: { notIn: ["COMPLETED", "FAILED"] },
+    },
+    include: {
+      sourceNode: { select: { displayName: true } },
+      targetNode: { select: { displayName: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!transfer) {
+    return c.json({ active: false });
+  }
+
+  return c.json({
+    active: true,
+    transfer: {
+      id: transfer.id,
+      status: transfer.status,
+      progress: transfer.progress,
+      error: transfer.error,
+      sourceNode: transfer.sourceNode.displayName,
+      targetNode: transfer.targetNode.displayName,
+      createdAt: transfer.createdAt,
+    },
+  });
+});
+
+// Cancel a transfer
+servers.delete("/:serverId/transfer", requireServerAccess, async (c) => {
+  const server = c.get("server");
+
+  const transfer = await db.serverTransfer.findFirst({
+    where: {
+      serverId: server.id,
+      status: { in: ["PENDING", "ARCHIVING"] }, // Can only cancel early stages
+    },
+  });
+
+  if (!transfer) {
+    return c.json({ error: "No cancellable transfer found" }, 404);
+  }
+
+  await db.serverTransfer.update({
+    where: { id: transfer.id },
+    data: {
+      status: "FAILED",
+      error: "Cancelled by user",
+      completedAt: new Date(),
+    },
+  });
+
+  return c.json({ success: true });
+});
+
+// Get transfer history
+servers.get("/:serverId/transfer/history", requireServerAccess, async (c) => {
+  const server = c.get("server");
+
+  const transfers = await db.serverTransfer.findMany({
+    where: { serverId: server.id },
+    include: {
+      sourceNode: { select: { displayName: true } },
+      targetNode: { select: { displayName: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+
+  return c.json(transfers.map((t) => ({
+    id: t.id,
+    status: t.status,
+    progress: t.progress,
+    error: t.error,
+    sourceNode: t.sourceNode.displayName,
+    targetNode: t.targetNode.displayName,
+    createdAt: t.createdAt,
+    completedAt: t.completedAt,
+  })));
 });
 
 export { servers };

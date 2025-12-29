@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.4.9",
     "@codemirror/commands": "^6.10.1",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-markdown": "^6.5.0",
@@ -29,6 +30,7 @@
     "lucide-react": "^0.475.0",
     "next": "^15.5.9",
     "next-themes": "^0.4.6",
+    "qrcode": "^1.5.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-icons": "^5.5.0",
@@ -38,6 +40,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^20.19.9",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@workspace/eslint-config": "workspace:^",

@@ -12,19 +12,23 @@ datasource db {
 // ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          String    @default("user")
-  banned        Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  emailVerified    Boolean   @default(false)
+  image            String?
+  role             String    @default("user")
+  banned           Boolean   @default(false)
+  twoFactorEnabled Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  sessions Session[]
-  accounts Account[]
-  servers  Server[]
+  sessions   Session[]
+  accounts   Account[]
+  servers    Server[]
+  twoFactors TwoFactor[]
+  passkeys   Passkey[]
+  webhooks   Webhook[]
 
   @@map("users")
 }
@@ -73,6 +77,35 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verifications")
+}
+
+model TwoFactor {
+  id          String  @id @default(cuid())
+  userId      String
+  secret      String
+  backupCodes String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factors")
+}
+
+model Passkey {
+  id             String   @id @default(cuid())
+  name           String?
+  publicKey      String
+  userId         String
+  credentialId   String   @unique
+  counter        Int
+  deviceType     String
+  backedUp       Boolean
+  transports     String?
+  createdAt      DateTime @default(now())
+  aaguid         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passkeys")
 }
 
 // ============================================
@@ -129,6 +162,8 @@ model Node {
 
   allocations Allocation[]
   servers     Server[]
+  outgoingTransfers ServerTransfer[] @relation("TransferSource")
+  incomingTransfers ServerTransfer[] @relation("TransferTarget")
 
   @@map("nodes")
 }
@@ -255,9 +290,21 @@ model Server {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  allocations Allocation[]
-  backups     Backup[]
-  activityLogs ActivityLog[]
+  allocations   Allocation[]
+  backups       Backup[]
+  activityLogs  ActivityLog[]
+  transfers     ServerTransfer[]
+  webhooks      Webhook[]
+  subdomain     Subdomain?
+  customDomains CustomDomain[]
+
+  // Primary allocation for this server (first allocation by default)
+  primaryAllocationId String?
+
+  // Server splitting - parent/child relationship
+  parentServerId String?
+  parentServer   Server?  @relation("ServerChildren", fields: [parentServerId], references: [id])
+  childServers   Server[] @relation("ServerChildren")
 
   @@map("servers")
 }
@@ -339,4 +386,137 @@ model ActivityLog {
   @@index([event])
   @@index([timestamp])
   @@map("activity_logs")
+}
+
+// ============================================
+// Server Transfer Table
+// ============================================
+
+model ServerTransfer {
+  id            String   @id @default(uuid())
+
+  // Server being transferred
+  serverId      String
+  server        Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Source and target nodes
+  sourceNodeId  String
+  sourceNode    Node     @relation("TransferSource", fields: [sourceNodeId], references: [id])
+  targetNodeId  String
+  targetNode    Node     @relation("TransferTarget", fields: [targetNodeId], references: [id])
+
+  // Transfer status
+  status        TransferStatus @default(PENDING)
+  progress      Int            @default(0) // 0-100 percentage
+  error         String?
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@map("server_transfers")
+}
+
+enum TransferStatus {
+  PENDING
+  ARCHIVING
+  UPLOADING
+  DOWNLOADING
+  RESTORING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// Webhook Tables
+// ============================================
+
+model Webhook {
+  id         String   @id @default(uuid())
+
+  // Owner
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional server scope (null = all servers)
+  serverId   String?
+  server     Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Webhook configuration
+  url        String
+  secret     String   // HMAC-SHA256 signing secret
+  events     String[] // Array of event types to listen for
+
+  // Status
+  enabled    Boolean  @default(true)
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id           String   @id @default(uuid())
+
+  // Webhook reference
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  // Delivery details
+  event        String
+  payload      Json
+  statusCode   Int?
+  response     String?  @db.Text
+  attempts     Int      @default(0)
+
+  // Timestamps
+  deliveredAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
+}
+
+// ============================================
+// Subdomain & Domain Tables
+// ============================================
+
+model Subdomain {
+  id        String   @id @default(uuid())
+
+  // Server association (one-to-one)
+  serverId  String   @unique
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Subdomain name (e.g., "my-server" -> my-server.stellarstack.io)
+  subdomain String   @unique
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@map("subdomains")
+}
+
+model CustomDomain {
+  id         String   @id @default(uuid())
+
+  // Server association
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Domain configuration
+  domain     String   @unique
+  verified   Boolean  @default(false)
+  verifyCode String   // TXT record value for domain verification
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("custom_domains")
 }

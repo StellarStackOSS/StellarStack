@@ -9,6 +9,8 @@ import { locations } from "./routes/locations";
 import { nodes } from "./routes/nodes";
 import { blueprints } from "./routes/blueprints";
 import { servers } from "./routes/servers";
+import { webhooks } from "./routes/webhooks";
+import { domains } from "./routes/domains";
 import { remote } from "./routes/remote";
 
 const app = new Hono();
@@ -52,6 +54,8 @@ app.route("/api/locations", locations);
 app.route("/api/nodes", nodes);
 app.route("/api/blueprints", blueprints);
 app.route("/api/servers", servers);
+app.route("/api/webhooks", webhooks);
+app.route("/api/servers", domains); // Domain routes under /api/servers/:serverId/subdomain and /domains
 
 // Daemon-facing API routes (node authentication required)
 app.route("/api/remote", remote);

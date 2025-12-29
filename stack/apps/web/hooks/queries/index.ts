@@ -71,3 +71,9 @@ export {
   useStartup,
   useStartupMutations,
 } from "./use-startup";
+
+// Activity queries
+export {
+  activityKeys,
+  useActivity,
+} from "./use-activity";

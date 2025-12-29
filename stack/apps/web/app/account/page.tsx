@@ -11,73 +11,189 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
 import { Input } from "@workspace/ui/components/input";
-import { BsSun, BsMoon, BsKey, BsShieldCheck, BsTrash, BsPlus, BsCheckCircle } from "react-icons/bs";
+import { BsSun, BsMoon, BsKey, BsShieldCheck, BsTrash, BsPlus, BsCheckCircle, BsGoogle, BsGithub, BsDiscord } from "react-icons/bs";
+import { authClient, useSession } from "@/lib/auth-client";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import QRCode from "qrcode";
 
 interface Passkey {
   id: string;
-  name: string;
-  createdAt: string;
-  lastUsed?: string;
+  name: string | null;
+  createdAt: Date;
+  credentialId: string;
 }
-
-interface TwoFactorMethod {
-  id: string;
-  type: "authenticator" | "sms";
-  enabled: boolean;
-  phone?: string;
-}
-
-const mockPasskeys: Passkey[] = [
-  { id: "pk-1", name: "MacBook Pro - Touch ID", createdAt: "2025-01-01", lastUsed: "Today" },
-  { id: "pk-2", name: "YubiKey 5", createdAt: "2025-01-05", lastUsed: "3 days ago" },
-];
-
-const defaultProfile = {
-  name: "John Doe",
-  email: "john@example.com",
-};
 
 const AccountPage = (): JSX.Element | null => {
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: session, isPending: sessionLoading } = useSession();
 
-  const [profile, setProfile] = useState(defaultProfile);
-  const [originalProfile, setOriginalProfile] = useState(defaultProfile);
+  const [profile, setProfile] = useState({ name: "", email: "" });
+  const [originalProfile, setOriginalProfile] = useState({ name: "", email: "" });
   const [saved, setSaved] = useState(false);
 
-  const [twoFactor, setTwoFactor] = useState<TwoFactorMethod[]>([
-    { id: "2fa-1", type: "authenticator", enabled: true },
-    { id: "2fa-2", type: "sms", enabled: false, phone: "+1 (555) 123-4567" },
-  ]);
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showTotpSetup, setShowTotpSetup] = useState(false);
+  const [totpUri, setTotpUri] = useState<string | null>(null);
+  const [totpQrCode, setTotpQrCode] = useState<string | null>(null);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
+  const [passwordForAction, setPasswordForAction] = useState("");
 
-  const [passkeys, setPasskeys] = useState<Passkey[]>(mockPasskeys);
-
-  // Modal states
+  // Passkey state
+  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [addPasskeyModalOpen, setAddPasskeyModalOpen] = useState(false);
   const [deletePasskeyModalOpen, setDeletePasskeyModalOpen] = useState(false);
   const [selectedPasskey, setSelectedPasskey] = useState<Passkey | null>(null);
   const [newPasskeyName, setNewPasskeyName] = useState("");
+  const [disableTwoFactorModalOpen, setDisableTwoFactorModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (session?.user) {
+      const userData = {
+        name: session.user.name || "",
+        email: session.user.email || "",
+      };
+      setProfile(userData);
+      setOriginalProfile(userData);
+      setTwoFactorEnabled(session.user.twoFactorEnabled || false);
+    }
+  }, [session]);
+
+  // Fetch passkeys
+  const { data: passkeyData } = useQuery({
+    queryKey: ["passkeys"],
+    queryFn: async () => {
+      const response = await authClient.passkey.listUserPasskeys();
+      return response.data || [];
+    },
+    enabled: !!session,
+  });
+
+  useEffect(() => {
+    if (passkeyData) {
+      setPasskeys(passkeyData as unknown as Passkey[]);
+    }
+  }, [passkeyData]);
+
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
-  if (!mounted) return null;
+  if (!mounted || sessionLoading) return null;
 
   const hasProfileChanges = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
-  const handleSaveProfile = () => {
-    setOriginalProfile({ ...profile });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSaveProfile = async () => {
+    try {
+      await authClient.updateUser({ name: profile.name });
+      setOriginalProfile({ ...profile });
+      setSaved(true);
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
   };
 
-  const toggleTwoFactor = (id: string) => {
-    setTwoFactor(prev => prev.map(method =>
-      method.id === id ? { ...method, enabled: !method.enabled } : method
-    ));
+  // 2FA functions
+  const handleEnableTwoFactor = async () => {
+    if (!passwordForAction) {
+      toast.error("Please enter your password");
+      return;
+    }
+    try {
+      const response = await authClient.twoFactor.enable({
+        password: passwordForAction,
+      });
+      if (response.data?.totpURI) {
+        setTotpUri(response.data.totpURI);
+        const qr = await QRCode.toDataURL(response.data.totpURI);
+        setTotpQrCode(qr);
+        if (response.data.backupCodes) {
+          setBackupCodes(response.data.backupCodes);
+        }
+        setShowTotpSetup(true);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to enable 2FA");
+    }
+  };
+
+  const handleVerifyTotp = async () => {
+    try {
+      const response = await authClient.twoFactor.verifyTotp({
+        code: verifyCode,
+      });
+      if (response.data) {
+        setTwoFactorEnabled(true);
+        setShowTotpSetup(false);
+        setShowBackupCodes(true);
+        setVerifyCode("");
+        setPasswordForAction("");
+        queryClient.invalidateQueries({ queryKey: ["session"] });
+        toast.success("Two-factor authentication enabled");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Invalid verification code");
+    }
+  };
+
+  const handleDisableTwoFactor = async () => {
+    if (!passwordForAction) {
+      toast.error("Please enter your password");
+      return;
+    }
+    try {
+      await authClient.twoFactor.disable({
+        password: passwordForAction,
+      });
+      setTwoFactorEnabled(false);
+      setDisableTwoFactorModalOpen(false);
+      setPasswordForAction("");
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+      toast.success("Two-factor authentication disabled");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to disable 2FA");
+    }
+  };
+
+  // Passkey functions
+  const handleAddPasskey = async () => {
+    try {
+      const response = await authClient.passkey.addPasskey({
+        name: newPasskeyName,
+      });
+      if (response.data) {
+        queryClient.invalidateQueries({ queryKey: ["passkeys"] });
+        setAddPasskeyModalOpen(false);
+        setNewPasskeyName("");
+        toast.success("Passkey added successfully");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to add passkey");
+    }
+  };
+
+  const handleDeletePasskey = async () => {
+    if (!selectedPasskey) return;
+    try {
+      await authClient.passkey.deletePasskey({
+        id: selectedPasskey.id,
+      });
+      queryClient.invalidateQueries({ queryKey: ["passkeys"] });
+      setDeletePasskeyModalOpen(false);
+      setSelectedPasskey(null);
+      toast.success("Passkey deleted");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete passkey");
+    }
   };
 
   const openDeletePasskeyModal = (passkey: Passkey) => {
@@ -85,24 +201,16 @@ const AccountPage = (): JSX.Element | null => {
     setDeletePasskeyModalOpen(true);
   };
 
-  const handleAddPasskey = () => {
-    const dateStr = new Date().toISOString().split("T")[0] ?? new Date().toISOString().substring(0, 10);
-    const newPasskey: Passkey = {
-      id: `pk-${Date.now()}`,
-      name: newPasskeyName,
-      createdAt: dateStr,
-      lastUsed: "Never",
-    };
-    setPasskeys(prev => [...prev, newPasskey]);
-    setAddPasskeyModalOpen(false);
-    setNewPasskeyName("");
-  };
-
-  const handleDeletePasskey = () => {
-    if (!selectedPasskey) return;
-    setPasskeys(prev => prev.filter(pk => pk.id !== selectedPasskey.id));
-    setDeletePasskeyModalOpen(false);
-    setSelectedPasskey(null);
+  // Social login functions
+  const handleSocialSignIn = async (provider: "google" | "github" | "discord") => {
+    try {
+      await authClient.signIn.social({
+        provider,
+        callbackURL: window.location.href,
+      });
+    } catch (error: any) {
+      toast.error(error?.message || `Failed to connect ${provider}`);
+    }
   };
 
   return (
@@ -201,14 +309,17 @@ const AccountPage = (): JSX.Element | null => {
                 <input
                   type="email"
                   value={profile.email}
-                  onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                  disabled
                   className={cn(
-                    "w-full mt-2 px-3 py-2 text-sm border outline-none transition-colors",
+                    "w-full mt-2 px-3 py-2 text-sm border outline-none transition-colors opacity-50",
                     isDark
-                      ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500"
-                      : "bg-white border-zinc-300 text-zinc-800 focus:border-zinc-400"
+                      ? "bg-zinc-900/50 border-zinc-700/50 text-zinc-200"
+                      : "bg-white border-zinc-300 text-zinc-800"
                   )}
                 />
+                <p className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                  Email changes are not yet supported
+                </p>
               </div>
             </div>
 
@@ -237,6 +348,78 @@ const AccountPage = (): JSX.Element | null => {
                 <span className="text-xs uppercase tracking-wider">Update Profile</span>
               )}
             </Button>
+          </div>
+
+          {/* Connected Accounts Section */}
+          <div className={cn(
+            "relative p-6 border mb-6",
+            isDark
+              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
+              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+          )}>
+            <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+
+            <h2 className={cn(
+              "text-sm font-medium uppercase tracking-wider mb-6",
+              isDark ? "text-zinc-300" : "text-zinc-700"
+            )}>
+              Connected Accounts
+            </h2>
+
+            <p className={cn(
+              "text-xs mb-4",
+              isDark ? "text-zinc-500" : "text-zinc-500"
+            )}>
+              Connect your social accounts for quick sign-in.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSocialSignIn("google")}
+                className={cn(
+                  "transition-all gap-2",
+                  isDark
+                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                )}
+              >
+                <BsGoogle className="w-4 h-4" />
+                <span className="text-xs uppercase tracking-wider">Google</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSocialSignIn("github")}
+                className={cn(
+                  "transition-all gap-2",
+                  isDark
+                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                )}
+              >
+                <BsGithub className="w-4 h-4" />
+                <span className="text-xs uppercase tracking-wider">GitHub</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSocialSignIn("discord")}
+                className={cn(
+                  "transition-all gap-2",
+                  isDark
+                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                )}
+              >
+                <BsDiscord className="w-4 h-4" />
+                <span className="text-xs uppercase tracking-wider">Discord</span>
+              </Button>
+            </div>
           </div>
 
           {/* Passkeys Section */}
@@ -285,43 +468,49 @@ const AccountPage = (): JSX.Element | null => {
             </p>
 
             <div className="space-y-3">
-              {passkeys.map((passkey) => (
-                <div
-                  key={passkey.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 border",
-                    isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
-                  )}
-                >
-                  <div>
-                    <div className={cn(
-                      "text-sm font-medium",
-                      isDark ? "text-zinc-200" : "text-zinc-700"
-                    )}>
-                      {passkey.name}
-                    </div>
-                    <div className={cn(
-                      "text-xs mt-1",
-                      isDark ? "text-zinc-500" : "text-zinc-500"
-                    )}>
-                      Added {passkey.createdAt} • Last used: {passkey.lastUsed || "Never"}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openDeletePasskeyModal(passkey)}
+              {passkeys.length === 0 ? (
+                <p className={cn("text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                  No passkeys registered yet.
+                </p>
+              ) : (
+                passkeys.map((passkey) => (
+                  <div
+                    key={passkey.id}
                     className={cn(
-                      "transition-all p-2",
-                      isDark
-                        ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
-                        : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
+                      "flex items-center justify-between p-4 border",
+                      isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
                     )}
                   >
-                    <BsTrash className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                    <div>
+                      <div className={cn(
+                        "text-sm font-medium",
+                        isDark ? "text-zinc-200" : "text-zinc-700"
+                      )}>
+                        {passkey.name || "Unnamed Passkey"}
+                      </div>
+                      <div className={cn(
+                        "text-xs mt-1",
+                        isDark ? "text-zinc-500" : "text-zinc-500"
+                      )}>
+                        Added {new Date(passkey.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDeletePasskeyModal(passkey)}
+                      className={cn(
+                        "transition-all p-2",
+                        isDark
+                          ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
+                          : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
+                      )}
+                    >
+                      <BsTrash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -354,42 +543,178 @@ const AccountPage = (): JSX.Element | null => {
               Add an extra layer of security to your account by requiring a second form of verification.
             </p>
 
-            <div className="space-y-3">
-              {twoFactor.map((method) => (
-                <div
-                  key={method.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 border",
-                    isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
-                  )}
-                >
-                  <div>
-                    <div className={cn(
-                      "text-sm font-medium",
-                      isDark ? "text-zinc-200" : "text-zinc-700"
-                    )}>
-                      {method.type === "authenticator" ? "Authenticator App" : "SMS Authentication"}
-                    </div>
-                    <div className={cn(
-                      "text-xs mt-1",
-                      isDark ? "text-zinc-500" : "text-zinc-500"
-                    )}>
-                      {method.type === "authenticator"
-                        ? "Use an app like Google Authenticator or Authy"
-                        : `Receive codes via SMS to ${method.phone}`}
-                    </div>
+            {!showTotpSetup ? (
+              <div className={cn(
+                "flex items-center justify-between p-4 border",
+                isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+              )}>
+                <div>
+                  <div className={cn(
+                    "text-sm font-medium",
+                    isDark ? "text-zinc-200" : "text-zinc-700"
+                  )}>
+                    Authenticator App
                   </div>
-                  <Switch
-                    checked={method.enabled}
-                    onCheckedChange={() => toggleTwoFactor(method.id)}
-                    isDark={isDark}
-                  />
+                  <div className={cn(
+                    "text-xs mt-1",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
+                  )}>
+                    {twoFactorEnabled
+                      ? "Two-factor authentication is enabled"
+                      : "Use an app like Google Authenticator or Authy"}
+                  </div>
                 </div>
-              ))}
-            </div>
+                {twoFactorEnabled ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisableTwoFactorModalOpen(true)}
+                    className={cn(
+                      "transition-all",
+                      isDark
+                        ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
+                        : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
+                    )}
+                  >
+                    <span className="text-xs uppercase tracking-wider">Disable</span>
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={passwordForAction}
+                      onChange={(e) => setPasswordForAction(e.target.value)}
+                      className={cn(
+                        "w-40 h-8 text-sm",
+                        isDark
+                          ? "bg-zinc-900 border-zinc-700 text-zinc-100"
+                          : "bg-white border-zinc-300 text-zinc-900"
+                      )}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEnableTwoFactor}
+                      disabled={!passwordForAction}
+                      className={cn(
+                        "transition-all",
+                        isDark
+                          ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                          : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                      )}
+                    >
+                      <span className="text-xs uppercase tracking-wider">Enable</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className={cn(
+                  "p-4 border",
+                  isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+                )}>
+                  <p className={cn("text-sm mb-4", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                    Scan this QR code with your authenticator app:
+                  </p>
+                  {totpQrCode && (
+                    <div className="flex justify-center mb-4">
+                      <img src={totpQrCode} alt="TOTP QR Code" className="w-48 h-48" />
+                    </div>
+                  )}
+                  <p className={cn("text-xs mb-2", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                    Or enter this code manually:
+                  </p>
+                  <code className={cn(
+                    "block p-2 text-xs break-all",
+                    isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-700"
+                  )}>
+                    {totpUri?.split("secret=")[1]?.split("&")[0] || ""}
+                  </code>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value)}
+                    maxLength={6}
+                    className={cn(
+                      "w-40 h-8 text-sm",
+                      isDark
+                        ? "bg-zinc-900 border-zinc-700 text-zinc-100"
+                        : "bg-white border-zinc-300 text-zinc-900"
+                    )}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleVerifyTotp}
+                    disabled={verifyCode.length !== 6}
+                    className={cn(
+                      "transition-all",
+                      isDark
+                        ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                        : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                    )}
+                  >
+                    <span className="text-xs uppercase tracking-wider">Verify</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowTotpSetup(false);
+                      setTotpUri(null);
+                      setTotpQrCode(null);
+                      setVerifyCode("");
+                      setPasswordForAction("");
+                    }}
+                    className={cn(
+                      "transition-all",
+                      isDark
+                        ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                        : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                    )}
+                  >
+                    <span className="text-xs uppercase tracking-wider">Cancel</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Backup Codes Modal */}
+      <FormModal
+        open={showBackupCodes}
+        onOpenChange={setShowBackupCodes}
+        title="Backup Codes"
+        description="Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device."
+        onSubmit={() => {
+          setShowBackupCodes(false);
+          setBackupCodes([]);
+        }}
+        submitLabel="I've saved these codes"
+        isDark={isDark}
+        isValid={true}
+      >
+        <div className="space-y-2">
+          {backupCodes.map((code, index) => (
+            <div
+              key={index}
+              className={cn(
+                "font-mono text-sm p-2 text-center",
+                isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-700"
+              )}
+            >
+              {code}
+            </div>
+          ))}
+        </div>
+      </FormModal>
 
       {/* Add Passkey Modal */}
       <FormModal
@@ -436,12 +761,47 @@ const AccountPage = (): JSX.Element | null => {
         open={deletePasskeyModalOpen}
         onOpenChange={setDeletePasskeyModalOpen}
         title="Delete Passkey"
-        description={`Are you sure you want to delete "${selectedPasskey?.name}"? You will no longer be able to sign in using this passkey.`}
+        description={`Are you sure you want to delete "${selectedPasskey?.name || 'this passkey'}"? You will no longer be able to sign in using this passkey.`}
         onConfirm={handleDeletePasskey}
         confirmLabel="Delete"
         variant="danger"
         isDark={isDark}
       />
+
+      {/* Disable 2FA Modal */}
+      <FormModal
+        open={disableTwoFactorModalOpen}
+        onOpenChange={setDisableTwoFactorModalOpen}
+        title="Disable Two-Factor Authentication"
+        description="Enter your password to disable two-factor authentication. This will make your account less secure."
+        onSubmit={handleDisableTwoFactor}
+        submitLabel="Disable 2FA"
+        isDark={isDark}
+        isValid={passwordForAction.length > 0}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className={cn(
+              "text-xs uppercase tracking-wider mb-2 block",
+              isDark ? "text-zinc-400" : "text-zinc-600"
+            )}>
+              Password
+            </label>
+            <Input
+              type="password"
+              value={passwordForAction}
+              onChange={(e) => setPasswordForAction(e.target.value)}
+              placeholder="Enter your password"
+              className={cn(
+                "transition-all",
+                isDark
+                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
+                  : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400"
+              )}
+            />
+          </div>
+        </div>
+      </FormModal>
     </div>
   );
 };
