@@ -9,105 +9,96 @@ import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { BsSun, BsMoon, BsPlayFill, BsStopFill, BsArrowRepeat, BsPersonFill, BsGear, BsFileEarmark, BsDatabase, BsChevronDown, BsArrowReturnRight, BsExclamationTriangle } from "react-icons/bs";
+import { Spinner } from "@workspace/ui/components/spinner";
+import {
+  BsSun,
+  BsMoon,
+  BsPlayFill,
+  BsStopFill,
+  BsArrowRepeat,
+  BsPersonFill,
+  BsGear,
+  BsFileEarmark,
+  BsDatabase,
+  BsChevronDown,
+  BsArrowReturnRight,
+  BsFolder,
+  BsArchive,
+  BsTerminal,
+  BsShieldLock,
+  BsGlobe,
+  BsTrash,
+} from "react-icons/bs";
 import { useServer } from "@/components/server-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
+import { useActivity } from "@/hooks/queries";
+import type { ActivityLog } from "@/lib/api";
 
-type ActivityType = "server_start" | "server_stop" | "server_restart" | "user_login" | "file_change" | "setting_change" | "backup_created" | "database_query";
+// Map API event types to display configuration
+const eventConfig: Record<string, { icon: JSX.Element; label: string; color: string }> = {
+  "server:power.start": { icon: <BsPlayFill className="w-4 h-4" />, label: "Server started", color: "text-green-500" },
+  "server:power.stop": { icon: <BsStopFill className="w-4 h-4" />, label: "Server stopped", color: "text-red-500" },
+  "server:power.restart": { icon: <BsArrowRepeat className="w-4 h-4" />, label: "Server restarted", color: "text-amber-500" },
+  "server:power.kill": { icon: <BsStopFill className="w-4 h-4" />, label: "Server killed", color: "text-red-600" },
+  "server:console.command": { icon: <BsTerminal className="w-4 h-4" />, label: "Command executed", color: "text-blue-500" },
+  "server:settings.create": { icon: <BsGear className="w-4 h-4" />, label: "Server created", color: "text-purple-500" },
+  "server:settings.update": { icon: <BsGear className="w-4 h-4" />, label: "Server updated", color: "text-purple-500" },
+  "server:settings.delete": { icon: <BsTrash className="w-4 h-4" />, label: "Server deleted", color: "text-red-500" },
+  "server:settings.reinstall": { icon: <BsArrowRepeat className="w-4 h-4" />, label: "Server reinstalled", color: "text-amber-500" },
+  "server:startup.update": { icon: <BsGear className="w-4 h-4" />, label: "Startup updated", color: "text-purple-500" },
+  "server:file.read": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File read", color: "text-zinc-500" },
+  "server:file.write": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File modified", color: "text-cyan-500" },
+  "server:file.delete": { icon: <BsTrash className="w-4 h-4" />, label: "File deleted", color: "text-red-500" },
+  "server:file.rename": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File renamed", color: "text-cyan-500" },
+  "server:file.copy": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File copied", color: "text-cyan-500" },
+  "server:file.compress": { icon: <BsArchive className="w-4 h-4" />, label: "Files compressed", color: "text-cyan-500" },
+  "server:file.decompress": { icon: <BsArchive className="w-4 h-4" />, label: "Archive extracted", color: "text-cyan-500" },
+  "server:file.upload": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File uploaded", color: "text-green-500" },
+  "server:file.download": { icon: <BsFileEarmark className="w-4 h-4" />, label: "File downloaded", color: "text-blue-500" },
+  "server:directory.create": { icon: <BsFolder className="w-4 h-4" />, label: "Directory created", color: "text-cyan-500" },
+  "server:directory.delete": { icon: <BsFolder className="w-4 h-4" />, label: "Directory deleted", color: "text-red-500" },
+  "server:backup.create": { icon: <BsDatabase className="w-4 h-4" />, label: "Backup created", color: "text-green-500" },
+  "server:backup.delete": { icon: <BsDatabase className="w-4 h-4" />, label: "Backup deleted", color: "text-red-500" },
+  "server:backup.restore": { icon: <BsDatabase className="w-4 h-4" />, label: "Backup restored", color: "text-amber-500" },
+  "server:backup.download": { icon: <BsDatabase className="w-4 h-4" />, label: "Backup downloaded", color: "text-blue-500" },
+  "server:backup.lock": { icon: <BsShieldLock className="w-4 h-4" />, label: "Backup locked", color: "text-purple-500" },
+  "server:backup.unlock": { icon: <BsShieldLock className="w-4 h-4" />, label: "Backup unlocked", color: "text-purple-500" },
+  "server:allocation.add": { icon: <BsGlobe className="w-4 h-4" />, label: "Allocation added", color: "text-green-500" },
+  "server:allocation.remove": { icon: <BsGlobe className="w-4 h-4" />, label: "Allocation removed", color: "text-red-500" },
+  "server:transfer.start": { icon: <BsArrowRepeat className="w-4 h-4" />, label: "Transfer started", color: "text-amber-500" },
+  "server:transfer.complete": { icon: <BsArrowRepeat className="w-4 h-4" />, label: "Transfer completed", color: "text-green-500" },
+  "server:transfer.fail": { icon: <BsArrowRepeat className="w-4 h-4" />, label: "Transfer failed", color: "text-red-500" },
+  "server:webhook.create": { icon: <BsGlobe className="w-4 h-4" />, label: "Webhook created", color: "text-green-500" },
+  "server:webhook.update": { icon: <BsGlobe className="w-4 h-4" />, label: "Webhook updated", color: "text-purple-500" },
+  "server:webhook.delete": { icon: <BsGlobe className="w-4 h-4" />, label: "Webhook deleted", color: "text-red-500" },
+  "user:auth.login": { icon: <BsPersonFill className="w-4 h-4" />, label: "User logged in", color: "text-blue-500" },
+  "user:auth.logout": { icon: <BsPersonFill className="w-4 h-4" />, label: "User logged out", color: "text-zinc-500" },
+  "user:auth.2fa-enable": { icon: <BsShieldLock className="w-4 h-4" />, label: "2FA enabled", color: "text-green-500" },
+  "user:auth.2fa-disable": { icon: <BsShieldLock className="w-4 h-4" />, label: "2FA disabled", color: "text-red-500" },
+};
 
-interface ActivityMetadata {
-  [key: string]: string | number | undefined;
-}
+const getEventConfig = (event: string) => {
+  return eventConfig[event] || {
+    icon: <BsGear className="w-4 h-4" />,
+    label: event.replace(/[.:]/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+    color: "text-zinc-500",
+  };
+};
 
-interface ActivityLog {
-  id: string;
-  type: ActivityType;
-  message: string;
-  user?: string;
-  timestamp: string;
-  details?: string;
-  metadata?: ActivityMetadata;
-}
+const formatTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-const mockActivity: ActivityLog[] = [
-  {
-    id: "act-1",
-    type: "server_restart",
-    message: "Server restarted",
-    user: "john_doe",
-    timestamp: "5 minutes ago",
-    details: "Manual restart via dashboard",
-    metadata: {
-      "Trigger": "Manual",
-      "Previous Uptime": "2d 14h 32m",
-      "Restart Duration": "12.4s",
-      "IP Address": "192.168.1.105",
-    }
-  },
-  {
-    id: "act-2",
-    type: "file_change",
-    message: "server.properties modified",
-    user: "jane_smith",
-    timestamp: "15 minutes ago",
-    metadata: {
-      "File Path": "/server.properties",
-      "Changes": "3 lines modified",
-      "Previous Size": "2.3 KB",
-      "New Size": "2.4 KB",
-    }
-  },
-  {
-    id: "act-3",
-    type: "user_login",
-    message: "User logged in",
-    user: "bob_wilson",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "act-4",
-    type: "backup_created",
-    message: "Backup created",
-    timestamp: "3 hours ago",
-    details: "Automatic daily backup",
-    metadata: {
-      "Backup Size": "2.4 GB",
-      "Duration": "45s",
-      "Files Included": "1,247",
-      "Compression": "gzip",
-      "Storage Location": "s3://backups/daily/",
-    }
-  },
-  {
-    id: "act-5",
-    type: "setting_change",
-    message: "Max memory changed to 4GB",
-    user: "john_doe",
-    timestamp: "5 hours ago",
-  },
-  { id: "act-6", type: "server_start", message: "Server started", user: "john_doe", timestamp: "6 hours ago" },
-  {
-    id: "act-7",
-    type: "database_query",
-    message: "Database export completed",
-    user: "jane_smith",
-    timestamp: "1 day ago",
-    metadata: {
-      "Export Type": "Full backup",
-      "Tables": "12",
-      "Rows Exported": "45,892",
-      "File Size": "128 MB",
-      "Format": "SQL",
-    }
-  },
-  {
-    id: "act-8",
-    type: "server_stop",
-    message: "Server stopped",
-    timestamp: "1 day ago",
-    details: "Scheduled maintenance",
-  },
-];
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  if (days < 7) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  return date.toLocaleDateString();
+};
 
 const ActivityPage = (): JSX.Element | null => {
   const params = useParams();
@@ -116,6 +107,9 @@ const ActivityPage = (): JSX.Element | null => {
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Fetch activity logs
+  const { data: activityData, isLoading } = useActivity(serverId, { limit: 50 });
 
   useEffect(() => {
     setMounted(true);
@@ -149,26 +143,7 @@ const ActivityPage = (): JSX.Element | null => {
     );
   }
 
-  const getActivityIcon = (type: ActivityType) => {
-    switch (type) {
-      case "server_start":
-        return <BsPlayFill className="w-4 h-4 text-green-500" />;
-      case "server_stop":
-        return <BsStopFill className="w-4 h-4 text-red-500" />;
-      case "server_restart":
-        return <BsArrowRepeat className="w-4 h-4 text-amber-500" />;
-      case "user_login":
-        return <BsPersonFill className="w-4 h-4 text-blue-500" />;
-      case "file_change":
-        return <BsFileEarmark className="w-4 h-4 text-purple-500" />;
-      case "setting_change":
-        return <BsGear className="w-4 h-4 text-zinc-500" />;
-      case "backup_created":
-        return <BsArrowRepeat className="w-4 h-4 text-cyan-500" />;
-      case "database_query":
-        return <BsDatabase className="w-4 h-4 text-orange-500" />;
-    }
-  };
+  const logs = activityData?.logs || [];
 
   return (
     <div className={cn(
@@ -198,7 +173,7 @@ const ActivityPage = (): JSX.Element | null => {
                   "text-sm mt-1",
                   isDark ? "text-zinc-500" : "text-zinc-500"
                 )}>
-                  Server {serverId} • Recent activity
+                  Server {server?.shortId || serverId.slice(0, 8)} • {logs.length} recent activities
                 </p>
               </div>
             </div>
@@ -217,22 +192,6 @@ const ActivityPage = (): JSX.Element | null => {
             </Button>
           </div>
 
-          {/* Development Notice */}
-          <div className={cn(
-            "mb-6 p-4 border flex items-center gap-3",
-            isDark
-              ? "bg-amber-950/20 border-amber-700/30 text-amber-200/80"
-              : "bg-amber-50 border-amber-200 text-amber-800"
-          )}>
-            <BsExclamationTriangle className="w-5 h-5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">Under Development</p>
-              <p className={cn("text-xs mt-0.5", isDark ? "text-amber-200/60" : "text-amber-600")}>
-                Activity logging is not yet connected to the API. The data shown below is for demonstration purposes only.
-              </p>
-            </div>
-          </div>
-
           {/* Activity Timeline */}
           <div className={cn(
             "relative border",
@@ -246,126 +205,160 @@ const ActivityPage = (): JSX.Element | null => {
             <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
             <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
 
-            {mockActivity.map((activity, index) => {
-              const isExpandable = !!activity.metadata;
-              const isExpanded = expandedIds.has(activity.id);
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Spinner className="w-8 h-8" />
+              </div>
+            ) : logs.length === 0 ? (
+              <div className={cn(
+                "flex flex-col items-center justify-center py-20",
+                isDark ? "text-zinc-500" : "text-zinc-400"
+              )}>
+                <BsGear className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-sm">No activity recorded yet</p>
+              </div>
+            ) : (
+              logs.map((activity: ActivityLog, index: number) => {
+                const config = getEventConfig(activity.event);
+                const hasMetadata = activity.metadata && Object.keys(activity.metadata).length > 0;
+                const isExpanded = expandedIds.has(activity.id);
 
-              return (
-                <div
-                  key={activity.id}
-                  className={cn(
-                    index !== mockActivity.length - 1 && (isDark ? "border-b border-zinc-800/50" : "border-b border-zinc-200")
-                  )}
-                >
+                return (
                   <div
-                    onClick={() => isExpandable && toggleExpanded(activity.id)}
+                    key={activity.id}
                     className={cn(
-                      "flex items-start gap-4 px-6 py-4 transition-colors",
-                      isDark ? "hover:bg-zinc-800/20" : "hover:bg-zinc-50",
-                      isExpandable && "cursor-pointer"
+                      index !== logs.length - 1 && (isDark ? "border-b border-zinc-800/50" : "border-b border-zinc-200")
                     )}
                   >
-                    <div className={cn(
-                      "w-8 h-8 flex items-center justify-center border shrink-0 mt-0.5",
-                      isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
-                    )}>
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "text-sm font-medium",
-                          isDark ? "text-zinc-200" : "text-zinc-700"
-                        )}>
-                          {activity.message}
-                        </span>
-                        {activity.user && (
+                    <div
+                      onClick={() => hasMetadata && toggleExpanded(activity.id)}
+                      className={cn(
+                        "flex items-start gap-4 px-6 py-4 transition-colors",
+                        isDark ? "hover:bg-zinc-800/20" : "hover:bg-zinc-50",
+                        hasMetadata && "cursor-pointer"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 flex items-center justify-center border shrink-0 mt-0.5",
+                        isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100",
+                        config.color
+                      )}>
+                        {config.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
                           <span className={cn(
-                            "text-xs px-2 py-0.5 border",
-                            isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500"
+                            "text-sm font-medium",
+                            isDark ? "text-zinc-200" : "text-zinc-700"
                           )}>
-                            {activity.user}
+                            {config.label}
                           </span>
+                          {activity.ip && (
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 border",
+                              isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500"
+                            )}>
+                              {activity.ip}
+                            </span>
+                          )}
+                        </div>
+                        {!!activity.metadata?.command && (
+                          <p className={cn(
+                            "text-xs mt-1 font-mono",
+                            isDark ? "text-zinc-500" : "text-zinc-400"
+                          )}>
+                            {String(activity.metadata.command)}
+                          </p>
+                        )}
+                        {!!activity.metadata?.path && !activity.metadata?.command && (
+                          <p className={cn(
+                            "text-xs mt-1 font-mono",
+                            isDark ? "text-zinc-500" : "text-zinc-400"
+                          )}>
+                            {String(activity.metadata.path)}
+                          </p>
                         )}
                       </div>
-                      {activity.details && (
-                        <p className={cn(
-                          "text-xs mt-1",
-                          isDark ? "text-zinc-500" : "text-zinc-400"
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={cn(
+                          "text-xs",
+                          isDark ? "text-zinc-600" : "text-zinc-400"
                         )}>
-                          {activity.details}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className={cn(
-                        "text-xs",
-                        isDark ? "text-zinc-600" : "text-zinc-400"
-                      )}>
-                        {activity.timestamp}
-                      </span>
-                      {isExpandable && (
-                        <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <BsChevronDown className={cn(
-                            "w-4 h-4",
-                            isDark ? "text-zinc-600" : "text-zinc-400"
-                          )} />
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expandable metadata section */}
-                  <AnimatePresence>
-                    {isExpanded && activity.metadata && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-6 pb-4 pt-1 relative">
-                          {/* Arrow connector - positioned below the icon */}
-                          <div className="absolute left-[2.2rem] top-0 flex items-start gap-1">
-                            <BsArrowReturnRight className={cn(
-                              "w-4 h-4 mt-1",
+                          {formatTimestamp(activity.timestamp)}
+                        </span>
+                        {hasMetadata && (
+                          <motion.div
+                            animate={{ rotate: isExpanded ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <BsChevronDown className={cn(
+                              "w-4 h-4",
                               isDark ? "text-zinc-600" : "text-zinc-400"
                             )} />
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expandable metadata section */}
+                    <AnimatePresence>
+                      {isExpanded && activity.metadata && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-6 pb-4 pt-1 relative">
+                            {/* Arrow connector - positioned below the icon */}
+                            <div className="absolute left-[2.2rem] top-0 flex items-start gap-1">
+                              <BsArrowReturnRight className={cn(
+                                "w-4 h-4 mt-1",
+                                isDark ? "text-zinc-600" : "text-zinc-400"
+                              )} />
+                            </div>
+                            <div className={cn(
+                              "ml-8",
+                              "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border",
+                              isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-white"
+                            )}>
+                              {Object.entries(activity.metadata).map(([key, value]) => (
+                                <div key={key}>
+                                  <span className={cn(
+                                    "text-[10px] font-medium uppercase tracking-wider block",
+                                    isDark ? "text-zinc-500" : "text-zinc-400"
+                                  )}>
+                                    {key.replace(/_/g, " ")}
+                                  </span>
+                                  <span className={cn(
+                                    "text-xs mt-0.5 block font-mono break-all",
+                                    isDark ? "text-zinc-300" : "text-zinc-700"
+                                  )}>
+                                    {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className={cn(
-                            "ml-8",
-                            "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border",
-                            isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-white"
-                          )}>
-                            {Object.entries(activity.metadata).map(([key, value]) => (
-                              <div key={key}>
-                                <span className={cn(
-                                  "text-[10px] font-medium uppercase tracking-wider block",
-                                  isDark ? "text-zinc-500" : "text-zinc-400"
-                                )}>
-                                  {key}
-                                </span>
-                                <span className={cn(
-                                  "text-xs mt-0.5 block",
-                                  isDark ? "text-zinc-300" : "text-zinc-700"
-                                )}>
-                                  {value}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
+            )}
           </div>
+
+          {/* Pagination info */}
+          {activityData && activityData.total > 0 && (
+            <div className={cn(
+              "mt-4 text-xs text-center",
+              isDark ? "text-zinc-600" : "text-zinc-400"
+            )}>
+              Showing {logs.length} of {activityData.total} activities
+            </div>
+          )}
         </div>
       </div>
     </div>

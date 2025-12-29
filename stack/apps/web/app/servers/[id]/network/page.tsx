@@ -12,17 +12,10 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Switch } from "@workspace/ui/components/switch";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
-import { BsSun, BsMoon, BsPlus, BsTrash, BsGlobe, BsHddNetwork, BsKey } from "react-icons/bs";
+import { BsSun, BsMoon, BsPlus, BsTrash, BsGlobe, BsHddNetwork, BsKey, BsStar, BsStarFill } from "react-icons/bs";
 import { useServer } from "@/components/server-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-
-interface PortAllocation {
-  id: string;
-  port: number;
-  protocol: "tcp" | "udp" | "both";
-  description: string;
-  primary: boolean;
-}
+import { servers, type Allocation } from "@/lib/api";
 
 interface Subdomain {
   id: string;
@@ -32,47 +25,25 @@ interface Subdomain {
   ssl: boolean;
 }
 
-const mockPorts: PortAllocation[] = [
-  { id: "port-1", port: 25565, protocol: "tcp", description: "Minecraft Server", primary: true },
-  { id: "port-2", port: 25566, protocol: "udp", description: "Voice Chat", primary: false },
-  { id: "port-3", port: 8123, protocol: "tcp", description: "Dynmap Web", primary: false },
-];
-
-const mockSubdomains: Subdomain[] = [
-  { id: "sub-1", subdomain: "mc", domain: "stellarstack.app", targetPort: 25565, ssl: true },
-  { id: "sub-2", subdomain: "map", domain: "stellarstack.app", targetPort: 8123, ssl: true },
-];
-
-type Protocol = "tcp" | "udp" | "both";
-
-const protocolOptions: { value: Protocol; label: string }[] = [
-  { value: "tcp", label: "TCP" },
-  { value: "udp", label: "UDP" },
-  { value: "both", label: "Both" },
-];
-
 const NetworkPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
-  const [ports, setPorts] = useState<PortAllocation[]>(mockPorts);
-  const [subdomains, setSubdomains] = useState<Subdomain[]>(mockSubdomains);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [subdomains, setSubdomains] = useState<Subdomain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
 
-  // Get server data for SFTP details
-  const { server, consoleInfo, isInstalling } = useServer();
+  // Get server data for SFTP details and primary allocation
+  const { server, consoleInfo, isInstalling, refetch } = useServer();
 
   // Modal states
-  const [addPortModalOpen, setAddPortModalOpen] = useState(false);
   const [deletePortModalOpen, setDeletePortModalOpen] = useState(false);
   const [addSubdomainModalOpen, setAddSubdomainModalOpen] = useState(false);
   const [deleteSubdomainModalOpen, setDeleteSubdomainModalOpen] = useState(false);
-  const [selectedPort, setSelectedPort] = useState<PortAllocation | null>(null);
+  const [selectedAllocation, setSelectedAllocation] = useState<Allocation | null>(null);
   const [selectedSubdomain, setSelectedSubdomain] = useState<Subdomain | null>(null);
-
-  // Port form states
-  const [portProtocol, setPortProtocol] = useState<Protocol>("tcp");
-  const [portDescription, setPortDescription] = useState("");
 
   // Subdomain form states
   const [subdomainName, setSubdomainName] = useState("");
@@ -82,6 +53,25 @@ const NetworkPage = (): JSX.Element | null => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch allocations
+  useEffect(() => {
+    if (serverId) {
+      fetchAllocations();
+    }
+  }, [serverId]);
+
+  const fetchAllocations = async () => {
+    try {
+      setLoading(true);
+      const data = await servers.allocations.list(serverId);
+      setAllocations(data);
+    } catch (error) {
+      console.error("Failed to fetch allocations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
@@ -99,43 +89,23 @@ const NetworkPage = (): JSX.Element | null => {
     );
   }
 
-  // Generate a random port between 30000 and 40000 for demo purposes
-  const generateRandomPort = () => {
-    const existingPorts = ports.map(p => p.port);
-    let newPort: number;
-    do {
-      newPort = Math.floor(Math.random() * 10000) + 30000;
-    } while (existingPorts.includes(newPort));
-    return newPort;
-  };
-
-  const resetPortForm = () => {
-    setPortProtocol("tcp");
-    setPortDescription("");
-  };
-
   const resetSubdomainForm = () => {
     setSubdomainName("");
     setSubdomainTargetPort("");
     setSubdomainSsl(true);
   };
 
-  const openAddPortModal = () => {
-    resetPortForm();
-    setAddPortModalOpen(true);
-  };
-
-  const openDeletePortModal = (port: PortAllocation) => {
-    setSelectedPort(port);
+  const openDeletePortModal = (allocation: Allocation) => {
+    setSelectedAllocation(allocation);
     setDeletePortModalOpen(true);
   };
 
   const openAddSubdomainModal = () => {
     resetSubdomainForm();
-    // Default to primary port or first port
-    const defaultPort = ports.find(p => p.primary) || ports[0];
-    if (defaultPort) {
-      setSubdomainTargetPort(defaultPort.port.toString());
+    // Default to primary allocation or first allocation
+    const defaultAllocation = allocations.find(a => a.id === server?.primaryAllocationId) || allocations[0];
+    if (defaultAllocation) {
+      setSubdomainTargetPort(defaultAllocation.port.toString());
     }
     setAddSubdomainModalOpen(true);
   };
@@ -145,28 +115,34 @@ const NetworkPage = (): JSX.Element | null => {
     setDeleteSubdomainModalOpen(true);
   };
 
-  const handleAddPort = () => {
-    const newPort: PortAllocation = {
-      id: `port-${Date.now()}`,
-      port: generateRandomPort(),
-      protocol: portProtocol,
-      description: portDescription || "Custom Port",
-      primary: false,
-    };
-    setPorts(prev => [...prev, newPort]);
-    setAddPortModalOpen(false);
-    resetPortForm();
+  const handleDeletePort = async () => {
+    if (!selectedAllocation) return;
+    try {
+      await servers.allocations.remove(serverId, selectedAllocation.id);
+      await fetchAllocations();
+      setDeletePortModalOpen(false);
+      setSelectedAllocation(null);
+    } catch (error) {
+      console.error("Failed to delete allocation:", error);
+    }
   };
 
-  const handleDeletePort = () => {
-    if (!selectedPort) return;
-    setPorts(prev => prev.filter(p => p.id !== selectedPort.id));
-    setDeletePortModalOpen(false);
-    setSelectedPort(null);
+  const handleSetPrimary = async (allocation: Allocation) => {
+    if (allocation.id === server?.primaryAllocationId) return;
+
+    try {
+      setSettingPrimary(allocation.id);
+      await servers.allocations.setPrimary(serverId, allocation.id);
+      await refetch();
+    } catch (error) {
+      console.error("Failed to set primary allocation:", error);
+    } finally {
+      setSettingPrimary(null);
+    }
   };
 
   const handleAddSubdomain = () => {
-    const selectedPortNumber = subdomainTargetPort ? parseInt(subdomainTargetPort) : ports[0]?.port || 0;
+    const selectedPortNumber = subdomainTargetPort ? parseInt(subdomainTargetPort) : allocations[0]?.port || 0;
     const newSubdomain: Subdomain = {
       id: `sub-${Date.now()}`,
       subdomain: subdomainName.toLowerCase(),
@@ -186,8 +162,8 @@ const NetworkPage = (): JSX.Element | null => {
     setSelectedSubdomain(null);
   };
 
-  const isPortValid = true; // Port is auto-assigned, so always valid
-  const isSubdomainValid = subdomainName.trim() !== "" && ports.length > 0;
+  const isSubdomainValid = subdomainName.trim() !== "" && allocations.length > 0;
+  const isPrimary = (allocation: Allocation) => allocation.id === server?.primaryAllocationId;
 
   return (
     <div className={cn(
@@ -217,7 +193,7 @@ const NetworkPage = (): JSX.Element | null => {
                   "text-sm mt-1",
                   isDark ? "text-zinc-500" : "text-zinc-500"
                 )}>
-                  Server {serverId} • Port allocation & subdomains
+                  Server {server?.shortId || serverId} • Port allocation & subdomains
                 </p>
               </div>
             </div>
@@ -248,92 +224,121 @@ const NetworkPage = (): JSX.Element | null => {
                   Port Allocations
                 </h2>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openAddPortModal}
-                className={cn(
-                  "transition-all gap-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-                )}
-              >
-                <BsPlus className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Add Port</span>
-              </Button>
             </div>
 
-            <div className="space-y-3">
-              {ports.map((port) => (
-                <div
-                  key={port.id}
-                  className={cn(
-                    "relative p-4 border transition-all",
-                    isDark
-                      ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-                      : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
-                  )}
-                >
-                  {/* Corner decorations */}
-                  <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            {loading ? (
+              <div className={cn(
+                "p-8 text-center border",
+                isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+              )}>
+                Loading allocations...
+              </div>
+            ) : allocations.length === 0 ? (
+              <div className={cn(
+                "p-8 text-center border",
+                isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+              )}>
+                No allocations assigned to this server.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allocations.map((allocation) => (
+                  <div
+                    key={allocation.id}
+                    className={cn(
+                      "relative p-4 border transition-all",
+                      isDark
+                        ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
+                        : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+                    )}
+                  >
+                    {/* Corner decorations */}
+                    <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "text-lg font-mono font-medium",
-                        isDark ? "text-zinc-100" : "text-zinc-800"
-                      )}>
-                        {port.port}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "text-lg font-mono font-medium",
+                          isDark ? "text-zinc-100" : "text-zinc-800"
+                        )}>
+                          {allocation.ip}:{allocation.port}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isPrimary(allocation) && (
+                            <span className={cn(
+                              "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
+                              isDark ? "border-green-500/50 text-green-400" : "border-green-400 text-green-600"
+                            )}>
+                              Primary
+                            </span>
+                          )}
+                          {allocation.alias && (
+                            <span className={cn(
+                              "text-sm",
+                              isDark ? "text-zinc-500" : "text-zinc-500"
+                            )}>
+                              {allocation.alias}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                          isDark ? "border-zinc-600 text-zinc-400" : "border-zinc-400 text-zinc-600"
-                        )}>
-                          {port.protocol}
-                        </span>
-                        {port.primary && (
-                          <span className={cn(
-                            "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                            isDark ? "border-green-500/50 text-green-400" : "border-green-400 text-green-600"
-                          )}>
-                            Primary
-                          </span>
+                        {!isPrimary(allocation) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={settingPrimary === allocation.id}
+                            onClick={() => handleSetPrimary(allocation)}
+                            className={cn(
+                              "transition-all p-2",
+                              isDark
+                                ? "border-zinc-700 text-zinc-400 hover:text-yellow-400 hover:border-yellow-700"
+                                : "border-zinc-300 text-zinc-600 hover:text-yellow-600 hover:border-yellow-400"
+                            )}
+                            title="Set as primary"
+                          >
+                            {settingPrimary === allocation.id ? (
+                              <span className="w-4 h-4 animate-spin">⏳</span>
+                            ) : (
+                              <BsStar className="w-4 h-4" />
+                            )}
+                          </Button>
                         )}
+                        {isPrimary(allocation) && (
+                          <div className={cn(
+                            "p-2",
+                            isDark ? "text-yellow-400" : "text-yellow-600"
+                          )}>
+                            <BsStarFill className="w-4 h-4" />
+                          </div>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isPrimary(allocation) || allocations.length <= 1}
+                          onClick={() => openDeletePortModal(allocation)}
+                          className={cn(
+                            "transition-all p-2",
+                            isDark
+                              ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700 disabled:opacity-30"
+                              : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400 disabled:opacity-30"
+                          )}
+                        >
+                          <BsTrash className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <span className={cn(
-                        "text-sm",
-                        isDark ? "text-zinc-500" : "text-zinc-500"
-                      )}>
-                        {port.description}
-                      </span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={port.primary}
-                      onClick={() => openDeletePortModal(port)}
-                      className={cn(
-                        "transition-all p-2",
-                        isDark
-                          ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700 disabled:opacity-30"
-                          : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400 disabled:opacity-30"
-                      )}
-                    >
-                      <BsTrash className="w-4 h-4" />
-                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Subdomains Section */}
-          <div>
+          <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <BsGlobe className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-600")} />
@@ -360,65 +365,74 @@ const NetworkPage = (): JSX.Element | null => {
               </Button>
             </div>
 
-            <div className="space-y-3">
-              {subdomains.map((sub) => (
-                <div
-                  key={sub.id}
-                  className={cn(
-                    "relative p-4 border transition-all",
-                    isDark
-                      ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-                      : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
-                  )}
-                >
-                  {/* Corner decorations */}
-                  <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-                  <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            {subdomains.length === 0 ? (
+              <div className={cn(
+                "p-8 text-center border",
+                isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+              )}>
+                No subdomains configured. Add a subdomain to create a friendly URL for your server.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {subdomains.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className={cn(
+                      "relative p-4 border transition-all",
+                      isDark
+                        ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
+                        : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+                    )}
+                  >
+                    {/* Corner decorations */}
+                    <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
+                    <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "text-sm font-mono",
-                        isDark ? "text-zinc-100" : "text-zinc-800"
-                      )}>
-                        {sub.subdomain}.{sub.domain}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "text-sm font-mono",
+                          isDark ? "text-zinc-100" : "text-zinc-800"
+                        )}>
+                          {sub.subdomain}.{sub.domain}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {sub.ssl && (
+                            <span className={cn(
+                              "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
+                              isDark ? "border-green-500/50 text-green-400" : "border-green-400 text-green-600"
+                            )}>
+                              SSL
+                            </span>
+                          )}
+                        </div>
+                        <span className={cn(
+                          "text-sm",
+                          isDark ? "text-zinc-500" : "text-zinc-500"
+                        )}>
+                          → Port {sub.targetPort}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {sub.ssl && (
-                          <span className={cn(
-                            "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                            isDark ? "border-green-500/50 text-green-400" : "border-green-400 text-green-600"
-                          )}>
-                            SSL
-                          </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDeleteSubdomainModal(sub)}
+                        className={cn(
+                          "transition-all p-2",
+                          isDark
+                            ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
+                            : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
                         )}
-                      </div>
-                      <span className={cn(
-                        "text-sm",
-                        isDark ? "text-zinc-500" : "text-zinc-500"
-                      )}>
-                        → Port {sub.targetPort}
-                      </span>
+                      >
+                        <BsTrash className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDeleteSubdomainModal(sub)}
-                      className={cn(
-                        "transition-all p-2",
-                        isDark
-                          ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
-                          : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
-                      )}
-                    >
-                      <BsTrash className="w-4 h-4" />
-                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SFTP Connection Details Section */}
@@ -545,94 +559,14 @@ const NetworkPage = (): JSX.Element | null => {
         </div>
       </div>
 
-      {/* Add Port Modal */}
-      <FormModal
-        open={addPortModalOpen}
-        onOpenChange={setAddPortModalOpen}
-        title="Allocate Port"
-        description="A port will be automatically assigned to your server."
-        onSubmit={handleAddPort}
-        submitLabel="Allocate Port"
-        isDark={isDark}
-        isValid={isPortValid}
-      >
-        <div className="space-y-4">
-          <div className={cn(
-            "p-4 border text-center",
-            isDark ? "bg-zinc-800/50 border-zinc-700" : "bg-zinc-100 border-zinc-300"
-          )}>
-            <p className={cn(
-              "text-xs uppercase tracking-wider mb-1",
-              isDark ? "text-zinc-500" : "text-zinc-500"
-            )}>
-              Port Assignment
-            </p>
-            <p className={cn(
-              "text-sm",
-              isDark ? "text-zinc-300" : "text-zinc-600"
-            )}>
-              A random available port will be assigned automatically
-            </p>
-          </div>
-          <div>
-            <label className={cn(
-              "text-xs uppercase tracking-wider mb-2 block",
-              isDark ? "text-zinc-400" : "text-zinc-600"
-            )}>
-              Protocol
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {protocolOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPortProtocol(opt.value)}
-                  className={cn(
-                    "p-3 text-center border transition-all text-sm",
-                    portProtocol === opt.value
-                      ? isDark
-                        ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-400 bg-zinc-100 text-zinc-900"
-                      : isDark
-                        ? "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                        : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className={cn(
-              "text-xs uppercase tracking-wider mb-2 block",
-              isDark ? "text-zinc-400" : "text-zinc-600"
-            )}>
-              Description
-            </label>
-            <Input
-              value={portDescription}
-              onChange={(e) => setPortDescription(e.target.value)}
-              placeholder="e.g., Voice Chat, Query Port, RCON"
-              className={cn(
-                "transition-all",
-                isDark
-                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
-                  : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400"
-              )}
-            />
-          </div>
-        </div>
-      </FormModal>
-
       {/* Delete Port Modal */}
       <ConfirmationModal
         open={deletePortModalOpen}
         onOpenChange={setDeletePortModalOpen}
-        title="Delete Port"
-        description={`Are you sure you want to remove port ${selectedPort?.port}? Services using this port will no longer be accessible.`}
+        title="Remove Allocation"
+        description={`Are you sure you want to remove ${selectedAllocation?.ip}:${selectedAllocation?.port}? Services using this allocation will no longer be accessible.`}
         onConfirm={handleDeletePort}
-        confirmLabel="Delete"
+        confirmLabel="Remove"
         variant="danger"
         isDark={isDark}
       />
@@ -683,16 +617,16 @@ const NetworkPage = (): JSX.Element | null => {
             )}>
               Target Port
             </label>
-            {ports.length > 0 ? (
+            {allocations.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
-                {ports.map((port) => (
+                {allocations.map((allocation) => (
                   <button
-                    key={port.id}
+                    key={allocation.id}
                     type="button"
-                    onClick={() => setSubdomainTargetPort(port.port.toString())}
+                    onClick={() => setSubdomainTargetPort(allocation.port.toString())}
                     className={cn(
                       "p-3 text-left border transition-all",
-                      (subdomainTargetPort === port.port.toString() || (!subdomainTargetPort && port.primary))
+                      (subdomainTargetPort === allocation.port.toString() || (!subdomainTargetPort && isPrimary(allocation)))
                         ? isDark
                           ? "border-zinc-500 bg-zinc-800 text-zinc-100"
                           : "border-zinc-400 bg-zinc-100 text-zinc-900"
@@ -703,14 +637,8 @@ const NetworkPage = (): JSX.Element | null => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-sm">{port.port}</span>
-                        <span className={cn(
-                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                          isDark ? "border-zinc-600 text-zinc-500" : "border-zinc-400 text-zinc-500"
-                        )}>
-                          {port.protocol}
-                        </span>
-                        {port.primary && (
+                        <span className="font-mono text-sm">{allocation.ip}:{allocation.port}</span>
+                        {isPrimary(allocation) && (
                           <span className={cn(
                             "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
                             isDark ? "border-green-500/50 text-green-400" : "border-green-400 text-green-600"
@@ -719,12 +647,14 @@ const NetworkPage = (): JSX.Element | null => {
                           </span>
                         )}
                       </div>
-                      <span className={cn(
-                        "text-xs",
-                        isDark ? "text-zinc-500" : "text-zinc-500"
-                      )}>
-                        {port.description}
-                      </span>
+                      {allocation.alias && (
+                        <span className={cn(
+                          "text-xs",
+                          isDark ? "text-zinc-500" : "text-zinc-500"
+                        )}>
+                          {allocation.alias}
+                        </span>
+                      )}
                     </div>
                   </button>
                 ))}
@@ -738,7 +668,7 @@ const NetworkPage = (): JSX.Element | null => {
                   "text-sm",
                   isDark ? "text-zinc-400" : "text-zinc-500"
                 )}>
-                  No ports allocated. Allocate a port first.
+                  No allocations available.
                 </p>
               </div>
             )}

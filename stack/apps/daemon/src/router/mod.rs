@@ -116,6 +116,18 @@ fn server_routes() -> Router<AppState> {
 
         // Backup routes
         .nest("/backup", backup_routes())
+
+        // Transfer routes
+        .nest("/transfer", transfer_routes())
+}
+
+/// Routes for server transfer operations
+fn transfer_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", post(handlers::transfer::initiate_transfer))
+        .route("/", get(handlers::transfer::transfer_status))
+        .route("/receive", post(handlers::transfer::receive_transfer))
+        .route("/cancel", post(handlers::transfer::cancel_transfer))
 }
 
 /// Routes for file operations

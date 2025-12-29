@@ -21,7 +21,7 @@ export async function requireAuth(c: Context, next: Next) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  c.set("user", session.user as SessionUser);
+  c.set("user", session.user as unknown as SessionUser);
   c.set("session", session.session);
 
   return next();
@@ -37,7 +37,7 @@ export async function requireAdmin(c: Context, next: Next) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const user = session.user as SessionUser;
+  const user = session.user as unknown as SessionUser;
 
   if (user.role !== "admin") {
     return c.json({ error: "Forbidden: Admin access required" }, 403);
@@ -114,7 +114,7 @@ export async function requireServerAccess(c: Context, next: Next) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const user = session.user as SessionUser;
+  const user = session.user as unknown as SessionUser;
   const serverId = c.req.param("serverId");
 
   if (!serverId) {

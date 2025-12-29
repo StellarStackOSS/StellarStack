@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { db } from "../lib/db";
 import { requireAuth, requireAdmin } from "../middleware/auth";
+import { sendEmail, testEmailConfig, getEmailConfigStatus } from "../lib/email";
 import type { Variables } from "../types";
 
 const account = new Hono<{ Variables: Variables }>();
@@ -190,6 +191,49 @@ account.delete("/users/:id", requireAdmin, async (c) => {
     return c.json({ success: true });
   } catch {
     return c.json({ error: "User not found or has associated servers" }, 400);
+  }
+});
+
+// === Admin email management ===
+
+// Get email configuration status (admin only)
+account.get("/admin/email/status", requireAdmin, async (c) => {
+  const status = getEmailConfigStatus();
+  return c.json(status);
+});
+
+// Send test email (admin only)
+account.post("/admin/email/test", requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const testAddress = body.email;
+
+  if (!testAddress) {
+    return c.json({ error: "Email address required" }, 400);
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(testAddress)) {
+    return c.json({ error: "Invalid email format" }, 400);
+  }
+
+  const result = await sendEmail({
+    to: testAddress,
+    subject: "StellarStack Email Test",
+    html: `
+      <h1>Email Configuration Test</h1>
+      <p>This is a test email from StellarStack.</p>
+      <p><strong>Provider:</strong> ${getEmailConfigStatus().provider}</p>
+      <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+      <p>If you received this email, your email configuration is working correctly!</p>
+    `,
+    text: `Email Configuration Test\n\nThis is a test email from StellarStack.\nProvider: ${getEmailConfigStatus().provider}\nTime: ${new Date().toISOString()}\n\nIf you received this email, your email configuration is working correctly!`,
+  });
+
+  if (result.success) {
+    return c.json({ success: true, messageId: result.messageId });
+  } else {
+    return c.json({ error: result.error || "Failed to send test email" }, 500);
   }
 });
 

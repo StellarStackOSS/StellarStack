@@ -11,6 +11,7 @@ mod manager;
 mod power;
 mod server;
 mod state;
+mod transfer;
 
 pub use backup::{create_backup, restore_backup, delete_backup, list_backups, BackupResult, BackupError, BackupInfo};
 pub use configuration::*;
@@ -20,3 +21,7 @@ pub use manager::Manager;
 pub use power::{PowerAction, PowerError};
 pub use server::Server;
 pub use state::ServerState;
+pub use transfer::{
+    create_transfer_archive, upload_transfer_archive, receive_transfer_archive,
+    cleanup_transfer_archive, TransferArchiveResult, TransferConfig, TransferError,
+};
