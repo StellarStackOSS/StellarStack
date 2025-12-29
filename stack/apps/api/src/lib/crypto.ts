@@ -26,7 +26,7 @@ const AES_ALGORITHM = "aes-256-cbc";
 const IV_LENGTH = 16; // AES block size
 
 // Get encryption key from environment (must be 32 bytes for AES-256)
-function getEncryptionKey(): Buffer {
+const getEncryptionKey = (): Buffer => {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
     throw new Error("ENCRYPTION_KEY environment variable is required for encryption operations");
@@ -44,7 +44,7 @@ function getEncryptionKey(): Buffer {
 
   // Hash the key to get consistent 32 bytes
   return createHash("sha256").update(key).digest();
-}
+};
 
 // ============================================================================
 // Token Generation
@@ -53,16 +53,16 @@ function getEncryptionKey(): Buffer {
 /**
  * Generate a cryptographically secure random token
  */
-export function generateToken(length: number = 32): string {
+export const generateToken = (length: number = 32): string => {
   return randomBytes(length).toString("hex");
-}
+};
 
 /**
  * Generate a secure random string (URL-safe)
  */
-export function generateSecureString(length: number = 32): string {
+export const generateSecureString = (length: number = 32): string => {
   return randomBytes(length).toString("base64url");
-}
+};
 
 // ============================================================================
 // Hashing (SHA-256)
@@ -71,15 +71,15 @@ export function generateSecureString(length: number = 32): string {
 /**
  * Hash a string using SHA-256
  */
-export function hashToken(token: string): string {
+export const hashToken = (token: string): string => {
   return createHash("sha256").update(token).digest("hex");
-}
+};
 
 /**
  * Verify a token against a SHA-256 hash using timing-safe comparison
  * Prevents timing attacks
  */
-export function verifyToken(token: string, hash: string): boolean {
+export const verifyToken = (token: string, hash: string): boolean => {
   const tokenHash = hashToken(token);
 
   // Both must be same length for timingSafeEqual
@@ -92,7 +92,7 @@ export function verifyToken(token: string, hash: string): boolean {
   } catch {
     return false;
   }
-}
+};
 
 // ============================================================================
 // Password Hashing (bcrypt) - Like Pterodactyl
@@ -103,9 +103,9 @@ export function verifyToken(token: string, hash: string): boolean {
  * @param password - Plain text password
  * @returns Promise<string> - Bcrypt hash
  */
-export async function hashPassword(password: string): Promise<string> {
+export const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, BCRYPT_ROUNDS);
-}
+};
 
 /**
  * Verify a password against a bcrypt hash
@@ -113,13 +113,13 @@ export async function hashPassword(password: string): Promise<string> {
  * @param hash - Bcrypt hash to compare against
  * @returns Promise<boolean> - True if password matches
  */
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
   try {
     return await bcrypt.compare(password, hash);
   } catch {
     return false;
   }
-}
+};
 
 // ============================================================================
 // AES-256-CBC Encryption - Like Pterodactyl
@@ -131,7 +131,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * @param plaintext - Data to encrypt
  * @returns Encrypted data as base64 string (IV prepended)
  */
-export function encrypt(plaintext: string): string {
+export const encrypt = (plaintext: string): string => {
   const key = getEncryptionKey();
   const iv = randomBytes(IV_LENGTH);
 
@@ -141,14 +141,14 @@ export function encrypt(plaintext: string): string {
 
   // Prepend IV to encrypted data
   return iv.toString("base64") + ":" + encrypted;
-}
+};
 
 /**
  * Decrypt data encrypted with AES-256-CBC
  * @param ciphertext - Encrypted data as base64 (IV:encrypted)
  * @returns Decrypted plaintext
  */
-export function decrypt(ciphertext: string): string {
+export const decrypt = (ciphertext: string): string => {
   const key = getEncryptionKey();
 
   const [ivBase64, encryptedData] = ciphertext.split(":");
@@ -166,29 +166,29 @@ export function decrypt(ciphertext: string): string {
   decrypted += decipher.final("utf8");
 
   return decrypted;
-}
+};
 
 /**
  * Safely encrypt sensitive data, returning null if encryption fails
  */
-export function safeEncrypt(plaintext: string): string | null {
+export const safeEncrypt = (plaintext: string): string | null => {
   try {
     return encrypt(plaintext);
   } catch {
     return null;
   }
-}
+};
 
 /**
  * Safely decrypt data, returning null if decryption fails
  */
-export function safeDecrypt(ciphertext: string): string | null {
+export const safeDecrypt = (ciphertext: string): string | null => {
   try {
     return decrypt(ciphertext);
   } catch {
     return null;
   }
-}
+};
 
 // ============================================================================
 // Timing-Safe String Comparison
@@ -197,7 +197,7 @@ export function safeDecrypt(ciphertext: string): string | null {
 /**
  * Compare two strings in constant time to prevent timing attacks
  */
-export function timingSafeCompare(a: string, b: string): boolean {
+export const timingSafeCompare = (a: string, b: string): boolean => {
   if (a.length !== b.length) {
     // Still do a comparison to maintain constant time
     timingSafeEqual(Buffer.from(a), Buffer.from(a));
@@ -209,7 +209,7 @@ export function timingSafeCompare(a: string, b: string): boolean {
   } catch {
     return false;
   }
-}
+};
 
 // ============================================================================
 // HMAC Generation
@@ -218,16 +218,16 @@ export function timingSafeCompare(a: string, b: string): boolean {
 /**
  * Generate an HMAC signature
  */
-export function generateHmac(data: string, secret: string): string {
+export const generateHmac = (data: string, secret: string): string => {
   return createHash("sha256")
     .update(data + secret)
     .digest("hex");
-}
+};
 
 /**
  * Verify an HMAC signature using timing-safe comparison
  */
-export function verifyHmac(data: string, signature: string, secret: string): boolean {
+export const verifyHmac = (data: string, signature: string, secret: string): boolean => {
   const expected = generateHmac(data, secret);
   return timingSafeCompare(expected, signature);
-}
+};

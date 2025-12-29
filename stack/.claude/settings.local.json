@@ -49,7 +49,14 @@
       "Bash(bash -n:*)",
       "Bash(pnpm --filter @workspace/api build:*)",
       "Bash(ls:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(find:*)",
+      "Bash(pnpm:*)",
+      "Bash(for dir in */)",
+      "Bash(do if [ ! -f \"$dirindex.ts\" ])",
+      "Bash(then echo \"Missing: $dir\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import {
   CloudIcon,
   GlobeIcon,
@@ -21,7 +22,7 @@ import Link from "next/link";
 import { adminSettings, type CloudflareSettings, type SubdomainSettings, type EmailSettings, type BrandingSettings } from "@/lib/api";
 import { toast } from "sonner";
 
-function InputField({
+const InputField = ({
   label,
   type = "text",
   value,
@@ -39,7 +40,7 @@ function InputField({
   isDark: boolean;
   disabled?: boolean;
   helperText?: string;
-}) {
+}) => {
   return (
     <div>
       <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
@@ -63,9 +64,9 @@ function InputField({
       )}
     </div>
   );
-}
+};
 
-function Toggle({
+const Toggle = ({
   label,
   checked,
   onChange,
@@ -77,7 +78,7 @@ function Toggle({
   onChange: (value: boolean) => void;
   isDark: boolean;
   disabled?: boolean;
-}) {
+}) => {
   return (
     <label className="flex items-center gap-3 cursor-pointer">
       <div
@@ -104,9 +105,9 @@ function Toggle({
       <span className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}>{label}</span>
     </label>
   );
-}
+};
 
-function Select({
+const Select = ({
   label,
   value,
   onChange,
@@ -120,7 +121,7 @@ function Select({
   options: { value: string; label: string }[];
   isDark: boolean;
   disabled?: boolean;
-}) {
+}) => {
   return (
     <div>
       <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
@@ -145,9 +146,9 @@ function Select({
       </select>
     </div>
   );
-}
+};
 
-function SettingsSection({
+const SettingsSection = ({
   title,
   description,
   icon: Icon,
@@ -169,7 +170,7 @@ function SettingsSection({
   isSaving: boolean;
   isTesting?: boolean;
   testResult?: { success: boolean; message?: string } | null;
-}) {
+}) => {
   return (
     <div
       className={cn(
@@ -251,7 +252,7 @@ function SettingsSection({
       </div>
     </div>
   );
-}
+};
 
 export default function AdminSettingsPage() {
   const { resolvedTheme } = useNextTheme();

@@ -10,14 +10,14 @@ export interface ConsoleLine {
 }
 
 // Strip ANSI escape codes from text (common in Pterodactyl egg output)
-function stripAnsi(text: string): string {
+const stripAnsi = (text: string): string => {
   // Matches ANSI escape codes including:
   // - Color codes: \x1b[31m, \x1b[0m, etc.
   // - Control codes: \x1b[2J (clear screen), \x1b[H (cursor home), etc.
   // - Extended codes: \x1b[38;2;r;g;bm (24-bit color), \x1b[38;5;nm (256 color)
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07|\x1b\(B|\x1b\[\?.*?[hl]|\r/g, "");
-}
+};
 
 interface UseConsoleWebSocketOptions {
   consoleInfo: ConsoleInfo | null;
@@ -52,7 +52,7 @@ interface UseConsoleWebSocketResult {
  * - "jwt error" - Authentication error
  * - "error" - General error
  */
-export function useConsoleWebSocket({
+export const useConsoleWebSocket = ({
   consoleInfo,
   enabled = true,
   maxLines = 500,
@@ -60,7 +60,7 @@ export function useConsoleWebSocket({
   onDisconnect,
   onError,
   onStatusChange,
-}: UseConsoleWebSocketOptions): UseConsoleWebSocketResult {
+}: UseConsoleWebSocketOptions): UseConsoleWebSocketResult => {
   const [lines, setLines] = useState<ConsoleLine[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -380,4 +380,4 @@ export function useConsoleWebSocket({
     clearLines,
     reconnect,
   };
-}
+};

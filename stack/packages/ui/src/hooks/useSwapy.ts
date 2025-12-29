@@ -23,9 +23,9 @@ export interface UseSwapyReturn<T extends HTMLElement> {
   update: () => void;
 }
 
-export function useSwapy<T extends HTMLElement = HTMLDivElement>(
+export const useSwapy = <T extends HTMLElement = HTMLDivElement>(
   options: UseSwapyOptions = {}
-): UseSwapyReturn<T> {
+): UseSwapyReturn<T> => {
   const {
     animation = "dynamic",
     enabled = true,
@@ -103,4 +103,4 @@ export function useSwapy<T extends HTMLElement = HTMLDivElement>(
     disable,
     update,
   };
-}
+};

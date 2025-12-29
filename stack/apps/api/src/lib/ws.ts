@@ -1,34 +1,8 @@
 import { WebSocket } from "ws";
+import type { WSEventType, WSEvent, ConnectedClient } from "./ws.types";
 
-// Event types that can be broadcast to clients
-export type WSEventType =
-  | "server:created"
-  | "server:updated"
-  | "server:deleted"
-  | "server:status"
-  | "server:stats"
-  | "node:updated"
-  | "node:status"
-  | "backup:created"
-  | "backup:deleted"
-  | "backup:status";
-
-export interface WSEvent {
-  type: WSEventType;
-  data: unknown;
-  // Optional: scope events to specific users
-  userId?: string;
-  // Optional: scope events to specific servers
-  serverId?: string;
-}
-
-interface ConnectedClient {
-  ws: WebSocket;
-  userId?: string;
-  authenticated: boolean;
-  // Servers the client is subscribed to
-  subscribedServers: Set<string>;
-}
+// Re-export types for backwards compatibility
+export type { WSEventType, WSEvent, ConnectedClient } from "./ws.types";
 
 class WebSocketManager {
   private clients: Map<WebSocket, ConnectedClient> = new Map();
@@ -164,21 +138,21 @@ class WebSocketManager {
 export const wsManager = new WebSocketManager();
 
 // Helper to emit server events
-export function emitServerEvent(
+export const emitServerEvent = (
   type: WSEventType,
   serverId: string,
   data: unknown,
   userId?: string
-) {
+) => {
   wsManager.broadcast({
     type,
     serverId,
     data,
     userId,
   });
-}
+};
 
 // Helper to emit global events
-export function emitGlobalEvent(type: WSEventType, data: unknown) {
+export const emitGlobalEvent = (type: WSEventType, data: unknown) => {
   wsManager.broadcast({ type, data });
-}
+};

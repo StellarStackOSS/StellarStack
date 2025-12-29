@@ -9,32 +9,32 @@ export const fileKeys = {
   diskUsage: (serverId: string) => [...fileKeys.all(serverId), "diskUsage"] as const,
 };
 
-export function useFiles(serverId: string | undefined, path?: string) {
+export const useFiles = (serverId: string | undefined, path?: string) => {
   return useQuery({
     queryKey: fileKeys.list(serverId!, path),
     queryFn: () => servers.files.list(serverId!, path),
     enabled: !!serverId,
   });
-}
+};
 
-export function useFileContent(serverId: string | undefined, path: string | undefined) {
+export const useFileContent = (serverId: string | undefined, path: string | undefined) => {
   return useQuery({
     queryKey: fileKeys.content(serverId!, path!),
     queryFn: () => servers.files.read(serverId!, path!),
     enabled: !!serverId && !!path,
     staleTime: 0, // Always fetch fresh content when editing
   });
-}
+};
 
-export function useDiskUsage(serverId: string | undefined) {
+export const useDiskUsage = (serverId: string | undefined) => {
   return useQuery({
     queryKey: fileKeys.diskUsage(serverId!),
     queryFn: () => servers.files.diskUsage(serverId!),
     enabled: !!serverId,
   });
-}
+};
 
-export function useFileMutations(serverId: string) {
+export const useFileMutations = (serverId: string) => {
   const queryClient = useQueryClient();
 
   const invalidateFiles = (path?: string) => {
@@ -80,4 +80,4 @@ export function useFileMutations(serverId: string) {
   });
 
   return { write, create, remove, rename, getDownloadToken };
-}
+};

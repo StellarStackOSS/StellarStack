@@ -7,8 +7,8 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
-import { FormModal } from "@workspace/ui/components/shared/FormModal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
 import {
   BsSun,
   BsMoon,

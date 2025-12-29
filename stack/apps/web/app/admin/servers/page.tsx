@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   ContextMenu,
   ContextMenuContent,

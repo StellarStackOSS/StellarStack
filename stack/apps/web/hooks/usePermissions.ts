@@ -37,7 +37,7 @@ interface UsePermissionsResult {
  *   // Show command input
  * }
  */
-export function usePermissions(): UsePermissionsResult {
+export const usePermissions = (): UsePermissionsResult => {
   const { user, isAdmin } = useAuth();
   const { server, serverAccess } = useServer();
 
@@ -75,7 +75,7 @@ export function usePermissions(): UsePermissionsResult {
   }, [user, server, serverAccess, isAdmin]);
 
   return result;
-}
+};
 
 // Export PERMISSIONS for convenience
 export { PERMISSIONS };

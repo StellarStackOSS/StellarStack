@@ -19,7 +19,7 @@ const SOUND_FILES: Record<SoundType, string> = {
  *   playSound("jobDone"); // When server finishes installing
  *   playSound("startup"); // When user signs in
  */
-export function useSoundEffects() {
+export const useSoundEffects = () => {
   const audioRefs = useRef<Record<SoundType, HTMLAudioElement | null>>({
     copy: null,
     jobDone: null,
@@ -49,13 +49,13 @@ export function useSoundEffects() {
   }, []);
 
   return { playSound };
-}
+};
 
 /**
  * Standalone function for playing sounds outside of React components
  * Useful for callbacks in API responses
  */
-export function playSoundEffect(type: SoundType, volume: number = 0.5) {
+export const playSoundEffect = (type: SoundType, volume: number = 0.5) => {
   if (typeof window === "undefined") return;
 
   try {
@@ -67,4 +67,4 @@ export function playSoundEffect(type: SoundType, volume: number = 0.5) {
   } catch (err) {
     console.debug("Failed to play sound:", err);
   }
-}
+};

@@ -4,10 +4,10 @@ import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useState, useEffect, memo } from "react";
 import { SidebarProvider, SidebarInset } from "@workspace/ui/components/sidebar";
-import { AppSidebar } from "../../../components/app-sidebar";
-import { ServerProvider } from "../../../components/server-provider";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { AppSidebar } from "@/components/app-sidebar";
+import { ServerProvider } from "@/components/server-provider";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {

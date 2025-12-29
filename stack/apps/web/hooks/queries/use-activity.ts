@@ -8,13 +8,13 @@ export const activityKeys = {
     [...activityKeys.lists(serverId), options] as const,
 };
 
-export function useActivity(
+export const useActivity = (
   serverId: string | undefined,
   options?: { limit?: number; offset?: number; event?: string }
-) {
+) => {
   return useQuery({
     queryKey: activityKeys.list(serverId!, options),
     queryFn: () => servers.activity.list(serverId!, options),
     enabled: !!serverId,
   });
-}
+};

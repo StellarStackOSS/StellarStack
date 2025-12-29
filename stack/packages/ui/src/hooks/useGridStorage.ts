@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { GridItemConfig, Layouts } from "../components/shared/DragDropGrid";
+import type { GridItemConfig, Layouts } from "../components/drag-drop-grid";
 
 export interface GridStorageData {
   items: GridItemConfig[];
@@ -22,7 +22,7 @@ const STORAGE_VERSION = 4;
  * Hook for persisting grid layout to localStorage.
  * Designed to be extended for backend sync with user accounts.
  */
-export function useGridStorage({ key, defaultItems, defaultHiddenCards = [] }: UseGridStorageOptions) {
+export const useGridStorage = ({ key, defaultItems, defaultHiddenCards = [] }: UseGridStorageOptions) => {
   // Use ref to avoid re-running effect when defaultItems reference changes
   const defaultItemsRef = useRef(defaultItems);
   defaultItemsRef.current = defaultItems;
@@ -215,4 +215,4 @@ export function useGridStorage({ key, defaultItems, defaultHiddenCards = [] }: U
     showCard,
     hideCard,
   };
-}
+};

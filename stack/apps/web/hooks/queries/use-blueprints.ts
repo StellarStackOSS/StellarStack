@@ -9,22 +9,22 @@ export const blueprintKeys = {
   detail: (id: string) => [...blueprintKeys.details(), id] as const,
 };
 
-export function useBlueprints() {
+export const useBlueprints = () => {
   return useQuery({
     queryKey: blueprintKeys.list(),
     queryFn: () => blueprints.list(),
   });
-}
+};
 
-export function useBlueprint(id: string | undefined) {
+export const useBlueprint = (id: string | undefined) => {
   return useQuery({
     queryKey: blueprintKeys.detail(id!),
     queryFn: () => blueprints.get(id!),
     enabled: !!id,
   });
-}
+};
 
-export function useBlueprintMutations() {
+export const useBlueprintMutations = () => {
   const queryClient = useQueryClient();
 
   const invalidateBlueprints = () => {
@@ -57,4 +57,4 @@ export function useBlueprintMutations() {
   });
 
   return { create, update, remove, importEgg, exportEgg };
-}
+};

@@ -10,7 +10,7 @@ import type { Context, Next } from "hono";
  * Security headers middleware
  * Adds common security headers to all responses
  */
-export function securityHeaders() {
+export const securityHeaders = () => {
   return async (c: Context, next: Next) => {
     await next();
 
@@ -43,13 +43,13 @@ export function securityHeaders() {
       c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     }
   };
-}
+};
 
 /**
  * Validate required environment variables at startup
  * Throws if critical security variables are missing in production
  */
-export function validateEnvironment(): void {
+export const validateEnvironment = (): void => {
   const isProduction = process.env.NODE_ENV === "production";
   const errors: string[] = [];
 
@@ -115,13 +115,13 @@ export function validateEnvironment(): void {
       console.error(`[Security Error] ${message}`);
     }
   }
-}
+};
 
 /**
  * Get a required environment variable
  * Throws if not set in production, returns fallback in development
  */
-export function getRequiredEnv(name: string, fallback?: string): string {
+export const getRequiredEnv = (name: string, fallback?: string): string => {
   const value = process.env[name];
 
   if (value) {
@@ -134,13 +134,13 @@ export function getRequiredEnv(name: string, fallback?: string): string {
   }
 
   throw new Error(`Required environment variable ${name} is not set`);
-}
+};
 
 /**
  * Validate that a URL is safe for SSRF protection
  * Blocks internal IPs and localhost
  */
-export function validateExternalUrl(url: string): boolean {
+export const validateExternalUrl = (url: string): boolean => {
   try {
     const parsed = new URL(url);
 
@@ -169,12 +169,12 @@ export function validateExternalUrl(url: string): boolean {
   } catch {
     return false;
   }
-}
+};
 
 /**
  * Check if an IP address is in a private range
  */
-function isPrivateIP(ip: string): boolean {
+const isPrivateIP = (ip: string): boolean => {
   // IPv4 private ranges
   const privateRanges = [
     /^10\./,                      // 10.0.0.0/8
@@ -191,17 +191,17 @@ function isPrivateIP(ip: string): boolean {
   }
 
   return false;
-}
+};
 
 /**
  * Validate daemon node configuration for SSRF protection
  * Returns sanitized node info or throws
  */
-export function validateNodeConfig(node: {
+export const validateNodeConfig = (node: {
   host: string;
   port: number;
   protocol: string;
-}): void {
+}): void => {
   // Check for private IPs (potential SSRF)
   if (isPrivateIP(node.host) && process.env.NODE_ENV === "production") {
     // In production, we might still need to connect to private IPs
@@ -218,12 +218,12 @@ export function validateNodeConfig(node: {
   if (!["HTTP", "HTTPS", "HTTP_PROXY", "HTTPS_PROXY"].includes(node.protocol)) {
     throw new Error("Invalid daemon protocol");
   }
-}
+};
 
 /**
  * Sanitize log output to prevent sensitive data leakage
  */
-export function sanitizeForLog(data: unknown): unknown {
+export const sanitizeForLog = (data: unknown): unknown => {
   if (typeof data !== "object" || data === null) {
     return data;
   }
@@ -257,4 +257,4 @@ export function sanitizeForLog(data: unknown): unknown {
   }
 
   return sanitized;
-}
+};

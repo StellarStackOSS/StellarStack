@@ -23,14 +23,14 @@ const remote = new Hono<{ Variables: Variables }>();
 remote.use("*", requireDaemon);
 
 // Helper to serialize BigInt fields
-function serializeServer(server: any) {
+const serializeServer = (server: any) => {
   return {
     ...server,
     memory: Number(server.memory),
     disk: Number(server.disk),
     swap: Number(server.swap),
   };
-}
+};
 
 // ============================================================================
 // Server Configuration Endpoints
@@ -833,10 +833,10 @@ remote.post("/activity", async (c) => {
 /**
  * Build startup command with variable substitution
  */
-function buildStartupCommand(
+const buildStartupCommand = (
   template: string | null,
   variables: Record<string, string>
-): string {
+): string => {
   if (!template) return "";
 
   let cmd = template;
@@ -848,14 +848,14 @@ function buildStartupCommand(
   }
 
   return cmd;
-}
+};
 
 /**
  * Build allocation mappings for additional ports
  */
-function buildAllocationMappings(
+const buildAllocationMappings = (
   allocations: Array<{ ip: string; port: number }>
-): Record<string, number[]> {
+): Record<string, number[]> => {
   const mappings: Record<string, number[]> = {};
 
   // Skip the first allocation (it's the default)
@@ -868,12 +868,12 @@ function buildAllocationMappings(
   }
 
   return mappings;
-}
+};
 
 /**
  * Build config file modifications for daemon
  */
-function buildConfigFiles(configFiles: any): any[] {
+const buildConfigFiles = (configFiles: any): any[] => {
   if (!configFiles) return [];
 
   const configs: any[] = [];
@@ -902,6 +902,6 @@ function buildConfigFiles(configFiles: any): any[] {
   }
 
   return configs;
-}
+};
 
 export { remote };

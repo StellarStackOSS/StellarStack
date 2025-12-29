@@ -7,15 +7,15 @@ export const backupKeys = {
   list: (serverId: string) => [...backupKeys.lists(serverId)] as const,
 };
 
-export function useBackups(serverId: string | undefined) {
+export const useBackups = (serverId: string | undefined) => {
   return useQuery({
     queryKey: backupKeys.list(serverId!),
     queryFn: () => servers.backups.list(serverId!),
     enabled: !!serverId,
   });
-}
+};
 
-export function useBackupMutations(serverId: string) {
+export const useBackupMutations = (serverId: string) => {
   const queryClient = useQueryClient();
 
   const invalidateBackups = () => {
@@ -82,4 +82,4 @@ export function useBackupMutations(serverId: string) {
   });
 
   return { create, restore, remove, lock, getDownloadToken };
-}
+};

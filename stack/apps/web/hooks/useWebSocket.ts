@@ -5,12 +5,12 @@ import { serverKeys } from "./queries/use-servers";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Convert HTTP URL to WebSocket URL
-function getWebSocketUrl(): string {
+const getWebSocketUrl = (): string => {
   const url = new URL(API_URL);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/api/ws";
   return url.toString();
-}
+};
 
 export type WSEventType =
   | "server:created"
@@ -43,7 +43,7 @@ interface UseWebSocketOptions {
   enabled?: boolean;
 }
 
-export function useWebSocket(options: UseWebSocketOptions = {}) {
+export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const {
     serverIds = [],
     autoReconnect = true,
@@ -254,19 +254,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     disconnect,
     ping,
   };
-}
+};
 
 // Hook for subscribing to a single server's updates
-export function useServerWebSocket(serverId: string | undefined) {
+export const useServerWebSocket = (serverId: string | undefined) => {
   return useWebSocket({
     serverIds: serverId ? [serverId] : [],
     enabled: !!serverId,
   });
-}
+};
 
 // Global WebSocket hook for the app
-export function useGlobalWebSocket() {
+export const useGlobalWebSocket = () => {
   return useWebSocket({
     enabled: true,
   });
-}
+};

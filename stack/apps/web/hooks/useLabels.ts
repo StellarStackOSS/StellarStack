@@ -1,18 +1,16 @@
 "use client";
 
 import { t } from "../lib/i18n";
-import type {
-  CpuCardLabels,
-  UsageMetricCardLabels,
-  NetworkUsageCardLabels,
-  NetworkInfoCardLabels,
-  SystemInfoCardLabels,
-  ContainerControlsCardLabels,
-  ContainerUptimeCardLabels,
-  PlayersOnlineCardLabels,
-  RecentLogsCardLabels,
-} from "@workspace/ui/components/shared/DashboardCards";
-import type { RemoveConfirmLabels } from "@workspace/ui/components/shared/DragDropGrid";
+import type { CpuCardLabels } from "@workspace/ui/components/cpu-card";
+import type { UsageMetricCardLabels } from "@workspace/ui/components/usage-metric-card";
+import type { NetworkUsageCardLabels } from "@workspace/ui/components/network-usage-card";
+import type { NetworkInfoCardLabels } from "@workspace/ui/components/network-info-card";
+import type { SystemInfoCardLabels } from "@workspace/ui/components/system-information-card";
+import type { ContainerControlsCardLabels } from "@workspace/ui/components/container-controls-card";
+import type { ContainerUptimeCardLabels } from "@workspace/ui/components/container-uptime-card";
+import type { PlayersOnlineCardLabels } from "@workspace/ui/components/players-online-card";
+import type { RecentLogsCardLabels } from "@workspace/ui/components/recent-logs-card";
+import type { RemoveConfirmLabels } from "@workspace/ui/components/drag-drop-grid";
 
 interface DashboardLabels {
   editLayout: string;

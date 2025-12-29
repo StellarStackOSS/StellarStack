@@ -10,29 +10,29 @@ export const userKeys = {
   me: () => [...userKeys.all, "me"] as const,
 };
 
-export function useUsers() {
+export const useUsers = () => {
   return useQuery({
     queryKey: userKeys.list(),
     queryFn: () => account.listUsers(),
   });
-}
+};
 
-export function useUser(id: string | undefined) {
+export const useUser = (id: string | undefined) => {
   return useQuery({
     queryKey: userKeys.detail(id!),
     queryFn: () => account.getUser(id!),
     enabled: !!id,
   });
-}
+};
 
-export function useCurrentUser() {
+export const useCurrentUser = () => {
   return useQuery({
     queryKey: userKeys.me(),
     queryFn: () => account.me(),
   });
-}
+};
 
-export function useUserMutations() {
+export const useUserMutations = () => {
   const queryClient = useQueryClient();
 
   const invalidateUsers = () => {
@@ -58,4 +58,4 @@ export function useUserMutations() {
   });
 
   return { update, remove, updateMe };
-}
+};

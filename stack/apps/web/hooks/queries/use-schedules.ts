@@ -9,23 +9,23 @@ export const scheduleKeys = {
   detail: (serverId: string, scheduleId: string) => [...scheduleKeys.details(serverId), scheduleId] as const,
 };
 
-export function useSchedules(serverId: string | undefined) {
+export const useSchedules = (serverId: string | undefined) => {
   return useQuery({
     queryKey: scheduleKeys.list(serverId!),
     queryFn: () => servers.schedules.list(serverId!),
     enabled: !!serverId,
   });
-}
+};
 
-export function useSchedule(serverId: string | undefined, scheduleId: string | undefined) {
+export const useSchedule = (serverId: string | undefined, scheduleId: string | undefined) => {
   return useQuery({
     queryKey: scheduleKeys.detail(serverId!, scheduleId!),
     queryFn: () => servers.schedules.get(serverId!, scheduleId!),
     enabled: !!serverId && !!scheduleId,
   });
-}
+};
 
-export function useScheduleMutations(serverId: string) {
+export const useScheduleMutations = (serverId: string) => {
   const queryClient = useQueryClient();
 
   const invalidateSchedules = () => {
@@ -54,4 +54,4 @@ export function useScheduleMutations(serverId: string) {
   });
 
   return { create, update, remove, run };
-}
+};

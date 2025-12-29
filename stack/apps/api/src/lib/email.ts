@@ -1,52 +1,30 @@
 import nodemailer from "nodemailer";
+import type { EmailProvider, EmailOptions, EmailResult } from "./email.types";
 
-/**
- * Email provider types
- */
-export type EmailProvider = "resend" | "smtp" | "console";
-
-/**
- * Email send options
- */
-export interface EmailOptions {
-  to: string | string[];
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-  replyTo?: string;
-}
-
-/**
- * Email send result
- */
-export interface EmailResult {
-  success: boolean;
-  messageId?: string;
-  error?: string;
-}
+// Re-export types for backwards compatibility
+export type { EmailProvider, EmailOptions, EmailResult } from "./email.types";
 
 /**
  * Get the configured email provider
  */
-function getProvider(): EmailProvider {
+const getProvider = (): EmailProvider => {
   const provider = process.env.EMAIL_PROVIDER?.toLowerCase();
   if (provider === "resend") return "resend";
   if (provider === "smtp") return "smtp";
   return "console"; // Default to console logging in development
-}
+};
 
 /**
  * Get the default from address
  */
-function getDefaultFrom(): string {
+const getDefaultFrom = (): string => {
   return process.env.EMAIL_FROM || "StellarStack <noreply@stellarstack.io>";
-}
+};
 
 /**
  * Send email via Resend API
  */
-async function sendViaResend(options: EmailOptions): Promise<EmailResult> {
+const sendViaResend = async (options: EmailOptions): Promise<EmailResult> => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return { success: false, error: "RESEND_API_KEY not configured" };
@@ -79,12 +57,12 @@ async function sendViaResend(options: EmailOptions): Promise<EmailResult> {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-}
+};
 
 /**
  * Send email via SMTP
  */
-async function sendViaSMTP(options: EmailOptions): Promise<EmailResult> {
+const sendViaSMTP = async (options: EmailOptions): Promise<EmailResult> => {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT || "587", 10);
   const secure = process.env.SMTP_SECURE === "true";
@@ -116,12 +94,12 @@ async function sendViaSMTP(options: EmailOptions): Promise<EmailResult> {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-}
+};
 
 /**
  * Console logger for development
  */
-async function sendViaConsole(options: EmailOptions): Promise<EmailResult> {
+const sendViaConsole = async (options: EmailOptions): Promise<EmailResult> => {
   console.log("=== Email (Console Provider) ===");
   console.log(`To: ${Array.isArray(options.to) ? options.to.join(", ") : options.to}`);
   console.log(`Subject: ${options.subject}`);
@@ -131,12 +109,12 @@ async function sendViaConsole(options: EmailOptions): Promise<EmailResult> {
   console.log("================================");
 
   return { success: true, messageId: `console-${Date.now()}` };
-}
+};
 
 /**
  * Send an email using the configured provider
  */
-export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
+export const sendEmail = async (options: EmailOptions): Promise<EmailResult> => {
   const provider = getProvider();
 
   switch (provider) {
@@ -148,12 +126,12 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     default:
       return sendViaConsole(options);
   }
-}
+};
 
 /**
  * Test email configuration
  */
-export async function testEmailConfig(): Promise<EmailResult> {
+export const testEmailConfig = async (): Promise<EmailResult> => {
   const provider = getProvider();
   const testAddress = process.env.EMAIL_TEST_ADDRESS || "test@example.com";
 
@@ -168,16 +146,16 @@ export async function testEmailConfig(): Promise<EmailResult> {
     `,
     text: `Email Configuration Test\n\nThis is a test email from StellarStack.\nProvider: ${provider}\nTime: ${new Date().toISOString()}`,
   });
-}
+};
 
 /**
  * Get email configuration status
  */
-export function getEmailConfigStatus(): {
+export const getEmailConfigStatus = (): {
   provider: EmailProvider;
   configured: boolean;
   details: Record<string, string | boolean>;
-} {
+} => {
   const provider = getProvider();
 
   switch (provider) {
@@ -213,4 +191,4 @@ export function getEmailConfigStatus(): {
         },
       };
   }
-}
+};

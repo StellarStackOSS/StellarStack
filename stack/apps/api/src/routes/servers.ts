@@ -21,16 +21,16 @@ const DOWNLOAD_SECRET = getRequiredEnv(
 const DOWNLOAD_TOKEN_EXPIRY = 300;
 
 // Generate a signed download token
-function generateDownloadToken(userId: string, serverId: string, resource: string): { token: string; expiresAt: number } {
+const generateDownloadToken = (userId: string, serverId: string, resource: string): { token: string; expiresAt: number } => {
   const expiresAt = Math.floor(Date.now() / 1000) + DOWNLOAD_TOKEN_EXPIRY;
   const payload = `${userId}:${serverId}:${resource}:${expiresAt}`;
   const signature = createHmac("sha256", DOWNLOAD_SECRET).update(payload).digest("hex");
   const token = Buffer.from(`${payload}:${signature}`).toString("base64url");
   return { token, expiresAt };
-}
+};
 
 // Verify a download token and return the parsed data
-function verifyDownloadToken(token: string): { valid: boolean; userId?: string; serverId?: string; resource?: string } {
+const verifyDownloadToken = (token: string): { valid: boolean; userId?: string; serverId?: string; resource?: string } => {
   try {
     const decoded = Buffer.from(token, "base64url").toString("utf-8");
 
@@ -86,17 +86,17 @@ function verifyDownloadToken(token: string): { valid: boolean; userId?: string; 
   } catch {
     return { valid: false };
   }
-}
+};
 
 // Helper to convert BigInt fields to Number for JSON serialization
-function serializeServer(server: any) {
+const serializeServer = (server: any) => {
   return {
     ...server,
     memory: Number(server.memory),
     disk: Number(server.disk),
     swap: Number(server.swap),
   };
-}
+};
 
 // Validation schemas
 const createServerSchema = z.object({
@@ -137,13 +137,13 @@ const updateStartupSchema = z.object({
 });
 
 // Helper to communicate with daemon
-async function daemonRequest(
+const daemonRequest = async (
   node: { id: string; host: string; port: number; protocol: string; token: string },
   method: string,
   path: string,
   body?: any,
   options?: { responseType?: "json" | "text" }
-) {
+) => {
   // Validate node configuration for SSRF protection
   validateNodeConfig(node);
 
@@ -185,7 +185,7 @@ async function daemonRequest(
   } catch (error) {
     throw new Error(`Failed to communicate with daemon: ${error}`);
   }
-}
+};
 
 // List servers (users see their own, admins see all)
 servers.get("/", requireAuth, async (c) => {
@@ -1119,7 +1119,7 @@ servers.patch("/:serverId/startup", requireServerAccess, async (c) => {
 // === File Management ===
 
 // Helper to get server with node for daemon communication
-async function getServerWithNode(serverId: string) {
+const getServerWithNode = async (serverId: string) => {
   const server = await db.server.findUnique({
     where: { id: serverId },
     include: { node: true },
@@ -1134,12 +1134,12 @@ async function getServerWithNode(serverId: string) {
   }
 
   return server;
-}
+};
 
 // Helper to normalize file paths (convert backslashes to forward slashes)
-function normalizePath(path: string): string {
+const normalizePath = (path: string): string => {
   return path.replace(/\\/g, "/");
-}
+};
 
 // Get disk usage
 servers.get("/:serverId/files/disk-usage", requireServerAccess, async (c) => {

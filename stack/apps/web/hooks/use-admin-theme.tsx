@@ -6,7 +6,7 @@ import { cn } from "@workspace/ui/lib/utils";
  * Hook that encapsulates theme-related logic for admin pages.
  * Handles hydration issues and provides consistent styling classes.
  */
-export function useAdminTheme() {
+export const useAdminTheme = () => {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -122,12 +122,12 @@ export function useAdminTheme() {
     selectClasses,
     buttonClasses,
   };
-}
+};
 
 /**
  * Corner accent decorations for cards and modals
  */
-export function CornerAccents({
+export const CornerAccents = ({
   isDark,
   size = "sm",
   color = "zinc",
@@ -135,7 +135,7 @@ export function CornerAccents({
   isDark: boolean;
   size?: "sm" | "lg";
   color?: "zinc" | "blue";
-}) {
+}) => {
   const sizeClass = size === "sm" ? "w-2 h-2" : "w-3 h-3";
   const colorClass =
     color === "blue"
@@ -154,4 +154,4 @@ export function CornerAccents({
       <div className={cn("absolute bottom-0 right-0 border-b border-r", sizeClass, colorClass)} />
     </>
   );
-}
+};

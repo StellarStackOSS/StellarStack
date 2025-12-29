@@ -101,7 +101,7 @@ const baseStyles = `
   }
 `;
 
-function wrapTemplate(content: string): string {
+const wrapTemplate = (content: string): string => {
   return `
 <!DOCTYPE html>
 <html>
@@ -127,15 +127,15 @@ function wrapTemplate(content: string): string {
 </body>
 </html>
 `;
-}
+};
 
 /**
  * Email verification template
  */
-export function verificationEmail(params: {
+export const verificationEmail = (params: {
   name: string;
   verificationUrl: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const html = wrapTemplate(`
     <h2>Verify your email address</h2>
     <p>Hi ${params.name},</p>
@@ -163,15 +163,15 @@ If you didn't create an account, you can safely ignore this email.
 `;
 
   return { html, text };
-}
+};
 
 /**
  * Password reset template
  */
-export function passwordResetEmail(params: {
+export const passwordResetEmail = (params: {
   name: string;
   resetUrl: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const html = wrapTemplate(`
     <h2>Reset your password</h2>
     <p>Hi ${params.name},</p>
@@ -200,15 +200,15 @@ If you didn't request a password reset, you can safely ignore this email. Your p
 `;
 
   return { html, text };
-}
+};
 
 /**
  * Two-factor authentication code template
  */
-export function twoFactorCodeEmail(params: {
+export const twoFactorCodeEmail = (params: {
   name: string;
   code: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const html = wrapTemplate(`
     <h2>Your verification code</h2>
     <p>Hi ${params.name},</p>
@@ -233,18 +233,18 @@ If you didn't try to sign in, please secure your account immediately by changing
 `;
 
   return { html, text };
-}
+};
 
 /**
  * Server alert/notification template
  */
-export function serverAlertEmail(params: {
+export const serverAlertEmail = (params: {
   name: string;
   serverName: string;
   alertType: "started" | "stopped" | "crashed" | "high_resource" | "backup_complete" | "backup_failed";
   details?: string;
   timestamp: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const alertMessages: Record<string, { title: string; message: string; color: string }> = {
     started: { title: "Server Started", message: "Your server has been started successfully.", color: "#22c55e" },
     stopped: { title: "Server Stopped", message: "Your server has been stopped.", color: "#f59e0b" },
@@ -296,14 +296,14 @@ View your dashboard: ${process.env.FRONTEND_URL || "http://localhost:3000"}/serv
 `;
 
   return { html, text };
-}
+};
 
 /**
  * Welcome email template
  */
-export function welcomeEmail(params: {
+export const welcomeEmail = (params: {
   name: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
   const html = wrapTemplate(`
@@ -342,15 +342,15 @@ If you have any questions, feel free to reach out to our support team.
 `;
 
   return { html, text };
-}
+};
 
 /**
  * Account deletion template
  */
-export function accountDeletionEmail(params: {
+export const accountDeletionEmail = (params: {
   name: string;
   deletionDate: string;
-}): { html: string; text: string } {
+}): { html: string; text: string } => {
   const html = wrapTemplate(`
     <h2>Account Deleted</h2>
     <p>Hi ${params.name},</p>
@@ -380,4 +380,4 @@ We're sorry to see you go. If you ever want to come back, you're always welcome 
 `;
 
   return { html, text };
-}
+};

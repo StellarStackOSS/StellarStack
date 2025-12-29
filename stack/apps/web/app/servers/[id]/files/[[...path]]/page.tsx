@@ -42,8 +42,8 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
-import { FormModal } from "@workspace/ui/components/shared/FormModal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
   BsSun,

@@ -6,6 +6,11 @@
  * Full admin access is represented by ["*"]
  */
 
+import type { Permission, PermissionCategory, PermissionDefinition } from "./permissions.types";
+
+// Re-export types for backwards compatibility
+export type { Permission, PermissionCategory, PermissionDefinition } from "./permissions.types";
+
 export const PERMISSION_CATEGORIES = {
   CONTROL: "control",
   CONSOLE: "console",
@@ -91,17 +96,7 @@ export const PERMISSIONS = {
   SPLIT_DELETE: "split.delete",
 } as const;
 
-export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
-export type PermissionCategory = (typeof PERMISSION_CATEGORIES)[keyof typeof PERMISSION_CATEGORIES];
-
 // Permission definitions with metadata for UI
-export interface PermissionDefinition {
-  key: Permission;
-  name: string;
-  description: string;
-  category: PermissionCategory;
-}
-
 export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   // Control
   {
@@ -457,7 +452,7 @@ export const CATEGORY_DEFINITIONS = {
 };
 
 // Helper functions
-export function hasPermission(userPermissions: string[], permission: Permission): boolean {
+export const hasPermission = (userPermissions: string[], permission: Permission): boolean => {
   // Wildcard grants all permissions
   if (userPermissions.includes("*")) {
     return true;
@@ -475,23 +470,23 @@ export function hasPermission(userPermissions: string[], permission: Permission)
   }
 
   return false;
-}
+};
 
-export function hasAnyPermission(userPermissions: string[], permissions: Permission[]): boolean {
+export const hasAnyPermission = (userPermissions: string[], permissions: Permission[]): boolean => {
   return permissions.some((p) => hasPermission(userPermissions, p));
-}
+};
 
-export function hasAllPermissions(userPermissions: string[], permissions: Permission[]): boolean {
+export const hasAllPermissions = (userPermissions: string[], permissions: Permission[]): boolean => {
   return permissions.every((p) => hasPermission(userPermissions, p));
-}
+};
 
-export function getPermissionsByCategory(category: PermissionCategory): PermissionDefinition[] {
+export const getPermissionsByCategory = (category: PermissionCategory): PermissionDefinition[] => {
   return PERMISSION_DEFINITIONS.filter((p) => p.category === category);
-}
+};
 
-export function getAllCategories(): PermissionCategory[] {
+export const getAllCategories = (): PermissionCategory[] => {
   return Object.values(PERMISSION_CATEGORIES);
-}
+};
 
 // Preset permission sets
 export const PERMISSION_PRESETS = {

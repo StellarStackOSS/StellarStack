@@ -10,31 +10,31 @@ export const nodeKeys = {
   stats: (id: string) => [...nodeKeys.all, "stats", id] as const,
 };
 
-export function useNodes() {
+export const useNodes = () => {
   return useQuery({
     queryKey: nodeKeys.list(),
     queryFn: () => nodes.list(),
   });
-}
+};
 
-export function useNode(id: string | undefined) {
+export const useNode = (id: string | undefined) => {
   return useQuery({
     queryKey: nodeKeys.detail(id!),
     queryFn: () => nodes.get(id!),
     enabled: !!id,
   });
-}
+};
 
-export function useNodeStats(id: string | undefined) {
+export const useNodeStats = (id: string | undefined) => {
   return useQuery({
     queryKey: nodeKeys.stats(id!),
     queryFn: () => nodes.getStats(id!),
     enabled: !!id,
     refetchInterval: 5000, // Refresh every 5 seconds
   });
-}
+};
 
-export function useNodeMutations() {
+export const useNodeMutations = () => {
   const queryClient = useQueryClient();
 
   const invalidateNodes = () => {
@@ -89,4 +89,4 @@ export function useNodeMutations() {
     addAllocationRange,
     deleteAllocation,
   };
-}
+};

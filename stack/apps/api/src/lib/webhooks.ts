@@ -1,5 +1,9 @@
 import { db } from "./db";
 import crypto from "crypto";
+import type { WebhookEvent, WebhookPayload, DispatchWebhookOptions } from "./webhooks.types";
+
+// Re-export types for backwards compatibility
+export type { WebhookEvent, WebhookPayload, DispatchWebhookOptions } from "./webhooks.types";
 
 /**
  * Webhook event types
@@ -39,50 +43,30 @@ export const WebhookEvents = {
   RESOURCE_CRITICAL: "resource.critical",
 } as const;
 
-export type WebhookEvent = typeof WebhookEvents[keyof typeof WebhookEvents];
-
-/**
- * Webhook payload structure
- */
-interface WebhookPayload {
-  event: string;
-  timestamp: string;
-  server?: {
-    id: string;
-    name: string;
-    status?: string;
-  };
-  data?: Record<string, unknown>;
-}
-
 /**
  * Generate HMAC-SHA256 signature for webhook payload
  */
-function signPayload(payload: string, secret: string): string {
+const signPayload = (payload: string, secret: string): string => {
   return crypto
     .createHmac("sha256", secret)
     .update(payload)
     .digest("hex");
-}
+};
 
 /**
  * Generate a random webhook secret
  */
-export function generateWebhookSecret(): string {
+export const generateWebhookSecret = (): string => {
   return crypto.randomBytes(32).toString("hex");
-}
+};
 
 /**
  * Dispatch a webhook event
  */
-export async function dispatchWebhook(
+export const dispatchWebhook = async (
   event: WebhookEvent | string,
-  options: {
-    serverId?: string;
-    userId?: string;
-    data?: Record<string, unknown>;
-  } = {}
-): Promise<void> {
+  options: DispatchWebhookOptions = {}
+): Promise<void> => {
   const { serverId, userId, data } = options;
 
   // Find all webhooks that should receive this event
@@ -193,12 +177,12 @@ export async function dispatchWebhook(
 
   // Execute all deliveries in parallel (fire and forget)
   await Promise.allSettled(deliveryPromises);
-}
+};
 
 /**
  * Schedule a retry for a failed webhook delivery
  */
-async function scheduleRetry(deliveryId: string, attemptNumber: number): Promise<void> {
+const scheduleRetry = async (deliveryId: string, attemptNumber: number): Promise<void> => {
   // Maximum 5 retry attempts
   if (attemptNumber >= 5) {
     return;
@@ -273,26 +257,26 @@ async function scheduleRetry(deliveryId: string, attemptNumber: number): Promise
       }
     }
   }, delay);
-}
+};
 
 /**
  * Get all available webhook events
  */
-export function getAvailableEvents(): string[] {
+export const getAvailableEvents = (): string[] => {
   return Object.values(WebhookEvents);
-}
+};
 
 /**
  * Verify webhook signature
  */
-export function verifyWebhookSignature(
+export const verifyWebhookSignature = (
   payload: string,
   signature: string,
   secret: string
-): boolean {
+): boolean => {
   const expectedSignature = `sha256=${signPayload(payload, secret)}`;
   return crypto.timingSafeEqual(
     Buffer.from(signature),
     Buffer.from(expectedSignature)
   );
-}
+};

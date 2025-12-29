@@ -3,6 +3,10 @@ import { z } from "zod";
 import { db } from "../lib/db";
 import { requireAdmin } from "../middleware/auth";
 import type { Variables } from "../types";
+import type { SmtpConfig, EmailConfig } from "./settings.types";
+
+// Re-export types for backwards compatibility
+export type { SmtpConfig, EmailConfig, CloudflareSettings, SubdomainSettings, BrandingSettings } from "./settings.types";
 
 const settings = new Hono<{ Variables: Variables }>();
 
@@ -49,21 +53,21 @@ const brandingSettingsSchema = z.object({
 });
 
 // Helper to get a setting
-async function getSetting<T>(key: string, defaultValue: T): Promise<T> {
+const getSetting = async <T>(key: string, defaultValue: T): Promise<T> => {
   const setting = await db.settings.findUnique({
     where: { key },
   });
   return (setting?.value as T) ?? defaultValue;
-}
+};
 
 // Helper to set a setting
-async function setSetting<T>(key: string, value: T): Promise<void> {
+const setSetting = async <T>(key: string, value: T): Promise<void> => {
   await db.settings.upsert({
     where: { key },
     create: { key, value: value as any },
     update: { value: value as any },
   });
-}
+};
 
 // === Cloudflare Settings ===
 
@@ -202,22 +206,6 @@ settings.patch("/subdomains", requireAdmin, async (c) => {
 // === Email Settings ===
 
 // Get email settings
-interface SmtpConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  username: string;
-  password: string;
-}
-
-interface EmailConfig {
-  provider: "smtp" | "resend" | "sendgrid" | "mailgun";
-  fromEmail: string;
-  fromName: string;
-  smtp: SmtpConfig | null;
-  apiKey: string;
-}
-
 settings.get("/email", requireAdmin, async (c) => {
   const email = await getSetting<EmailConfig>("email", {
     provider: "smtp",

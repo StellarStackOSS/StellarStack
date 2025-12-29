@@ -45,9 +45,9 @@ export const gridSizeConfig: Record<
   xl: { colSpan: 12, rowSpan: 2 },
 };
 
-export function useGridLayout(
+export const useGridLayout = (
   options: UseGridLayoutOptions = {}
-): UseGridLayoutReturn {
+): UseGridLayoutReturn => {
   const { initialItems = [], totalSlots = 9, onLayoutChange } = options;
 
   const [items, setItems] = useState<GridItem[]>(initialItems);
@@ -196,4 +196,4 @@ export function useGridLayout(
     swapItems,
     isSlotEmpty,
   };
-}
+};
