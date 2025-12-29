@@ -15,7 +15,18 @@ const authConfig = {
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    // Enable email verification in production for security
+    requireEmailVerification: process.env.NODE_ENV === "production",
+    // Send verification email on signup
+    sendResetPassword: async ({ user, url }) => {
+      const { sendEmail } = await import("./email");
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your StellarStack password",
+        html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+        text: `Reset your password: ${url}`,
+      });
+    },
   },
   plugins: [
     admin(),

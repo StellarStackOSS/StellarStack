@@ -2,6 +2,7 @@ import { Context, Next } from "hono";
 import { auth } from "../lib/auth";
 import { db } from "../lib/db";
 import { verifyToken } from "../lib/crypto";
+import { hasPermission, Permission, PERMISSIONS } from "../lib/permissions";
 
 // User session type
 export type SessionUser = {
@@ -9,6 +10,15 @@ export type SessionUser = {
   name: string;
   email: string;
   role: string;
+};
+
+// Server access context with permissions
+export type ServerAccessContext = {
+  server: any;
+  isOwner: boolean;
+  isAdmin: boolean;
+  isMember: boolean;
+  permissions: string[];
 };
 
 // Middleware to require authenticated user
@@ -104,7 +114,7 @@ export async function requireDaemon(c: Context, next: Next) {
   return next();
 }
 
-// Middleware to check server ownership
+// Middleware to check server ownership or membership
 export async function requireServerAccess(c: Context, next: Next) {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
@@ -129,13 +139,96 @@ export async function requireServerAccess(c: Context, next: Next) {
     return c.json({ error: "Server not found" }, 404);
   }
 
-  // Admins can access any server, users only their own
-  if (user.role !== "admin" && server.ownerId !== user.id) {
-    return c.json({ error: "Forbidden: You don't own this server" }, 403);
+  const isAdmin = user.role === "admin";
+  const isOwner = server.ownerId === user.id;
+
+  // Check if user is a member with permissions
+  let isMember = false;
+  let permissions: string[] = [];
+
+  if (!isAdmin && !isOwner) {
+    const membership = await db.serverMember.findUnique({
+      where: {
+        serverId_userId: {
+          serverId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (membership) {
+      isMember = true;
+      permissions = membership.permissions;
+    }
+  }
+
+  // Admins and owners have all permissions
+  if (isAdmin || isOwner) {
+    permissions = ["*"];
+  }
+
+  // If not admin, owner, or member, deny access
+  if (!isAdmin && !isOwner && !isMember) {
+    return c.json({ error: "Forbidden: You don't have access to this server" }, 403);
   }
 
   c.set("user", user);
   c.set("server", server);
+  c.set("serverAccess", {
+    server,
+    isOwner,
+    isAdmin,
+    isMember,
+    permissions,
+  } as ServerAccessContext);
 
   return next();
+}
+
+// Factory function to create permission middleware
+export function requirePermission(...requiredPermissions: Permission[]) {
+  return async (c: Context, next: Next) => {
+    const serverAccess = c.get("serverAccess") as ServerAccessContext | undefined;
+
+    if (!serverAccess) {
+      return c.json({ error: "Server access context not available" }, 500);
+    }
+
+    // Admins and owners have all permissions
+    if (serverAccess.isAdmin || serverAccess.isOwner) {
+      return next();
+    }
+
+    // Check if user has required permission
+    const hasRequiredPermission = requiredPermissions.some((perm) =>
+      hasPermission(serverAccess.permissions, perm)
+    );
+
+    if (!hasRequiredPermission) {
+      return c.json(
+        {
+          error: "Forbidden: Missing required permission",
+          required: requiredPermissions,
+        },
+        403
+      );
+    }
+
+    return next();
+  };
+}
+
+// Helper to check permission in route handlers
+export function checkPermission(c: Context, permission: Permission): boolean {
+  const serverAccess = c.get("serverAccess") as ServerAccessContext | undefined;
+
+  if (!serverAccess) {
+    return false;
+  }
+
+  if (serverAccess.isAdmin || serverAccess.isOwner) {
+    return true;
+  }
+
+  return hasPermission(serverAccess.permissions, permission);
 }

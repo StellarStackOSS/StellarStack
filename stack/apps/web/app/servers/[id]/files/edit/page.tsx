@@ -6,7 +6,6 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Loader2, File } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FadeIn } from "@workspace/ui/components/shared/Animations/FadeIn";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { CodeEditor, detectLanguage } from "@/components/code-editor";
@@ -100,7 +99,7 @@ export default function FileEditPage() {
 
   return (
     <div className={cn("min-h-screen relative", isDark ? "bg-black" : "bg-zinc-50")}>
-      <AnimatedBackground isDark={isDark} />
+      {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative z-10 h-screen flex flex-col">
         {/* Header */}

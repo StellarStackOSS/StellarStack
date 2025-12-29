@@ -1,18 +1,22 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "../lib/db";
 import { requireAuth, requireAdmin, requireServerAccess } from "../middleware/auth";
 import type { Variables } from "../types";
 import { logActivityFromContext, ActivityEvents } from "../lib/activity";
 import { dispatchWebhook, WebhookEvents } from "../lib/webhooks";
 import { emitServerEvent, emitGlobalEvent } from "../lib/ws";
+import { getRequiredEnv, validateNodeConfig } from "../middleware/security";
 
 const servers = new Hono<{ Variables: Variables }>();
 
-// Download token secret - should be set in environment
-const DOWNLOAD_SECRET = process.env.DOWNLOAD_TOKEN_SECRET || process.env.BETTER_AUTH_SECRET || "stellarstack-download-secret";
+// Download token secret - requires environment variable in production
+const DOWNLOAD_SECRET = getRequiredEnv(
+  "DOWNLOAD_TOKEN_SECRET",
+  process.env.BETTER_AUTH_SECRET || "dev-only-secret"
+);
 // Token expiration time in seconds (5 minutes)
 const DOWNLOAD_TOKEN_EXPIRY = 300;
 
@@ -65,10 +69,16 @@ function verifyDownloadToken(token: string): { valid: boolean; userId?: string; 
       return { valid: false };
     }
 
-    // Verify signature
+    // Verify signature using timing-safe comparison to prevent timing attacks
     const payload = `${userId}:${serverId}:${resource}:${expiresAt}`;
     const expectedSignature = createHmac("sha256", DOWNLOAD_SECRET).update(payload).digest("hex");
-    if (signature !== expectedSignature) {
+
+    // Use timing-safe comparison
+    if (signature.length !== expectedSignature.length) {
+      return { valid: false };
+    }
+    const isValid = timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+    if (!isValid) {
       return { valid: false };
     }
 
@@ -134,6 +144,9 @@ async function daemonRequest(
   body?: any,
   options?: { responseType?: "json" | "text" }
 ) {
+  // Validate node configuration for SSRF protection
+  validateNodeConfig(node);
+
   const protocol = node.protocol === "HTTPS" || node.protocol === "HTTPS_PROXY" ? "https" : "http";
   const url = `${protocol}://${node.host}:${node.port}${path}`;
 

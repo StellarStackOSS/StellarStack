@@ -7,7 +7,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
-import { ArrowLeftIcon, SaveIcon, RefreshCwIcon, PlusIcon, TrashIcon, NetworkIcon } from "lucide-react";
+import { ArrowLeftIcon, SaveIcon, RefreshCwIcon, PlusIcon, TrashIcon, NetworkIcon, SplitIcon, ExternalLinkIcon } from "lucide-react";
 import { useServer, useServerMutations } from "@/hooks/queries";
 import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
@@ -579,6 +579,36 @@ export default function EditServerPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Server Splitting */}
+                  <div className={cn("pt-4 border-t", isDark ? "border-zinc-700/50" : "border-zinc-200")}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className={cn("text-sm font-medium uppercase tracking-wider", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                          Server Splitting
+                        </h3>
+                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                          {server?.parentServerId ? "This is a child server" : "Split resources to create child servers"}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/servers/${serverId}/split`)}
+                        className={cn(
+                          "flex items-center gap-2 text-xs uppercase tracking-wider",
+                          isDark
+                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                        )}
+                      >
+                        <SplitIcon className="w-4 h-4" />
+                        Manage
+                        <ExternalLinkIcon className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

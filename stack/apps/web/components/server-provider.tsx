@@ -1,15 +1,34 @@
 "use client";
 
-import { createContext, useContext, useCallback, useMemo, useEffect, useRef } from "react";
+import { createContext, useContext, useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries";
 import { useServerWebSocket } from "@/hooks/useWebSocket";
-import type { Server, ConsoleInfo } from "@/lib/api";
+import { useAuth } from "@/components/auth-provider";
+import type { Server, ConsoleInfo, ServerMember } from "@/lib/api";
+import { servers } from "@/lib/api";
 import { playSoundEffect } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
+
+// Server access context with permission info
+export interface ServerAccessContext {
+  isOwner: boolean;
+  isAdmin: boolean;
+  isMember: boolean;
+  permissions: string[];
+}
+
+// Loading states for power actions
+export interface PowerActionLoadingStates {
+  start: boolean;
+  stop: boolean;
+  restart: boolean;
+  kill: boolean;
+}
 
 interface ServerContextType {
   server: Server | null;
   consoleInfo: ConsoleInfo | null;
+  serverAccess: ServerAccessContext | null;
   isLoading: boolean;
   isInstalling: boolean;
   error: string | null;
@@ -22,6 +41,9 @@ interface ServerContextType {
   restart: () => Promise<void>;
   kill: () => Promise<void>;
   sendCommand: (command: string) => Promise<void>;
+
+  // Loading states for power actions
+  powerActionLoading: PowerActionLoadingStates;
 }
 
 const ServerContext = createContext<ServerContextType | null>(null);
@@ -42,6 +64,10 @@ interface ServerProviderProps {
 export function ServerProvider({ serverId, children }: ServerProviderProps) {
   // Track previous status to detect when installation completes
   const prevStatusRef = useRef<string | null>(null);
+  const { user, isAdmin } = useAuth();
+
+  // Server access state
+  const [serverAccess, setServerAccess] = useState<ServerAccessContext | null>(null);
 
   // WebSocket connection for real-time updates
   const { isConnected: wsConnected } = useServerWebSocket(serverId);
@@ -59,6 +85,62 @@ export function ServerProvider({ serverId, children }: ServerProviderProps) {
       ? 2000
       : wsConnected ? 30000 : 5000,
   });
+
+  // Compute server access based on user and server
+  useEffect(() => {
+    if (!server || !user) {
+      setServerAccess(null);
+      return;
+    }
+
+    const isOwner = server.ownerId === user.id;
+
+    // If user is admin or owner, they have full access
+    if (isAdmin || isOwner) {
+      setServerAccess({
+        isOwner,
+        isAdmin,
+        isMember: false,
+        permissions: ["*"],
+      });
+      return;
+    }
+
+    // Otherwise, check if user is a member and get their permissions
+    // For now, we'll try to fetch members list and find the user's membership
+    // If we can't access it, we likely don't have permissions anyway
+    servers.members.list(serverId)
+      .then((members) => {
+        const membership = members.find((m) => m.userId === user.id);
+        if (membership) {
+          setServerAccess({
+            isOwner: false,
+            isAdmin: false,
+            isMember: true,
+            permissions: membership.permissions,
+          });
+        } else {
+          // User has some access (since they can view the server) but not a member
+          // This shouldn't normally happen since requireServerAccess middleware checks this
+          setServerAccess({
+            isOwner: false,
+            isAdmin: false,
+            isMember: false,
+            permissions: [],
+          });
+        }
+      })
+      .catch(() => {
+        // If we can't fetch members, user might not have users.read permission
+        // Set minimal access
+        setServerAccess({
+          isOwner: false,
+          isAdmin: false,
+          isMember: true, // Assume member since they can access the server
+          permissions: [], // Unknown permissions - rely on API to enforce
+        });
+      });
+  }, [server, user, isAdmin, serverId]);
 
   // Only fetch console info when server exists and is not suspended
   const {
@@ -143,9 +225,18 @@ export function ServerProvider({ serverId, children }: ServerProviderProps) {
     }
   }, [serverId, mutations.sendCommand]);
 
+  // Compute loading states from mutations
+  const powerActionLoading = useMemo<PowerActionLoadingStates>(() => ({
+    start: mutations.start.isPending,
+    stop: mutations.stop.isPending,
+    restart: mutations.restart.isPending,
+    kill: mutations.kill.isPending,
+  }), [mutations.start.isPending, mutations.stop.isPending, mutations.restart.isPending, mutations.kill.isPending]);
+
   const value = useMemo<ServerContextType>(() => ({
     server,
     consoleInfo,
+    serverAccess,
     isLoading,
     isInstalling,
     error,
@@ -156,7 +247,8 @@ export function ServerProvider({ serverId, children }: ServerProviderProps) {
     restart,
     kill,
     sendCommand,
-  }), [server, consoleInfo, isLoading, isInstalling, error, refetch, refreshConsoleInfo, start, stop, restart, kill, sendCommand]);
+    powerActionLoading,
+  }), [server, consoleInfo, serverAccess, isLoading, isInstalling, error, refetch, refreshConsoleInfo, start, stop, restart, kill, sendCommand, powerActionLoading]);
 
   return (
     <ServerContext.Provider value={value}>

@@ -6,8 +6,6 @@ import { useTheme as useNextTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
@@ -137,7 +135,7 @@ const ActivityPage = (): JSX.Element | null => {
         "min-h-svh",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
+        {/* Background is now rendered in the layout for persistence */}
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
@@ -150,8 +148,7 @@ const ActivityPage = (): JSX.Element | null => {
       "min-h-svh transition-colors relative",
       isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
     )}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
