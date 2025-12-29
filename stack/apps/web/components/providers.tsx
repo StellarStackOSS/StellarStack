@@ -4,6 +4,7 @@ import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { AuthProvider } from "./auth-provider"
 import { QueryProvider } from "./query-provider"
+import { WebSocketProvider } from "./websocket-provider"
 import { CommandPalette } from "./command-palette"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,8 +18,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryProvider>
         <AuthProvider>
-          {children}
-          <CommandPalette />
+          <WebSocketProvider>
+            {children}
+            <CommandPalette />
+          </WebSocketProvider>
         </AuthProvider>
       </QueryProvider>
     </NextThemesProvider>

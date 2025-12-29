@@ -7,6 +7,7 @@ import { requireAuth, requireAdmin, requireServerAccess } from "../middleware/au
 import type { Variables } from "../types";
 import { logActivityFromContext, ActivityEvents } from "../lib/activity";
 import { dispatchWebhook, WebhookEvents } from "../lib/webhooks";
+import { emitServerEvent, emitGlobalEvent } from "../lib/ws";
 
 const servers = new Hono<{ Variables: Variables }>();
 
@@ -560,6 +561,9 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     metadata: { changes: Object.keys(parsed.data) },
   });
 
+  // Emit WebSocket event for real-time updates
+  emitServerEvent("server:updated", server.id, serializeServer(updated), user.id);
+
   return c.json(serializeServer(updated));
 });
 
@@ -602,6 +606,9 @@ servers.delete("/:serverId", requireAdmin, async (c) => {
   // Delete server
   await db.server.delete({ where: { id: serverId } });
 
+  // Emit WebSocket event for real-time updates
+  emitGlobalEvent("server:deleted", { id: serverId });
+
   return c.json({ success: true });
 });
 
@@ -632,6 +639,9 @@ servers.post("/:serverId/start", requireServerAccess, async (c) => {
 
     // Dispatch webhook (fire and forget)
     dispatchWebhook(WebhookEvents.SERVER_STARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+
+    // Emit WebSocket event for real-time updates
+    emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
 
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
@@ -665,6 +675,9 @@ servers.post("/:serverId/stop", requireServerAccess, async (c) => {
     // Dispatch webhook (fire and forget)
     dispatchWebhook(WebhookEvents.SERVER_STOPPED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
 
+    // Emit WebSocket event for real-time updates
+    emitServerEvent("server:status", server.id, { id: server.id, status: "STOPPING" });
+
     return c.json({ success: true, status: "STOPPING" });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
@@ -696,6 +709,9 @@ servers.post("/:serverId/restart", requireServerAccess, async (c) => {
 
     // Dispatch webhook (fire and forget)
     dispatchWebhook(WebhookEvents.SERVER_RESTARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+
+    // Emit WebSocket event for real-time updates
+    emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
 
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {

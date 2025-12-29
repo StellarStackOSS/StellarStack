@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useCallback, useMemo, useEffect, useRef } from "react";
 import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries";
+import { useServerWebSocket } from "@/hooks/useWebSocket";
 import type { Server, ConsoleInfo } from "@/lib/api";
 import { playSoundEffect } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
@@ -42,15 +43,21 @@ export function ServerProvider({ serverId, children }: ServerProviderProps) {
   // Track previous status to detect when installation completes
   const prevStatusRef = useRef<string | null>(null);
 
-  // React Query hooks - poll faster during installation
+  // WebSocket connection for real-time updates
+  const { isConnected: wsConnected } = useServerWebSocket(serverId);
+
+  // React Query hooks - poll less frequently when WebSocket is connected
   const {
     data: server = null,
     isLoading,
     error: serverError,
     refetch: refetchServer,
   } = useServerQuery(serverId, {
-    // Poll every 2 seconds during installation, every 5 seconds otherwise
-    refetchInterval: prevStatusRef.current === "INSTALLING" ? 2000 : 5000,
+    // When WebSocket connected: poll every 30s as fallback, otherwise poll faster
+    // During installation: poll every 2s regardless (installation progress isn't pushed via WS)
+    refetchInterval: prevStatusRef.current === "INSTALLING"
+      ? 2000
+      : wsConnected ? 30000 : 5000,
   });
 
   // Only fetch console info when server exists and is not suspended

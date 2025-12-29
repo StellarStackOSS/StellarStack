@@ -100,8 +100,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [isAuthenticated, isAdmin, pathname, isPending, router, isRedirecting]);
 
   const handleSignOut = async () => {
+    setIsRedirecting(true); // Prevent auth redirects during logout
     await authSignOut();
-    router.push("/");
+    // Force a hard navigation to clear all state
+    window.location.href = "/";
   };
 
   return (
