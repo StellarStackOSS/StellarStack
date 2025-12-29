@@ -257,7 +257,12 @@ pub async fn stop_container(
             // Send command to stdin
             debug!("Sending stop command to container {}: {}", container_name, cmd);
             if let Err(e) = env.send_command(cmd).await {
-                warn!("Failed to send stop command: {}", e);
+                warn!("Failed to send stop command: {} - falling back to SIGTERM", e);
+                // Fall back to SIGTERM if we can't send the command
+                let options = KillContainerOptions { signal: "SIGTERM" };
+                if let Err(e) = env.docker().kill_container(container_name, Some(options)).await {
+                    warn!("Failed to send SIGTERM to container: {}", e);
+                }
             }
         }
         StopConfig::Native => {

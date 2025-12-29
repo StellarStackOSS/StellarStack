@@ -101,8 +101,10 @@ docker:
   installer_limits:
     memory: 1024
     cpu: 100
+  # Memory overhead percentage (extra memory for JVM metaspace, native memory, etc.)
+  # For Java/Minecraft servers, 10-15% is recommended
   overhead:
-    default: 0
+    default: 10
     override: {{}}
 
 remote:

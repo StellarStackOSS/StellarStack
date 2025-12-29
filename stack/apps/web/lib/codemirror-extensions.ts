@@ -99,6 +99,18 @@ export const lightTheme = EditorView.theme({
 });
 
 /**
+ * Theme extension for proper scrolling
+ */
+const scrollableTheme = EditorView.theme({
+  "&": {
+    height: "100%",
+  },
+  ".cm-scroller": {
+    overflow: "auto",
+  },
+});
+
+/**
  * Base extensions for all editor instances
  */
 export function getBaseExtensions(isDark: boolean, readOnly: boolean = false): Extension[] {
@@ -113,6 +125,7 @@ export function getBaseExtensions(isDark: boolean, readOnly: boolean = false): E
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     isDark ? darkTheme : lightTheme,
+    scrollableTheme,
     EditorView.lineWrapping,
   ];
 
