@@ -588,11 +588,26 @@ export type WebhookEvent =
 
 export interface Webhook {
   id: string;
-  serverId: string;
+  serverId: string | null;
   url: string;
   events: WebhookEvent[];
   enabled: boolean;
   secret?: string;
+  secretOnce?: string;
+  server?: { id: string; name: string } | null;
+  _count?: { deliveries: number };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhookId: string;
+  event: string;
+  payload: Record<string, unknown>;
+  statusCode: number | null;
+  response: string | null;
+  attempts: number;
+  deliveredAt: string | null;
+  createdAt: string;
 }

@@ -21,7 +21,11 @@ const DOWNLOAD_SECRET = getRequiredEnv(
 const DOWNLOAD_TOKEN_EXPIRY = 300;
 
 // Generate a signed download token
-const generateDownloadToken = (userId: string, serverId: string, resource: string): { token: string; expiresAt: number } => {
+const generateDownloadToken = (
+  userId: string,
+  serverId: string,
+  resource: string
+): { token: string; expiresAt: number } => {
   const expiresAt = Math.floor(Date.now() / 1000) + DOWNLOAD_TOKEN_EXPIRY;
   const payload = `${userId}:${serverId}:${resource}:${expiresAt}`;
   const signature = createHmac("sha256", DOWNLOAD_SECRET).update(payload).digest("hex");
@@ -30,7 +34,9 @@ const generateDownloadToken = (userId: string, serverId: string, resource: strin
 };
 
 // Verify a download token and return the parsed data
-const verifyDownloadToken = (token: string): { valid: boolean; userId?: string; serverId?: string; resource?: string } => {
+const verifyDownloadToken = (
+  token: string
+): { valid: boolean; userId?: string; serverId?: string; resource?: string } => {
   try {
     const decoded = Buffer.from(token, "base64url").toString("utf-8");
 
@@ -421,11 +427,11 @@ servers.post("/", requireAdmin, async (c) => {
   const startupDonePatterns: string[] = [];
 
   // Handle various formats of startupDetection
-  if (typeof startupDetection.done === 'string') {
+  if (typeof startupDetection.done === "string") {
     startupDonePatterns.push(startupDetection.done);
   } else if (Array.isArray(startupDetection.done)) {
     startupDonePatterns.push(...startupDetection.done);
-  } else if (typeof startupDetection === 'string') {
+  } else if (typeof startupDetection === "string") {
     // Simple string format
     startupDonePatterns.push(startupDetection);
   }
@@ -454,11 +460,14 @@ servers.post("/", requireAdmin, async (c) => {
         ip: primaryAllocation.ip,
         port: primaryAllocation.port,
       },
-      mappings: allocations.reduce((acc, a) => {
-        if (!acc[a.ip]) acc[a.ip] = [];
-        acc[a.ip].push(a.port);
-        return acc;
-      }, {} as Record<string, number[]>),
+      mappings: allocations.reduce(
+        (acc, a) => {
+          if (!acc[a.ip]) acc[a.ip] = [];
+          acc[a.ip].push(a.port);
+          return acc;
+        },
+        {} as Record<string, number[]>
+      ),
     },
     egg: {
       id: blueprint.id,
@@ -641,7 +650,9 @@ servers.post("/:serverId/start", requireServerAccess, async (c) => {
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "start" });
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
+      action: "start",
+    });
 
     await db.server.update({
       where: { id: server.id },
@@ -651,7 +662,10 @@ servers.post("/:serverId/start", requireServerAccess, async (c) => {
     await logActivityFromContext(c, ActivityEvents.SERVER_START, { serverId: server.id });
 
     // Dispatch webhook (fire and forget)
-    dispatchWebhook(WebhookEvents.SERVER_STARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+    dispatchWebhook(WebhookEvents.SERVER_STARTED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+    }).catch(() => {});
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
@@ -676,7 +690,9 @@ servers.post("/:serverId/stop", requireServerAccess, async (c) => {
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "stop" });
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
+      action: "stop",
+    });
 
     await db.server.update({
       where: { id: server.id },
@@ -686,7 +702,10 @@ servers.post("/:serverId/stop", requireServerAccess, async (c) => {
     await logActivityFromContext(c, ActivityEvents.SERVER_STOP, { serverId: server.id });
 
     // Dispatch webhook (fire and forget)
-    dispatchWebhook(WebhookEvents.SERVER_STOPPED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+    dispatchWebhook(WebhookEvents.SERVER_STOPPED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+    }).catch(() => {});
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STOPPING" });
@@ -711,7 +730,9 @@ servers.post("/:serverId/restart", requireServerAccess, async (c) => {
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "restart" });
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
+      action: "restart",
+    });
 
     await db.server.update({
       where: { id: server.id },
@@ -721,7 +742,10 @@ servers.post("/:serverId/restart", requireServerAccess, async (c) => {
     await logActivityFromContext(c, ActivityEvents.SERVER_RESTART, { serverId: server.id });
 
     // Dispatch webhook (fire and forget)
-    dispatchWebhook(WebhookEvents.SERVER_RESTARTED, { serverId: server.id, userId: c.get("user").id }).catch(() => {});
+    dispatchWebhook(WebhookEvents.SERVER_RESTARTED, {
+      serverId: server.id,
+      userId: c.get("user").id,
+    }).catch(() => {});
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
@@ -746,7 +770,9 @@ servers.post("/:serverId/kill", requireServerAccess, async (c) => {
   }
 
   try {
-    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, { action: "kill" });
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
+      action: "kill",
+    });
 
     await db.server.update({
       where: { id: server.id },
@@ -1030,7 +1056,7 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
   // Build startup command with variable substitution
   let startupCommand = blueprint.startup || "";
   variables.forEach((v) => {
-    const regex = new RegExp(`\\{\\{${v.envVariable}\\}\\}`, 'g');
+    const regex = new RegExp(`\\{\\{${v.envVariable}\\}\\}`, "g");
     startupCommand = startupCommand.replace(regex, v.value);
   });
   // Replace SERVER_MEMORY placeholder with memory limit
@@ -1265,7 +1291,10 @@ servers.get("/:serverId/files/download", async (c) => {
 
   try {
     const fullServer = await getServerWithNode(serverId);
-    const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
+    const protocol =
+      fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY"
+        ? "https"
+        : "http";
     // Use the daemon's public download endpoint with signed token
     const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/download/file?server=${serverId}&file=${encodeURIComponent(path)}`;
 
@@ -1521,7 +1550,9 @@ servers.get("/:serverId/backups", requireServerAccess, async (c) => {
       storagePath: backup.storage_path,
       serverId: server.id,
       ignoredFiles: backup.ignored_files || [],
-      completedAt: backup.completed_at ? new Date(backup.completed_at * 1000).toISOString() : undefined,
+      completedAt: backup.completed_at
+        ? new Date(backup.completed_at * 1000).toISOString()
+        : undefined,
       createdAt: backup.created_at
         ? new Date(backup.created_at * 1000).toISOString()
         : new Date().toISOString(),
@@ -1653,7 +1684,10 @@ servers.get("/:serverId/backups/download", async (c) => {
 
   try {
     const fullServer = await getServerWithNode(serverId);
-    const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
+    const protocol =
+      fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY"
+        ? "https"
+        : "http";
     // Use the daemon's public backup download endpoint
     const url = `${protocol}://${fullServer.node.host}:${fullServer.node.port}/download/backup?server=${serverId}&backup=${encodeURIComponent(backupId)}`;
 
@@ -1865,10 +1899,13 @@ servers.post("/:serverId/allocations", requireAdmin, async (c) => {
             ip: fullServer.allocations[0]?.ip || "0.0.0.0",
             port: fullServer.allocations[0]?.port || 25565,
           },
-          mappings: allAllocations.reduce((acc, a) => {
-            acc[a.port] = a.port;
-            return acc;
-          }, {} as Record<number, number>),
+          mappings: allAllocations.reduce(
+            (acc, a) => {
+              acc[a.port] = a.port;
+              return acc;
+            },
+            {} as Record<number, number>
+          ),
         },
       });
     } catch (error: any) {
@@ -1936,10 +1973,13 @@ servers.delete("/:serverId/allocations/:allocationId", requireAdmin, async (c) =
             ip: remainingAllocations[0]?.ip || "0.0.0.0",
             port: remainingAllocations[0]?.port || 25565,
           },
-          mappings: remainingAllocations.reduce((acc, a) => {
-            acc[a.port] = a.port;
-            return acc;
-          }, {} as Record<number, number>),
+          mappings: remainingAllocations.reduce(
+            (acc, a) => {
+              acc[a.port] = a.port;
+              return acc;
+            },
+            {} as Record<number, number>
+          ),
         },
       });
     } catch (error: any) {
@@ -1988,10 +2028,13 @@ servers.post("/:serverId/allocations/:allocationId/primary", requireServerAccess
             ip: allocation.ip,
             port: allocation.port,
           },
-          mappings: fullServer.allocations.reduce((acc, a) => {
-            acc[a.port] = a.port;
-            return acc;
-          }, {} as Record<number, number>),
+          mappings: fullServer.allocations.reduce(
+            (acc, a) => {
+              acc[a.port] = a.port;
+              return acc;
+            },
+            {} as Record<number, number>
+          ),
         },
       });
     } catch (error: any) {
@@ -2151,23 +2194,41 @@ servers.post("/:serverId/split", requireServerAccess, async (c) => {
     });
 
     // Notify daemon to create the child container
-    await daemonRequest(
-      parentServer.node,
-      "POST",
-      "/api/servers",
-      {
+    try {
+      await daemonRequest(parentServer.node, "POST", "/api/servers", {
         uuid: childServer.id,
+        name: childServer.name,
         memory: Number(childMemory),
         disk: Number(childDisk),
         cpu: childCpu,
         image: childServer.dockerImage || parentServer.dockerImage,
         environment: childServer.variables || {},
-        allocations: [{
-          ip: allocation.ip,
-          port: allocation.port,
-        }],
-      }
-    );
+        allocations: [
+          {
+            ip: allocation.ip,
+            port: allocation.port,
+          },
+        ],
+      });
+    } catch (daemonError: any) {
+      // Rollback: restore parent resources, release allocation, delete child server
+      await db.server.update({
+        where: { id: parentServer.id },
+        data: {
+          memory: parentServer.memory,
+          disk: parentServer.disk,
+          cpu: parentServer.cpu,
+        },
+      });
+      await db.allocation.update({
+        where: { id: allocation.id },
+        data: { assigned: false, serverId: null },
+      });
+      await db.server.delete({
+        where: { id: childServer.id },
+      });
+      return c.json({ error: `Failed to communicate with daemon: ${daemonError.message}` }, 500);
+    }
 
     await logActivityFromContext(c, "server:split", {
       serverId: parentServer.id,
@@ -2212,11 +2273,13 @@ servers.get("/:serverId/children", requireServerAccess, async (c) => {
     },
   });
 
-  return c.json(children.map((child) => ({
-    ...child,
-    memory: Number(child.memory),
-    disk: Number(child.disk),
-  })));
+  return c.json(
+    children.map((child) => ({
+      ...child,
+      memory: Number(child.memory),
+      disk: Number(child.disk),
+    }))
+  );
 });
 
 // === Server Transfer ===
@@ -2338,21 +2401,16 @@ servers.post("/:serverId/transfer", requireServerAccess, async (c) => {
 
     // Notify source daemon to start archiving
     // The daemon will create an archive and update the transfer status
-    await daemonRequest(
-      fullServer.node,
-      "POST",
-      `/api/servers/${server.id}/transfer`,
-      {
-        transferId: transfer.id,
-        targetNodeHost: targetNode.host,
-        targetNodePort: targetNode.port,
-        targetNodeToken: targetNode.token,
-        targetAllocation: {
-          ip: allocation.ip,
-          port: allocation.port,
-        },
-      }
-    );
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/transfer`, {
+      transferId: transfer.id,
+      targetNodeHost: targetNode.host,
+      targetNodePort: targetNode.port,
+      targetNodeToken: targetNode.token,
+      targetAllocation: {
+        ip: allocation.ip,
+        port: allocation.port,
+      },
+    });
 
     // Update transfer status
     await db.serverTransfer.update({
@@ -2459,16 +2517,18 @@ servers.get("/:serverId/transfer/history", requireServerAccess, async (c) => {
     take: 10,
   });
 
-  return c.json(transfers.map((t) => ({
-    id: t.id,
-    status: t.status,
-    progress: t.progress,
-    error: t.error,
-    sourceNode: t.sourceNode.displayName,
-    targetNode: t.targetNode.displayName,
-    createdAt: t.createdAt,
-    completedAt: t.completedAt,
-  })));
+  return c.json(
+    transfers.map((t) => ({
+      id: t.id,
+      status: t.status,
+      progress: t.progress,
+      error: t.error,
+      sourceNode: t.sourceNode.displayName,
+      targetNode: t.targetNode.displayName,
+      createdAt: t.createdAt,
+      completedAt: t.completedAt,
+    }))
+  );
 });
 
 export { servers };

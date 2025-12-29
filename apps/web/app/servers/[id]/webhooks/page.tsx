@@ -18,7 +18,7 @@ import {
   BsGlobe,
   BsCheck2,
   BsX,
-  BsClipboard,
+  BsArrowRepeat,
 } from "react-icons/bs";
 import { useServer } from "@/components/server-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
@@ -28,7 +28,11 @@ import { toast } from "sonner";
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
   { value: "server.stopped", label: "Server Stopped", description: "When the server stops" },
-  { value: "server.status_changed", label: "Status Changed", description: "When server status changes" },
+  {
+    value: "server.status_changed",
+    label: "Status Changed",
+    description: "When server status changes",
+  },
   { value: "server.console", label: "Console Output", description: "Console log messages" },
   { value: "backup.created", label: "Backup Created", description: "When a backup is created" },
   { value: "backup.restored", label: "Backup Restored", description: "When a backup is restored" },
@@ -68,8 +72,9 @@ const WebhooksPage = (): JSX.Element | null => {
   const fetchWebhooks = async () => {
     try {
       setLoading(true);
-      const data = await webhooks.list(serverId);
-      setWebhookList(data);
+      const data = await webhooks.list();
+      // Filter to show only webhooks for this server
+      setWebhookList(data.filter((w) => w.serverId === serverId));
     } catch (error) {
       console.error("Failed to fetch webhooks:", error);
       toast.error("Failed to load webhooks");
@@ -121,7 +126,6 @@ const WebhooksPage = (): JSX.Element | null => {
         serverId,
         url: formUrl,
         events: formEvents,
-        enabled: formEnabled,
       });
       setWebhookList((prev) => [...prev, newWebhook]);
       setAddModalOpen(false);
@@ -162,12 +166,13 @@ const WebhooksPage = (): JSX.Element | null => {
     }
   };
 
-  const handleTest = async (webhook: Webhook) => {
+  const handleRegenerateSecret = async (webhook: Webhook) => {
     try {
-      await webhooks.test(webhook.id);
-      toast.success("Test payload sent");
+      const result = await webhooks.regenerateSecret(webhook.id);
+      toast.success(`New secret: ${result.secret}`, { duration: 10000 });
+      fetchWebhooks();
     } catch (error) {
-      toast.error("Failed to send test payload");
+      toast.error("Failed to regenerate secret");
     }
   };
 
@@ -181,14 +186,17 @@ const WebhooksPage = (): JSX.Element | null => {
 
   return (
     <div
-      className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}
+      className={cn(
+        "relative min-h-svh transition-colors",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}
     >
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto max-w-6xl">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SidebarTrigger
                 className={cn(
@@ -205,7 +213,7 @@ const WebhooksPage = (): JSX.Element | null => {
                 >
                   WEBHOOKS
                 </h1>
-                <p className={cn("text-sm mt-1", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
                   Server {serverId} • {webhookList.length} webhooks
                 </p>
               </div>
@@ -216,83 +224,83 @@ const WebhooksPage = (): JSX.Element | null => {
                 size="sm"
                 onClick={openAddModal}
                 className={cn(
-                  "transition-all gap-2",
+                  "gap-2 transition-all",
                   isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
                 )}
               >
-                <BsPlus className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Add Webhook</span>
+                <BsPlus className="h-4 w-4" />
+                <span className="text-xs tracking-wider uppercase">Add Webhook</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setTheme(isDark ? "light" : "dark")}
                 className={cn(
-                  "transition-all hover:scale-110 active:scale-95 p-2",
+                  "p-2 transition-all hover:scale-110 active:scale-95",
                   isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
                 )}
               >
-                {isDark ? <BsSun className="w-4 h-4" /> : <BsMoon className="w-4 h-4" />}
+                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("text-center py-12", isDark ? "text-zinc-500" : "text-zinc-400")}>
+            <div className={cn("py-12 text-center", isDark ? "text-zinc-500" : "text-zinc-400")}>
               Loading webhooks...
             </div>
           ) : webhookList.length === 0 ? (
             <div
               className={cn(
-                "relative p-8 border text-center",
+                "relative border p-8 text-center",
                 isDark
-                  ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-                  : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+                  ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+                  : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
               )}
             >
               {/* Corner decorations */}
               <div
                 className={cn(
-                  "absolute top-0 left-0 w-2 h-2 border-t border-l",
+                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
                   isDark ? "border-zinc-500" : "border-zinc-400"
                 )}
               />
               <div
                 className={cn(
-                  "absolute top-0 right-0 w-2 h-2 border-t border-r",
+                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
                   isDark ? "border-zinc-500" : "border-zinc-400"
                 )}
               />
               <div
                 className={cn(
-                  "absolute bottom-0 left-0 w-2 h-2 border-b border-l",
+                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
                   isDark ? "border-zinc-500" : "border-zinc-400"
                 )}
               />
               <div
                 className={cn(
-                  "absolute bottom-0 right-0 w-2 h-2 border-b border-r",
+                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
                   isDark ? "border-zinc-500" : "border-zinc-400"
                 )}
               />
 
               <BsGlobe
-                className={cn("w-12 h-12 mx-auto mb-4", isDark ? "text-zinc-600" : "text-zinc-400")}
+                className={cn("mx-auto mb-4 h-12 w-12", isDark ? "text-zinc-600" : "text-zinc-400")}
               />
               <h3
                 className={cn(
-                  "text-lg font-medium mb-2",
+                  "mb-2 text-lg font-medium",
                   isDark ? "text-zinc-300" : "text-zinc-700"
                 )}
               >
                 No Webhooks
               </h3>
-              <p className={cn("text-sm mb-4", isDark ? "text-zinc-500" : "text-zinc-500")}>
+              <p className={cn("mb-4 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
                 Add a webhook to receive notifications about server events.
               </p>
               <Button
@@ -306,7 +314,7 @@ const WebhooksPage = (): JSX.Element | null => {
                     : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
                 )}
               >
-                <BsPlus className="w-4 h-4" />
+                <BsPlus className="h-4 w-4" />
                 Add Webhook
               </Button>
             </div>
@@ -317,60 +325,57 @@ const WebhooksPage = (): JSX.Element | null => {
                 <div
                   key={webhook.id}
                   className={cn(
-                    "relative p-6 border transition-all",
+                    "relative border p-6 transition-all",
                     isDark
-                      ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-                      : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+                      ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+                      : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
                   )}
                 >
                   {/* Corner decorations */}
                   <div
                     className={cn(
-                      "absolute top-0 left-0 w-2 h-2 border-t border-l",
+                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
                       isDark ? "border-zinc-500" : "border-zinc-400"
                     )}
                   />
                   <div
                     className={cn(
-                      "absolute top-0 right-0 w-2 h-2 border-t border-r",
+                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
                       isDark ? "border-zinc-500" : "border-zinc-400"
                     )}
                   />
                   <div
                     className={cn(
-                      "absolute bottom-0 left-0 w-2 h-2 border-b border-l",
+                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
                       isDark ? "border-zinc-500" : "border-zinc-400"
                     )}
                   />
                   <div
                     className={cn(
-                      "absolute bottom-0 right-0 w-2 h-2 border-b border-r",
+                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
                       isDark ? "border-zinc-500" : "border-zinc-400"
                     )}
                   />
 
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex items-center gap-3">
                         <div
                           className={cn(
-                            "w-8 h-8 flex items-center justify-center border",
+                            "flex h-8 w-8 items-center justify-center border",
                             isDark
                               ? "border-zinc-700 bg-zinc-800/50"
                               : "border-zinc-300 bg-zinc-100"
                           )}
                         >
                           <BsGlobe
-                            className={cn(
-                              "w-4 h-4",
-                              isDark ? "text-zinc-400" : "text-zinc-500"
-                            )}
+                            className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-500")}
                           />
                         </div>
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              "text-xs font-mono truncate max-w-[400px]",
+                              "max-w-[400px] truncate font-mono text-xs",
                               isDark ? "text-zinc-100" : "text-zinc-800"
                             )}
                           >
@@ -378,7 +383,7 @@ const WebhooksPage = (): JSX.Element | null => {
                           </span>
                           <span
                             className={cn(
-                              "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
+                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
                               webhook.enabled
                                 ? isDark
                                   ? "border-green-700/50 text-green-400"
@@ -397,7 +402,7 @@ const WebhooksPage = (): JSX.Element | null => {
                           <span
                             key={event}
                             className={cn(
-                              "text-[10px] uppercase tracking-wider px-2 py-0.5 border",
+                              "border px-2 py-0.5 text-[10px] tracking-wider uppercase",
                               isDark
                                 ? "border-zinc-700 text-zinc-400"
                                 : "border-zinc-300 text-zinc-500"
@@ -408,46 +413,46 @@ const WebhooksPage = (): JSX.Element | null => {
                         ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="ml-4 flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleTest(webhook)}
+                        onClick={() => handleRegenerateSecret(webhook)}
                         className={cn(
-                          "transition-all p-2",
+                          "p-2 transition-all",
                           isDark
-                            ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                            : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
                         )}
-                        title="Send test payload"
+                        title="Regenerate secret"
                       >
-                        <BsClipboard className="w-4 h-4" />
+                        <BsArrowRepeat className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditModal(webhook)}
                         className={cn(
-                          "transition-all p-2",
+                          "p-2 transition-all",
                           isDark
-                            ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                            : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
                         )}
                       >
-                        <BsPencil className="w-4 h-4" />
+                        <BsPencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openDeleteModal(webhook)}
                         className={cn(
-                          "transition-all p-2",
+                          "p-2 transition-all",
                           isDark
-                            ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700"
-                            : "border-red-300 text-red-600 hover:text-red-700 hover:border-red-400"
+                            ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
+                            : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700"
                         )}
                       >
-                        <BsTrash className="w-4 h-4" />
+                        <BsTrash className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -473,7 +478,7 @@ const WebhooksPage = (): JSX.Element | null => {
           <div>
             <label
               className={cn(
-                "text-xs uppercase tracking-wider mb-2 block",
+                "mb-2 block text-xs tracking-wider uppercase",
                 isDark ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -485,17 +490,17 @@ const WebhooksPage = (): JSX.Element | null => {
               onChange={(e) => setFormUrl(e.target.value)}
               placeholder="https://example.com/webhook"
               className={cn(
-                "transition-all font-mono text-sm",
+                "font-mono text-sm transition-all",
                 isDark
-                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
-                  : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400"
+                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
+                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
               )}
             />
           </div>
           <div>
             <label
               className={cn(
-                "text-xs uppercase tracking-wider mb-2 block",
+                "mb-2 block text-xs tracking-wider uppercase",
                 isDark ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -508,7 +513,7 @@ const WebhooksPage = (): JSX.Element | null => {
                   type="button"
                   onClick={() => toggleEvent(event.value)}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 border transition-all text-left",
+                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
                     formEvents.includes(event.value)
                       ? isDark
                         ? "border-zinc-500 bg-zinc-800"
@@ -520,7 +525,7 @@ const WebhooksPage = (): JSX.Element | null => {
                 >
                   <div
                     className={cn(
-                      "w-5 h-5 border flex items-center justify-center",
+                      "flex h-5 w-5 items-center justify-center border",
                       formEvents.includes(event.value)
                         ? isDark
                           ? "border-green-500 bg-green-500/20"
@@ -532,10 +537,7 @@ const WebhooksPage = (): JSX.Element | null => {
                   >
                     {formEvents.includes(event.value) && (
                       <BsCheck2
-                        className={cn(
-                          "w-3 h-3",
-                          isDark ? "text-green-400" : "text-green-600"
-                        )}
+                        className={cn("h-3 w-3", isDark ? "text-green-400" : "text-green-600")}
                       />
                     )}
                   </div>
@@ -548,12 +550,7 @@ const WebhooksPage = (): JSX.Element | null => {
                     >
                       {event.label}
                     </div>
-                    <div
-                      className={cn(
-                        "text-xs",
-                        isDark ? "text-zinc-500" : "text-zinc-500"
-                      )}
-                    >
+                    <div className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
                       {event.description}
                     </div>
                   </div>
@@ -579,7 +576,7 @@ const WebhooksPage = (): JSX.Element | null => {
           <div>
             <label
               className={cn(
-                "text-xs uppercase tracking-wider mb-2 block",
+                "mb-2 block text-xs tracking-wider uppercase",
                 isDark ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -591,17 +588,17 @@ const WebhooksPage = (): JSX.Element | null => {
               onChange={(e) => setFormUrl(e.target.value)}
               placeholder="https://example.com/webhook"
               className={cn(
-                "transition-all font-mono text-sm",
+                "font-mono text-sm transition-all",
                 isDark
-                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600"
-                  : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400"
+                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
+                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
               )}
             />
           </div>
           <div>
             <label
               className={cn(
-                "text-xs uppercase tracking-wider mb-2 block",
+                "mb-2 block text-xs tracking-wider uppercase",
                 isDark ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -611,7 +608,7 @@ const WebhooksPage = (): JSX.Element | null => {
               type="button"
               onClick={() => setFormEnabled(!formEnabled)}
               className={cn(
-                "flex items-center gap-3 p-3 border transition-all w-full",
+                "flex w-full items-center gap-3 border p-3 transition-all",
                 formEnabled
                   ? isDark
                     ? "border-green-700/50 bg-green-900/20"
@@ -623,7 +620,7 @@ const WebhooksPage = (): JSX.Element | null => {
             >
               <div
                 className={cn(
-                  "w-10 h-5 relative rounded-full transition-colors",
+                  "relative h-5 w-10 rounded-full transition-colors",
                   formEnabled
                     ? isDark
                       ? "bg-green-600"
@@ -635,7 +632,7 @@ const WebhooksPage = (): JSX.Element | null => {
               >
                 <div
                   className={cn(
-                    "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform",
+                    "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
                     formEnabled ? "translate-x-5" : "translate-x-0.5"
                   )}
                 />
@@ -648,7 +645,7 @@ const WebhooksPage = (): JSX.Element | null => {
           <div>
             <label
               className={cn(
-                "text-xs uppercase tracking-wider mb-2 block",
+                "mb-2 block text-xs tracking-wider uppercase",
                 isDark ? "text-zinc-400" : "text-zinc-600"
               )}
             >
@@ -661,7 +658,7 @@ const WebhooksPage = (): JSX.Element | null => {
                   type="button"
                   onClick={() => toggleEvent(event.value)}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 border transition-all text-left",
+                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
                     formEvents.includes(event.value)
                       ? isDark
                         ? "border-zinc-500 bg-zinc-800"
@@ -673,7 +670,7 @@ const WebhooksPage = (): JSX.Element | null => {
                 >
                   <div
                     className={cn(
-                      "w-5 h-5 border flex items-center justify-center",
+                      "flex h-5 w-5 items-center justify-center border",
                       formEvents.includes(event.value)
                         ? isDark
                           ? "border-green-500 bg-green-500/20"
@@ -685,10 +682,7 @@ const WebhooksPage = (): JSX.Element | null => {
                   >
                     {formEvents.includes(event.value) && (
                       <BsCheck2
-                        className={cn(
-                          "w-3 h-3",
-                          isDark ? "text-green-400" : "text-green-600"
-                        )}
+                        className={cn("h-3 w-3", isDark ? "text-green-400" : "text-green-600")}
                       />
                     )}
                   </div>
@@ -701,12 +695,7 @@ const WebhooksPage = (): JSX.Element | null => {
                     >
                       {event.label}
                     </div>
-                    <div
-                      className={cn(
-                        "text-xs",
-                        isDark ? "text-zinc-500" : "text-zinc-500"
-                      )}
-                    >
+                    <div className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
                       {event.description}
                     </div>
                   </div>
