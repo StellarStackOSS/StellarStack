@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { createNodeWebSocket } from "@hono/node-ws";
 import { serve } from "@hono/node-server";
 
 import { auth } from "./lib/auth";
+import { wsManager } from "./lib/ws";
 import { account } from "./routes/account";
 import { locations } from "./routes/locations";
 import { nodes } from "./routes/nodes";
@@ -14,6 +16,9 @@ import { domains } from "./routes/domains";
 import { remote } from "./routes/remote";
 
 const app = new Hono();
+
+// Create WebSocket adapter
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
 // Middleware
 app.use("*", logger());
@@ -60,6 +65,28 @@ app.route("/api/servers", domains); // Domain routes under /api/servers/:serverI
 // Daemon-facing API routes (node authentication required)
 app.route("/api/remote", remote);
 
+// WebSocket endpoint for real-time updates
+app.get(
+  "/api/ws",
+  upgradeWebSocket((c) => {
+    return {
+      onOpen: (_event, ws) => {
+        // TODO: Authenticate user from session/token
+        wsManager.addClient(ws.raw as any);
+      },
+      onMessage: (event, ws) => {
+        wsManager.handleMessage(ws.raw as any, event.data.toString());
+      },
+      onClose: (_event, ws) => {
+        wsManager.removeClient(ws.raw as any);
+      },
+      onError: (_event, ws) => {
+        wsManager.removeClient(ws.raw as any);
+      },
+    };
+  })
+);
+
 // 404 handler
 app.notFound((c) => {
   return c.json({ error: "Not found" }, 404);
@@ -77,10 +104,14 @@ const hostname = process.env.HOSTNAME || "::";
 
 console.log(`Starting API server on port ${port}...`);
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port,
   hostname,
 });
 
+// Inject WebSocket support into the server
+injectWebSocket(server);
+
 console.log(`API server running at http://localhost:${port}`);
+console.log(`WebSocket endpoint available at ws://localhost:${port}/api/ws`);
