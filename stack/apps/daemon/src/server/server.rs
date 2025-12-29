@@ -723,9 +723,12 @@ impl Server {
             return Err(PowerError::Suspended);
         }
 
+        // Fix permissions on the server data directory
+        // This ensures the container user (uid/gid 1000) can write to it
+        self.fix_permissions().await?;
+
         // TODO: Check disk space
         // TODO: Update configuration files
-        // TODO: Fix permissions if needed
 
         // Recreate container with latest config
         info!("Recreating container for {}", self.uuid());
@@ -737,6 +740,47 @@ impl Server {
             Err(e) => {
                 error!("Failed to recreate container for {}: {}", self.uuid(), e);
                 Err(PowerError::Environment(e))
+            }
+        }
+    }
+
+    /// Fix ownership permissions on the server data directory
+    async fn fix_permissions(&self) -> Result<(), PowerError> {
+        use std::process::Command;
+
+        let data_dir = &self.data_dir;
+        let uid = 1000u32; // Container user ID
+        let gid = 1000u32; // Container group ID
+
+        // Check if directory exists
+        if !data_dir.exists() {
+            debug!("Data directory doesn't exist yet, skipping permission fix");
+            return Ok(());
+        }
+
+        info!("Fixing permissions on {} (uid={}, gid={})", data_dir.display(), uid, gid);
+
+        // Use chown command for recursive ownership change (more reliable than walking manually)
+        let output = Command::new("chown")
+            .args(["-R", &format!("{}:{}", uid, gid), &data_dir.to_string_lossy()])
+            .output();
+
+        match output {
+            Ok(result) => {
+                if result.status.success() {
+                    debug!("Permissions fixed successfully on {}", data_dir.display());
+                    Ok(())
+                } else {
+                    let stderr = String::from_utf8_lossy(&result.stderr);
+                    warn!("Failed to fix permissions on {}: {}", data_dir.display(), stderr);
+                    // Don't fail the start - the container might still work if permissions are already correct
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                warn!("Failed to run chown command: {}", e);
+                // Don't fail the start
+                Ok(())
             }
         }
     }
