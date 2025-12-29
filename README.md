@@ -45,7 +45,7 @@ This software is under active development. Use at your own risk.
 ### Administration
 - **Node Management** - Manage multiple daemon nodes
 - **Location Grouping** - Organize nodes by geographic location
-- **Blueprint System** - Pre-configured server templates (like Pterodactyl eggs)
+- **Blueprint System** - Pre-configured server templates
 - **Network Allocations** - IP and port allocation management
 - **White-label Branding** - Custom app name, logo, colors, and CSS
 - **Cloudflare Integration** - DNS management for subdomains
@@ -193,15 +193,6 @@ StellarStack is an open-source project. If you'd like to support development:
 
 - [GitHub Sponsors](https://github.com/sponsors/your-username)
 - [Open Collective](https://opencollective.com/stellarstack)
-
----
-
-## Acknowledgments
-
-StellarStack draws inspiration from:
-- [Pterodactyl](https://pterodactyl.io/) - The original game server panel
-- [Pelican](https://pelican.dev/) - Modern Pterodactyl alternative
-- [shadcn/ui](https://ui.shadcn.com/) - Beautiful UI components
 
 ---
 
