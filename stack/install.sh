@@ -151,6 +151,56 @@ show_welcome() {
     wait_for_enter
 }
 
+# Check for existing installation
+check_existing_installation() {
+    clear_screen
+    echo -e "${PRIMARY}  > EXISTING INSTALLATION CHECK${NC}"
+    echo ""
+
+    local existing=false
+
+    # Check if daemon binary exists
+    if [ -f "${DAEMON_INSTALL_DIR}/stellar-daemon" ]; then
+        existing=true
+        print_warning "Existing daemon installation found at ${DAEMON_INSTALL_DIR}"
+    fi
+
+    # Check if systemd service exists
+    if systemctl list-unit-files | grep -q "stellar-daemon.service"; then
+        existing=true
+        print_warning "Existing systemd service found"
+    fi
+
+    if [ "$existing" = true ]; then
+        echo ""
+        echo -e "${SECONDARY}  An existing StellarStack Daemon installation was detected.${NC}"
+        echo -e "${SECONDARY}  The installer will stop the current daemon and upgrade it.${NC}"
+        echo ""
+
+        if ask_yes_no "Continue with upgrade?" "y"; then
+            echo ""
+            print_task "Stopping existing daemon"
+            systemctl stop stellar-daemon 2>/dev/null || true
+            print_task_done "Stopping existing daemon"
+
+            print_task "Disabling existing daemon"
+            systemctl disable stellar-daemon 2>/dev/null || true
+            print_task_done "Disabling existing daemon"
+
+            print_info "Existing daemon stopped. Configuration will be recollected."
+        else
+            echo ""
+            print_info "Installation cancelled."
+            exit 0
+        fi
+    else
+        print_success "No existing installation detected"
+        print_info "Proceeding with fresh installation"
+    fi
+
+    wait_for_enter
+}
+
 # Check dependencies and ask to install missing ones
 check_dependencies() {
     clear_screen
@@ -705,25 +755,28 @@ main() {
     # Step 1: Welcome
     show_welcome
 
-    # Step 2: Check dependencies
+    # Step 2: Check for existing installation
+    check_existing_installation
+
+    # Step 3: Check dependencies
     check_dependencies
 
-    # Step 3: Collect daemon configuration
+    # Step 4: Collect daemon configuration
     collect_daemon_config
 
-    # Step 4: SSL configuration
+    # Step 5: SSL configuration
     collect_ssl_config
 
-    # Step 5: Redis configuration
+    # Step 6: Redis configuration
     collect_redis_config
 
-    # Step 6: Show summary and confirm
+    # Step 7: Show summary and confirm
     show_summary
 
-    # Step 7: Run installation
+    # Step 8: Run installation
     run_installation
 
-    # Step 8: Show completion
+    # Step 9: Show completion
     show_complete
 }
 
