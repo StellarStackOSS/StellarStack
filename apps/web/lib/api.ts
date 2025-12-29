@@ -41,6 +41,7 @@ import {
   PublicBrandingSettings,
   WebhookEvent,
   Webhook,
+  WebhookDelivery,
 } from "./api.types";
 
 // Re-export all types
@@ -113,12 +114,17 @@ export const nodes = {
   list: () => request<Node[]>("/api/nodes"),
   get: (id: string) => request<Node>(`/api/nodes/${id}`),
   create: (data: CreateNodeData) =>
-    request<{ node: Node; token_id: string; token: string }>("/api/nodes", { method: "POST", body: data }),
+    request<{ node: Node; token_id: string; token: string }>("/api/nodes", {
+      method: "POST",
+      body: data,
+    }),
   update: (id: string, data: Partial<CreateNodeData>) =>
     request<Node>(`/api/nodes/${id}`, { method: "PATCH", body: data }),
   delete: (id: string) => request(`/api/nodes/${id}`, { method: "DELETE" }),
   regenerateToken: (id: string) =>
-    request<{ token_id: string; token: string }>(`/api/nodes/${id}/regenerate-token`, { method: "POST" }),
+    request<{ token_id: string; token: string }>(`/api/nodes/${id}/regenerate-token`, {
+      method: "POST",
+    }),
 
   // Stats
   getStats: (id: string) => request<NodeStats>(`/api/nodes/${id}/stats`),
@@ -127,7 +133,10 @@ export const nodes = {
   addAllocation: (nodeId: string, data: { ip: string; port: number; alias?: string }) =>
     request<Allocation>(`/api/nodes/${nodeId}/allocations`, { method: "POST", body: data }),
   addAllocationRange: (nodeId: string, data: { ip: string; startPort: number; endPort: number }) =>
-    request<{ count: number }>(`/api/nodes/${nodeId}/allocations/range`, { method: "POST", body: data }),
+    request<{ count: number }>(`/api/nodes/${nodeId}/allocations/range`, {
+      method: "POST",
+      body: data,
+    }),
   deleteAllocation: (nodeId: string, allocationId: string) =>
     request(`/api/nodes/${nodeId}/allocations/${allocationId}`, { method: "DELETE" }),
 };
@@ -144,10 +153,13 @@ export const blueprints = {
 
   // Pterodactyl egg import/export
   importEgg: (egg: PterodactylEgg) =>
-    request<{ success: boolean; blueprint: Blueprint; message: string }>("/api/blueprints/import/egg", {
-      method: "POST",
-      body: egg,
-    }),
+    request<{ success: boolean; blueprint: Blueprint; message: string }>(
+      "/api/blueprints/import/egg",
+      {
+        method: "POST",
+        body: egg,
+      }
+    ),
   exportEgg: (id: string) => request<PterodactylEgg>(`/api/blueprints/${id}/export/egg`),
 };
 
@@ -167,10 +179,11 @@ export const servers = {
   restart: (id: string) => request(`/api/servers/${id}/restart`, { method: "POST" }),
   kill: (id: string) => request(`/api/servers/${id}/kill`, { method: "POST" }),
   sync: (id: string) => request(`/api/servers/${id}/sync`, { method: "POST" }),
-  reinstall: (id: string) => request<{ success: boolean; message: string; containerId: string }>(
-    `/api/servers/${id}/reinstall`,
-    { method: "POST" }
-  ),
+  reinstall: (id: string) =>
+    request<{ success: boolean; message: string; containerId: string }>(
+      `/api/servers/${id}/reinstall`,
+      { method: "POST" }
+    ),
   setStatus: (id: string, status: string) =>
     request<Server>(`/api/servers/${id}/status`, { method: "PATCH", body: { status } }),
 
@@ -187,19 +200,28 @@ export const servers = {
   // Files
   files: {
     list: (serverId: string, path?: string) =>
-      request<FileList>(`/api/servers/${serverId}/files${path ? `?path=${encodeURIComponent(path)}` : ""}`),
+      request<FileList>(
+        `/api/servers/${serverId}/files${path ? `?path=${encodeURIComponent(path)}` : ""}`
+      ),
     diskUsage: (serverId: string) =>
       request<DiskUsage>(`/api/servers/${serverId}/files/disk-usage`),
     read: async (serverId: string, path: string) => {
-      const response = await request<{ content: string }>(`/api/servers/${serverId}/files/read?path=${encodeURIComponent(path)}`);
+      const response = await request<{ content: string }>(
+        `/api/servers/${serverId}/files/read?path=${encodeURIComponent(path)}`
+      );
       return response.content;
     },
     write: (serverId: string, path: string, content: string) =>
       request(`/api/servers/${serverId}/files/write`, { method: "POST", body: { path, content } }),
     create: (serverId: string, path: string, type: "file" | "directory", content?: string) =>
-      request(`/api/servers/${serverId}/files/create`, { method: "POST", body: { path, type, content } }),
+      request(`/api/servers/${serverId}/files/create`, {
+        method: "POST",
+        body: { path, type, content },
+      }),
     delete: (serverId: string, path: string) =>
-      request(`/api/servers/${serverId}/files/delete?path=${encodeURIComponent(path)}`, { method: "DELETE" }),
+      request(`/api/servers/${serverId}/files/delete?path=${encodeURIComponent(path)}`, {
+        method: "DELETE",
+      }),
     rename: (serverId: string, from: string, to: string) =>
       request(`/api/servers/${serverId}/files/rename`, { method: "POST", body: { from, to } }),
     getDownloadToken: (serverId: string, path: string) =>
@@ -215,9 +237,13 @@ export const servers = {
     create: (serverId: string, data: { name?: string; ignore?: string[]; locked?: boolean }) =>
       request<Backup>(`/api/servers/${serverId}/backups`, { method: "POST", body: data }),
     restore: (serverId: string, backupId: string) =>
-      request(`/api/servers/${serverId}/backups/restore?id=${encodeURIComponent(backupId)}`, { method: "POST" }),
+      request(`/api/servers/${serverId}/backups/restore?id=${encodeURIComponent(backupId)}`, {
+        method: "POST",
+      }),
     delete: (serverId: string, backupId: string) =>
-      request(`/api/servers/${serverId}/backups/delete?id=${encodeURIComponent(backupId)}`, { method: "DELETE" }),
+      request(`/api/servers/${serverId}/backups/delete?id=${encodeURIComponent(backupId)}`, {
+        method: "DELETE",
+      }),
     lock: (serverId: string, backupId: string, locked: boolean) =>
       request(`/api/servers/${serverId}/backups/lock?id=${encodeURIComponent(backupId)}`, {
         method: "PATCH",
@@ -233,7 +259,8 @@ export const servers = {
   // Allocations
   allocations: {
     list: (serverId: string) => request<Allocation[]>(`/api/servers/${serverId}/allocations`),
-    available: (serverId: string) => request<Allocation[]>(`/api/servers/${serverId}/allocations/available`),
+    available: (serverId: string) =>
+      request<Allocation[]>(`/api/servers/${serverId}/allocations/available`),
     add: (serverId: string, allocationId: string) =>
       request<Allocation>(`/api/servers/${serverId}/allocations`, {
         method: "POST",
@@ -256,7 +283,10 @@ export const servers = {
     create: (serverId: string, data: CreateScheduleData) =>
       request<Schedule>(`/api/servers/${serverId}/schedules`, { method: "POST", body: data }),
     update: (serverId: string, scheduleId: string, data: Partial<CreateScheduleData>) =>
-      request<Schedule>(`/api/servers/${serverId}/schedules/${scheduleId}`, { method: "PATCH", body: data }),
+      request<Schedule>(`/api/servers/${serverId}/schedules/${scheduleId}`, {
+        method: "PATCH",
+        body: data,
+      }),
     delete: (serverId: string, scheduleId: string) =>
       request(`/api/servers/${serverId}/schedules/${scheduleId}`, { method: "DELETE" }),
     run: (serverId: string, scheduleId: string) =>
@@ -316,7 +346,10 @@ export const servers = {
   // Server splitting
   split: {
     children: (serverId: string) => request<ChildServer[]>(`/api/servers/${serverId}/children`),
-    create: (serverId: string, data: { name: string; memoryPercent: number; diskPercent: number; cpuPercent: number }) =>
+    create: (
+      serverId: string,
+      data: { name: string; memoryPercent: number; diskPercent: number; cpuPercent: number }
+    ) =>
       request<SplitServerResponse>(`/api/servers/${serverId}/split`, {
         method: "POST",
         body: data,
@@ -327,11 +360,13 @@ export const servers = {
 // Invitation endpoints (not server-scoped)
 export const invitations = {
   get: (token: string) => request<InvitationDetails>(`/api/servers/invitation/${token}`),
-  accept: (token: string) => request<{ success: boolean; server: { id: string; name: string } }>(
-    `/api/servers/invitation/${token}/accept`,
-    { method: "POST" }
-  ),
-  decline: (token: string) => request(`/api/servers/invitation/${token}/decline`, { method: "POST" }),
+  accept: (token: string) =>
+    request<{ success: boolean; server: { id: string; name: string } }>(
+      `/api/servers/invitation/${token}/accept`,
+      { method: "POST" }
+    ),
+  decline: (token: string) =>
+    request(`/api/servers/invitation/${token}/decline`, { method: "POST" }),
   myInvitations: () => request<PendingInvitation[]>(`/api/servers/my-invitations`),
   myMemberships: () => request<Membership[]>(`/api/servers/my-memberships`),
 };
@@ -343,15 +378,21 @@ export const permissions = {
 
 // Webhooks endpoints
 export const webhooks = {
-  list: (serverId: string) => request<Webhook[]>(`/api/servers/${serverId}/webhooks`),
-  get: (serverId: string, webhookId: string) =>
-    request<Webhook>(`/api/servers/${serverId}/webhooks/${webhookId}`),
-  create: (data: { serverId: string; url: string; events: WebhookEvent[]; enabled?: boolean }) =>
-    request<Webhook>(`/api/servers/${data.serverId}/webhooks`, { method: "POST", body: data }),
+  list: () => request<Webhook[]>(`/api/webhooks`),
+  get: (webhookId: string) => request<Webhook>(`/api/webhooks/${webhookId}`),
+  create: (data: { serverId?: string; url: string; events: WebhookEvent[] }) =>
+    request<Webhook>(`/api/webhooks`, { method: "POST", body: data }),
   update: (webhookId: string, data: { url?: string; events?: WebhookEvent[]; enabled?: boolean }) =>
     request<Webhook>(`/api/webhooks/${webhookId}`, { method: "PATCH", body: data }),
   delete: (webhookId: string) => request(`/api/webhooks/${webhookId}`, { method: "DELETE" }),
-  test: (webhookId: string) => request(`/api/webhooks/${webhookId}/test`, { method: "POST" }),
+  regenerateSecret: (webhookId: string) =>
+    request<{ secret: string }>(`/api/webhooks/${webhookId}/regenerate-secret`, { method: "POST" }),
+  deliveries: (webhookId: string, limit?: number, offset?: number) =>
+    request<{ deliveries: WebhookDelivery[]; total: number }>(
+      `/api/webhooks/${webhookId}/deliveries?limit=${limit || 50}&offset=${offset || 0}`
+    ),
+  retryDelivery: (webhookId: string, deliveryId: string) =>
+    request(`/api/webhooks/${webhookId}/deliveries/${deliveryId}/retry`, { method: "POST" }),
 };
 
 // Admin settings
@@ -363,11 +404,16 @@ export const adminSettings = {
   cloudflare: {
     get: () => request<CloudflareSettings>("/api/admin/settings/cloudflare"),
     update: (data: Partial<CloudflareSettings>) =>
-      request<CloudflareSettings>("/api/admin/settings/cloudflare", { method: "PATCH", body: data }),
-    test: () => request<{ success: boolean; error?: string; zone?: { id: string; name: string; status: string } }>(
-      "/api/admin/settings/cloudflare/test",
-      { method: "POST" }
-    ),
+      request<CloudflareSettings>("/api/admin/settings/cloudflare", {
+        method: "PATCH",
+        body: data,
+      }),
+    test: () =>
+      request<{
+        success: boolean;
+        error?: string;
+        zone?: { id: string; name: string; status: string };
+      }>("/api/admin/settings/cloudflare/test", { method: "POST" }),
   },
 
   // Subdomains
