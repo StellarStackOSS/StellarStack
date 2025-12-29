@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
-use tracing::{debug, info};
+use tracing::info;
 
 /// Process state enum matching Wings patterns
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
