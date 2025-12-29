@@ -404,7 +404,11 @@ impl Server {
 
     /// Start watching console output for startup completion
     fn start_startup_detector(&self, cancel_token: CancellationToken) {
-        let done_patterns = self.config.read().process.startup.done.clone();
+        // Sanitize patterns - remove Windows line endings (\r\n -> \n, remove stray \r)
+        let done_patterns: Vec<String> = self.config.read().process.startup.done
+            .iter()
+            .map(|p| p.replace("\r\n", "\n").replace('\r', ""))
+            .collect();
         let strip_ansi = self.config.read().process.startup.strip_ansi;
 
         // If no patterns, immediately mark as running
