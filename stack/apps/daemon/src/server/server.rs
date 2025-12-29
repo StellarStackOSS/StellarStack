@@ -131,6 +131,21 @@ impl Server {
         data_dir: &PathBuf,
         docker_config: &DockerConfiguration,
     ) -> Result<EnvironmentConfiguration, ServerError> {
+        // Calculate memory with overhead
+        // Overhead can be specified per-egg or use the default
+        let overhead_percent = docker_config.overhead.r#override
+            .get(&config.egg.id)
+            .copied()
+            .unwrap_or(docker_config.overhead.default);
+
+        let base_memory = config.memory_bytes();
+        let memory_with_overhead = if base_memory > 0 && overhead_percent > 0 {
+            // Add overhead percentage to memory limit
+            base_memory + (base_memory * overhead_percent / 100)
+        } else {
+            base_memory
+        };
+
         let mut env_config = EnvironmentConfiguration {
             id: config.uuid.clone(),
             image: config.container.image.clone(),
@@ -139,11 +154,12 @@ impl Server {
             ports: HashMap::new(),
             port_bindings: config.get_port_bindings(),
             limits: crate::environment::ResourceLimits {
-                memory: config.memory_bytes(),
+                memory: memory_with_overhead,
                 memory_swap: config.swap_bytes(),
                 cpu_quota: config.cpu_quota(),
                 cpu_period: 100000,
                 cpu_shares: 1024,
+                cpuset_cpus: config.build.threads.clone(),
                 io_weight: config.build.io_weight as u16,
                 pids_limit: docker_config.container_pid_limit,
                 disk_space: config.disk_bytes(),

@@ -119,6 +119,7 @@ pub async fn create_container(env: &DockerEnvironment) -> EnvironmentResult<()> 
         } else {
             None
         },
+        cpuset_cpus: config.limits.cpuset_cpus.clone(),
         blkio_weight: Some(config.limits.io_weight),
         pids_limit: if config.limits.pids_limit > 0 {
             Some(config.limits.pids_limit)

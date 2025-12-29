@@ -141,6 +141,9 @@ pub struct ResourceLimits {
     /// CPU shares (relative weight)
     pub cpu_shares: i64,
 
+    /// CPU set - pin to specific CPUs (e.g., "0,1,2,3" or "0-3")
+    pub cpuset_cpus: Option<String>,
+
     /// Block I/O weight (10-1000)
     pub io_weight: u16,
 
