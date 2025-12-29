@@ -69,12 +69,14 @@ app.onError((err, c) => {
 
 // Start server
 const port = parseInt(process.env.PORT || "3001");
+const hostname = process.env.HOSTNAME || "::";
 
 console.log(`Starting API server on port ${port}...`);
 
 serve({
   fetch: app.fetch,
   port,
+  hostname,
 });
 
 console.log(`API server running at http://localhost:${port}`);
