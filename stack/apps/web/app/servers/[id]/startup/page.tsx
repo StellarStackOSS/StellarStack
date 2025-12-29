@@ -5,8 +5,6 @@ import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -78,7 +76,7 @@ const StartupPage = (): JSX.Element | null => {
         "min-h-svh",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
+        {/* Background is now rendered in the layout for persistence */}
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
@@ -166,7 +164,7 @@ const StartupPage = (): JSX.Element | null => {
         "min-h-full transition-colors relative flex items-center justify-center",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
+        {/* Background is now rendered in the layout for persistence */}
         <Spinner className="w-8 h-8" />
       </div>
     );
@@ -177,8 +175,7 @@ const StartupPage = (): JSX.Element | null => {
       "min-h-full transition-colors relative",
       isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
     )}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">

@@ -20,10 +20,6 @@ import type { Variables } from "../types";
 const remote = new Hono<{ Variables: Variables }>();
 
 // All remote routes require daemon authentication
-remote.use("*", async (c, next) => {
-  console.log(`[Remote] Incoming request: ${c.req.method} ${c.req.path}`);
-  return next();
-});
 remote.use("*", requireDaemon);
 
 // Helper to serialize BigInt fields
@@ -317,11 +313,8 @@ remote.post("/servers/:uuid/status", async (c) => {
   const { uuid } = c.req.param();
   const body = await c.req.json();
 
-  console.log(`[Remote] Status update request for server ${uuid}:`, body);
-
   const parsed = statusSchema.safeParse(body);
   if (!parsed.success) {
-    console.log(`[Remote] Invalid status for server ${uuid}:`, parsed.error.errors);
     return c.json({ error: "Invalid status", details: parsed.error.errors }, 400);
   }
 
@@ -330,7 +323,6 @@ remote.post("/servers/:uuid/status", async (c) => {
   });
 
   if (!server) {
-    console.log(`[Remote] Server ${uuid} not found on node ${node.id}`);
     return c.json({ error: "Server not found" }, 404);
   }
 
@@ -346,14 +338,11 @@ remote.post("/servers/:uuid/status", async (c) => {
   };
 
   const newStatus = statusMap[parsed.data.status];
-  console.log(`[Remote] Updating server ${uuid} status from ${server.status} to ${newStatus}`);
 
   await db.server.update({
     where: { id: uuid },
     data: { status: newStatus as any },
   });
-
-  console.log(`[Remote] Server ${uuid} status updated successfully to ${newStatus}`);
 
   return c.json({ success: true });
 });
@@ -646,7 +635,6 @@ remote.post("/servers/:uuid/archive", async (c) => {
   }
 
   // TODO: Update transfer status
-  console.log(`Server ${uuid} archive status:`, parsed.data);
 
   return c.json({ success: true });
 });
@@ -678,7 +666,6 @@ remote.post("/servers/:uuid/transfer", async (c) => {
   }
 
   // TODO: Handle transfer completion
-  console.log(`Server ${uuid} transfer status:`, parsed.data);
 
   return c.json({ success: true });
 });
@@ -745,11 +732,13 @@ remote.post("/sftp/auth", async (c) => {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
-  // TODO: Use proper password verification from Better Auth
-  // For now, we'll need to implement password verification
-  // This is a placeholder - you should use bcrypt or argon2
-  const crypto = await import("crypto");
-  const hashedPassword = crypto.createHash("sha256").update(parsed.data.password).digest("hex");
+  // Verify password using bcrypt (industry standard like Pterodactyl)
+  const { verifyPassword } = await import("../lib/crypto");
+  const isValidPassword = await verifyPassword(parsed.data.password, credentialAccount.password);
+
+  if (!isValidPassword) {
+    return c.json({ error: "Invalid credentials" }, 401);
+  }
 
   // Check if user owns the server or is admin
   if (server.ownerId !== user.id && user.role !== "admin") {
@@ -790,16 +779,27 @@ remote.post("/sftp/auth", async (c) => {
  * POST /api/remote/activity
  * Receive activity logs from daemon
  */
+// Safe metadata schema - only allow primitive values and arrays/objects of primitives
+const safeMetadataSchema = z.record(
+  z.union([
+    z.string().max(1000),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])),
+  ])
+).optional();
+
 const activityLogSchema = z.object({
   data: z.array(
     z.object({
-      server: z.string(),
-      event: z.string(),
-      metadata: z.any().optional(),
-      ip: z.string().optional(),
-      timestamp: z.string(),
+      server: z.string().uuid(),
+      event: z.string().max(100).regex(/^[a-z0-9:._-]+$/i), // Only allow safe event names
+      metadata: safeMetadataSchema,
+      ip: z.string().ip().optional(),
+      timestamp: z.string().datetime(),
     })
-  ),
+  ).max(100), // Limit batch size
 });
 
 remote.post("/activity", async (c) => {

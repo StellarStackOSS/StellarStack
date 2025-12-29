@@ -33,6 +33,8 @@ import {
   BellIcon,
   ChevronUpIcon,
   ShieldIcon,
+  WebhookIcon,
+  SplitIcon,
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "./auth-provider";
@@ -47,6 +49,8 @@ const navItems = [
   { title: "Users", icon: UsersIcon, href: "/users" },
   { title: "Databases", icon: DatabaseIcon, href: "/databases" },
   { title: "Network", icon: NetworkIcon, href: "/network" },
+  { title: "Webhooks", icon: WebhookIcon, href: "/webhooks" },
+  { title: "Split", icon: SplitIcon, href: "/split" },
   { title: "Activity", icon: ActivityIcon, href: "/activity" },
   { title: "Startup", icon: PlayIcon, href: "/startup" },
   { title: "Settings", icon: SettingsIcon, href: "/settings" },

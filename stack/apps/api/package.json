@@ -19,6 +19,7 @@
     "@hono/node-server": "^1.13.7",
     "@hono/node-ws": "^1.2.0",
     "@prisma/client": "^6.1.0",
+    "bcrypt": "^6.0.0",
     "better-auth": "^1.1.14",
     "hono": "^4.6.16",
     "jsonwebtoken": "^9.0.3",
@@ -28,6 +29,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^7.0.4",

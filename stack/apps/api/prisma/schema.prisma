@@ -30,6 +30,11 @@ model User {
   passkeys   Passkey[]
   webhooks   Webhook[]
 
+  // Server member relationships
+  serverMemberships   ServerMember[]
+  sentInvitations     ServerInvitation[] @relation("SentInvitations")
+  receivedInvitations ServerInvitation[] @relation("ReceivedInvitations")
+
   @@map("users")
 }
 
@@ -306,6 +311,10 @@ model Server {
   parentServer   Server?  @relation("ServerChildren", fields: [parentServerId], references: [id])
   childServers   Server[] @relation("ServerChildren")
 
+  // Server members (subusers with permissions)
+  members       ServerMember[]
+  invitations   ServerInvitation[]
+
   @@map("servers")
 }
 
@@ -519,4 +528,82 @@ model CustomDomain {
   updatedAt  DateTime @updatedAt
 
   @@map("custom_domains")
+}
+
+// ============================================
+// Server Member & Permissions Tables
+// ============================================
+
+model ServerMember {
+  id          String   @id @default(uuid())
+
+  // Server association
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // User association
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Permissions (stored as array of permission node strings)
+  permissions String[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([serverId, userId])
+  @@map("server_members")
+}
+
+model ServerInvitation {
+  id          String   @id @default(uuid())
+
+  // Server association
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Inviter
+  inviterId   String
+  inviter     User     @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  // Invitee (can be email or user ID)
+  email       String
+  inviteeId   String?
+  invitee     User?    @relation("ReceivedInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  // Permissions to grant on acceptance
+  permissions String[]
+
+  // Invitation status
+  status      InvitationStatus @default(PENDING)
+  token       String           @unique @default(uuid())
+
+  // Expiration
+  expiresAt   DateTime
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("server_invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// ============================================
+// Settings Table
+// ============================================
+
+model Settings {
+  id    String @id @default("settings")
+  key   String @unique
+  value Json
+
+  @@map("settings")
 }

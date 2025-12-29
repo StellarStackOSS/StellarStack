@@ -9,8 +9,7 @@ import { Console } from "@workspace/ui/components/shared/Console";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { BsSun, BsMoon, BsGrid } from "react-icons/bs";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
+import { FadeIn } from "@workspace/ui/components/shared/Animations";
 import { Badge } from "@workspace/ui/components/badge";
 import { BsExclamationTriangle } from "react-icons/bs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@workspace/ui/components/sheet";
@@ -160,7 +159,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
   const [mounted, setMounted] = useState(false);
   const labels = useLabels();
 
-  const { server, consoleInfo, isLoading, isInstalling, start, stop, restart, kill, refetch } = useServer();
+  const { server, consoleInfo, isLoading, isInstalling, start, stop, restart, kill, refetch, powerActionLoading } = useServer();
 
   // Enable WebSocket if we have consoleInfo - this means the API approved the connection
   // The daemon will report the actual server state via WebSocket events
@@ -249,7 +248,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
         "min-h-svh",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
@@ -278,8 +276,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
         "min-h-svh transition-colors relative",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
-        <FloatingDots isDark={isDark} count={15} />
+        {/* Background is now rendered in the layout for persistence */}
 
         {/* Connection error banner */}
         {wsEnabled && !wsConnected && !wsConnecting && (
@@ -477,6 +474,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     onKill={containerControls.handleKill}
                     onRestart={containerControls.handleRestart}
                     labels={labels.containerControls}
+                    loadingStates={powerActionLoading}
                   />
                 </GridItem>
               </div>

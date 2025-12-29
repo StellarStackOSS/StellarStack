@@ -14,25 +14,42 @@ import { servers } from "./routes/servers";
 import { webhooks } from "./routes/webhooks";
 import { domains } from "./routes/domains";
 import { remote } from "./routes/remote";
+import { members } from "./routes/members";
+import { settings } from "./routes/settings";
+import { securityHeaders, validateEnvironment, getRequiredEnv } from "./middleware/security";
+import { authRateLimit, apiRateLimit } from "./middleware/rate-limit";
+import { db } from "./lib/db";
+
+// Validate environment variables at startup
+validateEnvironment();
 
 const app = new Hono();
 
 // Create WebSocket adapter
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
+// Get frontend URL with production safety
+const FRONTEND_URL = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
+
 // Middleware
 app.use("*", logger());
+app.use("*", securityHeaders());
 
 // CORS for auth routes (must be before the auth handler)
 app.use(
   "/api/auth/*",
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: FRONTEND_URL,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     credentials: true,
   })
 );
+
+// Rate limiting for auth routes
+app.use("/api/auth/sign-in/*", authRateLimit);
+app.use("/api/auth/sign-up/*", authRateLimit);
+app.use("/api/auth/forget-password/*", authRateLimit);
 
 // Better Auth routes
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
@@ -43,10 +60,13 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 app.use(
   "/api/*",
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
+
+// General API rate limiting
+app.use("/api/*", apiRateLimit);
 
 // Health check
 app.get("/health", (c) => {
@@ -61,21 +81,55 @@ app.route("/api/blueprints", blueprints);
 app.route("/api/servers", servers);
 app.route("/api/webhooks", webhooks);
 app.route("/api/servers", domains); // Domain routes under /api/servers/:serverId/subdomain and /domains
+app.route("/api/servers", members); // Member routes under /api/servers/:serverId/members
+app.route("/api/admin/settings", settings); // Admin settings routes
 
 // Daemon-facing API routes (node authentication required)
 app.route("/api/remote", remote);
 
-// WebSocket endpoint for real-time updates
+// WebSocket endpoint for real-time updates with authentication
 app.get(
   "/api/ws",
   upgradeWebSocket((c) => {
     return {
-      onOpen: (_event, ws) => {
-        // TODO: Authenticate user from session/token
+      onOpen: async (_event, ws) => {
+        // WebSocket authentication is handled via message after connection
+        // Client must send an auth message with session token
         wsManager.addClient(ws.raw as any);
       },
-      onMessage: (event, ws) => {
-        wsManager.handleMessage(ws.raw as any, event.data.toString());
+      onMessage: async (event, ws) => {
+        const message = event.data.toString();
+
+        try {
+          const data = JSON.parse(message);
+
+          // Handle authentication message
+          if (data.type === "auth" && data.token) {
+            // Verify session token
+            const session = await db.session.findFirst({
+              where: {
+                token: data.token,
+                expiresAt: { gt: new Date() },
+              },
+              include: { user: true },
+            });
+
+            if (session) {
+              // Update client with authenticated user
+              wsManager.authenticateClient(ws.raw as any, session.userId);
+              ws.send(JSON.stringify({ type: "auth_success", userId: session.userId }));
+            } else {
+              ws.send(JSON.stringify({ type: "auth_error", error: "Invalid or expired session" }));
+            }
+            return;
+          }
+
+          // Handle other messages
+          wsManager.handleMessage(ws.raw as any, message);
+        } catch {
+          // Invalid JSON, let wsManager handle it
+          wsManager.handleMessage(ws.raw as any, message);
+        }
       },
       onClose: (_event, ws) => {
         wsManager.removeClient(ws.raw as any);
@@ -94,7 +148,12 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error(err);
+  // Don't log full error details in production
+  if (process.env.NODE_ENV === "production") {
+    console.error(`[Error] ${err.message}`);
+  } else {
+    console.error(err);
+  }
   return c.json({ error: "Internal server error" }, 500);
 });
 

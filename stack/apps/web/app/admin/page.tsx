@@ -5,7 +5,7 @@ import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
 import { FadeIn, FloatingDots } from "@workspace/ui/components/shared/Animations";
-import { CpuIcon, MapPinIcon, ServerIcon, PackageIcon, UsersIcon, ActivityIcon } from "lucide-react";
+import { CpuIcon, MapPinIcon, ServerIcon, PackageIcon, UsersIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { nodes, locations, servers, blueprints, account } from "@/lib/api";
 import type { Node, Location, Server, Blueprint, User } from "@/lib/api";
@@ -182,6 +182,13 @@ export default function AdminOverviewPage() {
           value={isLoading ? "..." : stats.users}
               icon={UsersIcon}
               href="/admin/users"
+              isDark={isDark}
+            />
+            <StatCard
+              title="Settings"
+              value="Configure"
+              icon={SettingsIcon}
+              href="/admin/settings"
               isDark={isDark}
             />
             </div>

@@ -256,6 +256,103 @@ export const servers = {
       );
     },
   },
+
+  // Server members (subusers)
+  members: {
+    list: (serverId: string) => request<ServerMember[]>(`/api/servers/${serverId}/members`),
+    get: (serverId: string, memberId: string) =>
+      request<ServerMember>(`/api/servers/${serverId}/members/${memberId}`),
+    update: (serverId: string, memberId: string, data: { permissions: string[] }) =>
+      request<ServerMember>(`/api/servers/${serverId}/members/${memberId}`, {
+        method: "PATCH",
+        body: data,
+      }),
+    remove: (serverId: string, memberId: string) =>
+      request(`/api/servers/${serverId}/members/${memberId}`, { method: "DELETE" }),
+  },
+
+  // Server invitations
+  invitations: {
+    list: (serverId: string) => request<ServerInvitation[]>(`/api/servers/${serverId}/invitations`),
+    create: (serverId: string, data: { email: string; permissions: string[] }) =>
+      request<ServerInvitation>(`/api/servers/${serverId}/invitations`, {
+        method: "POST",
+        body: data,
+      }),
+    cancel: (serverId: string, invitationId: string) =>
+      request(`/api/servers/${serverId}/invitations/${invitationId}`, { method: "DELETE" }),
+  },
+
+  // Server splitting
+  split: {
+    children: (serverId: string) => request<ChildServer[]>(`/api/servers/${serverId}/children`),
+    create: (serverId: string, data: { name: string; memoryPercent: number; diskPercent: number; cpuPercent: number }) =>
+      request<SplitServerResponse>(`/api/servers/${serverId}/split`, {
+        method: "POST",
+        body: data,
+      }),
+  },
+};
+
+// Invitation endpoints (not server-scoped)
+export const invitations = {
+  get: (token: string) => request<InvitationDetails>(`/api/servers/invitation/${token}`),
+  accept: (token: string) => request<{ success: boolean; server: { id: string; name: string } }>(
+    `/api/servers/invitation/${token}/accept`,
+    { method: "POST" }
+  ),
+  decline: (token: string) => request(`/api/servers/invitation/${token}/decline`, { method: "POST" }),
+  myInvitations: () => request<PendingInvitation[]>(`/api/servers/my-invitations`),
+  myMemberships: () => request<Membership[]>(`/api/servers/my-memberships`),
+};
+
+// Permissions metadata
+export const permissions = {
+  definitions: () => request<PermissionDefinitions>(`/api/servers/permissions`),
+};
+
+// Admin settings
+export const adminSettings = {
+  // Overview
+  get: () => request<SettingsOverview>("/api/admin/settings"),
+
+  // Cloudflare
+  cloudflare: {
+    get: () => request<CloudflareSettings>("/api/admin/settings/cloudflare"),
+    update: (data: Partial<CloudflareSettings>) =>
+      request<CloudflareSettings>("/api/admin/settings/cloudflare", { method: "PATCH", body: data }),
+    test: () => request<{ success: boolean; error?: string; zone?: { id: string; name: string; status: string } }>(
+      "/api/admin/settings/cloudflare/test",
+      { method: "POST" }
+    ),
+  },
+
+  // Subdomains
+  subdomains: {
+    get: () => request<SubdomainSettings>("/api/admin/settings/subdomains"),
+    update: (data: Partial<SubdomainSettings>) =>
+      request<SubdomainSettings>("/api/admin/settings/subdomains", { method: "PATCH", body: data }),
+  },
+
+  // Email
+  email: {
+    get: () => request<EmailSettings>("/api/admin/settings/email"),
+    update: (data: Partial<EmailSettings>) =>
+      request<EmailSettings>("/api/admin/settings/email", { method: "PATCH", body: data }),
+    test: (testEmail: string) =>
+      request<{ success: boolean; error?: string; message?: string }>(
+        "/api/admin/settings/email/test",
+        { method: "POST", body: { testEmail } }
+      ),
+  },
+
+  // Branding
+  branding: {
+    get: () => request<BrandingSettings>("/api/admin/settings/branding"),
+    update: (data: Partial<BrandingSettings>) =>
+      request<BrandingSettings>("/api/admin/settings/branding", { method: "PATCH", body: data }),
+    getPublic: () => request<PublicBrandingSettings>("/api/admin/settings/branding/public"),
+  },
 };
 
 // Types
@@ -621,6 +718,199 @@ export interface ActivityLogResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+// Server members (subusers)
+export interface ServerMember {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+  };
+  permissions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServerInvitation {
+  id: string;
+  email: string;
+  permissions: string[];
+  token?: string;
+  acceptUrl?: string;
+  inviter?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface InvitationDetails {
+  id: string;
+  server: {
+    id: string;
+    name: string;
+  };
+  inviter: {
+    name: string;
+    email: string;
+  };
+  permissions: string[];
+  expiresAt: string;
+}
+
+export interface PendingInvitation {
+  id: string;
+  token: string;
+  server: {
+    id: string;
+    name: string;
+  };
+  inviter: {
+    name: string;
+  };
+  permissions: string[];
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface Membership {
+  id: string;
+  server: {
+    id: string;
+    name: string;
+    status: string;
+    node: {
+      displayName: string;
+      location?: {
+        name: string;
+      };
+    };
+  };
+  permissions: string[];
+  createdAt: string;
+}
+
+export interface ChildServer {
+  id: string;
+  name: string;
+  status: string;
+  memory: number;
+  disk: number;
+  cpu: number;
+  createdAt: string;
+}
+
+export interface SplitServerResponse {
+  success: boolean;
+  childServer: {
+    id: string;
+    name: string;
+    memory: number;
+    disk: number;
+    cpu: number;
+  };
+  parentServer: {
+    id: string;
+    memory: number;
+    disk: number;
+    cpu: number;
+  };
+}
+
+export interface PermissionDefinition {
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface PermissionCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  permissions: PermissionDefinition[];
+}
+
+export interface PermissionDefinitions {
+  categories: PermissionCategory[];
+}
+
+// Admin settings types
+export interface SettingsOverview {
+  cloudflare: {
+    enabled: boolean;
+    domain: string;
+  };
+  subdomains: {
+    enabled: boolean;
+    baseDomain: string;
+  };
+  email: {
+    provider: string;
+    configured: boolean;
+  };
+}
+
+export interface CloudflareSettings {
+  apiToken: string;
+  zoneId: string;
+  domain: string;
+  enabled: boolean;
+  hasApiToken?: boolean;
+}
+
+export interface SubdomainSettings {
+  enabled: boolean;
+  baseDomain: string;
+  autoProvision: boolean;
+  dnsProvider: "cloudflare" | "manual";
+}
+
+export interface EmailSettings {
+  provider: "smtp" | "resend" | "sendgrid" | "mailgun";
+  fromEmail: string;
+  fromName: string;
+  smtp?: {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    password: string;
+  };
+  apiKey?: string;
+  hasApiKey?: boolean;
+}
+
+export interface BrandingSettings {
+  appName: string;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  primaryColor: string;
+  supportEmail: string;
+  supportUrl: string | null;
+  termsUrl: string | null;
+  privacyUrl: string | null;
+  footerText: string;
+  customCss: string;
+}
+
+export interface PublicBrandingSettings {
+  appName: string;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  primaryColor: string;
+  supportEmail: string;
+  supportUrl: string | null;
+  termsUrl: string | null;
+  privacyUrl: string | null;
+  footerText: string;
 }
 
 export { ApiError };

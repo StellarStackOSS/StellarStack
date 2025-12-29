@@ -48,7 +48,8 @@
       "Bash(chmod:*)",
       "Bash(bash -n:*)",
       "Bash(pnpm --filter @workspace/api build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

@@ -7,8 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { AnimatedBackground } from "@workspace/ui/components/shared/AnimatedBackground";
-import { FloatingDots } from "@workspace/ui/components/shared/Animations";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/shared/ConfirmationModal";
 import { FormModal } from "@workspace/ui/components/shared/FormModal";
@@ -54,6 +52,15 @@ const BackupsPage = (): JSX.Element | null => {
 
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
+  // Check if a backup is currently in progress
+  const isBackupInProgress = backups.some(b => b.status === "IN_PROGRESS" || b.status === "RESTORING");
+
+  // Backup limit from server
+  const backupLimit = server?.backupLimit ?? 0;
+  const backupsDisabled = backupLimit === 0;
+  const completedBackups = backups.filter(b => b.status === "COMPLETED").length;
+  const canCreateBackup = !backupsDisabled && !isBackupInProgress && completedBackups < backupLimit;
+
   if (!mounted) return null;
 
   if (isInstalling) {
@@ -62,7 +69,6 @@ const BackupsPage = (): JSX.Element | null => {
         "min-h-svh",
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}>
-        <AnimatedBackground isDark={isDark} />
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
@@ -163,8 +169,7 @@ const BackupsPage = (): JSX.Element | null => {
       "min-h-svh transition-colors relative",
       isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
     )}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -186,25 +191,36 @@ const BackupsPage = (): JSX.Element | null => {
                   "text-sm mt-1",
                   isDark ? "text-zinc-500" : "text-zinc-500"
                 )}>
-                  {server?.name || `Server ${serverId}`} - {backups.length} backup{backups.length !== 1 ? "s" : ""}
+                  {server?.name || `Server ${serverId}`} • {completedBackups} / {backupLimit} backup{backupLimit !== 1 ? "s" : ""} used
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openCreateModal}
-                className={cn(
-                  "transition-all gap-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-                )}
-              >
-                <BsPlus className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Create Backup</span>
-              </Button>
+              {!backupsDisabled && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openCreateModal}
+                  disabled={!canCreateBackup}
+                  title={
+                    isBackupInProgress
+                      ? "A backup is currently in progress"
+                      : completedBackups >= backupLimit
+                        ? "Backup limit reached"
+                        : "Create a new backup"
+                  }
+                  className={cn(
+                    "transition-all gap-2",
+                    !canCreateBackup && "opacity-50 cursor-not-allowed",
+                    isDark
+                      ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
+                      : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                  )}
+                >
+                  <BsPlus className="w-4 h-4" />
+                  <span className="text-xs uppercase tracking-wider">Create Backup</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -230,6 +246,14 @@ const BackupsPage = (): JSX.Element | null => {
               )}>
                 <Spinner className="w-4 h-4" />
                 Loading backups...
+              </div>
+            ) : backupsDisabled ? (
+              <div className={cn(
+                "text-center py-12 border",
+                isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+              )}>
+                <p className="mb-2">Backups are not available for this server.</p>
+                <p className="text-xs">Contact an administrator to enable backups.</p>
               </div>
             ) : backups.length === 0 ? (
               <div className={cn(

@@ -25,6 +25,7 @@ export interface WSEvent {
 interface ConnectedClient {
   ws: WebSocket;
   userId?: string;
+  authenticated: boolean;
   // Servers the client is subscribed to
   subscribedServers: Set<string>;
 }
@@ -36,22 +37,46 @@ class WebSocketManager {
     this.clients.set(ws, {
       ws,
       userId,
+      authenticated: !!userId,
       subscribedServers: new Set(),
     });
-    console.log(`WebSocket client connected. Total clients: ${this.clients.size}`);
+  }
+
+  /**
+   * Authenticate a connected client
+   */
+  authenticateClient(ws: WebSocket, userId: string) {
+    const client = this.clients.get(ws);
+    if (client) {
+      client.userId = userId;
+      client.authenticated = true;
+    }
+  }
+
+  /**
+   * Check if a client is authenticated
+   */
+  isAuthenticated(ws: WebSocket): boolean {
+    const client = this.clients.get(ws);
+    return client?.authenticated ?? false;
   }
 
   removeClient(ws: WebSocket) {
     this.clients.delete(ws);
-    console.log(`WebSocket client disconnected. Total clients: ${this.clients.size}`);
   }
 
-  // Subscribe client to server updates
-  subscribeToServer(ws: WebSocket, serverId: string) {
+  // Subscribe client to server updates (requires authentication)
+  subscribeToServer(ws: WebSocket, serverId: string): boolean {
     const client = this.clients.get(ws);
-    if (client) {
-      client.subscribedServers.add(serverId);
+    if (!client) return false;
+
+    // Only authenticated clients can subscribe to server updates
+    if (!client.authenticated) {
+      return false;
     }
+
+    client.subscribedServers.add(serverId);
+    return true;
   }
 
   // Unsubscribe client from server updates
@@ -101,12 +126,22 @@ class WebSocketManager {
       switch (data.type) {
         case "subscribe":
           if (data.serverId) {
-            this.subscribeToServer(ws, data.serverId);
+            const success = this.subscribeToServer(ws, data.serverId);
+            if (ws.readyState === WebSocket.OPEN) {
+              if (success) {
+                ws.send(JSON.stringify({ type: "subscribed", serverId: data.serverId }));
+              } else {
+                ws.send(JSON.stringify({ type: "error", error: "Authentication required to subscribe" }));
+              }
+            }
           }
           break;
         case "unsubscribe":
           if (data.serverId) {
             this.unsubscribeFromServer(ws, data.serverId);
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "unsubscribed", serverId: data.serverId }));
+            }
           }
           break;
         case "ping":
@@ -115,8 +150,8 @@ class WebSocketManager {
           }
           break;
       }
-    } catch (error) {
-      console.error("Failed to parse WebSocket message:", error);
+    } catch {
+      // Invalid JSON message, ignore
     }
   }
 
