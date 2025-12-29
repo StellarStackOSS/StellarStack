@@ -637,7 +637,7 @@ upgrade_daemon() {
     echo -e "  ${SECONDARY}Building daemon (this may take several minutes)...${NC}"
     echo ""
 
-    if ! build_with_progress "${BUILD_DIR}/stack/apps/daemon"; then
+    if ! build_with_progress "${BUILD_DIR}/apps/daemon"; then
         print_error "Failed to build daemon"
         exit 1
     fi
@@ -649,7 +649,7 @@ upgrade_daemon() {
     print_task_done "Backing up existing daemon"
 
     print_task "Installing new daemon"
-    cp "${BUILD_DIR}/stack/apps/daemon/target/release/stellar-daemon" "${DAEMON_INSTALL_DIR}/stellar-daemon"
+    cp "${BUILD_DIR}/apps/daemon/target/release/stellar-daemon" "${DAEMON_INSTALL_DIR}/stellar-daemon"
     chmod +x "${DAEMON_INSTALL_DIR}/stellar-daemon"
     print_task_done "Installing new daemon"
 
@@ -671,14 +671,14 @@ install_daemon() {
     echo -e "  ${SECONDARY}Building daemon (this may take several minutes)...${NC}"
     echo ""
 
-    if ! build_with_progress "${BUILD_DIR}/stack/apps/daemon"; then
+    if ! build_with_progress "${BUILD_DIR}/apps/daemon"; then
         print_error "Failed to build daemon"
         exit 1
     fi
 
     print_task "Installing daemon"
     mkdir -p "${DAEMON_INSTALL_DIR}"/{volumes,backups,archives,tmp,logs}
-    cp "${BUILD_DIR}/stack/apps/daemon/target/release/stellar-daemon" "${DAEMON_INSTALL_DIR}/stellar-daemon"
+    cp "${BUILD_DIR}/apps/daemon/target/release/stellar-daemon" "${DAEMON_INSTALL_DIR}/stellar-daemon"
     chmod +x "${DAEMON_INSTALL_DIR}/stellar-daemon"
     print_task_done "Installing daemon"
 
