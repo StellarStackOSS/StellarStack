@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Run lint-staged for formatting
+pnpm exec lint-staged
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# Initialize flags for which packages need building
+BUILD_API=false
+BUILD_WEB=false
+BUILD_HOME=false
+BUILD_DOCS=false
+BUILD_UI=false
+
+# Check which directories have changes
+for file in $STAGED_FILES; do
+  case "$file" in
+    apps/api/*)
+      BUILD_API=true
+      ;;
+    apps/web/*)
+      BUILD_WEB=true
+      ;;
+    apps/home/*)
+      BUILD_HOME=true
+      ;;
+    apps/docs/*)
+      BUILD_DOCS=true
+      ;;
+    packages/ui/*)
+      BUILD_UI=true
+      # UI changes affect web and home
+      BUILD_WEB=true
+      BUILD_HOME=true
+      ;;
+    packages/*)
+      # Other package changes may affect all apps
+      BUILD_API=true
+      BUILD_WEB=true
+      BUILD_HOME=true
+      BUILD_DOCS=true
+      ;;
+  esac
+done
+
+# Build affected packages
+if [ "$BUILD_UI" = true ]; then
+  echo "🔨 Building UI package..."
+  pnpm build:ui || exit 1
+fi
+
+if [ "$BUILD_API" = true ]; then
+  echo "🔨 Building API..."
+  pnpm build:api || exit 1
+fi
+
+if [ "$BUILD_WEB" = true ]; then
+  echo "🔨 Building Web..."
+  pnpm build:web || exit 1
+fi
+
+if [ "$BUILD_HOME" = true ]; then
+  echo "🔨 Building Home..."
+  pnpm build:home || exit 1
+fi
+
+if [ "$BUILD_DOCS" = true ]; then
+  echo "🔨 Building Docs..."
+  pnpm build:docs || exit 1
+fi
+
+# If no specific packages changed, skip builds
+if [ "$BUILD_API" = false ] && [ "$BUILD_WEB" = false ] && [ "$BUILD_HOME" = false ] && [ "$BUILD_DOCS" = false ] && [ "$BUILD_UI" = false ]; then
+  echo "✅ No app/package changes detected, skipping builds"
+fi
+
+echo "✅ Pre-commit checks passed"

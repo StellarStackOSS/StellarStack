@@ -6,18 +6,35 @@
     "build": "turbo build",
     "build:api": "turbo build --filter=@workspace/api",
     "build:web": "turbo build --filter=web",
+    "build:home": "turbo build --filter=home",
+    "build:docs": "turbo build --filter=docs",
+    "build:ui": "turbo build --filter=@workspace/ui...",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css}\"",
     "start:api": "pnpm --filter @workspace/api start",
-    "start:web": "pnpm --filter web start"
+    "start:web": "pnpm --filter web start",
+    "prepare": "husky",
+    "typecheck": "turbo typecheck"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.5.5",
     "typescript": "5.7.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "packageManager": "pnpm@10.4.1",
   "engines": {
