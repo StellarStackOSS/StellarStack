@@ -1,14 +1,14 @@
 // @ts-nocheck -- skip type checking
-import * as d_docs_21 from "../content/docs/components/index.mdx?collection=docs";
-import * as d_docs_20 from "../content/docs/components/dashboard-cards.mdx?collection=docs";
-import * as d_docs_19 from "../content/docs/components/console.mdx?collection=docs";
-import * as d_docs_18 from "../content/docs/components/card.mdx?collection=docs";
-import * as d_docs_17 from "../content/docs/components/button.mdx?collection=docs";
-import * as d_docs_16 from "../content/docs/components/animations.mdx?collection=docs";
-import * as d_docs_15 from "../content/docs/guides/schedules.mdx?collection=docs";
-import * as d_docs_14 from "../content/docs/guides/permissions.mdx?collection=docs";
-import * as d_docs_13 from "../content/docs/guides/blueprints.mdx?collection=docs";
-import * as d_docs_12 from "../content/docs/guides/backups.mdx?collection=docs";
+import * as d_docs_21 from "../content/docs/guides/schedules.mdx?collection=docs";
+import * as d_docs_20 from "../content/docs/guides/permissions.mdx?collection=docs";
+import * as d_docs_19 from "../content/docs/guides/blueprints.mdx?collection=docs";
+import * as d_docs_18 from "../content/docs/guides/backups.mdx?collection=docs";
+import * as d_docs_17 from "../content/docs/components/index.mdx?collection=docs";
+import * as d_docs_16 from "../content/docs/components/dashboard-cards.mdx?collection=docs";
+import * as d_docs_15 from "../content/docs/components/console.mdx?collection=docs";
+import * as d_docs_14 from "../content/docs/components/card.mdx?collection=docs";
+import * as d_docs_13 from "../content/docs/components/button.mdx?collection=docs";
+import * as d_docs_12 from "../content/docs/components/animations.mdx?collection=docs";
 import * as d_docs_11 from "../content/docs/architecture/real-time.mdx?collection=docs";
 import * as d_docs_10 from "../content/docs/architecture/index.mdx?collection=docs";
 import * as d_docs_9 from "../content/docs/architecture/daemon.mdx?collection=docs";
@@ -68,49 +68,49 @@ export const docs = _runtime.docs<typeof _source.docs>(
       data: d_docs_11,
     },
     {
-      info: { path: "guides/backups.mdx", fullPath: "content/docs/guides/backups.mdx" },
-      data: d_docs_12,
-    },
-    {
-      info: { path: "guides/blueprints.mdx", fullPath: "content/docs/guides/blueprints.mdx" },
-      data: d_docs_13,
-    },
-    {
-      info: { path: "guides/permissions.mdx", fullPath: "content/docs/guides/permissions.mdx" },
-      data: d_docs_14,
-    },
-    {
-      info: { path: "guides/schedules.mdx", fullPath: "content/docs/guides/schedules.mdx" },
-      data: d_docs_15,
-    },
-    {
       info: {
         path: "components/animations.mdx",
         fullPath: "content/docs/components/animations.mdx",
       },
-      data: d_docs_16,
+      data: d_docs_12,
     },
     {
       info: { path: "components/button.mdx", fullPath: "content/docs/components/button.mdx" },
-      data: d_docs_17,
+      data: d_docs_13,
     },
     {
       info: { path: "components/card.mdx", fullPath: "content/docs/components/card.mdx" },
-      data: d_docs_18,
+      data: d_docs_14,
     },
     {
       info: { path: "components/console.mdx", fullPath: "content/docs/components/console.mdx" },
-      data: d_docs_19,
+      data: d_docs_15,
     },
     {
       info: {
         path: "components/dashboard-cards.mdx",
         fullPath: "content/docs/components/dashboard-cards.mdx",
       },
-      data: d_docs_20,
+      data: d_docs_16,
     },
     {
       info: { path: "components/index.mdx", fullPath: "content/docs/components/index.mdx" },
+      data: d_docs_17,
+    },
+    {
+      info: { path: "guides/backups.mdx", fullPath: "content/docs/guides/backups.mdx" },
+      data: d_docs_18,
+    },
+    {
+      info: { path: "guides/blueprints.mdx", fullPath: "content/docs/guides/blueprints.mdx" },
+      data: d_docs_19,
+    },
+    {
+      info: { path: "guides/permissions.mdx", fullPath: "content/docs/guides/permissions.mdx" },
+      data: d_docs_20,
+    },
+    {
+      info: { path: "guides/schedules.mdx", fullPath: "content/docs/guides/schedules.mdx" },
       data: d_docs_21,
     },
   ],
@@ -140,17 +140,17 @@ export const docs = _runtime.docs<typeof _source.docs>(
       data: { title: "API Reference", pages: ["index", "authentication", "servers", "nodes"] },
     },
     {
-      info: { path: "architecture/meta.json", fullPath: "content/docs/architecture/meta.json" },
-      data: {
-        title: "Architecture",
-        pages: ["index", "control-plane", "daemon", "authentication", "real-time"],
-      },
-    },
-    {
       info: { path: "components/meta.json", fullPath: "content/docs/components/meta.json" },
       data: {
         title: "Components",
         pages: ["index", "button", "card", "dashboard-cards", "console", "animations"],
+      },
+    },
+    {
+      info: { path: "architecture/meta.json", fullPath: "content/docs/architecture/meta.json" },
+      data: {
+        title: "Architecture",
+        pages: ["index", "control-plane", "daemon", "authentication", "real-time"],
       },
     },
     {

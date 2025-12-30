@@ -30,6 +30,7 @@ import { servers } from "@/lib/api";
 import type { Schedule, ScheduleTask, CreateScheduleData } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
 import { toast } from "sonner";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
@@ -120,6 +121,14 @@ const SchedulesPage = (): JSX.Element | null => {
       <div className="min-h-svh">
         {/* Background is now rendered in the layout for persistence */}
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  if (server?.status === "SUSPENDED") {
+    return (
+      <div className="min-h-svh">
+        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
   }
