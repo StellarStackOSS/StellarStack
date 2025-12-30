@@ -95,8 +95,19 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
             break;
 
           case "server:status":
-            // Update server status in cache
+            // Update server status in cache - force immediate refetch
             if (data.serverId) {
+              // Immediately update the cache if we have status data
+              if (data.data && typeof data.data === "object" && "status" in (data.data as object)) {
+                const statusData = data.data as { status: string };
+                queryClient.setQueryData(serverKeys.detail(data.serverId), (oldData: unknown) => {
+                  if (oldData && typeof oldData === "object") {
+                    return { ...(oldData as Record<string, unknown>), status: statusData.status };
+                  }
+                  return oldData;
+                });
+              }
+              // Also trigger refetch to get full updated data
               queryClient.invalidateQueries({
                 queryKey: serverKeys.detail(data.serverId),
               });
@@ -112,14 +123,23 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
             // Periodic sync - update cache directly without refetching
             if (data.serverId && data.data && typeof data.data === "object") {
               const serverData = data.data as Record<string, unknown>;
+              const queryKey = serverKeys.detail(data.serverId);
 
-              // Update the server detail cache directly
-              queryClient.setQueryData(serverKeys.detail(data.serverId), (oldData: unknown) => {
+              // Update the server detail cache directly with proper merge
+              queryClient.setQueryData(queryKey, (oldData: unknown) => {
                 // Merge new data with existing data to preserve any extra fields
                 if (oldData && typeof oldData === "object") {
-                  return { ...(oldData as Record<string, unknown>), ...serverData };
+                  const merged = { ...(oldData as Record<string, unknown>), ...serverData };
+                  return merged;
                 }
                 return serverData;
+              });
+
+              // Force React Query to notify subscribers by invalidating stale time
+              // This ensures components re-render when data changes
+              queryClient.invalidateQueries({
+                queryKey,
+                refetchType: 'none' // Don't refetch, just mark as stale to trigger re-render
               });
 
               // Also update the server in the list cache

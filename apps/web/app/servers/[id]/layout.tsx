@@ -5,9 +5,12 @@ import { useTheme } from "next-themes";
 import { useState, useEffect, memo } from "react";
 import { SidebarProvider, SidebarInset } from "@workspace/ui/components/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ServerProvider } from "@/components/server-provider";
+import { ServerProvider, useServer } from "@/components/server-provider";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder/server-maintenance-placeholder";
+import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder/server-suspended-placeholder";
+import { cn } from "@workspace/ui/lib/utils";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
@@ -18,6 +21,37 @@ const PersistentBackground = memo(function PersistentBackground({ isDark }: { is
     </>
   );
 });
+
+// Wrapper component that checks server status and shows placeholder if needed
+function ServerStatusWrapper({
+  children,
+  isDark,
+}: {
+  children: React.ReactNode;
+  isDark: boolean;
+}) {
+  const { server } = useServer();
+
+  // Show suspended placeholder if server is suspended
+  if (server?.status === "SUSPENDED") {
+    return (
+      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  // Show maintenance placeholder if server is under maintenance
+  if (server?.status === "MAINTENANCE") {
+    return (
+      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+        <ServerMaintenancePlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function ServerLayout({
   children,
@@ -43,7 +77,9 @@ export default function ServerLayout({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          {children}
+          <ServerStatusWrapper isDark={isDark}>
+            {children}
+          </ServerStatusWrapper>
         </SidebarInset>
       </SidebarProvider>
     </ServerProvider>

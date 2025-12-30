@@ -581,6 +581,18 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     delete parsed.data.status;
   }
 
+  // Check if we're suspending the server - need to get child servers
+  const isSuspending = parsed.data.status === "SUSPENDED" && server.status !== "SUSPENDED";
+  let childServers: { id: string; status: string }[] = [];
+
+  if (isSuspending) {
+    const serverWithChildren = await db.server.findUnique({
+      where: { id: server.id },
+      include: { childServers: { select: { id: true, status: true } } },
+    });
+    childServers = serverWithChildren?.childServers || [];
+  }
+
   const updated = await db.server.update({
     where: { id: server.id },
     data: parsed.data as any,
@@ -604,10 +616,36 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     }
   }
 
-  await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
-    serverId: server.id,
-    metadata: { changes: Object.keys(parsed.data) },
-  });
+  // Cascading suspension: if parent is suspended, also suspend all child servers
+  if (isSuspending && childServers.length > 0) {
+    const childUpdates = await Promise.all(
+      childServers
+        .filter((child) => child.status !== "SUSPENDED")
+        .map(async (child) => {
+          await db.server.update({
+            where: { id: child.id },
+            data: { status: "SUSPENDED" },
+          });
+          emitServerEvent("server:status", child.id, { id: child.id, status: "SUSPENDED" });
+          return child.id;
+        })
+    );
+
+    if (childUpdates.length > 0) {
+      await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+        serverId: server.id,
+        metadata: {
+          changes: Object.keys(parsed.data),
+          cascadingSuspension: { childServerIds: childUpdates },
+        },
+      });
+    }
+  } else {
+    await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+      serverId: server.id,
+      metadata: { changes: Object.keys(parsed.data) },
+    });
+  }
 
   // Emit WebSocket event for real-time updates
   emitServerEvent("server:updated", server.id, serializeServer(updated), user.id);
@@ -896,6 +934,11 @@ servers.patch("/:serverId/status", requireAdmin, async (c) => {
 
   const server = await db.server.findUnique({
     where: { id: serverId },
+    include: {
+      childServers: {
+        select: { id: true, status: true },
+      },
+    },
   });
 
   if (!server) {
@@ -910,10 +953,37 @@ servers.patch("/:serverId/status", requireAdmin, async (c) => {
   // Emit WebSocket event for real-time updates
   emitServerEvent("server:status", serverId, { id: serverId, status: parsed.data.status });
 
-  await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
-    serverId,
-    metadata: { statusChange: { from: server.status, to: parsed.data.status } },
-  });
+  // Cascading suspension: if parent is suspended, also suspend all child servers
+  if (parsed.data.status === "SUSPENDED" && server.childServers.length > 0) {
+    const childUpdates = await Promise.all(
+      server.childServers
+        .filter((child) => child.status !== "SUSPENDED") // Only suspend non-suspended children
+        .map(async (child) => {
+          await db.server.update({
+            where: { id: child.id },
+            data: { status: "SUSPENDED" },
+          });
+          // Emit WebSocket event for each child server
+          emitServerEvent("server:status", child.id, { id: child.id, status: "SUSPENDED" });
+          return child.id;
+        })
+    );
+
+    if (childUpdates.length > 0) {
+      await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+        serverId,
+        metadata: {
+          statusChange: { from: server.status, to: parsed.data.status },
+          cascadingSuspension: { childServerIds: childUpdates },
+        },
+      });
+    }
+  } else {
+    await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+      serverId,
+      metadata: { statusChange: { from: server.status, to: parsed.data.status } },
+    });
+  }
 
   return c.json(serializeServer(updated));
 });
