@@ -13,6 +13,7 @@ export type WSEventType =
   | "server:deleted"
   | "server:status"
   | "server:stats"
+  | "server:sync" // Periodic full server data sync (every 5s)
   | "node:updated"
   | "node:status"
   | "backup:created"

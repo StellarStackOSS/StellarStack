@@ -327,9 +327,12 @@ remote.post("/servers/:uuid/status", async (c) => {
     return c.json({ error: "Server not found" }, 404);
   }
 
-  // Don't update status if server is suspended (admin override)
-  if (server.status === "SUSPENDED") {
-    return c.json({ success: true, message: "Server is suspended, status not updated" });
+  // Don't update status if server is suspended or in maintenance (admin override)
+  if (server.status === "SUSPENDED" || server.status === "MAINTENANCE") {
+    return c.json({
+      success: true,
+      message: `Server is ${server.status.toLowerCase()}, status not updated`,
+    });
   }
 
   // Map daemon status to our schema
@@ -453,9 +456,12 @@ remote.post("/servers/:uuid/install", async (c) => {
     return c.json({ error: "Server not found" }, 404);
   }
 
-  // Don't update status if server is suspended (admin override)
-  if (server.status === "SUSPENDED") {
-    return c.json({ success: true, message: "Server is suspended, status not updated" });
+  // Don't update status if server is suspended or in maintenance (admin override)
+  if (server.status === "SUSPENDED" || server.status === "MAINTENANCE") {
+    return c.json({
+      success: true,
+      message: `Server is ${server.status.toLowerCase()}, status not updated`,
+    });
   }
 
   // Update server status based on installation result
@@ -785,6 +791,96 @@ remote.post("/sftp/auth", async (c) => {
   return c.json({
     server: serverUuid,
     permissions,
+  });
+});
+
+// ============================================================================
+// Maintenance Mode
+// ============================================================================
+
+/**
+ * POST /api/remote/maintenance/enter
+ * Set all servers on this node to MAINTENANCE mode
+ * Stores their current status for restoration later
+ */
+remote.post("/maintenance/enter", async (c) => {
+  const node = c.get("node");
+
+  // Get all servers on this node that are not already in maintenance or suspended
+  const servers = await db.server.findMany({
+    where: {
+      nodeId: node.id,
+      status: {
+        notIn: ["MAINTENANCE", "SUSPENDED"],
+      },
+    },
+    select: { id: true, status: true },
+  });
+
+  // Update each server to MAINTENANCE and store previous status
+  const updated = await Promise.all(
+    servers.map((server) =>
+      db.server.update({
+        where: { id: server.id },
+        data: {
+          previousStatus: server.status,
+          status: "MAINTENANCE",
+        },
+      })
+    )
+  );
+
+  // Emit WebSocket events for all affected servers
+  for (const server of updated) {
+    emitServerEvent("server:status", server.id, { id: server.id, status: "MAINTENANCE" });
+  }
+
+  return c.json({
+    success: true,
+    affected: updated.length,
+    message: `Set ${updated.length} servers to maintenance mode`,
+  });
+});
+
+/**
+ * POST /api/remote/maintenance/exit
+ * Restore all servers on this node from MAINTENANCE to their previous status
+ */
+remote.post("/maintenance/exit", async (c) => {
+  const node = c.get("node");
+
+  // Get all servers in maintenance mode with a stored previous status
+  const servers = await db.server.findMany({
+    where: {
+      nodeId: node.id,
+      status: "MAINTENANCE",
+      previousStatus: { not: null },
+    },
+    select: { id: true, previousStatus: true },
+  });
+
+  // Restore each server to its previous status
+  const updated = await Promise.all(
+    servers.map((server) =>
+      db.server.update({
+        where: { id: server.id },
+        data: {
+          status: server.previousStatus!,
+          previousStatus: null,
+        },
+      })
+    )
+  );
+
+  // Emit WebSocket events for all affected servers
+  for (const server of updated) {
+    emitServerEvent("server:status", server.id, { id: server.id, status: server.status });
+  }
+
+  return c.json({
+    success: true,
+    affected: updated.length,
+    message: `Restored ${updated.length} servers from maintenance mode`,
   });
 });
 

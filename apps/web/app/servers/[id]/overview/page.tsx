@@ -40,6 +40,7 @@ import { useServerWebSocket, type StatsWithHistory } from "@/hooks/useServerWebS
 import { EulaExtension } from "../extensions/eula";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder";
 
 // Build display data from real server and stats (with history)
 const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
@@ -265,6 +266,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   const getStatusLabel = (): string => {
     if (!server) return labels.status.offline;
+    // Note: SUSPENDED and MAINTENANCE are handled by placeholders and never reach here
     switch (server.status) {
       case "RUNNING":
         return labels.status.online;
@@ -299,6 +301,15 @@ const ServerOverviewPage = (): JSX.Element | null => {
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
         <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  // Show maintenance placeholder if server is under maintenance
+  if (server?.status === "MAINTENANCE") {
+    return (
+      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+        <ServerMaintenancePlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
   }
@@ -431,6 +442,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     server?.status === "STARTING" && "border-amber-500 text-amber-500",
                     server?.status === "STOPPING" && "border-amber-500 text-amber-500",
                     server?.status === "INSTALLING" && "border-blue-500 text-blue-500"
+                    // Note: SUSPENDED and MAINTENANCE are handled by placeholders and never reach here
                   )}
                 >
                   {getStatusLabel()}

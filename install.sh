@@ -62,6 +62,83 @@ install_certbot="n"
 # Upgrade mode (keeps existing config)
 upgrade_mode="n"
 
+# Read config file and extract values
+read_existing_config() {
+    local config_file="${DAEMON_INSTALL_DIR}/config.toml"
+    if [ -f "$config_file" ]; then
+        # Extract values from TOML using grep/sed
+        daemon_panel_url=$(grep '^url = ' "$config_file" | sed 's/url = "\(.*\)"/\1/' | head -1)
+        daemon_token_id=$(grep '^token_id = ' "$config_file" | sed 's/token_id = "\(.*\)"/\1/' | head -1)
+        daemon_token=$(grep '^token = ' "$config_file" | sed 's/token = "\(.*\)"/\1/' | head -1)
+        return 0
+    fi
+    return 1
+}
+
+# Call panel API to enter maintenance mode
+enter_maintenance_mode() {
+    if [ -z "$daemon_panel_url" ] || [ -z "$daemon_token_id" ] || [ -z "$daemon_token" ]; then
+        print_warning "Missing credentials, skipping maintenance mode"
+        return 1
+    fi
+
+    local api_url="${daemon_panel_url}/api/remote/maintenance/enter"
+    local auth_header="Bearer ${daemon_token_id}.${daemon_token}"
+
+    print_task "Entering maintenance mode"
+
+    local response
+    if response=$(curl -s --max-time 10 -X POST "$api_url" \
+        -H "Authorization: $auth_header" \
+        -H "Content-Type: application/json" 2>/dev/null); then
+
+        # Check for success in response
+        if echo "$response" | grep -q '"success":true'; then
+            local affected=$(echo "$response" | grep -o '"affected":[0-9]*' | cut -d: -f2)
+            print_task_done "Entering maintenance mode"
+            print_info "Set ${affected:-0} servers to maintenance mode"
+            return 0
+        else
+            echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not enter maintenance mode${NC}    "
+            return 1
+        fi
+    else
+        echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not connect to panel${NC}    "
+        return 1
+    fi
+}
+
+# Call panel API to exit maintenance mode
+exit_maintenance_mode() {
+    if [ -z "$daemon_panel_url" ] || [ -z "$daemon_token_id" ] || [ -z "$daemon_token" ]; then
+        return 1
+    fi
+
+    local api_url="${daemon_panel_url}/api/remote/maintenance/exit"
+    local auth_header="Bearer ${daemon_token_id}.${daemon_token}"
+
+    print_task "Restoring servers from maintenance mode"
+
+    local response
+    if response=$(curl -s --max-time 10 -X POST "$api_url" \
+        -H "Authorization: $auth_header" \
+        -H "Content-Type: application/json" 2>/dev/null); then
+
+        if echo "$response" | grep -q '"success":true'; then
+            local affected=$(echo "$response" | grep -o '"affected":[0-9]*' | cut -d: -f2)
+            print_task_done "Restoring servers from maintenance mode"
+            print_info "Restored ${affected:-0} servers to previous state"
+            return 0
+        else
+            echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not exit maintenance mode${NC}    "
+            return 1
+        fi
+    else
+        echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not connect to panel${NC}    "
+        return 1
+    fi
+}
+
 # Print functions
 print_step() {
     echo ""
@@ -338,6 +415,16 @@ check_existing_installation() {
                 echo ""
                 print_info "Upgrade mode enabled - existing config will be preserved"
                 echo ""
+
+                # Read existing config to get panel credentials for maintenance mode
+                if read_existing_config; then
+                    print_success "Loaded panel credentials from existing config"
+                    echo ""
+                    # Enter maintenance mode before stopping daemon
+                    enter_maintenance_mode || print_warning "Proceeding without maintenance mode"
+                    echo ""
+                fi
+
                 print_task "Stopping existing daemon"
                 systemctl stop stellar-daemon 2>/dev/null || true
                 print_task_done "Stopping existing daemon"
@@ -1027,15 +1114,28 @@ show_upgrade_complete() {
     echo ""
     echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
     echo ""
+    echo -e "${PRIMARY}  RESTARTING DAEMON:${NC}"
+    echo ""
+
+    print_task "Starting upgraded daemon"
+    systemctl start stellar-daemon
+    print_task_done "Starting upgraded daemon"
+
+    # Give daemon a moment to start up
+    sleep 2
+
+    # Exit maintenance mode now that daemon is running
+    echo ""
+    exit_maintenance_mode || print_warning "Could not exit maintenance mode - servers may need manual update"
+
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
     echo -e "${PRIMARY}  NEXT STEPS:${NC}"
     echo ""
     echo -e "${SECONDARY}  Your existing configuration has been preserved.${NC}"
     echo -e "${SECONDARY}  The previous daemon binary has been backed up to:${NC}"
     echo -e "    ${PRIMARY}${DAEMON_INSTALL_DIR}/stellar-daemon.bak${NC}"
-    echo ""
-    echo -e "${WARNING}  [!]${NC} ${SECONDARY}Please restart the daemon to apply the upgrade:${NC}"
-    echo ""
-    echo -e "    ${PRIMARY}systemctl restart stellar-daemon${NC}"
     echo ""
     echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
     echo ""
