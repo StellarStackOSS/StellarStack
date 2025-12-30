@@ -195,7 +195,15 @@ export interface Server {
   name: string;
   description?: string;
   containerId?: string;
-  status: "INSTALLING" | "STARTING" | "RUNNING" | "STOPPING" | "STOPPED" | "SUSPENDED" | "ERROR";
+  status:
+    | "INSTALLING"
+    | "STARTING"
+    | "RUNNING"
+    | "STOPPING"
+    | "STOPPED"
+    | "SUSPENDED"
+    | "MAINTENANCE"
+    | "ERROR";
   suspended: boolean;
   memory: number; // MiB
   disk: number; // MiB

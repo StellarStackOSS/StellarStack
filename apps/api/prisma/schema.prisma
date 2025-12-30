@@ -256,6 +256,7 @@ model Server {
   // Docker container info
   containerId  String?
   status       ServerStatus @default(INSTALLING)
+  previousStatus ServerStatus? // Stored when entering MAINTENANCE to restore later
   suspended    Boolean      @default(false)
 
   // Resource allocation
@@ -325,6 +326,7 @@ enum ServerStatus {
   STOPPING
   STOPPED
   SUSPENDED
+  MAINTENANCE
   ERROR
 }
 

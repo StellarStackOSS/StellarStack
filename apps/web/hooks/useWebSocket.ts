@@ -18,11 +18,16 @@ export type WSEventType =
   | "server:deleted"
   | "server:status"
   | "server:stats"
+  | "server:sync" // Periodic full server data sync (every 5s)
   | "node:updated"
   | "node:status"
   | "backup:created"
   | "backup:deleted"
   | "backup:status"
+  | "auth_success" // Authentication successful
+  | "auth_error" // Authentication failed
+  | "subscribed" // Successfully subscribed to server
+  | "unsubscribed" // Successfully unsubscribed from server
   | "pong";
 
 interface WSEvent {
@@ -44,17 +49,14 @@ interface UseWebSocketOptions {
 }
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
-  const {
-    serverIds = [],
-    autoReconnect = true,
-    reconnectDelay = 3000,
-    enabled = true,
-  } = options;
+  const { serverIds = [], autoReconnect = true, reconnectDelay = 3000, enabled = true } = options;
 
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSubscriptionsRef = useRef<string[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lastMessage, setLastMessage] = useState<WSEvent | null>(null);
 
   // Handle incoming WebSocket messages
@@ -106,6 +108,31 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
             // Stats updates can be handled by specific components
             break;
 
+          case "server:sync":
+            // Periodic sync - update cache directly without refetching
+            if (data.serverId && data.data && typeof data.data === "object") {
+              const serverData = data.data as Record<string, unknown>;
+
+              // Update the server detail cache directly
+              queryClient.setQueryData(serverKeys.detail(data.serverId), (oldData: unknown) => {
+                // Merge new data with existing data to preserve any extra fields
+                if (oldData && typeof oldData === "object") {
+                  return { ...(oldData as Record<string, unknown>), ...serverData };
+                }
+                return serverData;
+              });
+
+              // Also update the server in the list cache
+              queryClient.setQueryData(serverKeys.list(), (oldList: unknown[] | undefined) => {
+                if (!oldList || !Array.isArray(oldList)) return oldList;
+                return oldList.map((item) => {
+                  const server = item as Record<string, unknown>;
+                  return server.id === data.serverId ? { ...server, ...serverData } : server;
+                });
+              });
+            }
+            break;
+
           case "node:updated":
           case "node:status":
             // Invalidate nodes queries
@@ -121,6 +148,28 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
                 queryKey: ["backups", data.serverId],
               });
             }
+            break;
+
+          case "auth_success":
+            // Authentication successful - subscribe to pending servers
+            setIsAuthenticated(true);
+            if (pendingSubscriptionsRef.current.length > 0) {
+              pendingSubscriptionsRef.current.forEach((serverId) => {
+                wsRef.current?.send(JSON.stringify({ type: "subscribe", serverId }));
+              });
+              pendingSubscriptionsRef.current = [];
+            }
+            break;
+
+          case "auth_error":
+            // Authentication failed
+            setIsAuthenticated(false);
+            console.warn("WebSocket authentication failed");
+            break;
+
+          case "subscribed":
+          case "unsubscribed":
+            // Subscription confirmations - no action needed
             break;
 
           case "pong":
@@ -146,11 +195,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       ws.onopen = () => {
         console.log("WebSocket connected");
         setIsConnected(true);
+        setIsAuthenticated(false);
 
-        // Subscribe to server updates
-        serverIds.forEach((serverId) => {
-          ws.send(JSON.stringify({ type: "subscribe", serverId }));
-        });
+        // Store serverIds as pending - will subscribe after auth_success
+        pendingSubscriptionsRef.current = [...serverIds];
+        // Auto-auth happens server-side via cookies
+        // If user is not logged in, auth_success won't be received
       };
 
       ws.onmessage = handleMessage;
@@ -158,6 +208,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       ws.onclose = () => {
         console.log("WebSocket disconnected");
         setIsConnected(false);
+        setIsAuthenticated(false);
         wsRef.current = null;
 
         // Auto-reconnect
@@ -194,11 +245,19 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   }, []);
 
   // Subscribe to a server
-  const subscribe = useCallback((serverId: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "subscribe", serverId }));
-    }
-  }, []);
+  const subscribe = useCallback(
+    (serverId: string) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticated) {
+        wsRef.current.send(JSON.stringify({ type: "subscribe", serverId }));
+      } else {
+        // Add to pending subscriptions
+        if (!pendingSubscriptionsRef.current.includes(serverId)) {
+          pendingSubscriptionsRef.current.push(serverId);
+        }
+      }
+    },
+    [isAuthenticated]
+  );
 
   // Unsubscribe from a server
   const unsubscribe = useCallback((serverId: string) => {
@@ -225,14 +284,14 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     };
   }, [enabled]); // Only re-run if enabled changes
 
-  // Update subscriptions when serverIds change
+  // Update subscriptions when serverIds change or when authenticated
   useEffect(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticated) {
       serverIds.forEach((serverId) => {
         subscribe(serverId);
       });
     }
-  }, [serverIds, subscribe]);
+  }, [serverIds, isAuthenticated, subscribe]);
 
   // Ping every 30 seconds to keep connection alive
   useEffect(() => {
@@ -247,6 +306,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
   return {
     isConnected,
+    isAuthenticated,
     lastMessage,
     subscribe,
     unsubscribe,

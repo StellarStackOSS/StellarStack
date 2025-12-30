@@ -5,6 +5,7 @@ import { passkey } from "@better-auth/passkey";
 import { db } from "./db";
 import { sendEmail } from "./email";
 import { twoFactorCodeEmail } from "./email-templates";
+import { hashPassword, verifyPassword } from "./crypto";
 
 const authConfig = {
   appName: "StellarStack",
@@ -17,6 +18,11 @@ const authConfig = {
     enabled: true,
     // Enable email verification in production for security
     requireEmailVerification: process.env.NODE_ENV === "production",
+    // Use bcrypt for password hashing (compatible with SFTP auth and industry standard)
+    password: {
+      hash: hashPassword,
+      verify: async ({ password, hash }) => verifyPassword(password, hash),
+    },
     // Send verification email on signup
     sendResetPassword: async ({ user, url }) => {
       const { sendEmail } = await import("./email");
@@ -70,9 +76,7 @@ const authConfig = {
       enabled: !!process.env.DISCORD_CLIENT_ID,
     },
   },
-  trustedOrigins: [
-    process.env.FRONTEND_URL || "http://localhost:3000",
-  ],
+  trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000"],
   user: {
     additionalFields: {
       role: {

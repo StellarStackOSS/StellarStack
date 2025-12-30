@@ -91,11 +91,31 @@ app.route("/api/remote", remote);
 app.get(
   "/api/ws",
   upgradeWebSocket((c) => {
+    // Extract session token from cookies during upgrade
+    const cookies = c.req.header("Cookie") || "";
+    const sessionTokenMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
+    const cookieSessionToken = sessionTokenMatch ? decodeURIComponent(sessionTokenMatch[1]) : null;
+
     return {
       onOpen: async (_event, ws) => {
-        // WebSocket authentication is handled via message after connection
-        // Client must send an auth message with session token
+        // Add client first
         wsManager.addClient(ws.raw as any);
+
+        // Try to auto-authenticate via cookie
+        if (cookieSessionToken) {
+          const session = await db.session.findFirst({
+            where: {
+              token: cookieSessionToken,
+              expiresAt: { gt: new Date() },
+            },
+            include: { user: true },
+          });
+
+          if (session) {
+            wsManager.authenticateClient(ws.raw as any, session.userId);
+            ws.send(JSON.stringify({ type: "auth_success", userId: session.userId }));
+          }
+        }
       },
       onMessage: async (event, ws) => {
         const message = event.data.toString();
@@ -103,7 +123,7 @@ app.get(
         try {
           const data = JSON.parse(message);
 
-          // Handle authentication message
+          // Handle authentication message (fallback for manual auth)
           if (data.type === "auth" && data.token) {
             // Verify session token
             const session = await db.session.findFirst({
