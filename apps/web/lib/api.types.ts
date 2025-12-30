@@ -203,6 +203,7 @@ export interface Server {
     | "STOPPED"
     | "SUSPENDED"
     | "MAINTENANCE"
+    | "RESTORING"
     | "ERROR";
   suspended: boolean;
   memory: number; // MiB
@@ -212,6 +213,7 @@ export interface Server {
   swap: number; // MiB: -1 = unlimited, 0 = disabled, >0 = limited
   oomKillDisable: boolean;
   backupLimit: number;
+  allocationLimit: number;
   config?: Record<string, unknown>;
   variables?: Record<string, string>;
   dockerImage?: string;
