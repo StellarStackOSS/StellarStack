@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bash -c:*)"
+      "Bash(bash -c:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
