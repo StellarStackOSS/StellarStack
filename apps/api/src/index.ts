@@ -77,79 +77,26 @@ app.get("/health", (c) => {
 // This allows clients to get a short-lived token for WebSocket authentication
 // when cookies don't work (cross-origin)
 app.get("/api/ws/token", async (c) => {
-  // Get session from cookies
-  const cookies = c.req.header("Cookie") || "";
-  console.log("[WS Token] Cookies received:", cookies.substring(0, 100) + "...");
+  try {
+    // Use Better Auth's session API to properly validate the session
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
-  // Try multiple cookie name formats (Better Auth may use different formats)
-  let cookieSessionToken: string | null = null;
-
-  // Try: better-auth.session_token (with dot)
-  const dotMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
-  if (dotMatch) {
-    cookieSessionToken = decodeURIComponent(dotMatch[1]);
-    console.log("[WS Token] Found token with dot format");
-  }
-
-  // Try: better-auth_session_token (with underscore)
-  if (!cookieSessionToken) {
-    const underscoreMatch = cookies.match(/better-auth_session_token=([^;]+)/);
-    if (underscoreMatch) {
-      cookieSessionToken = decodeURIComponent(underscoreMatch[1]);
-      console.log("[WS Token] Found token with underscore format");
+    if (!session?.user || !session?.session) {
+      console.log("[WS Token] No valid session from Better Auth");
+      return c.json({ error: "Not authenticated" }, 401);
     }
-  }
 
-  // Try: session_token (simple)
-  if (!cookieSessionToken) {
-    const simpleMatch = cookies.match(/session_token=([^;]+)/);
-    if (simpleMatch) {
-      cookieSessionToken = decodeURIComponent(simpleMatch[1]);
-      console.log("[WS Token] Found token with simple format");
-    }
-  }
+    console.log(`[WS Token] Session valid for user: ${session.user.id}`);
 
-  if (!cookieSessionToken) {
-    console.log("[WS Token] No session token found in cookies");
-    return c.json({ error: "Not authenticated" }, 401);
-  }
-
-  console.log(
-    "[WS Token] Looking up session with token:",
-    cookieSessionToken.substring(0, 20) + "..."
-  );
-
-  // First, try to find any session with this token (ignore expiry for debugging)
-  const anySession = await db.session.findFirst({
-    where: { token: cookieSessionToken },
-  });
-
-  if (anySession) {
-    console.log("[WS Token] Found session, expires:", anySession.expiresAt, "now:", new Date());
-    if (anySession.expiresAt <= new Date()) {
-      console.log("[WS Token] Session is expired!");
-      return c.json({ error: "Session expired" }, 401);
-    }
-  } else {
-    console.log("[WS Token] No session found with this token");
-    // List some sessions for debugging (remove in production)
-    const recentSessions = await db.session.findMany({
-      take: 3,
-      orderBy: { createdAt: "desc" },
-      select: { token: true, expiresAt: true },
+    // Return the session token for WebSocket authentication
+    return c.json({
+      token: session.session.token,
+      userId: session.user.id,
     });
-    console.log(
-      "[WS Token] Recent sessions:",
-      recentSessions.map((s) => ({
-        tokenStart: s.token.substring(0, 20),
-        expiresAt: s.expiresAt,
-      }))
-    );
-    return c.json({ error: "Invalid session" }, 401);
+  } catch (error) {
+    console.error("[WS Token] Error getting session:", error);
+    return c.json({ error: "Authentication failed" }, 401);
   }
-
-  // Return the session token
-  return c.json({ token: cookieSessionToken, userId: anySession.userId });
 });
 
 // Public setup status endpoint - check if system is initialized
@@ -348,12 +295,10 @@ app.route("/api/remote", remote);
 app.get(
   "/api/ws",
   upgradeWebSocket((c) => {
-    // Extract session token from cookies during upgrade
-    const cookies = c.req.header("Cookie") || "";
-    const sessionTokenMatch = cookies.match(/better-auth\.session_token=([^;]+)/);
-    const cookieSessionToken = sessionTokenMatch ? decodeURIComponent(sessionTokenMatch[1]) : null;
+    // Store headers for Better Auth session lookup
+    const headers = c.req.raw.headers;
 
-    console.log(`[WS] Connection upgrade, cookie token present: ${!!cookieSessionToken}`);
+    console.log(`[WS] Connection upgrade requested`);
 
     return {
       onOpen: async (_event, ws) => {
@@ -361,26 +306,18 @@ app.get(
         // Add client first
         wsManager.addClient(ws.raw as any);
 
-        // Try to auto-authenticate via cookie
-        if (cookieSessionToken) {
-          console.log("[WS] Attempting cookie authentication...");
-          const session = await db.session.findFirst({
-            where: {
-              token: cookieSessionToken,
-              expiresAt: { gt: new Date() },
-            },
-            include: { user: true },
-          });
-
-          if (session) {
-            console.log(`[WS] Cookie auth successful for user ${session.userId}`);
-            wsManager.authenticateClient(ws.raw as any, session.userId);
-            ws.send(JSON.stringify({ type: "auth_success", userId: session.userId }));
+        // Try to auto-authenticate via Better Auth session
+        try {
+          const session = await auth.api.getSession({ headers });
+          if (session?.user) {
+            console.log(`[WS] Cookie auth successful for user ${session.user.id}`);
+            wsManager.authenticateClient(ws.raw as any, session.user.id);
+            ws.send(JSON.stringify({ type: "auth_success", userId: session.user.id }));
           } else {
-            console.log("[WS] Cookie auth failed - no valid session found");
+            console.log("[WS] No valid session found in cookies");
           }
-        } else {
-          console.log("[WS] No cookie token found");
+        } catch (error) {
+          console.log("[WS] Cookie auth failed:", error);
         }
       },
       onMessage: async (event, ws) => {
@@ -391,7 +328,7 @@ app.get(
 
           // Handle authentication message (fallback for manual auth)
           if (data.type === "auth" && data.token) {
-            // Verify session token
+            // Verify session token directly in database
             const session = await db.session.findFirst({
               where: {
                 token: data.token,
