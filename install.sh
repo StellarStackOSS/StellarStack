@@ -36,6 +36,7 @@ daemon_enable_ssl="n"
 daemon_ssl_domain=""
 daemon_enable_redis="n"
 daemon_redis_url=""
+server_ip=""
 
 # Dependency installation choices
 install_docker="n"
@@ -151,6 +152,66 @@ wait_for_enter() {
     echo ""
     echo -ne "${SECONDARY}  Press ${PRIMARY}[ENTER]${SECONDARY} to continue...${NC}"
     read -r </dev/tty
+}
+
+# Get server's public IP address
+get_server_ip() {
+    # Try multiple services in case one is down
+    local ip=""
+
+    # Try curl with various services
+    if command -v curl &> /dev/null; then
+        ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null) || \
+        ip=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null) || \
+        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null) || \
+        ip=$(curl -s --max-time 5 https://ipecho.net/plain 2>/dev/null)
+    fi
+
+    # Fallback to wget
+    if [ -z "$ip" ] && command -v wget &> /dev/null; then
+        ip=$(wget -qO- --timeout=5 https://api.ipify.org 2>/dev/null) || \
+        ip=$(wget -qO- --timeout=5 https://ifconfig.me 2>/dev/null)
+    fi
+
+    # Validate IP format (basic check)
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "$ip"
+        return 0
+    fi
+
+    return 1
+}
+
+# Verify domain resolves to server IP
+verify_domain_dns() {
+    local domain="$1"
+    local expected_ip="$2"
+
+    # Try to resolve domain using dig, nslookup, or host
+    local resolved_ip=""
+
+    if command -v dig &> /dev/null; then
+        resolved_ip=$(dig +short "$domain" A 2>/dev/null | head -1)
+    elif command -v nslookup &> /dev/null; then
+        resolved_ip=$(nslookup "$domain" 2>/dev/null | awk '/^Address: / { print $2 }' | tail -1)
+    elif command -v host &> /dev/null; then
+        resolved_ip=$(host "$domain" 2>/dev/null | awk '/has address/ { print $4 }' | head -1)
+    elif command -v getent &> /dev/null; then
+        resolved_ip=$(getent hosts "$domain" 2>/dev/null | awk '{ print $1 }' | head -1)
+    fi
+
+    if [ -z "$resolved_ip" ]; then
+        echo "unable_to_resolve"
+        return 1
+    fi
+
+    if [ "$resolved_ip" = "$expected_ip" ]; then
+        echo "$resolved_ip"
+        return 0
+    else
+        echo "$resolved_ip"
+        return 1
+    fi
 }
 
 # Ask yes/no question, returns 0 for yes, 1 for no
@@ -451,6 +512,27 @@ collect_ssl_config() {
     echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
     echo ""
 
+    # Get server's public IP first
+    print_task "Detecting server IP address"
+    server_ip=$(get_server_ip)
+    if [ -n "$server_ip" ]; then
+        print_task_done "Detecting server IP address"
+        echo ""
+        print_info "Server IP: ${server_ip}"
+        echo ""
+    else
+        echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not detect server IP automatically${NC}    "
+        echo ""
+        echo -e "${SECONDARY}  Please enter your server's public IP address:${NC}"
+        echo -ne "  ${PRIMARY}>${NC} "
+        read -r server_ip </dev/tty
+        if [ -z "$server_ip" ]; then
+            print_warning "No IP provided, using 0.0.0.0 (all interfaces)"
+            server_ip="0.0.0.0"
+        fi
+        echo ""
+    fi
+
     if ask_yes_no "Enable SSL with Certbot?" "n"; then
         daemon_enable_ssl="y"
         echo ""
@@ -469,13 +551,56 @@ collect_ssl_config() {
 
         if [ "$daemon_enable_ssl" = "y" ]; then
             echo ""
-            while [ -z "$daemon_ssl_domain" ]; do
+            local domain_verified=false
+            while [ "$domain_verified" = false ]; do
                 echo -e "${SECONDARY}  Domain for SSL certificate ${MUTED}(e.g., node1.example.com)${NC}"
                 echo -ne "  ${PRIMARY}>${NC} "
                 read -r daemon_ssl_domain </dev/tty
+
                 if [ -z "$daemon_ssl_domain" ]; then
                     print_error "Domain is required for SSL"
                     echo ""
+                    continue
+                fi
+
+                # Verify DNS points to this server
+                echo ""
+                print_task "Verifying DNS for ${daemon_ssl_domain}"
+                local dns_result
+                dns_result=$(verify_domain_dns "$daemon_ssl_domain" "$server_ip")
+                local dns_status=$?
+
+                if [ "$dns_result" = "unable_to_resolve" ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}Could not resolve ${daemon_ssl_domain}${NC}    "
+                    echo ""
+                    print_error "The domain could not be resolved. Please check:"
+                    echo -e "    ${MUTED}- DNS record exists for this domain${NC}"
+                    echo -e "    ${MUTED}- DNS has propagated (may take up to 24-48 hours)${NC}"
+                    echo ""
+                    if ! ask_yes_no "Try a different domain?" "y"; then
+                        print_warning "SSL disabled (domain verification failed)"
+                        daemon_enable_ssl="n"
+                        daemon_ssl_domain=""
+                        domain_verified=true
+                    fi
+                elif [ $dns_status -ne 0 ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}DNS mismatch for ${daemon_ssl_domain}${NC}    "
+                    echo ""
+                    print_error "Domain resolves to: ${dns_result}"
+                    print_error "Expected (this server): ${server_ip}"
+                    echo ""
+                    echo -e "${SECONDARY}  The domain must point to this server's IP for SSL to work.${NC}"
+                    echo ""
+                    if ! ask_yes_no "Try a different domain?" "y"; then
+                        print_warning "SSL disabled (domain verification failed)"
+                        daemon_enable_ssl="n"
+                        daemon_ssl_domain=""
+                        domain_verified=true
+                    fi
+                else
+                    print_task_done "Verifying DNS for ${daemon_ssl_domain}"
+                    print_success "Domain ${daemon_ssl_domain} correctly points to ${server_ip}"
+                    domain_verified=true
                 fi
             done
         fi
@@ -715,7 +840,7 @@ install_daemon() {
 debug = false
 
 [api]
-host = "0.0.0.0"
+host = "${server_ip}"
 port = ${daemon_port}
 upload_limit = 100
 trusted_proxies = []
@@ -772,7 +897,7 @@ prefix = "stellar"
 
 [sftp]
 enabled = true
-bind_address = "0.0.0.0"
+bind_address = "${server_ip}"
 bind_port = ${daemon_sftp_port}
 read_only = false
 EOF

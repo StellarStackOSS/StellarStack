@@ -77,17 +77,29 @@ pub async fn run(config_path: &str) -> Result<()> {
     });
     info!("Started periodic status sync (every 30s)");
 
-    // TODO: Start the SFTP server if enabled
-    // if config.sftp.enabled {
-    //     let sftp_config = config.sftp.clone();
-    //     let sftp_manager = manager.clone();
-    //     let sftp_client = api_client.clone();
-    //
-    //     tokio::spawn(async move {
-    //         info!("Starting SFTP server on {}:{}", sftp_config.bind_address, sftp_config.bind_port);
-    //         // SFTP server implementation pending
-    //     });
-    // }
+    // Start the SFTP server if enabled
+    if config.sftp.enabled {
+        let sftp_config = config.sftp.clone();
+        let sftp_manager = manager.clone();
+        let sftp_client = api_client.clone();
+
+        info!(
+            "Starting SFTP server on {}:{}",
+            sftp_config.bind_address, sftp_config.bind_port
+        );
+
+        tokio::spawn(async move {
+            if let Err(e) = stellar_daemon::sftp::start_server(
+                sftp_config,
+                sftp_manager,
+                sftp_client,
+            ).await {
+                error!("SFTP server error: {}", e);
+            }
+        });
+    } else {
+        info!("SFTP server is disabled");
+    }
 
     // Start the HTTP/HTTPS server
     let bind_addr: SocketAddr = format!("{}:{}", config.api.host, config.api.port)

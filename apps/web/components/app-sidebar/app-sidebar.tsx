@@ -35,7 +35,6 @@ import {
   ShieldIcon,
   WebhookIcon,
   SplitIcon,
-  TerminalIcon,
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -44,7 +43,6 @@ import { WaveText } from "@/components/wave-text";
 // Navigation items - href will be prefixed with /servers/[id]
 const navItems = [
   { title: "Overview", icon: LayoutDashboardIcon, href: "/overview" },
-  { title: "Console", icon: TerminalIcon, href: "/console" },
   { title: "Files", icon: FolderIcon, href: "/files" },
   { title: "Backups", icon: ArchiveIcon, href: "/backups" },
   { title: "Schedules", icon: CalendarIcon, href: "/schedules" },
