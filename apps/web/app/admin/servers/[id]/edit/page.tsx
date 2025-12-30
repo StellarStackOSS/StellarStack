@@ -454,6 +454,7 @@ export default function EditServerPage() {
                           <option value="STARTING">Starting</option>
                           <option value="STOPPING">Stopping</option>
                           <option value="INSTALLING">Installing</option>
+                          <option value="SUSPENDED">Suspended</option>
                           <option value="ERROR">Error</option>
                         </select>
                         <p

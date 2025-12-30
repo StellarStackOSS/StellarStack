@@ -39,6 +39,7 @@ import { useServer } from "@/components/server-provider";
 import { useServerWebSocket, type StatsWithHistory } from "@/hooks/useServerWebSocket";
 import { EulaExtension } from "../extensions/eula";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
 
 // Build display data from real server and stats (with history)
 const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
@@ -289,6 +290,15 @@ const ServerOverviewPage = (): JSX.Element | null => {
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  // Show suspended placeholder if server is suspended
+  if (server?.status === "SUSPENDED") {
+    return (
+      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
   }

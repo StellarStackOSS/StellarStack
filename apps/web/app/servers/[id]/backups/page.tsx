@@ -26,6 +26,7 @@ import { useBackups, useBackupMutations } from "@/hooks/queries";
 import type { Backup } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
 import { toast } from "sonner";
 
 const BackupsPage = (): JSX.Element | null => {
@@ -79,6 +80,14 @@ const BackupsPage = (): JSX.Element | null => {
     return (
       <div className="min-h-svh">
         <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  if (server?.status === "SUSPENDED") {
+    return (
+      <div className="min-h-svh">
+        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
   }

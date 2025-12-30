@@ -135,6 +135,9 @@ const updateServerSchema = z.object({
   oomKillDisable: z.boolean().optional(),
   backupLimit: z.number().int().min(0).optional(),
   config: z.record(z.any()).optional(),
+  status: z
+    .enum(["INSTALLING", "STARTING", "RUNNING", "STOPPING", "STOPPED", "SUSPENDED", "ERROR"])
+    .optional(), // Admin only
 });
 
 const updateStartupSchema = z.object({
@@ -548,11 +551,12 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
   }
 
-  // Only admins can change resources
+  // Only admins can change resources and status
   if (user.role !== "admin") {
     delete parsed.data.memory;
     delete parsed.data.disk;
     delete parsed.data.cpu;
+    delete parsed.data.status;
   }
 
   const updated = await db.server.update({
@@ -818,6 +822,52 @@ servers.post("/:serverId/sync", requireAdmin, async (c) => {
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
+});
+
+// Update server status (admin only)
+const statusUpdateSchema = z.object({
+  status: z.enum([
+    "INSTALLING",
+    "STARTING",
+    "RUNNING",
+    "STOPPING",
+    "STOPPED",
+    "SUSPENDED",
+    "ERROR",
+  ]),
+});
+
+servers.patch("/:serverId/status", requireAdmin, async (c) => {
+  const { serverId } = c.req.param();
+  const body = await c.req.json();
+  const parsed = statusUpdateSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
+  }
+
+  const server = await db.server.findUnique({
+    where: { id: serverId },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  const updated = await db.server.update({
+    where: { id: serverId },
+    data: { status: parsed.data.status },
+  });
+
+  // Emit WebSocket event for real-time updates
+  emitServerEvent("server:status", serverId, { id: serverId, status: parsed.data.status });
+
+  await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+    serverId,
+    metadata: { statusChange: { from: server.status, to: parsed.data.status } },
+  });
+
+  return c.json(serializeServer(updated));
 });
 
 // Reinstall server (run installation script again)
@@ -2106,10 +2156,10 @@ servers.post("/:serverId/split", requireServerAccess, async (c) => {
     return c.json({ error: "Cannot split a child server" }, 400);
   }
 
-  // Get the full server with node info
+  // Get the full server with node info and blueprint
   const parentServer = await db.server.findUnique({
     where: { id: server.id },
-    include: { node: true, allocations: true },
+    include: { node: true, allocations: true, blueprint: true },
   });
 
   if (!parentServer) {
@@ -2195,21 +2245,94 @@ servers.post("/:serverId/split", requireServerAccess, async (c) => {
 
     // Notify daemon to create the child container
     try {
-      await daemonRequest(parentServer.node, "POST", "/api/servers", {
+      // Build invocation command (startup command) from parent/blueprint
+      const blueprint = parentServer.blueprint;
+      let invocation = blueprint?.startup || "";
+      const variables = (childServer.variables as Record<string, string>) || {};
+
+      // Replace variables in invocation
+      for (const [key, value] of Object.entries(variables)) {
+        invocation = invocation.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+      }
+      invocation = invocation.replace(/\{\{SERVER_PORT\}\}/g, String(allocation.port));
+      invocation = invocation.replace(/\{\{SERVER_IP\}\}/g, allocation.ip);
+      invocation = invocation.replace(/\{\{SERVER_MEMORY\}\}/g, String(Number(childMemory)));
+
+      // Parse startup detection from blueprint
+      const startupDetection = (blueprint?.startupDetection as any) || {};
+      const startupDonePatterns: string[] = [];
+      if (typeof startupDetection.done === "string") {
+        startupDonePatterns.push(startupDetection.done);
+      } else if (Array.isArray(startupDetection.done)) {
+        startupDonePatterns.push(...startupDetection.done);
+      } else if (typeof startupDetection === "string") {
+        startupDonePatterns.push(startupDetection);
+      }
+
+      // Build the daemon request in the format the Rust daemon expects
+      const daemonRequest_body = {
         uuid: childServer.id,
         name: childServer.name,
-        memory: Number(childMemory),
-        disk: Number(childDisk),
-        cpu: childCpu,
-        image: childServer.dockerImage || parentServer.dockerImage,
-        environment: childServer.variables || {},
-        allocations: [
-          {
+        suspended: false,
+        invocation: invocation,
+        skip_egg_scripts: !blueprint?.installScript,
+        build: {
+          memory_limit: Number(childMemory) * 1024 * 1024, // MiB to bytes
+          swap: 0,
+          io_weight: 500,
+          cpu_limit: childCpu,
+          disk_space: Number(childDisk) * 1024 * 1024, // MiB to bytes
+          oom_disabled: false,
+        },
+        container: {
+          image: childServer.dockerImage || parentServer.dockerImage || "",
+          oom_disabled: false,
+        },
+        allocations: {
+          default: {
             ip: allocation.ip,
             port: allocation.port,
           },
-        ],
-      });
+          mappings: {
+            [allocation.ip]: [allocation.port],
+          },
+        },
+        egg: {
+          id: blueprint?.id || parentServer.blueprintId,
+          file_denylist: [],
+        },
+        mounts: [],
+        process_configuration: {
+          startup: {
+            done: startupDonePatterns,
+            user_interaction: [],
+            strip_ansi: false,
+          },
+          stop: blueprint?.stopCommand
+            ? { type: "command", value: blueprint.stopCommand }
+            : { type: "signal", value: "SIGTERM" },
+          configs: [],
+        },
+      };
+
+      await daemonRequest(parentServer.node, "POST", "/api/servers", daemonRequest_body);
+
+      // Trigger installation if there's an install script
+      const hasInstallScript =
+        blueprint?.installScript && blueprint.installScript.trim().length > 0;
+      if (hasInstallScript) {
+        try {
+          await daemonRequest(parentServer.node, "POST", `/api/servers/${childServer.id}/install`);
+        } catch (installError) {
+          console.error("Failed to trigger child server installation:", installError);
+        }
+      } else {
+        // No install script, mark as stopped
+        await db.server.update({
+          where: { id: childServer.id },
+          data: { status: "STOPPED" },
+        });
+      }
     } catch (daemonError: any) {
       // Rollback: restore parent resources, release allocation, delete child server
       await db.server.update({
