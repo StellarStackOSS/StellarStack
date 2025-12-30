@@ -1,6 +1,6 @@
 //! SFTP server module
 //!
-//! Provides an embedded SFTP server for file management using russh.
+//! Provides an embedded SSH/SFTP server for file management.
 
 mod auth;
 mod handler;
@@ -14,6 +14,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::api::HttpClient;
+use crate::config::SftpConfiguration;
 use crate::server::Manager;
 
 /// SFTP errors
@@ -45,7 +46,7 @@ pub type SftpResult<T> = Result<T, SftpError>;
 
 /// Start the SFTP server
 pub async fn start_server(
-    config: crate::config::SftpConfiguration,
+    config: SftpConfiguration,
     manager: Arc<Manager>,
     api_client: Arc<HttpClient>,
 ) -> SftpResult<()> {
@@ -53,6 +54,7 @@ pub async fn start_server(
         bind_address: config.bind_address,
         bind_port: config.bind_port,
         read_only: config.read_only,
+        host_key_path: config.host_key,
     };
 
     let server = SftpServer::new(sftp_config, manager, api_client)?;

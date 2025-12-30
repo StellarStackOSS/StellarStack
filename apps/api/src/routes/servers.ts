@@ -14,6 +14,11 @@ import { logActivityFromContext, ActivityEvents } from "../lib/activity";
 import { dispatchWebhook, WebhookEvents } from "../lib/webhooks";
 import { emitServerEvent, emitGlobalEvent } from "../lib/ws";
 import { getRequiredEnv, validateNodeConfig } from "../middleware/security";
+import {
+  CATEGORY_DEFINITIONS,
+  getAllCategories,
+  getPermissionsByCategory,
+} from "../lib/permissions";
 
 const servers = new Hono<{ Variables: Variables }>();
 
@@ -239,6 +244,18 @@ servers.get("/", requireAuth, async (c) => {
   });
 
   return c.json(allServers.map(serializeServer));
+});
+
+// Get permission definitions (public endpoint for UI)
+// Must be defined BEFORE /:serverId to avoid route conflict
+servers.get("/permissions", async (c) => {
+  const categories = getAllCategories().map((category) => ({
+    ...CATEGORY_DEFINITIONS[category],
+    id: category,
+    permissions: getPermissionsByCategory(category),
+  }));
+
+  return c.json({ categories });
 });
 
 // Get single server

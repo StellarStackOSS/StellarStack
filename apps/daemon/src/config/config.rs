@@ -441,6 +441,14 @@ pub struct SftpConfiguration {
     /// Read-only mode
     #[serde(default)]
     pub read_only: bool,
+
+    /// Path to SSH host key (will be auto-generated if not exists)
+    #[serde(default = "default_sftp_host_key")]
+    pub host_key: PathBuf,
+}
+
+fn default_sftp_host_key() -> PathBuf {
+    PathBuf::from("/opt/stellar-daemon/ssh_host_key")
 }
 
 fn default_sftp_enabled() -> bool {
