@@ -50,10 +50,14 @@ const NetworkPage = (): JSX.Element | null => {
 
   // Modal states
   const [deletePortModalOpen, setDeletePortModalOpen] = useState(false);
+  const [addAllocationModalOpen, setAddAllocationModalOpen] = useState(false);
   const [addSubdomainModalOpen, setAddSubdomainModalOpen] = useState(false);
   const [deleteSubdomainModalOpen, setDeleteSubdomainModalOpen] = useState(false);
   const [selectedAllocation, setSelectedAllocation] = useState<Allocation | null>(null);
   const [selectedSubdomain, setSelectedSubdomain] = useState<Subdomain | null>(null);
+  const [availableAllocations, setAvailableAllocations] = useState<Allocation[]>([]);
+  const [selectedNewAllocation, setSelectedNewAllocation] = useState<string | null>(null);
+  const [addingAllocation, setAddingAllocation] = useState(false);
 
   // Subdomain form states
   const [subdomainName, setSubdomainName] = useState("");
@@ -91,6 +95,37 @@ const NetworkPage = (): JSX.Element | null => {
       console.error("Failed to fetch allocations:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableAllocations = async () => {
+    try {
+      const data = await servers.allocations.available(serverId);
+      setAvailableAllocations(data);
+    } catch (error) {
+      console.error("Failed to fetch available allocations:", error);
+    }
+  };
+
+  const openAddAllocationModal = async () => {
+    setSelectedNewAllocation(null);
+    await fetchAvailableAllocations();
+    setAddAllocationModalOpen(true);
+  };
+
+  const handleAddAllocation = async () => {
+    if (!selectedNewAllocation) return;
+    try {
+      setAddingAllocation(true);
+      await servers.allocations.add(serverId, selectedNewAllocation);
+      await fetchAllocations();
+      await refetch();
+      setAddAllocationModalOpen(false);
+      setSelectedNewAllocation(null);
+    } catch (error) {
+      console.error("Failed to add allocation:", error);
+    } finally {
+      setAddingAllocation(false);
     }
   };
 
@@ -194,6 +229,11 @@ const NetworkPage = (): JSX.Element | null => {
   const isSubdomainValid = subdomainName.trim() !== "" && allocations.length > 0;
   const isPrimary = (allocation: Allocation) => allocation.id === server?.primaryAllocationId;
 
+  // Allocation limit
+  const allocationLimit = server?.allocationLimit ?? 1;
+  const allocationsRemaining = allocationLimit - allocations.length;
+  const canAddAllocation = allocationsRemaining > 0;
+
   return (
     <div className="relative min-h-full transition-colors">
       {/* Background is now rendered in the layout for persistence */}
@@ -241,19 +281,50 @@ const NetworkPage = (): JSX.Element | null => {
           {/* Port Allocations Section */}
           <div className="mb-8">
             <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BsHddNetwork
-                  className={cn("h-5 w-5", isDark ? "text-zinc-400" : "text-zinc-600")}
-                />
-                <h2
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <BsHddNetwork
+                    className={cn("h-5 w-5", isDark ? "text-zinc-400" : "text-zinc-600")}
+                  />
+                  <h2
+                    className={cn(
+                      "text-sm font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-300" : "text-zinc-700"
+                    )}
+                  >
+                    Port Allocations
+                  </h2>
+                </div>
+                <span
                   className={cn(
-                    "text-sm font-medium tracking-wider uppercase",
-                    isDark ? "text-zinc-300" : "text-zinc-700"
+                    "text-xs",
+                    isDark ? "text-zinc-500" : "text-zinc-500"
                   )}
                 >
-                  Port Allocations
-                </h2>
+                  {allocations.length} / {allocationLimit} used
+                </span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openAddAllocationModal}
+                disabled={!canAddAllocation}
+                title={
+                  canAddAllocation
+                    ? "Add a new allocation"
+                    : "Allocation limit reached"
+                }
+                className={cn(
+                  "gap-2 transition-all",
+                  !canAddAllocation && "cursor-not-allowed opacity-50",
+                  isDark
+                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                )}
+              >
+                <BsPlus className="h-4 w-4" />
+                <span className="text-xs tracking-wider uppercase">Add Allocation</span>
+              </Button>
             </div>
 
             {loading ? (
@@ -816,6 +887,75 @@ const NetworkPage = (): JSX.Element | null => {
         variant="danger"
         isDark={isDark}
       />
+
+      {/* Add Allocation Modal */}
+      <FormModal
+        open={addAllocationModalOpen}
+        onOpenChange={setAddAllocationModalOpen}
+        title="Add Allocation"
+        description={`Add a new port allocation to your server. ${allocationsRemaining} remaining.`}
+        onSubmit={handleAddAllocation}
+        submitLabel={addingAllocation ? "Adding..." : "Add Allocation"}
+        isDark={isDark}
+        isValid={!!selectedNewAllocation && !addingAllocation}
+        isLoading={addingAllocation}
+      >
+        <div className="space-y-4">
+          <div>
+            <label
+              className={cn(
+                "mb-2 block text-xs tracking-wider uppercase",
+                isDark ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              Available Allocations
+            </label>
+            {availableAllocations.length > 0 ? (
+              <div className="max-h-64 space-y-2 overflow-y-auto">
+                {availableAllocations.map((allocation) => (
+                  <button
+                    key={allocation.id}
+                    type="button"
+                    onClick={() => setSelectedNewAllocation(allocation.id)}
+                    className={cn(
+                      "w-full border p-3 text-left transition-all",
+                      selectedNewAllocation === allocation.id
+                        ? isDark
+                          ? "border-zinc-500 bg-zinc-800 text-zinc-100"
+                          : "border-zinc-400 bg-zinc-100 text-zinc-900"
+                        : isDark
+                          ? "border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                          : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm">
+                        {allocation.ip}:{allocation.port}
+                      </span>
+                      {allocation.alias && (
+                        <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                          {allocation.alias}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "border p-4 text-center",
+                  isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
+                )}
+              >
+                <p className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-500")}>
+                  No available allocations on this node.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </FormModal>
     </div>
   );
 };

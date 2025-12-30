@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, type JSX } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
@@ -71,11 +71,17 @@ const UsersPage = (): JSX.Element | null => {
   // Check if current user is server owner
   const isOwner = server?.ownerId === currentUser?.id;
 
-  // Get all available permissions from definitions
+  // Get all available permissions from definitions - use ref to stabilize after first load
+  const permissionDefsRef = useRef(permissionDefs);
+  if (permissionDefs && !permissionDefsRef.current) {
+    permissionDefsRef.current = permissionDefs;
+  }
+  const stablePermissionDefs = permissionDefsRef.current || permissionDefs;
+
   const allPermissions = useMemo(() => {
-    if (!permissionDefs?.categories) return [];
-    return permissionDefs.categories.flatMap((cat) => cat.permissions);
-  }, [permissionDefs]);
+    if (!stablePermissionDefs?.categories) return [];
+    return stablePermissionDefs.categories.flatMap((cat) => cat.permissions);
+  }, [stablePermissionDefs]);
 
   if (!mounted) return null;
 
@@ -192,64 +198,165 @@ const UsersPage = (): JSX.Element | null => {
     return `${permissions.length} permission${permissions.length !== 1 ? "s" : ""}`;
   };
 
+  // Helper to check if all permissions in a category are selected
+  const isCategoryFullySelected = (category: PermissionCategory) =>
+    category.permissions.every((p) => selectedPermissions.includes(p.key));
+
+  // Helper to check if some permissions in a category are selected
+  const isCategoryPartiallySelected = (category: PermissionCategory) =>
+    category.permissions.some((p) => selectedPermissions.includes(p.key)) &&
+    !isCategoryFullySelected(category);
+
+  // Toggle all permissions in a category
+  const toggleCategory = (category: PermissionCategory) => {
+    const categoryKeys = category.permissions.map((p) => p.key);
+    if (isCategoryFullySelected(category)) {
+      // Deselect all in category
+      setSelectedPermissions((prev) => prev.filter((p) => !categoryKeys.includes(p)));
+    } else {
+      // Select all in category
+      setSelectedPermissions((prev) => [...new Set([...prev, ...categoryKeys])]);
+    }
+  };
+
+  // Toggle all permissions
+  const toggleAllPermissions = () => {
+    if (selectedPermissions.length === allPermissions.length) {
+      setSelectedPermissions([]);
+    } else {
+      setSelectedPermissions(allPermissions.map((p) => p.key));
+    }
+  };
+
   const PermissionSelector = ({ categories }: { categories: PermissionCategory[] }) => (
-    <div className="max-h-80 space-y-4 overflow-y-auto">
-      {categories.map((category) => (
-        <div key={category.id}>
+    <div className="space-y-4">
+      {/* Global Select All */}
+      <div className="flex items-center justify-between border-b pb-3">
+        <span
+          className={cn(
+            "text-xs font-medium tracking-wider uppercase",
+            isDark ? "text-zinc-400" : "text-zinc-600"
+          )}
+        >
+          {selectedPermissions.length} of {allPermissions.length} selected
+        </span>
+        <button
+          type="button"
+          onClick={toggleAllPermissions}
+          className={cn(
+            "text-xs tracking-wider uppercase transition-colors",
+            isDark
+              ? "text-zinc-400 hover:text-zinc-100"
+              : "text-zinc-600 hover:text-zinc-900"
+          )}
+        >
+          {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
+        </button>
+      </div>
+
+      {/* Scrollable categories */}
+      <div className="max-h-80 space-y-4 overflow-y-auto pr-2">
+        {categories.map((category) => (
           <div
+            key={category.id}
             className={cn(
-              "mb-2 text-xs font-medium tracking-wider uppercase",
-              isDark ? "text-zinc-400" : "text-zinc-600"
+              "border p-3",
+              isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
             )}
           >
-            {category.name}
-          </div>
-          <div className="grid gap-2">
-            {category.permissions.map((perm) => (
+            {/* Category header with select all */}
+            <div className="mb-3 flex items-center justify-between">
               <button
-                key={perm.key}
                 type="button"
-                onClick={() => togglePermission(perm.key)}
-                className={cn(
-                  "flex items-center gap-3 border p-3 text-left transition-all",
-                  selectedPermissions.includes(perm.key)
-                    ? isDark
-                      ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                      : "border-zinc-400 bg-zinc-100 text-zinc-900"
-                    : isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
-                )}
+                onClick={() => toggleCategory(category)}
+                className="flex items-center gap-2"
               >
                 <div
                   className={cn(
                     "flex h-4 w-4 items-center justify-center border",
-                    selectedPermissions.includes(perm.key)
+                    isCategoryFullySelected(category)
                       ? isDark
                         ? "border-zinc-400 bg-zinc-600"
                         : "border-zinc-500 bg-zinc-400"
-                      : isDark
-                        ? "border-zinc-600"
-                        : "border-zinc-400"
+                      : isCategoryPartiallySelected(category)
+                        ? isDark
+                          ? "border-zinc-500 bg-zinc-700"
+                          : "border-zinc-400 bg-zinc-300"
+                        : isDark
+                          ? "border-zinc-600"
+                          : "border-zinc-400"
                   )}
                 >
-                  {selectedPermissions.includes(perm.key) && (
+                  {isCategoryFullySelected(category) && (
                     <div className={cn("h-2 w-2", isDark ? "bg-zinc-100" : "bg-zinc-100")} />
                   )}
+                  {isCategoryPartiallySelected(category) && (
+                    <div className={cn("h-0.5 w-2", isDark ? "bg-zinc-400" : "bg-zinc-500")} />
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{perm.name}</div>
-                  <div
-                    className={cn("truncate text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}
-                  >
-                    {perm.description}
-                  </div>
-                </div>
+                <span
+                  className={cn(
+                    "text-xs font-medium tracking-wider uppercase",
+                    isDark ? "text-zinc-300" : "text-zinc-700"
+                  )}
+                >
+                  {category.name}
+                </span>
               </button>
-            ))}
+              <span
+                className={cn(
+                  "text-[10px] tracking-wider",
+                  isDark ? "text-zinc-600" : "text-zinc-400"
+                )}
+              >
+                {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
+                {category.permissions.length}
+              </span>
+            </div>
+
+            {/* Category permissions - 2 column grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {category.permissions.map((perm) => (
+                <button
+                  key={perm.key}
+                  type="button"
+                  onClick={() => togglePermission(perm.key)}
+                  className={cn(
+                    "flex items-center gap-2 border p-2 text-left transition-all",
+                    selectedPermissions.includes(perm.key)
+                      ? isDark
+                        ? "border-zinc-500 bg-zinc-800 text-zinc-100"
+                        : "border-zinc-400 bg-zinc-100 text-zinc-900"
+                      : isDark
+                        ? "border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                        : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex h-3 w-3 shrink-0 items-center justify-center border",
+                      selectedPermissions.includes(perm.key)
+                        ? isDark
+                          ? "border-zinc-400 bg-zinc-600"
+                          : "border-zinc-500 bg-zinc-400"
+                        : isDark
+                          ? "border-zinc-600"
+                          : "border-zinc-400"
+                    )}
+                  >
+                    {selectedPermissions.includes(perm.key) && (
+                      <div className={cn("h-1.5 w-1.5", isDark ? "bg-zinc-100" : "bg-zinc-100")} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium">{perm.name}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 
@@ -656,6 +763,7 @@ const UsersPage = (): JSX.Element | null => {
         isDark={isDark}
         isValid={isEmailValid && selectedPermissions.length > 0}
         isLoading={createInvitation.isPending}
+        size="2xl"
       >
         <div className="space-y-4">
           <div>
@@ -689,8 +797,8 @@ const UsersPage = (): JSX.Element | null => {
             >
               Permissions
             </label>
-            {permissionDefs?.categories ? (
-              <PermissionSelector categories={permissionDefs.categories} />
+            {stablePermissionDefs?.categories ? (
+              <PermissionSelector categories={stablePermissionDefs.categories} />
             ) : (
               <div className="flex items-center justify-center py-8">
                 <Spinner className="h-6 w-6" />
@@ -711,10 +819,11 @@ const UsersPage = (): JSX.Element | null => {
         isDark={isDark}
         isValid={selectedPermissions.length > 0}
         isLoading={updateMember.isPending}
+        size="2xl"
       >
         <div className="space-y-4">
-          {permissionDefs?.categories ? (
-            <PermissionSelector categories={permissionDefs.categories} />
+          {stablePermissionDefs?.categories ? (
+            <PermissionSelector categories={stablePermissionDefs.categories} />
           ) : (
             <div className="flex items-center justify-center py-8">
               <Spinner className="h-6 w-6" />
