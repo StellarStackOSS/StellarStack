@@ -128,6 +128,7 @@ const createServerSchema = z.object({
   swap: z.number().int().default(-1), // Swap in MiB: -1 = unlimited, 0 = disabled, >0 = limited
   oomKillDisable: z.boolean().default(false), // Disable OOM killer
   backupLimit: z.number().int().min(0).default(3), // Backup limit
+  allocationLimit: z.number().int().min(1).default(1), // Allocation limit
   allocationIds: z.array(z.string()).min(1), // At least one allocation
   config: z.record(z.any()).optional(), // Override blueprint config
   variables: z.record(z.string()).optional(), // Override blueprint variables
@@ -144,9 +145,10 @@ const updateServerSchema = z.object({
   swap: z.number().int().optional(), // MiB
   oomKillDisable: z.boolean().optional(),
   backupLimit: z.number().int().min(0).optional(),
+  allocationLimit: z.number().int().min(1).optional(), // Allocation limit
   config: z.record(z.any()).optional(),
   status: z
-    .enum(["INSTALLING", "STARTING", "RUNNING", "STOPPING", "STOPPED", "SUSPENDED", "ERROR"])
+    .enum(["INSTALLING", "STARTING", "RUNNING", "STOPPING", "STOPPED", "SUSPENDED", "MAINTENANCE", "RESTORING", "ERROR"])
     .optional(), // Admin only
 });
 
@@ -396,6 +398,7 @@ servers.post("/", requireAdmin, async (c) => {
       swap: parsed.data.swap,
       oomKillDisable: parsed.data.oomKillDisable,
       backupLimit: parsed.data.backupLimit,
+      allocationLimit: parsed.data.allocationLimit,
       config: parsed.data.config as any,
       variables: parsed.data.variables as any,
       dockerImage: parsed.data.dockerImage,
@@ -2012,8 +2015,8 @@ servers.get("/:serverId/allocations/available", requireAdmin, async (c) => {
   return c.json(allocations);
 });
 
-// Add allocation to server (admin only)
-servers.post("/:serverId/allocations", requireAdmin, async (c) => {
+// Add allocation to server (server access required, respects allocation limit)
+servers.post("/:serverId/allocations", requireServerAccess, async (c) => {
   const server = c.get("server");
   const body = await c.req.json();
   const { allocationId } = body;
@@ -2029,6 +2032,15 @@ servers.post("/:serverId/allocations", requireAdmin, async (c) => {
 
   if (!fullServer) {
     return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Check allocation limit (admins bypass this check)
+  const user = c.get("user");
+  const isAdmin = user.role === "admin";
+  if (!isAdmin && fullServer.allocations.length >= fullServer.allocationLimit) {
+    return c.json({
+      error: `Allocation limit reached (${fullServer.allocationLimit}). Contact an administrator to increase your limit.`
+    }, 400);
   }
 
   // Verify the allocation exists, is on the same node, and is not assigned
@@ -2085,8 +2097,8 @@ servers.post("/:serverId/allocations", requireAdmin, async (c) => {
   return c.json(updated);
 });
 
-// Remove allocation from server (admin only)
-servers.delete("/:serverId/allocations/:allocationId", requireAdmin, async (c) => {
+// Remove allocation from server (server access required)
+servers.delete("/:serverId/allocations/:allocationId", requireServerAccess, async (c) => {
   const server = c.get("server");
   const { allocationId } = c.req.param();
 

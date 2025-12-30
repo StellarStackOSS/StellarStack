@@ -21,6 +21,7 @@ type ServerStatus =
   | "STOPPED"
   | "SUSPENDED"
   | "MAINTENANCE"
+  | "RESTORING"
   | "ERROR";
 
 const ServersPage = (): JSX.Element | null => {
@@ -74,6 +75,7 @@ const ServersPage = (): JSX.Element | null => {
       case "MAINTENANCE":
         return "text-amber-500 border-amber-500";
       case "INSTALLING":
+      case "RESTORING":
         return "text-blue-500 border-blue-500";
       case "SUSPENDED":
         return "text-red-400 border-red-400";

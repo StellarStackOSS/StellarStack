@@ -272,6 +272,9 @@ model Server {
   // Backup settings
   backupLimit  Int      @default(3) // Maximum number of backups
 
+  // Allocation settings
+  allocationLimit Int   @default(1) // Maximum number of allocations user can add
+
   // Configuration overrides (merged with blueprint)
   config       Json?
 
@@ -327,6 +330,7 @@ enum ServerStatus {
   STOPPED
   SUSPENDED
   MAINTENANCE
+  RESTORING
   ERROR
 }
 

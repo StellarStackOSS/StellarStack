@@ -10,6 +10,7 @@ import { AnimatedBackground } from "@workspace/ui/components/animated-background
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder/server-maintenance-placeholder";
 import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder/server-suspended-placeholder";
+import { ServerRestoringPlaceholder } from "@/components/server-restoring-placeholder/server-restoring-placeholder";
 import { cn } from "@workspace/ui/lib/utils";
 
 // Memoized background component to prevent re-renders
@@ -46,6 +47,15 @@ function ServerStatusWrapper({
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
         <ServerMaintenancePlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  // Show restoring placeholder if server is being restored from backup
+  if (server?.status === "RESTORING") {
+    return (
+      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+        <ServerRestoringPlaceholder isDark={isDark} serverName={server?.name} />
       </div>
     );
   }
