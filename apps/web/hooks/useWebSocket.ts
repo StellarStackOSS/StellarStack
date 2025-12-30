@@ -68,6 +68,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSubscriptionsRef = useRef<string[]>([]);
+  const subscribedServersRef = useRef<Set<string>>(new Set());
   const isAuthenticatedRef = useRef(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -190,12 +191,16 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
             isAuthenticatedRef.current = true;
             console.log("WebSocket: Authentication successful");
             if (pendingSubscriptionsRef.current.length > 0) {
-              console.log(
-                `WebSocket: Subscribing to ${pendingSubscriptionsRef.current.length} pending servers`
+              const toSubscribe = pendingSubscriptionsRef.current.filter(
+                (id) => !subscribedServersRef.current.has(id)
               );
-              pendingSubscriptionsRef.current.forEach((serverId) => {
-                wsRef.current?.send(JSON.stringify({ type: "subscribe", serverId }));
-              });
+              if (toSubscribe.length > 0) {
+                console.log(`WebSocket: Subscribing to ${toSubscribe.length} pending servers`);
+                toSubscribe.forEach((serverId) => {
+                  wsRef.current?.send(JSON.stringify({ type: "subscribe", serverId }));
+                  subscribedServersRef.current.add(serverId);
+                });
+              }
               pendingSubscriptionsRef.current = [];
             }
             break;
@@ -267,6 +272,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         setIsAuthenticated(false);
         isAuthenticatedRef.current = false;
         wsRef.current = null;
+        // Clear subscriptions on disconnect - they'll be re-established on reconnect
+        subscribedServersRef.current.clear();
 
         // Auto-reconnect
         if (autoReconnect && enabled) {
@@ -304,8 +311,14 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   // Subscribe to a server
   const subscribe = useCallback(
     (serverId: string) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticated) {
+      // Skip if already subscribed
+      if (subscribedServersRef.current.has(serverId)) {
+        return;
+      }
+
+      if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticatedRef.current) {
         wsRef.current.send(JSON.stringify({ type: "subscribe", serverId }));
+        subscribedServersRef.current.add(serverId);
       } else {
         // Add to pending subscriptions
         if (!pendingSubscriptionsRef.current.includes(serverId)) {
@@ -313,11 +326,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         }
       }
     },
-    [isAuthenticated]
+    [] // No dependencies - use refs instead
   );
 
   // Unsubscribe from a server
   const unsubscribe = useCallback((serverId: string) => {
+    subscribedServersRef.current.delete(serverId);
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "unsubscribe", serverId }));
     }
@@ -341,14 +355,25 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     };
   }, [enabled]); // Only re-run if enabled changes
 
-  // Update subscriptions when serverIds change or when authenticated
+  // Update subscriptions when serverIds change
   useEffect(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticated) {
+    if (wsRef.current?.readyState === WebSocket.OPEN && isAuthenticatedRef.current) {
+      // Subscribe to new servers (subscribe function handles duplicates)
       serverIds.forEach((serverId) => {
         subscribe(serverId);
       });
+    } else if (serverIds.length > 0) {
+      // If not connected/authenticated yet, add to pending
+      serverIds.forEach((serverId) => {
+        if (
+          !pendingSubscriptionsRef.current.includes(serverId) &&
+          !subscribedServersRef.current.has(serverId)
+        ) {
+          pendingSubscriptionsRef.current.push(serverId);
+        }
+      });
     }
-  }, [serverIds, isAuthenticated, subscribe]);
+  }, [serverIds, subscribe]);
 
   // Ping every 30 seconds to keep connection alive
   useEffect(() => {
