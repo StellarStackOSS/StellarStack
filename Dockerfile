@@ -46,7 +46,9 @@ COPY packages/typescript-config ./packages/typescript-config
 
 # Build arguments for environment variables needed at build time
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GIT_COMMIT_HASH=unknown
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GIT_COMMIT_HASH=$NEXT_PUBLIC_GIT_COMMIT_HASH
 
 # Build the application
 RUN pnpm --filter web build

@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+
+# Dependencies (will be installed in Docker)
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/.next
+out
+**/out
+dist
+**/dist
+build
+**/build
+
+# Turbo cache
+.turbo
+**/.turbo
+
+# Local env files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# IDE
+.idea
+.vscode
+
+# Rust build artifacts
+target
+**/target
+
+# Misc
+.DS_Store
+**/.DS_Store
+*.pem
+*.log
+npm-debug.log*
+.stellar
+*.md
+!packages/**/*.md
+
+# Test files
+coverage
+**/*.test.*
+**/*.spec.*
+
+# Stack duplicate (if exists)
+stack/
