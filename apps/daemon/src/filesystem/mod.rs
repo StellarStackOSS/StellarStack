@@ -4,7 +4,7 @@
 //! disk quota management, and archive compression/extraction.
 
 mod archive;
-mod disk;
+pub mod disk;
 mod errors;
 mod filesystem;
 mod path;

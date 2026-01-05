@@ -25,6 +25,7 @@ use tower_http::{
 use crate::api::HttpClient;
 use crate::config::Configuration;
 use crate::server::Manager;
+use crate::stats_buffer::StatsBuffer;
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -37,6 +38,9 @@ pub struct AppState {
 
     /// Global configuration
     pub config: Arc<Configuration>,
+
+    /// Stats buffer for maintaining recent server stats
+    pub stats_buffer: StatsBuffer,
 }
 
 /// Build the HTTP router with all routes
@@ -119,6 +123,9 @@ fn server_routes() -> Router<AppState> {
 
         // Transfer routes
         .nest("/transfer", transfer_routes())
+
+        // Schedule routes
+        .nest("/schedules", schedule_routes())
 }
 
 /// Routes for server transfer operations
@@ -153,4 +160,14 @@ fn backup_routes() -> Router<AppState> {
         .route("/", post(handlers::backup::create_backup))
         .route("/restore", post(handlers::backup::restore_backup))
         .route("/:backup_id", delete(handlers::backup::delete_backup))
+}
+
+/// Routes for schedule operations
+fn schedule_routes() -> Router<AppState> {
+    Router::new()
+        .route("/sync", post(handlers::schedules::sync_schedules))
+        .route("/", post(handlers::schedules::create_schedule))
+        .route("/", axum::routing::patch(handlers::schedules::update_schedule))
+        .route("/", delete(handlers::schedules::delete_schedule))
+        .route("/execute", post(handlers::schedules::execute_schedule))
 }

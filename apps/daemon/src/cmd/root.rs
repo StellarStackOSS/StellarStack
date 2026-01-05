@@ -12,6 +12,8 @@ use stellar_daemon::config::Configuration;
 use stellar_daemon::api::HttpClient;
 use stellar_daemon::server::Manager;
 use stellar_daemon::router::{self, AppState};
+use stellar_daemon::stats_buffer::StatsBuffer;
+use stellar_daemon::events::Event;
 
 /// Run the main daemon
 pub async fn run(config_path: &str) -> Result<()> {
@@ -42,16 +44,53 @@ pub async fn run(config_path: &str) -> Result<()> {
     // Sync container statuses to panel (important after daemon restart)
     manager.sync_all_statuses().await;
 
+    // Initialize stats buffer with Redis if enabled
+    let redis_url = if config.redis.enabled {
+        Some(config.redis.url.as_str())
+    } else {
+        None
+    };
+    let stats_buffer = StatsBuffer::new(redis_url);
+
     // Build the HTTP router
     let state = AppState {
         manager: manager.clone(),
         api_client: api_client.clone(),
         config: config.clone(),
+        stats_buffer: stats_buffer.clone(),
     };
     let app = router::build_router(state);
 
     // Create shutdown token for background tasks
     let shutdown_token = CancellationToken::new();
+
+    // Start stats buffering task for each server
+    // This ensures stats are continuously buffered even without WebSocket connections
+    for server in manager.all() {
+        let server_uuid = server.uuid();
+        let buffer_clone = stats_buffer.clone();
+        let buffer_token = shutdown_token.clone();
+
+        tokio::spawn(async move {
+            let mut events_rx = server.events().subscribe();
+            debug!("Started stats buffering for server {}", server_uuid);
+
+            loop {
+                tokio::select! {
+                    _ = buffer_token.cancelled() => {
+                        debug!("Stats buffering stopped for server {}", server_uuid);
+                        return;
+                    }
+                    Ok(event) = events_rx.recv() => {
+                        if let Event::Stats(stats) = event {
+                            buffer_clone.push(&server_uuid, stats);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    info!("Started stats buffering for {} servers", manager.count());
 
     // Start periodic status sync task (every 30 seconds)
     let sync_manager = manager.clone();

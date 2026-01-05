@@ -13,6 +13,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
 
 use crate::events::{Event, NetworkStats, ProcessState, Stats};
+use crate::filesystem::disk::calculate_dir_size_sync;
 use super::environment::DockerEnvironment;
 use super::super::traits::{EnvironmentError, EnvironmentResult, ProcessEnvironment, StopConfig};
 
@@ -128,8 +129,17 @@ fn start_stats_poller(env: &DockerEnvironment) {
                     // Get uptime from container start time
                     let uptime = 0i64; // Will be calculated from container inspect if needed
 
-                    // Disk usage - get from config limits (actual usage would require directory scan)
-                    let disk_limit_bytes = config.limits.disk_space;
+                    // Calculate disk usage from server data directory
+                    let (disk_bytes, disk_limit_bytes) = if let Some(mount) = config.mounts.first() {
+                        let data_dir = std::path::Path::new(&mount.source);
+                        let disk_limit = config.limits.disk_space;
+
+                        // Calculate actual disk usage (synchronous)
+                        let disk_usage = calculate_dir_size_sync(data_dir).unwrap_or(0);
+                        (disk_usage, disk_limit)
+                    } else {
+                        (0, config.limits.disk_space)
+                    };
 
                     let stats = Stats {
                         memory_bytes: memory,
@@ -137,7 +147,7 @@ fn start_stats_poller(env: &DockerEnvironment) {
                         cpu_absolute: cpu,
                         network: NetworkStats { rx_bytes, tx_bytes },
                         uptime,
-                        disk_bytes: 0, // TODO: Calculate from server data directory
+                        disk_bytes,
                         disk_limit_bytes,
                     };
 
