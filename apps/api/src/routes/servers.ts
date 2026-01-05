@@ -284,6 +284,7 @@ servers.get("/:serverId", requireServerAccess, async (c) => {
           host: true,
           port: true,
           protocol: true,
+          sftpPort: true,
           isOnline: true,
           location: {
             select: {

@@ -120,7 +120,11 @@ export const useServerWebSocket = ({
     }
 
     // If already connected to the same URL, skip
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && lastConnectionUrlRef.current === urlString) {
+    if (
+      wsRef.current &&
+      wsRef.current.readyState === WebSocket.OPEN &&
+      lastConnectionUrlRef.current === urlString
+    ) {
       console.log("[WebSocket] Already connected to same URL, skipping");
       return;
     }
@@ -172,7 +176,9 @@ export const useServerWebSocket = ({
                   const historyLines: ConsoleLine[] = data.lines
                     .map((line: string) => {
                       const text = stripAnsi(line).replace(/\r?\n$/, "");
-                      return text.trim() ? { text, type: "stdout" as const, timestamp: new Date() } : null;
+                      return text.trim()
+                        ? { text, type: "stdout" as const, timestamp: new Date() }
+                        : null;
                     })
                     .filter((line: ConsoleLine | null): line is ConsoleLine => line !== null);
 
@@ -187,11 +193,19 @@ export const useServerWebSocket = ({
                 break;
 
               case "jwt error":
-                addLine({ text: `Authentication error: ${data.message || "Invalid token"}`, type: "error", timestamp: new Date() });
+                addLine({
+                  text: `Authentication error: ${data.message || "Invalid token"}`,
+                  type: "error",
+                  timestamp: new Date(),
+                });
                 break;
 
               case "error":
-                addLine({ text: data.message || "Unknown error", type: "error", timestamp: new Date() });
+                addLine({
+                  text: data.message || "Unknown error",
+                  type: "error",
+                  timestamp: new Date(),
+                });
                 break;
 
               case "status":
@@ -208,7 +222,8 @@ export const useServerWebSocket = ({
                 if (data.line) {
                   let text = stripAnsi(data.line).replace(/\r?\n$/, "");
                   if (text.trim()) {
-                    addLine({ text, type: "stdout", timestamp: new Date() });
+                    const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+                    addLine({ text, type: "stdout", timestamp });
                   }
                 }
                 break;
@@ -217,7 +232,8 @@ export const useServerWebSocket = ({
                 if (data.line) {
                   let text = stripAnsi(data.line).replace(/\r?\n$/, "");
                   if (text.trim()) {
-                    addLine({ text: `[install] ${text}`, type: "stdout", timestamp: new Date() });
+                    const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+                    addLine({ text: `[install] ${text}`, type: "stdout", timestamp });
                   }
                 }
                 break;
@@ -228,7 +244,9 @@ export const useServerWebSocket = ({
 
               case "install completed":
                 addLine({
-                  text: data.successful ? "Installation completed successfully" : "Installation failed",
+                  text: data.successful
+                    ? "Installation completed successfully"
+                    : "Installation failed",
                   type: data.successful ? "info" : "error",
                   timestamp: new Date(),
                 });
@@ -254,7 +272,8 @@ export const useServerWebSocket = ({
                   const cpuPercent = newStats.cpu_absolute;
                   const memoryBytes = newStats.memory_bytes;
                   const memoryLimitBytes = newStats.memory_limit_bytes;
-                  const memoryPercent = memoryLimitBytes > 0 ? (memoryBytes / memoryLimitBytes) * 100 : 0;
+                  const memoryPercent =
+                    memoryLimitBytes > 0 ? (memoryBytes / memoryLimitBytes) * 100 : 0;
 
                   const networkRxTotal = newStats.network.rx_bytes;
                   const networkTxTotal = newStats.network.tx_bytes;
@@ -279,19 +298,27 @@ export const useServerWebSocket = ({
                     }
                   }
 
-                  prevNetworkRef.current = { rx: networkRxTotal, tx: networkTxTotal, timestamp: now };
+                  prevNetworkRef.current = {
+                    rx: networkRxTotal,
+                    tx: networkTxTotal,
+                    timestamp: now,
+                  };
 
                   return {
                     current: newStats,
                     cpuHistory: [...prev.cpuHistory, cpuPercent].slice(-MAX_HISTORY_LENGTH),
                     memoryHistory: [...prev.memoryHistory, memoryBytes].slice(-MAX_HISTORY_LENGTH),
-                    memoryPercentHistory: [...prev.memoryPercentHistory, memoryPercent].slice(-MAX_HISTORY_LENGTH),
+                    memoryPercentHistory: [...prev.memoryPercentHistory, memoryPercent].slice(
+                      -MAX_HISTORY_LENGTH
+                    ),
                     networkRxHistory: [...prev.networkRxHistory, rxRate].slice(-MAX_HISTORY_LENGTH),
                     networkTxHistory: [...prev.networkTxHistory, txRate].slice(-MAX_HISTORY_LENGTH),
                     networkRxRate: rxRate,
                     networkTxRate: txRate,
                     diskHistory: [...prev.diskHistory, diskBytes].slice(-MAX_HISTORY_LENGTH),
-                    diskPercentHistory: [...prev.diskPercentHistory, diskPercent].slice(-MAX_HISTORY_LENGTH),
+                    diskPercentHistory: [...prev.diskPercentHistory, diskPercent].slice(
+                      -MAX_HISTORY_LENGTH
+                    ),
                   };
                 });
                 break;

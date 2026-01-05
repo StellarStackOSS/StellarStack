@@ -141,6 +141,27 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
         }
     }
 
+    // Send buffered stats history (last 3 minutes)
+    let stats_history = state.stats_buffer.get_history(&server.uuid());
+    if !stats_history.is_empty() {
+        debug!("Sending {} buffered stats entries to WebSocket for {}", stats_history.len(), server.uuid());
+        for entry in stats_history {
+            let msg = WsOutgoing::new("stats", json!({
+                "memory_bytes": entry.stats.memory_bytes,
+                "memory_limit_bytes": entry.stats.memory_limit_bytes,
+                "cpu_absolute": entry.stats.cpu_absolute,
+                "network": {
+                    "rx_bytes": entry.stats.network.rx_bytes,
+                    "tx_bytes": entry.stats.network.tx_bytes,
+                },
+                "uptime": entry.stats.uptime,
+                "disk_bytes": entry.stats.disk_bytes,
+                "disk_limit_bytes": entry.stats.disk_limit_bytes,
+            }));
+            let _ = sender.send(Message::Text(msg.to_json())).await;
+        }
+    }
+
     // Main loop
     loop {
         tokio::select! {
@@ -173,7 +194,8 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
             Ok(data) = console_rx.recv() => {
                 let line = String::from_utf8_lossy(&data).to_string();
                 debug!("WebSocket forwarding console line for {}: {} chars", server.uuid(), line.len());
-                let msg = WsOutgoing::new("console output", json!({ "line": line }));
+                let timestamp = chrono::Utc::now().timestamp_millis();
+                let msg = WsOutgoing::new("console output", json!({ "line": line, "timestamp": timestamp }));
                 let _ = sender.send(Message::Text(msg.to_json())).await;
             }
 
@@ -181,7 +203,8 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
             Ok(data) = install_rx.recv() => {
                 if handler.claims.has_permission("admin.websocket.install") {
                     let line = String::from_utf8_lossy(&data).to_string();
-                    let msg = WsOutgoing::new("install output", json!({ "line": line }));
+                    let timestamp = chrono::Utc::now().timestamp_millis();
+                    let msg = WsOutgoing::new("install output", json!({ "line": line, "timestamp": timestamp }));
                     let _ = sender.send(Message::Text(msg.to_json())).await;
                 }
             }
@@ -194,6 +217,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
                     if let Event::StateChange(ref state) = event {
                         info!("WebSocket sending state change to client for {}: {}", server.uuid(), state);
                     }
+                    // Stats are already buffered by the background task in root.rs
                     if let Some(msg) = handler.handle_event(event) {
                         let _ = sender.send(Message::Text(msg.to_json())).await;
                     }

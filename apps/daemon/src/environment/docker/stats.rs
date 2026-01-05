@@ -6,6 +6,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, warn};
 
 use crate::events::{Event, NetworkStats, Stats};
+use crate::filesystem::disk::calculate_dir_size_sync;
 use super::environment::DockerEnvironment;
 use super::super::traits::{EnvironmentResult, ProcessEnvironment};
 
@@ -63,14 +64,26 @@ pub async fn poll_stats(
                     Err(_) => 0,
                 };
 
+                // Calculate disk usage from server data directory
+                let (disk_bytes, disk_limit_bytes) = if let Some(mount) = env.config().mounts.first() {
+                    let data_dir = std::path::Path::new(&mount.source);
+                    let disk_limit = env.config().limits.disk_space;
+
+                    // Calculate actual disk usage (synchronous to avoid blocking the stream)
+                    let disk_usage = calculate_dir_size_sync(data_dir).unwrap_or(0);
+                    (disk_usage, disk_limit)
+                } else {
+                    (0, env.config().limits.disk_space)
+                };
+
                 let stats = Stats {
                     memory_bytes: memory,
                     memory_limit_bytes: memory_limit,
                     cpu_absolute: cpu,
                     network,
                     uptime,
-                    disk_bytes: 0, // TODO: Calculate from server data directory
-                    disk_limit_bytes: 0, // Filled by server layer
+                    disk_bytes,
+                    disk_limit_bytes,
                 };
 
                 // Publish stats event
@@ -170,6 +183,7 @@ pub fn start_stats_poller(
     let container_name = env.container_name().to_string();
     let docker = env.docker().clone();
     let event_bus = env.events().clone();
+    let config = env.config().clone();
 
     tokio::spawn(async move {
         let options = StatsOptions {
@@ -201,14 +215,26 @@ pub fn start_stats_poller(
 
                             let network = calculate_network(&docker_stats.networks);
 
+                            // Calculate disk usage from server data directory
+                            let (disk_bytes, disk_limit_bytes) = if let Some(mount) = config.mounts.first() {
+                                let data_dir = std::path::Path::new(&mount.source);
+                                let disk_limit = config.limits.disk_space;
+
+                                // Calculate actual disk usage (synchronous)
+                                let disk_usage = calculate_dir_size_sync(data_dir).unwrap_or(0);
+                                (disk_usage, disk_limit)
+                            } else {
+                                (0, config.limits.disk_space)
+                            };
+
                             let stats = Stats {
                                 memory_bytes: memory,
                                 memory_limit_bytes: memory_limit,
                                 cpu_absolute: cpu,
                                 network,
                                 uptime: 0, // Will be filled by server
-                                disk_bytes: 0, // TODO: Calculate from server data directory
-                                disk_limit_bytes: 0, // Filled by server layer
+                                disk_bytes,
+                                disk_limit_bytes,
                             };
 
                             event_bus.publish(Event::Stats(stats));

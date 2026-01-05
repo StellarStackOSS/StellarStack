@@ -202,13 +202,13 @@ const SchedulesPage = (): JSX.Element | null => {
     try {
       const data: CreateScheduleData = {
         name: formName,
-        cron: formCron,
-        enabled: formEnabled,
+        cronExpression: formCron,
+        isActive: formEnabled,
         tasks: formTasks.map((t, i) => ({
           action: t.action,
           payload: t.payload,
-          sequence_id: i,
-          time_offset: t.time_offset,
+          sequence: i,
+          timeOffset: t.time_offset,
         })),
       };
       await servers.schedules.create(serverId, data);
@@ -229,13 +229,13 @@ const SchedulesPage = (): JSX.Element | null => {
     try {
       const data: CreateScheduleData = {
         name: formName,
-        cron: formCron,
-        enabled: formEnabled,
+        cronExpression: formCron,
+        isActive: formEnabled,
         tasks: formTasks.map((t, i) => ({
           action: t.action,
           payload: t.payload,
-          sequence_id: i,
-          time_offset: t.time_offset,
+          sequence: i,
+          timeOffset: t.time_offset,
         })),
       };
       await servers.schedules.update(serverId, selectedSchedule.id, data);
@@ -266,13 +266,14 @@ const SchedulesPage = (): JSX.Element | null => {
   const toggleSchedule = async (schedule: Schedule) => {
     try {
       await servers.schedules.update(serverId, schedule.id, {
-        ...schedule,
-        enabled: !schedule.enabled,
+        name: schedule.name,
+        cronExpression: schedule.cron,
+        isActive: !schedule.enabled,
         tasks: schedule.tasks.map((t) => ({
           action: t.action,
           payload: t.payload,
-          sequence_id: t.sequence_id,
-          time_offset: t.time_offset,
+          sequence: t.sequence_id,
+          timeOffset: t.time_offset,
         })),
       });
       fetchSchedules();

@@ -97,6 +97,7 @@ num_cpus = "1"
 
 # Cron scheduling
 tokio-cron-scheduler = "0.13"
+croner = "2.2"
 
 # Scopeguard for cleanup
 scopeguard = "1"

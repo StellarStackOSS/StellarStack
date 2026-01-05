@@ -15,9 +15,11 @@ pub mod parser;
 pub mod router;
 pub mod server;
 pub mod sftp;
+pub mod stats_buffer;
 pub mod system;
 
 // Re-export commonly used types
 pub use config::Configuration;
 pub use server::{Server, Manager};
 pub use events::EventBus;
+pub use stats_buffer::StatsBuffer;

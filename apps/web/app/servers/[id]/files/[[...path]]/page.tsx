@@ -1912,7 +1912,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 overflow-x-auto rounded border px-3 py-2 font-mono text-sm",
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm break-all whitespace-normal",
                         isDark
                           ? "border-zinc-800 bg-zinc-950 text-zinc-200"
                           : "border-zinc-200 bg-zinc-50 text-zinc-800"
