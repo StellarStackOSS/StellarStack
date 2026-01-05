@@ -169,31 +169,33 @@ const SchedulesPage = (): JSX.Element | null => {
 
   const MAX_TASKS = 12;
 
-  const addTask = (action: ActionType) => {
-    if (formTasks.length >= MAX_TASKS) return;
-    const newTask: LocalTask = {
-      id: `task-${Date.now()}`,
-      action,
-      payload: action === "command" ? "" : undefined,
-      sequence_id: formTasks.length,
-      time_offset: 0,
-    };
-    setFormTasks((prev) => [...prev, newTask]);
-  };
+  const addTask = useCallback((action: ActionType) => {
+    setFormTasks((prev) => {
+      if (prev.length >= MAX_TASKS) return prev;
+      const newTask: LocalTask = {
+        id: `task-${Date.now()}`,
+        action,
+        payload: action === "command" ? "" : undefined,
+        sequence_id: prev.length,
+        time_offset: 0,
+      };
+      return [...prev, newTask];
+    });
+  }, []);
 
-  const removeTask = (taskId: string) => {
+  const removeTask = useCallback((taskId: string) => {
     setFormTasks((prev) =>
       prev.filter((t) => t.id !== taskId).map((t, i) => ({ ...t, sequence_id: i }))
     );
-  };
+  }, []);
 
-  const updateTaskPayload = (taskId: string, payload: string) => {
+  const updateTaskPayload = useCallback((taskId: string, payload: string) => {
     setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, payload } : t)));
-  };
+  }, []);
 
-  const updateTaskOffset = (taskId: string, offset: number) => {
+  const updateTaskOffset = useCallback((taskId: string, offset: number) => {
     setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, time_offset: offset } : t)));
-  };
+  }, []);
 
   const handleCreate = async () => {
     setIsSaving(true);
@@ -279,15 +281,15 @@ const SchedulesPage = (): JSX.Element | null => {
     }
   };
 
-  const getActionIcon = (action: string) => {
+  const getActionIcon = useCallback((action: string) => {
     const option = actionOptions.find((o) => o.value === action);
     return option?.icon || null;
-  };
+  }, []);
 
-  const getActionLabel = (action: string) => {
+  const getActionLabel = useCallback((action: string) => {
     const option = actionOptions.find((o) => o.value === action);
     return option?.label || action;
-  };
+  }, []);
 
   const formatNextRun = (schedule: Schedule): string => {
     if (schedule.next_run) {
