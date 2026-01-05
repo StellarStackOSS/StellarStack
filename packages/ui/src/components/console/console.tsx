@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { BsSend } from "react-icons/bs";
 import { cn } from "@workspace/ui/lib/utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import { TimestampColumnTooltip } from "./timestamp-tooltip";
@@ -33,6 +34,7 @@ export const Console = ({
   className,
   isDark = true,
   isOffline = false,
+  showSendButton = false,
 }: ConsoleProps) => {
   const [inputValue, setInputValue] = useState("");
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -356,6 +358,22 @@ export const Console = ({
               isOffline && "cursor-not-allowed"
             )}
           />
+          {showSendButton && (
+            <button
+              type="submit"
+              disabled={isOffline || !inputValue.trim()}
+              className={cn(
+                "flex items-center justify-center rounded p-2 transition-all",
+                isDark
+                  ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  : "text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800",
+                (isOffline || !inputValue.trim()) && "cursor-not-allowed opacity-40"
+              )}
+              aria-label="Send command"
+            >
+              <BsSend className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </form>
     </div>

@@ -712,16 +712,21 @@ remote.post("/sftp/auth", async (c) => {
 
   const parsed = sftpAuthSchema.safeParse(body);
   if (!parsed.success) {
+    console.error("[SFTP Auth] Invalid request body:", parsed.error.errors);
     return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
   }
 
   // Parse username format: server_uuid.user_uuid
   const parts = parsed.data.username.split(".");
   if (parts.length !== 2) {
+    console.error("[SFTP Auth] Invalid username format:", parsed.data.username);
     return c.json({ error: "Invalid username format" }, 400);
   }
 
   const [serverUuid, userIdentifier] = parts;
+  console.log(
+    `[SFTP Auth] Attempting authentication - Server: ${serverUuid}, User: ${userIdentifier}`
+  );
 
   // Find server
   const server = await db.server.findFirst({
@@ -730,6 +735,7 @@ remote.post("/sftp/auth", async (c) => {
   });
 
   if (!server) {
+    console.error(`[SFTP Auth] Server not found: ${serverUuid} on node ${node.id}`);
     return c.json({ error: "Server not found" }, 404);
   }
 
@@ -746,12 +752,14 @@ remote.post("/sftp/auth", async (c) => {
   });
 
   if (!user) {
+    console.error(`[SFTP Auth] User not found: ${userIdentifier}`);
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
   // Verify password (using Better Auth's credential account)
   const credentialAccount = user.accounts.find((a) => a.providerId === "credential");
   if (!credentialAccount?.password) {
+    console.error(`[SFTP Auth] No credential account found for user: ${user.id} (${user.email})`);
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
@@ -760,13 +768,19 @@ remote.post("/sftp/auth", async (c) => {
   const isValidPassword = await verifyPassword(parsed.data.password, credentialAccount.password);
 
   if (!isValidPassword) {
+    console.error(`[SFTP Auth] Invalid password for user: ${user.id} (${user.email})`);
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
   // Check if user owns the server or is admin
   if (server.ownerId !== user.id && user.role !== "admin") {
+    console.error(`[SFTP Auth] Access denied - User ${user.id} does not own server ${server.id}`);
     return c.json({ error: "Access denied" }, 403);
   }
+
+  console.log(
+    `[SFTP Auth] Authentication successful for user ${user.email} on server ${server.id}`
+  );
 
   // Return permissions
   const permissions = [

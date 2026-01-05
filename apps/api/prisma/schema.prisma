@@ -301,6 +301,7 @@ model Server {
 
   allocations   Allocation[]
   backups       Backup[]
+  schedules     Schedule[]
   activityLogs  ActivityLog[]
   transfers     ServerTransfer[]
   webhooks      Webhook[]
@@ -374,6 +375,66 @@ enum BackupStatus {
   COMPLETED
   FAILED
   RESTORING
+}
+
+// ============================================
+// Schedules
+// ============================================
+
+model Schedule {
+  id          String   @id @default(uuid())
+  name        String
+
+  // Cron expression (e.g., "0 0 * * *" for daily at midnight)
+  cronExpression String
+
+  // Whether schedule is active
+  isActive    Boolean  @default(true)
+
+  // When schedule processing started (null if never run)
+  isProcessing Boolean @default(false)
+
+  // Last run timestamp
+  lastRunAt   DateTime?
+
+  // Next run timestamp (calculated from cron)
+  nextRunAt   DateTime?
+
+  // Relations
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  tasks       ScheduleTask[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("schedules")
+}
+
+model ScheduleTask {
+  id          String   @id @default(uuid())
+
+  // Action type: power_start, power_stop, power_restart, backup, command
+  action      String
+
+  // Payload (command text for "command" action, backup name for "backup", etc.)
+  payload     String?
+
+  // Time offset in seconds from schedule start
+  timeOffset  Int      @default(0)
+
+  // Sequence order (tasks execute in order)
+  sequence    Int      @default(0)
+
+  // Relations
+  scheduleId  String
+  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("schedule_tasks")
 }
 
 // ============================================

@@ -14,6 +14,7 @@ export interface ConsoleProps {
   className?: string;
   isDark?: boolean;
   isOffline?: boolean;
+  showSendButton?: boolean;
 }
 
 export interface TooltipPosition {

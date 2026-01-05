@@ -46,6 +46,13 @@ import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import {
   BsSun,
   BsMoon,
   BsFolder,
@@ -64,10 +71,16 @@ import {
   BsHddFill,
   BsX,
   BsCloudUpload,
+  BsEye,
+  BsEyeSlash,
+  BsSearch,
+  BsTerminal,
+  BsClipboard,
 } from "react-icons/bs";
 import { servers } from "@/lib/api";
 import type { FileInfo } from "@/lib/api";
 import { useServer } from "@/components/server-provider";
+import { useAuth } from "@/components/auth-provider";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -140,6 +153,7 @@ const FilesPage = (): JSX.Element | null => {
   const serverId = params.id as string;
   const pathSegments = params.path as string[] | undefined;
   const { server, isInstalling } = useServer();
+  const { user } = useAuth();
   const { playSound } = useSoundEffects();
 
   // Derive current path from URL params
@@ -163,6 +177,8 @@ const FilesPage = (): JSX.Element | null => {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderModalOpen, setNewFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newFileModalOpen, setNewFileModalOpen] = useState(false);
+  const [newFileNameInput, setNewFileNameInput] = useState("");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -171,6 +187,23 @@ const FilesPage = (): JSX.Element | null => {
   const [diskUsage, setDiskUsage] = useState<{ used: number; total: number }>({
     used: 0,
     total: 0,
+  });
+  const [showHiddenFiles, setShowHiddenFiles] = useState(() => {
+    // Load preference from localStorage
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("stellarstack-show-hidden-files");
+      return stored === "true";
+    }
+    return false;
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sftpModalOpen, setSftpModalOpen] = useState(false);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [fileToEditPermissions, setFileToEditPermissions] = useState<FileItem | null>(null);
+  const [permissions, setPermissions] = useState({
+    owner: { read: true, write: true, execute: false },
+    group: { read: true, write: false, execute: false },
+    others: { read: true, write: false, execute: false },
   });
 
   // Storage info - total from server allocation, used from actual disk usage
@@ -194,11 +227,20 @@ const FilesPage = (): JSX.Element | null => {
   const fetchDiskUsage = useCallback(async () => {
     try {
       const usage = await servers.files.diskUsage(serverId);
+      console.log("[Disk Usage] Response:", usage);
+
       // Use the limit from daemon if available, otherwise fall back to server config
       const totalBytes = usage.limit_bytes || (server?.disk ? server.disk * 1024 * 1024 : 0);
-      setDiskUsage({ used: usage.used_bytes, total: totalBytes });
-    } catch {
-      // Silently fail - disk usage is not critical
+      const usedBytes = usage.used_bytes || 0;
+
+      console.log("[Disk Usage] Used:", usedBytes, "Total:", totalBytes);
+      setDiskUsage({ used: usedBytes, total: totalBytes });
+    } catch (error) {
+      console.error("[Disk Usage] Failed to fetch disk usage:", error);
+      // Fall back to server config if daemon request fails
+      if (server?.disk) {
+        setDiskUsage({ used: 0, total: server.disk * 1024 * 1024 });
+      }
     }
   }, [serverId, server?.disk]);
 
@@ -446,6 +488,44 @@ const FilesPage = (): JSX.Element | null => {
     }
   };
 
+  const handleEditPermissions = (file: FileItem) => {
+    setFileToEditPermissions(file);
+    // TODO: Fetch current permissions from API and set them
+    // For now, use default permissions (644 for files, 755 for folders)
+    if (file.type === "folder") {
+      setPermissions({
+        owner: { read: true, write: true, execute: true },
+        group: { read: true, write: false, execute: true },
+        others: { read: true, write: false, execute: true },
+      });
+    } else {
+      setPermissions({
+        owner: { read: true, write: true, execute: false },
+        group: { read: true, write: false, execute: false },
+        others: { read: true, write: false, execute: false },
+      });
+    }
+    setPermissionsModalOpen(true);
+  };
+
+  const confirmPermissions = async () => {
+    if (!fileToEditPermissions) return;
+    // Convert permissions to octal
+    const toOctal = (p: { read: boolean; write: boolean; execute: boolean }) =>
+      (p.read ? 4 : 0) + (p.write ? 2 : 0) + (p.execute ? 1 : 0);
+    const mode = `${toOctal(permissions.owner)}${toOctal(permissions.group)}${toOctal(permissions.others)}`;
+
+    try {
+      await servers.files.chmod(serverId, fileToEditPermissions.path, mode);
+      toast.success(`Permissions updated to ${mode}`);
+      playSound("copy");
+      setPermissionsModalOpen(false);
+      setFileToEditPermissions(null);
+    } catch (error) {
+      toast.error(parseDaemonError(error));
+    }
+  };
+
   const handleNewFolder = () => {
     setNewFolderName("");
     setNewFolderModalOpen(true);
@@ -458,19 +538,28 @@ const FilesPage = (): JSX.Element | null => {
     const folderName = newFolderName.trim();
     try {
       await servers.files.create(serverId, folderPath, "directory");
-      // Optimistically add folder to list
-      setFiles((prev) => [
-        ...prev,
-        {
-          id: folderPath,
-          name: folderName,
-          type: "folder",
-          size: "--",
-          sizeBytes: 0,
-          modified: new Date().toLocaleString(),
-          path: folderPath,
-        },
-      ]);
+      // Optimistically add folder to list and sort
+      setFiles((prev) => {
+        const newFiles = [
+          ...prev,
+          {
+            id: folderPath,
+            name: folderName,
+            type: "folder",
+            size: "--",
+            sizeBytes: 0,
+            modified: new Date().toLocaleString(),
+            path: folderPath,
+          },
+        ];
+        // Sort: folders first (alphabetically), then files (alphabetically)
+        return newFiles.sort((a, b) => {
+          if (a.type === b.type) {
+            return a.name.localeCompare(b.name);
+          }
+          return a.type === "folder" ? -1 : 1;
+        });
+      });
       playSound("copy");
       toast.success("Folder created");
     } catch (error) {
@@ -478,6 +567,55 @@ const FilesPage = (): JSX.Element | null => {
     } finally {
       setNewFolderModalOpen(false);
       setNewFolderName("");
+    }
+  };
+
+  const handleNewFile = () => {
+    setNewFileNameInput("");
+    setNewFileModalOpen(true);
+  };
+
+  const confirmNewFile = async () => {
+    if (!newFileNameInput.trim()) return;
+    const filePath =
+      currentPath === "/"
+        ? `/${newFileNameInput.trim()}`
+        : `${currentPath}/${newFileNameInput.trim()}`;
+    const fileName = newFileNameInput.trim();
+    try {
+      await servers.files.create(serverId, filePath, "file", "");
+      // Optimistically add file to list and sort
+      setFiles((prev) => {
+        const newFiles = [
+          ...prev,
+          {
+            id: filePath,
+            name: fileName,
+            type: "file",
+            size: "0 B",
+            sizeBytes: 0,
+            modified: new Date().toLocaleString(),
+            path: filePath,
+          },
+        ];
+        // Sort: folders first (alphabetically), then files (alphabetically)
+        return newFiles.sort((a, b) => {
+          if (a.type === b.type) {
+            return a.name.localeCompare(b.name);
+          }
+          return a.type === "folder" ? -1 : 1;
+        });
+      });
+      playSound("copy");
+      toast.success("File created");
+      setNewFileModalOpen(false);
+      setNewFileNameInput("");
+      // Redirect to editor if file is editable
+      if (isEditable(fileName)) {
+        router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(filePath)}`);
+      }
+    } catch (error) {
+      toast.error(parseDaemonError(error));
     }
   };
 
@@ -527,12 +665,19 @@ const FilesPage = (): JSX.Element | null => {
           path: filePath,
         });
       }
-      // Optimistically add new files
+      // Optimistically add new files and sort
       if (newFiles.length > 0) {
         setFiles((prev) => {
           const existingPaths = new Set(prev.map((f) => f.path));
           const uniqueNewFiles = newFiles.filter((f) => !existingPaths.has(f.path));
-          return [...prev, ...uniqueNewFiles];
+          const updatedFiles = [...prev, ...uniqueNewFiles];
+          // Sort: folders first (alphabetically), then files (alphabetically)
+          return updatedFiles.sort((a, b) => {
+            if (a.type === b.type) {
+              return a.name.localeCompare(b.name);
+            }
+            return a.type === "folder" ? -1 : 1;
+          });
         });
       }
       playSound("copy");
@@ -620,10 +765,7 @@ const FilesPage = (): JSX.Element | null => {
                 onClick={() => {
                   if (file.type === "folder") {
                     navigateToFolder(file.name);
-                  }
-                }}
-                onDoubleClick={() => {
-                  if (file.type === "file" && isEditable(file.name)) {
+                  } else if (file.type === "file" && isEditable(file.name)) {
                     handleEdit(file);
                   }
                 }}
@@ -728,6 +870,18 @@ const FilesPage = (): JSX.Element | null => {
                   <BsPencil className="h-3 w-3" />
                   Rename
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleEditPermissions(file)}
+                  className={cn(
+                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                    isDark
+                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                      : "text-zinc-700 focus:bg-zinc-100"
+                  )}
+                >
+                  <BsTerminal className="h-3 w-3" />
+                  Permissions
+                </DropdownMenuItem>
                 {file.type === "file" && isEditable(file.name) && (
                   <DropdownMenuItem
                     onClick={() => handleEdit(file)}
@@ -791,8 +945,33 @@ const FilesPage = (): JSX.Element | null => {
     [isDark, currentPath, serverId]
   );
 
+  // Toggle hidden files visibility
+  const handleToggleHiddenFiles = useCallback(() => {
+    const newValue = !showHiddenFiles;
+    setShowHiddenFiles(newValue);
+    localStorage.setItem("stellarstack-show-hidden-files", String(newValue));
+  }, [showHiddenFiles]);
+
+  // Filter files based on hidden files preference
+  const displayFiles = useMemo(() => {
+    let filtered = files;
+
+    // Filter hidden files
+    if (!showHiddenFiles) {
+      filtered = filtered.filter((file) => !file.name.startsWith("."));
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((file) => file.name.toLowerCase().includes(query));
+    }
+
+    return filtered;
+  }, [files, showHiddenFiles, searchQuery]);
+
   const table = useReactTable({
-    data: files,
+    data: displayFiles,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -1055,6 +1234,20 @@ const FilesPage = (): JSX.Element | null => {
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">New Folder</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNewFile}
+                  className={cn(
+                    "gap-2 transition-all",
+                    isDark
+                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  )}
+                >
+                  <BsFileText className="h-4 w-4" />
+                  <span className="text-xs tracking-wider uppercase">New File</span>
+                </Button>
                 {selectedCount > 0 && (
                   <span className={cn("ml-2 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
                     {selectedCount} selected
@@ -1062,6 +1255,54 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {/* Search Input */}
+                <div className="relative">
+                  <BsSearch
+                    className={cn(
+                      "absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 transition-colors",
+                      isDark ? "text-zinc-500" : "text-zinc-400"
+                    )}
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search files..."
+                    className={cn(
+                      "h-9 w-48 border pr-8 pl-9 text-xs transition-colors outline-none",
+                      isDark
+                        ? "border-zinc-700 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
+                        : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+                    )}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className={cn(
+                        "absolute top-1/2 right-2 -translate-y-1/2 transition-colors",
+                        isDark
+                          ? "text-zinc-500 hover:text-zinc-300"
+                          : "text-zinc-400 hover:text-zinc-600"
+                      )}
+                    >
+                      <BsX className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSftpModalOpen(true)}
+                  className={cn(
+                    "gap-2 transition-all",
+                    isDark
+                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  )}
+                >
+                  <BsTerminal className="h-4 w-4" />
+                  <span className="text-xs tracking-wider uppercase">SFTP</span>
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1075,6 +1316,27 @@ const FilesPage = (): JSX.Element | null => {
                 >
                   <BsUpload className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Upload</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleHiddenFiles}
+                  className={cn(
+                    "gap-2 transition-all",
+                    isDark
+                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  )}
+                  title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
+                >
+                  {showHiddenFiles ? (
+                    <BsEye className="h-4 w-4" />
+                  ) : (
+                    <BsEyeSlash className="h-4 w-4" />
+                  )}
+                  <span className="text-xs tracking-wider uppercase">
+                    {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
+                  </span>
                 </Button>
                 <Button
                   variant="outline"
@@ -1129,24 +1391,17 @@ const FilesPage = (): JSX.Element | null => {
               )}
             />
 
-            <div
-              className={cn(
-                "scrollbar-thin max-h-[calc(100vh-280px)] overflow-y-auto",
-                isDark
-                  ? "scrollbar-thumb-zinc-700 scrollbar-track-transparent"
-                  : "scrollbar-thumb-zinc-400 scrollbar-track-transparent"
-              )}
-            >
+            <div>
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-20">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow
                       key={headerGroup.id}
                       className={cn(
                         "border-b",
                         isDark
-                          ? "border-zinc-700/50 hover:bg-transparent"
-                          : "border-zinc-200 hover:bg-transparent"
+                          ? "border-zinc-700/50 bg-[#0a0a0a] hover:bg-transparent"
+                          : "border-zinc-200 bg-white hover:bg-transparent"
                       )}
                     >
                       {headerGroup.headers.map((header) => (
@@ -1230,6 +1485,18 @@ const FilesPage = (): JSX.Element | null => {
                                   <BsPencil className="h-3 w-3" />
                                   Rename
                                 </ContextMenuItem>
+                                <ContextMenuItem
+                                  onClick={() => handleEditPermissions(file)}
+                                  className={cn(
+                                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                                    isDark
+                                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                                      : "text-zinc-700 focus:bg-zinc-100"
+                                  )}
+                                >
+                                  <BsTerminal className="h-3 w-3" />
+                                  Permissions
+                                </ContextMenuItem>
                                 {file.type === "file" && isEditable(file.name) && (
                                   <ContextMenuItem
                                     onClick={() => handleEdit(file)}
@@ -1297,7 +1564,9 @@ const FilesPage = (): JSX.Element | null => {
                               isDark ? "text-zinc-500" : "text-zinc-400"
                             )}
                           >
-                            No files found.
+                            {searchQuery
+                              ? `No files matching "${searchQuery}" found.`
+                              : "No files found."}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1439,6 +1708,530 @@ const FilesPage = (): JSX.Element | null => {
           )}
         />
       </FormModal>
+
+      {/* New File Modal */}
+      <FormModal
+        open={newFileModalOpen}
+        onOpenChange={setNewFileModalOpen}
+        title="New File"
+        description="Enter a name for the new file"
+        submitLabel="Create"
+        onSubmit={confirmNewFile}
+        isDark={isDark}
+        isValid={newFileNameInput.trim().length > 0}
+      >
+        <input
+          type="text"
+          value={newFileNameInput}
+          onChange={(e) => setNewFileNameInput(e.target.value)}
+          placeholder="File name (e.g., config.yml)"
+          className={cn(
+            "w-full border px-3 py-2 text-sm transition-colors outline-none",
+            isDark
+              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
+              : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+          )}
+        />
+      </FormModal>
+
+      {/* SFTP Connection Modal */}
+      <Dialog open={sftpModalOpen} onOpenChange={setSftpModalOpen}>
+        <DialogContent
+          className={cn(
+            "max-w-2xl",
+            isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+          )}
+        >
+          <DialogHeader>
+            <DialogTitle
+              className={cn("text-lg font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")}
+            >
+              SFTP Connection Details
+            </DialogTitle>
+            <DialogDescription
+              className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
+            >
+              Use these credentials to connect to your server via SFTP
+            </DialogDescription>
+          </DialogHeader>
+          {server?.node && user && (
+            <div className="mt-4 space-y-4">
+              {/* Connection Details */}
+              <div className="space-y-3">
+                {/* Host */}
+                <div>
+                  <label
+                    className={cn(
+                      "text-xs font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-500" : "text-zinc-600"
+                    )}
+                  >
+                    Host
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code
+                      className={cn(
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
+                        isDark
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                      )}
+                    >
+                      {server.node.host}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(server.node!.host);
+                        toast.success("Host copied to clipboard");
+                      }}
+                      className={cn(
+                        isDark
+                          ? "border-zinc-700 hover:bg-zinc-800"
+                          : "border-zinc-300 hover:bg-zinc-100"
+                      )}
+                    >
+                      <BsClipboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Port */}
+                <div>
+                  <label
+                    className={cn(
+                      "text-xs font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-500" : "text-zinc-600"
+                    )}
+                  >
+                    Port
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code
+                      className={cn(
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
+                        isDark
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                      )}
+                    >
+                      {server.node.sftpPort}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(server.node!.sftpPort.toString());
+                        toast.success("Port copied to clipboard");
+                      }}
+                      className={cn(
+                        isDark
+                          ? "border-zinc-700 hover:bg-zinc-800"
+                          : "border-zinc-300 hover:bg-zinc-100"
+                      )}
+                    >
+                      <BsClipboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Username */}
+                <div>
+                  <label
+                    className={cn(
+                      "text-xs font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-500" : "text-zinc-600"
+                    )}
+                  >
+                    Username
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code
+                      className={cn(
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
+                        isDark
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                      )}
+                    >
+                      {server.id}.{user.email}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${server.id}.${user.email}`);
+                        toast.success("Username copied to clipboard");
+                      }}
+                      className={cn(
+                        isDark
+                          ? "border-zinc-700 hover:bg-zinc-800"
+                          : "border-zinc-300 hover:bg-zinc-100"
+                      )}
+                    >
+                      <BsClipboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label
+                    className={cn(
+                      "text-xs font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-500" : "text-zinc-600"
+                    )}
+                  >
+                    Password
+                  </label>
+                  <div className="mt-1">
+                    <div
+                      className={cn(
+                        "rounded border px-3 py-2 text-sm",
+                        isDark
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-400"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-600"
+                      )}
+                    >
+                      Your account password
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connection String */}
+                <div>
+                  <label
+                    className={cn(
+                      "text-xs font-medium tracking-wider uppercase",
+                      isDark ? "text-zinc-500" : "text-zinc-600"
+                    )}
+                  >
+                    Connection String
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code
+                      className={cn(
+                        "flex-1 overflow-x-auto rounded border px-3 py-2 font-mono text-sm",
+                        isDark
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
+                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                      )}
+                    >
+                      sftp://{server.id}.{user.email}@{server.node.host}:{server.node.sftpPort}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `sftp://${server.id}.${user.email}@${server.node.host}:${server.node.sftpPort}`
+                        );
+                        toast.success("Connection string copied to clipboard");
+                      }}
+                      className={cn(
+                        isDark
+                          ? "border-zinc-700 hover:bg-zinc-800"
+                          : "border-zinc-300 hover:bg-zinc-100"
+                      )}
+                    >
+                      <BsClipboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div
+                className={cn(
+                  "mt-6 rounded border p-4",
+                  isDark ? "border-zinc-800 bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
+                )}
+              >
+                <h4
+                  className={cn(
+                    "mb-2 text-sm font-semibold",
+                    isDark ? "text-zinc-300" : "text-zinc-700"
+                  )}
+                >
+                  Popular SFTP Clients:
+                </h4>
+                <ul
+                  className={cn(
+                    "list-inside list-disc space-y-1 text-sm",
+                    isDark ? "text-zinc-400" : "text-zinc-600"
+                  )}
+                >
+                  <li>FileZilla (Windows, macOS, Linux)</li>
+                  <li>WinSCP (Windows)</li>
+                  <li>Cyberduck (Windows, macOS)</li>
+                  <li>Transmit (macOS)</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Editor Modal */}
+      <Dialog open={permissionsModalOpen} onOpenChange={setPermissionsModalOpen}>
+        <DialogContent
+          className={cn(
+            "max-w-md",
+            isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+          )}
+        >
+          <DialogHeader>
+            <DialogTitle
+              className={cn("text-lg font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")}
+            >
+              Edit Permissions
+            </DialogTitle>
+            <DialogDescription
+              className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
+            >
+              {fileToEditPermissions
+                ? `Change permissions for "${fileToEditPermissions.name}"`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {fileToEditPermissions && (
+            <div className="mt-4 space-y-4">
+              {/* Permission Grid */}
+              <div
+                className={cn(
+                  "overflow-hidden rounded border",
+                  isDark ? "border-zinc-800" : "border-zinc-200"
+                )}
+              >
+                {/* Header Row */}
+                <div
+                  className={cn(
+                    "grid grid-cols-4 border-b text-xs font-semibold tracking-wider uppercase",
+                    isDark
+                      ? "border-zinc-800 bg-zinc-950 text-zinc-400"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-600"
+                  )}
+                >
+                  <div className="p-3"></div>
+                  <div className="p-3 text-center">Read</div>
+                  <div className="p-3 text-center">Write</div>
+                  <div className="p-3 text-center">Execute</div>
+                </div>
+
+                {/* Owner Row */}
+                <div
+                  className={cn(
+                    "grid grid-cols-4 border-b",
+                    isDark ? "border-zinc-800" : "border-zinc-200"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "p-3 text-sm font-medium",
+                      isDark ? "text-zinc-300" : "text-zinc-700"
+                    )}
+                  >
+                    Owner
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.owner.read}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          owner: { ...p.owner, read: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.owner.write}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          owner: { ...p.owner, write: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.owner.execute}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          owner: { ...p.owner, execute: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                </div>
+
+                {/* Group Row */}
+                <div
+                  className={cn(
+                    "grid grid-cols-4 border-b",
+                    isDark ? "border-zinc-800" : "border-zinc-200"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "p-3 text-sm font-medium",
+                      isDark ? "text-zinc-300" : "text-zinc-700"
+                    )}
+                  >
+                    Group
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.group.read}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          group: { ...p.group, read: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.group.write}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          group: { ...p.group, write: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.group.execute}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          group: { ...p.group, execute: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                </div>
+
+                {/* Others Row */}
+                <div className="grid grid-cols-4">
+                  <div
+                    className={cn(
+                      "p-3 text-sm font-medium",
+                      isDark ? "text-zinc-300" : "text-zinc-700"
+                    )}
+                  >
+                    Others
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.others.read}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          others: { ...p.others, read: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.others.write}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          others: { ...p.others, write: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                  <div className="flex justify-center p-3">
+                    <Checkbox
+                      checked={permissions.others.execute}
+                      onCheckedChange={(checked) =>
+                        setPermissions((p) => ({
+                          ...p,
+                          others: { ...p.others, execute: checked as boolean },
+                        }))
+                      }
+                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Octal Preview */}
+              <div
+                className={cn(
+                  "rounded border p-4",
+                  isDark ? "border-zinc-800 bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
+                )}
+              >
+                <div
+                  className={cn(
+                    "mb-2 text-xs font-medium tracking-wider uppercase",
+                    isDark ? "text-zinc-500" : "text-zinc-600"
+                  )}
+                >
+                  Octal Representation
+                </div>
+                <code
+                  className={cn("font-mono text-lg", isDark ? "text-zinc-200" : "text-zinc-800")}
+                >
+                  {(permissions.owner.read ? 4 : 0) +
+                    (permissions.owner.write ? 2 : 0) +
+                    (permissions.owner.execute ? 1 : 0)}
+                  {(permissions.group.read ? 4 : 0) +
+                    (permissions.group.write ? 2 : 0) +
+                    (permissions.group.execute ? 1 : 0)}
+                  {(permissions.others.read ? 4 : 0) +
+                    (permissions.others.write ? 2 : 0) +
+                    (permissions.others.execute ? 1 : 0)}
+                </code>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPermissionsModalOpen(false)}
+                  className={cn(
+                    isDark
+                      ? "border-zinc-700 hover:bg-zinc-800"
+                      : "border-zinc-300 hover:bg-zinc-100"
+                  )}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmPermissions}
+                  className={cn(
+                    isDark
+                      ? "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
+                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  )}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Modal */}
       <FormModal
