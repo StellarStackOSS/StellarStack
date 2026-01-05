@@ -48,6 +48,12 @@ export const ActivityEvents = {
   BACKUP_LOCK: "server:backup.lock",
   BACKUP_UNLOCK: "server:backup.unlock",
 
+  // Schedule operations
+  SCHEDULE_CREATED: "server:schedule.created",
+  SCHEDULE_UPDATED: "server:schedule.updated",
+  SCHEDULE_DELETED: "server:schedule.deleted",
+  SCHEDULE_TRIGGERED: "server:schedule.triggered",
+
   // Allocation operations
   ALLOCATION_ADD: "server:allocation.add",
   ALLOCATION_REMOVE: "server:allocation.remove",

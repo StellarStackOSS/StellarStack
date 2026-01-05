@@ -70,3 +70,4 @@ enabled = true
 bind_address = "0.0.0.0"
 bind_port = 2022
 read_only = false
+host_key = "../.stellar/ssh_host_key"

@@ -1,0 +1,31 @@
+- Permission editor
+- New file creator
+- When clicking on a file, should automatically redirect
+- Ability to change "game"
+- Subdomain manager (needs actually implementing)
+- Firewall manager
+- MOTD from admins
+- Ability to append custom startup commands
+- Server doesn't take into consideration the port e.g. 25566, but Minecraft still loads as 25565
+- SFTP is still not working, authentication failed (server sent:)
+- Disc usage on the overview page is still appearing as 0.00
+- Ability to search on the file manager
+- When creating a new file / folder it should automatically be sorted, and not be at the bottom of the list.
+- Uptime counter (the card exists, but doesn't actually display anything)
+- Add a optional send button to the console component
+- Focus is lost on the create schedule
+- Creating schedules don't work
+- When refreshing the page on the overview section, it flashes the banner about "unable to connect to daemon"
+- Make the files table header be sticky.
+- Remove the scrollbar bar in the table, just make the entire page scrollable
+- Add a SFTP button to the file page
+- When uploading a file / folder, it should automatically close the modal, but display an icon or something in the header and when hovered, it displays a % + speed of upload.
+- Video and Audio files should be viewable in the browser + images.
+- Ability to toggle on "hidden files"
+- Deleting backups no longer work
+- Restoring from a backup no longer work
+- Complete the edit server page better, it should have everything that an admin needs, like server transferring, allocation editing, server splitting, allocations etc
+- The console times are wrong, they are appearing at local time, they should be timestamped from the console. Not right now.
+- Has some sort of stats on the sidebar like CPU Usage, Disk Usage, Memory Usage. Very basic
+- Ability to support themes and bundles (JS, HTML, CSS) where an admin can install custom "extensions" that people create that add or replace functionality in the frontend
+-

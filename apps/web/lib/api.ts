@@ -186,6 +186,19 @@ export const servers = {
       `/api/servers/${id}/reinstall`,
       { method: "POST" }
     ),
+  changeBlueprint: (
+    id: string,
+    data: {
+      blueprintId: string;
+      dockerImage?: string;
+      variables?: Record<string, string>;
+      reinstall?: boolean;
+    }
+  ) =>
+    request<{ success: boolean; message: string; server: Server; reinstalling: boolean }>(
+      `/api/servers/${id}/change-blueprint`,
+      { method: "POST", body: data }
+    ),
   setStatus: (id: string, status: string) =>
     request<Server>(`/api/servers/${id}/status`, { method: "PATCH", body: { status } }),
 
@@ -226,6 +239,8 @@ export const servers = {
       }),
     rename: (serverId: string, from: string, to: string) =>
       request(`/api/servers/${serverId}/files/rename`, { method: "POST", body: { from, to } }),
+    chmod: (serverId: string, path: string, mode: string) =>
+      request(`/api/servers/${serverId}/files/chmod`, { method: "POST", body: { path, mode } }),
     getDownloadToken: (serverId: string, path: string) =>
       request<DownloadToken>(`/api/servers/${serverId}/files/download-token`, {
         method: "POST",

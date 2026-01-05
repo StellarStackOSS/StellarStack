@@ -32,6 +32,7 @@ import { ContainerUptimeCard } from "@workspace/ui/components/container-uptime-c
 import { PlayersOnlineCard } from "@workspace/ui/components/players-online-card";
 import { RecentLogsCard } from "@workspace/ui/components/recent-logs-card";
 import { CardPreview } from "@workspace/ui/components/card-preview";
+import type { ContainerStatus } from "@workspace/ui/components/dashboard-cards-types";
 import { ThemeContext } from "../../../../contexts/ThemeContext";
 import { useLabels } from "../../../../hooks";
 import { defaultGridItems, defaultHiddenCards } from "../../../../constants";
@@ -43,7 +44,7 @@ import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeh
 import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder";
 
 // Build display data from real server and stats (with history)
-const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
+const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
   const stats = statsData.current;
 
   // New daemon stats format: memory_bytes, memory_limit_bytes, cpu_absolute, disk_bytes, disk_limit_bytes
@@ -56,8 +57,8 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
   const memLimit = server?.memory ? server.memory / 1024 : 1;
   const memPercent = memLimit > 0 ? (memUsed / memLimit) * 100 : 0;
 
-  // Disk usage from daemon stats (in bytes, convert to GiB)
-  const diskUsed = stats?.disk_bytes ? stats.disk_bytes / (1024 * 1024 * 1024) : 0;
+  // Disk usage from real disk usage API (daemon stats has disk_bytes: 0 TODO)
+  const diskUsed = realDiskUsageBytes / (1024 * 1024 * 1024);
   // Always use server.disk for limit (MiB to GiB) - daemon's disk_limit_bytes can have unit issues
   const diskLimit = server?.disk ? server.disk / 1024 : 10;
   const diskPercent = diskLimit > 0 ? (diskUsed / diskLimit) * 100 : 0;
@@ -81,7 +82,10 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory) => {
 
   return {
     name: server?.name || "Server",
-    status: server?.status?.toLowerCase() || "stopped",
+    // Use daemon's real-time state if available, otherwise fall back to database status
+    status: (stats?.state?.toLowerCase() ||
+      server?.status?.toLowerCase() ||
+      "stopped") as ContainerStatus,
     cpu: {
       usage: { percentage: cpuPercent, history: statsData.cpuHistory },
       limit: cpuLimit, // CPU limit as percentage (100 = 1 core)
@@ -171,6 +175,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
   const [isCardSheetOpen, setIsCardSheetOpen] = useState(false);
   const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
+  const [showConnectionBanner, setShowConnectionBanner] = useState(false);
   const labels = useLabels();
 
   const {
@@ -202,6 +207,23 @@ const ServerOverviewPage = (): JSX.Element | null => {
     enabled: wsEnabled,
   });
 
+  // Fetch real disk usage (WebSocket stats has disk_bytes: 0 TODO in daemon)
+  const [realDiskUsageBytes, setRealDiskUsageBytes] = useState<number>(0);
+  useEffect(() => {
+    const fetchDiskUsage = async () => {
+      try {
+        const usage = await servers.files.diskUsage(serverId);
+        setRealDiskUsageBytes(usage.used_bytes || 0);
+      } catch {
+        // Ignore errors, will show 0
+      }
+    };
+
+    fetchDiskUsage();
+    const interval = setInterval(fetchDiskUsage, 10000); // Update every 10s
+    return () => clearInterval(interval);
+  }, [serverId]);
+
   // Transform console lines to the format expected by Console component
   const consoleLines = rawConsoleLines.map((line, index) => ({
     id: `${line.timestamp.getTime()}-${index}`,
@@ -217,6 +239,27 @@ const ServerOverviewPage = (): JSX.Element | null => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Delay showing connection banner to prevent flash on page load
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (wsEnabled && !wsConnected && !wsConnecting) {
+      // Wait 3 seconds before showing the banner
+      timeoutId = setTimeout(() => {
+        setShowConnectionBanner(true);
+      }, 3000);
+    } else {
+      // Hide banner immediately when connected
+      setShowConnectionBanner(false);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [wsEnabled, wsConnected, wsConnecting]);
 
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
@@ -237,7 +280,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
   });
 
   // Build display data from real server and WebSocket stats
-  const displayData = buildDisplayData(server, statsData);
+  const displayData = buildDisplayData(server, statsData, realDiskUsageBytes);
   const isOffline = !server || server.status === "STOPPED" || server.status === "ERROR";
 
   const handleCommand = (command: string) => {
@@ -339,7 +382,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
         {/* Background is now rendered in the layout for persistence */}
 
         {/* Connection error banner */}
-        {wsEnabled && !wsConnected && !wsConnecting && (
+        {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
           <div
             className={cn(
               "relative z-10 flex items-center justify-center gap-2 px-4 py-3 text-sm",
@@ -674,6 +717,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     onCommand={handleCommand}
                     isDark={isDark}
                     isOffline={isOffline}
+                    showSendButton={true}
                   />
                 </GridItem>
               </div>

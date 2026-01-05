@@ -39,6 +39,9 @@ import {
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "@/components/auth-provider";
 import { WaveText } from "@/components/wave-text";
+import { useServer } from "@/components/server-provider";
+import { useServerWebSocket } from "@/hooks/useServerWebSocket";
+import { CpuIcon, HardDriveIcon, MemoryStickIcon } from "lucide-react";
 
 // Navigation items - href will be prefixed with /servers/[id]
 const navItems = [
@@ -67,6 +70,33 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
   const serverId = params.id as string;
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user: authUser, signOut, isAdmin } = useAuth();
+  const { server, consoleInfo } = useServer();
+
+  // Get real-time stats from WebSocket
+  const { stats: statsData } = useServerWebSocket({
+    consoleInfo,
+    enabled: !!consoleInfo,
+  });
+
+  // Calculate stats percentages (similar to overview page)
+  const stats = statsData.current;
+  const cpuPercent = stats?.cpu_absolute ?? 0;
+  const cpuLimit = server?.cpu ?? 100;
+
+  const memUsed = stats?.memory_bytes ? stats.memory_bytes / (1024 * 1024 * 1024) : 0;
+  const memLimit = server?.memory ? server.memory / 1024 : 1;
+  const memPercent = memLimit > 0 ? (memUsed / memLimit) * 100 : 0;
+
+  const diskUsed = stats?.disk_bytes ? stats.disk_bytes / (1024 * 1024 * 1024) : 0;
+  const diskLimit = server?.disk ? server.disk / 1024 : 10;
+  const diskPercent = diskLimit > 0 ? (diskUsed / diskLimit) * 100 : 0;
+
+  // Helper to get color based on usage percentage
+  const getUsageColor = (percent: number) => {
+    if (percent >= 85) return isDark ? "text-red-400" : "text-red-600";
+    if (percent >= 70) return isDark ? "text-amber-400" : "text-amber-600";
+    return isDark ? "text-emerald-400" : "text-emerald-600";
+  };
 
   // User data from auth
   const user = authUser
@@ -218,6 +248,76 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
       <SidebarFooter
         className={cn("border-t p-4", isDark ? "border-zinc-200/10" : "border-zinc-300")}
       >
+        {/* Server Stats */}
+        <div
+          className={cn(
+            "mb-3 space-y-2 border px-3 py-2",
+            isDark ? "border-zinc-700/50 bg-zinc-900/50" : "border-zinc-200 bg-white"
+          )}
+        >
+          {/* CPU */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CpuIcon
+                className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-zinc-500" : "text-zinc-400")}
+              />
+              <span
+                className={cn(
+                  "text-[10px] font-medium tracking-wider uppercase",
+                  isDark ? "text-zinc-400" : "text-zinc-600"
+                )}
+              >
+                CPU
+              </span>
+            </div>
+            <span className={cn("text-[10px] font-medium tabular-nums", getUsageColor(cpuPercent))}>
+              {cpuPercent.toFixed(0)}%
+            </span>
+          </div>
+
+          {/* Memory */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <MemoryStickIcon
+                className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-zinc-500" : "text-zinc-400")}
+              />
+              <span
+                className={cn(
+                  "text-[10px] font-medium tracking-wider uppercase",
+                  isDark ? "text-zinc-400" : "text-zinc-600"
+                )}
+              >
+                RAM
+              </span>
+            </div>
+            <span className={cn("text-[10px] font-medium tabular-nums", getUsageColor(memPercent))}>
+              {memUsed.toFixed(1)} / {memLimit.toFixed(0)} GB
+            </span>
+          </div>
+
+          {/* Disk */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HardDriveIcon
+                className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-zinc-500" : "text-zinc-400")}
+              />
+              <span
+                className={cn(
+                  "text-[10px] font-medium tracking-wider uppercase",
+                  isDark ? "text-zinc-400" : "text-zinc-600"
+                )}
+              >
+                Disk
+              </span>
+            </div>
+            <span
+              className={cn("text-[10px] font-medium tabular-nums", getUsageColor(diskPercent))}
+            >
+              {diskUsed.toFixed(1)} / {diskLimit.toFixed(0)} GB
+            </span>
+          </div>
+        </div>
+
         {/* User Menu */}
         <div className="relative">
           <button

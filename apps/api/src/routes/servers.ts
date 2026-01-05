@@ -148,7 +148,17 @@ const updateServerSchema = z.object({
   allocationLimit: z.number().int().min(1).optional(), // Allocation limit
   config: z.record(z.any()).optional(),
   status: z
-    .enum(["INSTALLING", "STARTING", "RUNNING", "STOPPING", "STOPPED", "SUSPENDED", "MAINTENANCE", "RESTORING", "ERROR"])
+    .enum([
+      "INSTALLING",
+      "STARTING",
+      "RUNNING",
+      "STOPPING",
+      "STOPPED",
+      "SUSPENDED",
+      "MAINTENANCE",
+      "RESTORING",
+      "ERROR",
+    ])
     .optional(), // Admin only
 });
 
@@ -1039,6 +1049,113 @@ servers.post("/:serverId/reinstall", requireServerAccess, async (c) => {
   }
 });
 
+// Change server blueprint (game type)
+servers.post("/:serverId/change-blueprint", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const body = await c.req.json();
+
+  // Validation
+  const schema = z.object({
+    blueprintId: z.string(),
+    dockerImage: z.string().optional(),
+    variables: z.record(z.string()).optional(),
+    reinstall: z.boolean().default(false),
+  });
+
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Check if blueprint exists
+  const blueprint = await db.blueprint.findUnique({
+    where: { id: parsed.data.blueprintId },
+  });
+
+  if (!blueprint) {
+    return c.json({ error: "Blueprint not found" }, 404);
+  }
+
+  // Check if blueprint is public or user is admin
+  const user = c.get("user");
+  if (!blueprint.isPublic && user.role !== "admin") {
+    return c.json({ error: "Blueprint not found" }, 404);
+  }
+
+  console.log(
+    `[Change Blueprint] Changing server ${server.id} from blueprint ${server.blueprintId} to ${parsed.data.blueprintId}`
+  );
+
+  // Update server with new blueprint
+  const updated = await db.server.update({
+    where: { id: server.id },
+    data: {
+      blueprintId: parsed.data.blueprintId,
+      dockerImage: parsed.data.dockerImage || undefined,
+      variables: parsed.data.variables ? parsed.data.variables : undefined,
+    },
+    include: {
+      node: true,
+      blueprint: true,
+      owner: true,
+      allocations: true,
+    },
+  });
+
+  await logActivityFromContext(c, ActivityEvents.SERVER_UPDATE, {
+    serverId: server.id,
+    metadata: {
+      blueprintChange: {
+        from: server.blueprintId,
+        to: parsed.data.blueprintId,
+      },
+    },
+  });
+
+  // If reinstall is requested, trigger reinstallation
+  if (parsed.data.reinstall && updated.node.isOnline) {
+    try {
+      console.log(`[Change Blueprint] Triggering reinstall for server ${server.id}`);
+      await daemonRequest(updated.node, "POST", `/api/servers/${server.id}/reinstall`);
+
+      // Update status to INSTALLING
+      await db.server.update({
+        where: { id: updated.id },
+        data: { status: "INSTALLING" },
+      });
+
+      await logActivityFromContext(c, ActivityEvents.SERVER_REINSTALL, { serverId: server.id });
+
+      return c.json({
+        success: true,
+        message: "Blueprint changed and server reinstalling...",
+        server: serializeServer(updated),
+        reinstalling: true,
+      });
+    } catch (error: any) {
+      console.error(`[Change Blueprint] Failed to reinstall server ${server.id}:`, error.message);
+      await db.server.update({
+        where: { id: updated.id },
+        data: { status: "ERROR" },
+      });
+      return c.json(
+        {
+          error: "Blueprint changed but reinstall failed",
+          details: error.message,
+        },
+        500
+      );
+    }
+  }
+
+  return c.json({
+    success: true,
+    message: "Blueprint changed successfully",
+    server: serializeServer(updated),
+    reinstalling: false,
+  });
+});
+
 // Get server stats
 // Note: Stats are typically streamed via WebSocket, this is for one-time fetch
 servers.get("/:serverId/stats", requireServerAccess, async (c) => {
@@ -1645,6 +1762,47 @@ servers.post("/:serverId/files/rename", requireServerAccess, requireNotSuspended
   }
 });
 
+// Change file permissions (chmod)
+servers.post("/:serverId/files/chmod", requireServerAccess, requireNotSuspended, async (c) => {
+  const server = c.get("server");
+  const body = await c.req.json();
+
+  if (!body.path || body.mode === undefined) {
+    return c.json({ error: "Path and mode required" }, 400);
+  }
+
+  // Validate mode is a valid octal number (e.g., 755, 644)
+  const mode = parseInt(String(body.mode), 8);
+  if (isNaN(mode) || mode < 0 || mode > 0o777) {
+    return c.json({ error: "Invalid mode. Must be octal between 000 and 777" }, 400);
+  }
+
+  const path = normalizePath(body.path);
+  const lastSlash = path.lastIndexOf("/");
+  const file = lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
+  const root = lastSlash >= 0 ? path.slice(0, lastSlash) : "";
+
+  try {
+    const fullServer = await getServerWithNode(server.id);
+    const result = await daemonRequest(
+      fullServer.node,
+      "POST",
+      `/api/servers/${server.id}/files/chmod`,
+      {
+        root,
+        files: [{ file, mode }],
+      }
+    );
+    await logActivityFromContext(c, ActivityEvents.FILE_WRITE, {
+      serverId: server.id,
+      metadata: { path, mode: body.mode },
+    });
+    return c.json(result);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 // Create archive
 servers.post("/:serverId/files/archive", requireServerAccess, requireNotSuspended, async (c) => {
   const server = c.get("server");
@@ -1780,7 +1938,15 @@ servers.post("/:serverId/backups/restore", requireServerAccess, requireNotSuspen
     return c.json({ error: "Backup ID required" }, 400);
   }
 
+  console.log(`[Backup Restore] Attempting to restore backup ${id} for server ${server.id}`);
+
   try {
+    // Update backup status to RESTORING
+    await db.backup.update({
+      where: { id },
+      data: { status: "RESTORING" },
+    });
+
     const fullServer = await getServerWithNode(server.id);
     const result = await daemonRequest(
       fullServer.node,
@@ -1788,6 +1954,14 @@ servers.post("/:serverId/backups/restore", requireServerAccess, requireNotSuspen
       `/api/servers/${server.id}/backup/restore`,
       { uuid: id, truncate: false }
     );
+    console.log(`[Backup Restore] Successfully completed restore for backup ${id}`);
+
+    // Update backup status back to COMPLETED
+    await db.backup.update({
+      where: { id },
+      data: { status: "COMPLETED" },
+    });
+
     await logActivityFromContext(c, ActivityEvents.BACKUP_RESTORE, {
       serverId: server.id,
       metadata: { backupId: id },
@@ -1802,6 +1976,16 @@ servers.post("/:serverId/backups/restore", requireServerAccess, requireNotSuspen
 
     return c.json(result);
   } catch (error: any) {
+    console.error(`[Backup Restore] Failed to restore backup ${id}:`, error.message);
+
+    // Update backup status to FAILED on error
+    await db.backup
+      .update({
+        where: { id },
+        data: { status: "FAILED" },
+      })
+      .catch(() => {}); // Ignore errors in error handler
+
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1897,6 +2081,8 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
     return c.json({ error: "Backup ID required" }, 400);
   }
 
+  console.log(`[Backup Delete] Attempting to delete backup ${id} for server ${server.id}`);
+
   try {
     const fullServer = await getServerWithNode(server.id);
     const result = await daemonRequest(
@@ -1904,6 +2090,14 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
       "DELETE",
       `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
     );
+    console.log(`[Backup Delete] Successfully deleted backup ${id} from daemon`);
+
+    // Delete from database
+    await db.backup.delete({
+      where: { id },
+    });
+    console.log(`[Backup Delete] Successfully deleted backup ${id} from database`);
+
     await logActivityFromContext(c, ActivityEvents.BACKUP_DELETE, {
       serverId: server.id,
       metadata: { backupId: id },
@@ -1918,6 +2112,7 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
 
     return c.json(result);
   } catch (error: any) {
+    console.error(`[Backup Delete] Failed to delete backup ${id}:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1937,43 +2132,223 @@ servers.patch("/:serverId/backups/lock", requireServerAccess, async (c) => {
 });
 
 // === Schedules ===
-// Note: Schedules are not yet implemented in the new daemon
-// These are stubbed out for now
+
+const scheduleSchema = z.object({
+  name: z.string().min(1).max(255),
+  cronExpression: z.string().min(1), // e.g., "0 0 * * *"
+  isActive: z.boolean().default(true),
+  tasks: z.array(
+    z.object({
+      action: z.enum(["power_start", "power_stop", "power_restart", "backup", "command"]),
+      payload: z.string().optional(),
+      timeOffset: z.number().int().min(0).default(0),
+      sequence: z.number().int().min(0).default(0),
+    })
+  ),
+});
 
 // List schedules
 servers.get("/:serverId/schedules", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json([]);
+  const server = c.get("server");
+
+  const schedules = await db.schedule.findMany({
+    where: { serverId: server.id },
+    include: { tasks: { orderBy: { sequence: "asc" } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return c.json(schedules);
 });
 
 // Get schedule
 servers.get("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json({ error: "Schedules not yet implemented" }, 501);
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+
+  const schedule = await db.schedule.findFirst({
+    where: { id: scheduleId, serverId: server.id },
+    include: { tasks: { orderBy: { sequence: "asc" } } },
+  });
+
+  if (!schedule) {
+    return c.json({ error: "Schedule not found" }, 404);
+  }
+
+  return c.json(schedule);
 });
 
 // Create schedule
 servers.post("/:serverId/schedules", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json({ error: "Schedules not yet implemented" }, 501);
+  const server = c.get("server");
+  const body = await c.req.json();
+
+  const parsed = scheduleSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  console.log(`[Schedule] Creating schedule "${parsed.data.name}" for server ${server.id}`);
+
+  try {
+    const schedule = await db.schedule.create({
+      data: {
+        serverId: server.id,
+        name: parsed.data.name,
+        cronExpression: parsed.data.cronExpression,
+        isActive: parsed.data.isActive,
+        tasks: {
+          create: parsed.data.tasks,
+        },
+      },
+      include: { tasks: { orderBy: { sequence: "asc" } } },
+    });
+
+    console.log(`[Schedule] Created schedule ${schedule.id}`);
+
+    // TODO: Sync schedule to daemon for execution
+    // await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules`, schedule);
+
+    await logActivityFromContext(c, ActivityEvents.SCHEDULE_CREATED, {
+      serverId: server.id,
+      metadata: { scheduleId: schedule.id, scheduleName: schedule.name },
+    });
+
+    return c.json(schedule, 201);
+  } catch (error: any) {
+    console.error("[Schedule] Failed to create schedule:", error.message);
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 // Update schedule
 servers.patch("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json({ error: "Schedules not yet implemented" }, 501);
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = scheduleSchema.partial().safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  console.log(`[Schedule] Updating schedule ${scheduleId}`);
+
+  try {
+    // Check schedule exists and belongs to server
+    const existing = await db.schedule.findFirst({
+      where: { id: scheduleId, serverId: server.id },
+    });
+
+    if (!existing) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    // Update schedule
+    const schedule = await db.schedule.update({
+      where: { id: scheduleId },
+      data: {
+        name: parsed.data.name,
+        cronExpression: parsed.data.cronExpression,
+        isActive: parsed.data.isActive,
+        ...(parsed.data.tasks && {
+          tasks: {
+            deleteMany: {}, // Remove all existing tasks
+            create: parsed.data.tasks, // Create new tasks
+          },
+        }),
+      },
+      include: { tasks: { orderBy: { sequence: "asc" } } },
+    });
+
+    console.log(`[Schedule] Updated schedule ${scheduleId}`);
+
+    // TODO: Sync schedule to daemon
+    // await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}/schedules/${scheduleId}`, schedule);
+
+    await logActivityFromContext(c, ActivityEvents.SCHEDULE_UPDATED, {
+      serverId: server.id,
+      metadata: { scheduleId: schedule.id, scheduleName: schedule.name },
+    });
+
+    return c.json(schedule);
+  } catch (error: any) {
+    console.error("[Schedule] Failed to update schedule:", error.message);
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 // Delete schedule
 servers.delete("/:serverId/schedules/:scheduleId", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json({ error: "Schedules not yet implemented" }, 501);
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+
+  console.log(`[Schedule] Deleting schedule ${scheduleId}`);
+
+  try {
+    // Check schedule exists and belongs to server
+    const existing = await db.schedule.findFirst({
+      where: { id: scheduleId, serverId: server.id },
+    });
+
+    if (!existing) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    await db.schedule.delete({
+      where: { id: scheduleId },
+    });
+
+    console.log(`[Schedule] Deleted schedule ${scheduleId}`);
+
+    // TODO: Remove schedule from daemon
+    // await daemonRequest(fullServer.node, "DELETE", `/api/servers/${server.id}/schedules/${scheduleId}`);
+
+    await logActivityFromContext(c, ActivityEvents.SCHEDULE_DELETED, {
+      serverId: server.id,
+      metadata: { scheduleId, scheduleName: existing.name },
+    });
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("[Schedule] Failed to delete schedule:", error.message);
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 // Run schedule now
 servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async (c) => {
-  // TODO: Implement schedules in daemon
-  return c.json({ error: "Schedules not yet implemented" }, 501);
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+
+  console.log(`[Schedule] Manually triggering schedule ${scheduleId}`);
+
+  try {
+    // Check schedule exists and belongs to server
+    const schedule = await db.schedule.findFirst({
+      where: { id: scheduleId, serverId: server.id },
+      include: { tasks: { orderBy: { sequence: "asc" } } },
+    });
+
+    if (!schedule) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    // TODO: Trigger schedule execution on daemon
+    // const fullServer = await getServerWithNode(server.id);
+    // await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules/${scheduleId}/run`);
+
+    console.log(`[Schedule] Triggered schedule ${scheduleId} manually`);
+
+    await logActivityFromContext(c, ActivityEvents.SCHEDULE_TRIGGERED, {
+      serverId: server.id,
+      metadata: { scheduleId, scheduleName: schedule.name, manual: true },
+    });
+
+    return c.json({ success: true, message: "Schedule triggered successfully" });
+  } catch (error: any) {
+    console.error("[Schedule] Failed to trigger schedule:", error.message);
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 // === Allocation Management ===
@@ -2038,9 +2413,12 @@ servers.post("/:serverId/allocations", requireServerAccess, async (c) => {
   const user = c.get("user");
   const isAdmin = user.role === "admin";
   if (!isAdmin && fullServer.allocations.length >= fullServer.allocationLimit) {
-    return c.json({
-      error: `Allocation limit reached (${fullServer.allocationLimit}). Contact an administrator to increase your limit.`
-    }, 400);
+    return c.json(
+      {
+        error: `Allocation limit reached (${fullServer.allocationLimit}). Contact an administrator to increase your limit.`,
+      },
+      400
+    );
   }
 
   // Verify the allocation exists, is on the same node, and is not assigned

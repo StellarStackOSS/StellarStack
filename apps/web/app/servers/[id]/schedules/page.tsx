@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type JSX } from "react";
+import { useState, useEffect, useCallback, useMemo, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
@@ -314,194 +314,212 @@ const SchedulesPage = (): JSX.Element | null => {
       return true;
     });
 
-  const ScheduleForm = () => (
-    <div className="space-y-4">
-      <div>
-        <label
-          className={cn(
-            "mb-2 block text-xs tracking-wider uppercase",
-            isDark ? "text-zinc-400" : "text-zinc-600"
-          )}
-        >
-          Schedule Name
-        </label>
-        <Input
-          value={formName}
-          onChange={(e) => setFormName(e.target.value)}
-          placeholder="e.g., Daily Maintenance"
-          disabled={isSaving}
-          className={cn(
-            "transition-all",
-            isDark
-              ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-              : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
-          )}
-        />
-      </div>
+  const ScheduleForm = useMemo(
+    () => (
+      <div className="space-y-4">
+        <div>
+          <label
+            className={cn(
+              "mb-2 block text-xs tracking-wider uppercase",
+              isDark ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
+            Schedule Name
+          </label>
+          <Input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder="e.g., Daily Maintenance"
+            disabled={isSaving}
+            className={cn(
+              "transition-all",
+              isDark
+                ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
+                : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+            )}
+          />
+        </div>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <label
+              className={cn(
+                "text-xs tracking-wider uppercase",
+                isDark ? "text-zinc-400" : "text-zinc-600"
+              )}
+            >
+              Tasks ({formTasks.length}/{MAX_TASKS})
+            </label>
+            {formTasks.length >= MAX_TASKS && (
+              <span className={cn("text-xs", isDark ? "text-amber-400" : "text-amber-600")}>
+                Maximum reached
+              </span>
+            )}
+          </div>
+
+          {/* Task list */}
+          {formTasks.length > 0 && (
+            <div
+              className={cn(
+                "mb-3 max-h-64 divide-y overflow-y-auto border",
+                isDark ? "divide-zinc-700 border-zinc-700" : "divide-zinc-200 border-zinc-200"
+              )}
+            >
+              {formTasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className={cn(
+                    "flex items-center gap-3 p-3",
+                    isDark ? "bg-zinc-800/50" : "bg-zinc-50"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-5 shrink-0 font-mono text-xs",
+                      isDark ? "text-zinc-500" : "text-zinc-400"
+                    )}
+                  >
+                    {index + 1}.
+                  </span>
+                  <div className="shrink-0">{getActionIcon(task.action)}</div>
+                  <div className="min-w-0 flex-1">
+                    <span className={cn("text-sm", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                      {getActionLabel(task.action)}
+                    </span>
+                    {task.action === "command" && (
+                      <Input
+                        value={task.payload || ""}
+                        onChange={(e) => updateTaskPayload(task.id, e.target.value)}
+                        placeholder="Enter command..."
+                        disabled={isSaving}
+                        className={cn(
+                          "mt-2 text-sm",
+                          isDark
+                            ? "border-zinc-600 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
+                            : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+                        )}
+                      />
+                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      <BsClock
+                        className={cn("h-3 w-3", isDark ? "text-zinc-500" : "text-zinc-400")}
+                      />
+                      <Input
+                        type="number"
+                        value={task.time_offset}
+                        onChange={(e) => updateTaskOffset(task.id, parseInt(e.target.value) || 0)}
+                        min={0}
+                        disabled={isSaving}
+                        className={cn(
+                          "w-20 text-sm",
+                          isDark
+                            ? "border-zinc-600 bg-zinc-900 text-zinc-100"
+                            : "border-zinc-300 bg-white text-zinc-900"
+                        )}
+                      />
+                      <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                        seconds delay
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeTask(task.id)}
+                    disabled={isSaving}
+                    className={cn(
+                      "shrink-0 p-1.5 transition-colors disabled:opacity-50",
+                      isDark
+                        ? "text-zinc-500 hover:text-red-400"
+                        : "text-zinc-400 hover:text-red-500"
+                    )}
+                  >
+                    <BsX className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add task buttons */}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {actionOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => addTask(opt.value)}
+                disabled={formTasks.length >= MAX_TASKS || isSaving}
+                className={cn(
+                  "flex items-center gap-2 border p-2 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-40",
+                  isDark
+                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
+                )}
+              >
+                {opt.icon}
+                <span className="truncate">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label
+            className={cn(
+              "mb-2 block text-xs tracking-wider uppercase",
+              isDark ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
+            Cron Expression
+          </label>
+          <Input
+            value={formCron}
+            onChange={(e) => setFormCron(e.target.value)}
+            placeholder="0 4 * * *"
+            disabled={isSaving}
+            className={cn(
+              "font-mono transition-all",
+              isDark
+                ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
+                : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+            )}
+          />
+          <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+            Format: minute hour day month weekday
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between">
           <label
             className={cn(
               "text-xs tracking-wider uppercase",
               isDark ? "text-zinc-400" : "text-zinc-600"
             )}
           >
-            Tasks ({formTasks.length}/{MAX_TASKS})
+            Enabled
           </label>
-          {formTasks.length >= MAX_TASKS && (
-            <span className={cn("text-xs", isDark ? "text-amber-400" : "text-amber-600")}>
-              Maximum reached
-            </span>
-          )}
-        </div>
-
-        {/* Task list */}
-        {formTasks.length > 0 && (
-          <div
-            className={cn(
-              "mb-3 max-h-64 divide-y overflow-y-auto border",
-              isDark ? "divide-zinc-700 border-zinc-700" : "divide-zinc-200 border-zinc-200"
-            )}
-          >
-            {formTasks.map((task, index) => (
-              <div
-                key={task.id}
-                className={cn(
-                  "flex items-center gap-3 p-3",
-                  isDark ? "bg-zinc-800/50" : "bg-zinc-50"
-                )}
-              >
-                <span
-                  className={cn(
-                    "w-5 shrink-0 font-mono text-xs",
-                    isDark ? "text-zinc-500" : "text-zinc-400"
-                  )}
-                >
-                  {index + 1}.
-                </span>
-                <div className="shrink-0">{getActionIcon(task.action)}</div>
-                <div className="min-w-0 flex-1">
-                  <span className={cn("text-sm", isDark ? "text-zinc-200" : "text-zinc-700")}>
-                    {getActionLabel(task.action)}
-                  </span>
-                  {task.action === "command" && (
-                    <Input
-                      value={task.payload || ""}
-                      onChange={(e) => updateTaskPayload(task.id, e.target.value)}
-                      placeholder="Enter command..."
-                      disabled={isSaving}
-                      className={cn(
-                        "mt-2 text-sm",
-                        isDark
-                          ? "border-zinc-600 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-                          : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
-                      )}
-                    />
-                  )}
-                  <div className="mt-2 flex items-center gap-2">
-                    <BsClock
-                      className={cn("h-3 w-3", isDark ? "text-zinc-500" : "text-zinc-400")}
-                    />
-                    <Input
-                      type="number"
-                      value={task.time_offset}
-                      onChange={(e) => updateTaskOffset(task.id, parseInt(e.target.value) || 0)}
-                      min={0}
-                      disabled={isSaving}
-                      className={cn(
-                        "w-20 text-sm",
-                        isDark
-                          ? "border-zinc-600 bg-zinc-900 text-zinc-100"
-                          : "border-zinc-300 bg-white text-zinc-900"
-                      )}
-                    />
-                    <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                      seconds delay
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeTask(task.id)}
-                  disabled={isSaving}
-                  className={cn(
-                    "shrink-0 p-1.5 transition-colors disabled:opacity-50",
-                    isDark ? "text-zinc-500 hover:text-red-400" : "text-zinc-400 hover:text-red-500"
-                  )}
-                >
-                  <BsX className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Add task buttons */}
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          {actionOptions.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => addTask(opt.value)}
-              disabled={formTasks.length >= MAX_TASKS || isSaving}
-              className={cn(
-                "flex items-center gap-2 border p-2 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-40",
-                isDark
-                  ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                  : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
-              )}
-            >
-              {opt.icon}
-              <span className="truncate">{opt.label}</span>
-            </button>
-          ))}
+          <Switch
+            checked={formEnabled}
+            onCheckedChange={setFormEnabled}
+            disabled={isSaving}
+            isDark={isDark}
+          />
         </div>
       </div>
-
-      <div>
-        <label
-          className={cn(
-            "mb-2 block text-xs tracking-wider uppercase",
-            isDark ? "text-zinc-400" : "text-zinc-600"
-          )}
-        >
-          Cron Expression
-        </label>
-        <Input
-          value={formCron}
-          onChange={(e) => setFormCron(e.target.value)}
-          placeholder="0 4 * * *"
-          disabled={isSaving}
-          className={cn(
-            "font-mono transition-all",
-            isDark
-              ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-              : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
-          )}
-        />
-        <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
-          Format: minute hour day month weekday
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <label
-          className={cn(
-            "text-xs tracking-wider uppercase",
-            isDark ? "text-zinc-400" : "text-zinc-600"
-          )}
-        >
-          Enabled
-        </label>
-        <Switch
-          checked={formEnabled}
-          onCheckedChange={setFormEnabled}
-          disabled={isSaving}
-          isDark={isDark}
-        />
-      </div>
-    </div>
+    ),
+    [
+      formName,
+      formTasks,
+      formCron,
+      formEnabled,
+      isSaving,
+      isDark,
+      updateTaskPayload,
+      updateTaskOffset,
+      removeTask,
+      addTask,
+      getActionIcon,
+      getActionLabel,
+    ]
   );
 
   return (
