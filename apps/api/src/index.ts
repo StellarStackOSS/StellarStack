@@ -20,7 +20,6 @@ import { securityHeaders, validateEnvironment, getRequiredEnv } from "./middlewa
 import { authRateLimit, apiRateLimit } from "./middleware/rate-limit";
 import { db } from "./lib/db";
 
-// Validate environment variables at startup
 validateEnvironment();
 
 const app = new Hono();
