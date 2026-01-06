@@ -552,7 +552,7 @@ const SchedulesPage = (): JSX.Element | null => {
                 </h1>
                 <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
                   {server?.name || `Server ${serverId}`} -{" "}
-                  {schedules.filter((s) => s.enabled).length} active
+                  {/*{schedules.filter((s) => s.enabled).length} active*/}
                 </p>
               </div>
             </div>
