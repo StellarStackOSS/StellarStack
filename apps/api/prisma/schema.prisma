@@ -12,16 +12,16 @@ datasource db {
 // ============================================
 
 model User {
-  id               String    @id @default(cuid())
+  id               String   @id @default(cuid())
   name             String
-  email            String    @unique
-  emailVerified    Boolean   @default(false)
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
   image            String?
-  role             String    @default("user")
-  banned           Boolean   @default(false)
-  twoFactorEnabled Boolean   @default(false)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  role             String   @default("user")
+  banned           Boolean  @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   sessions   Session[]
   accounts   Account[]
@@ -85,7 +85,7 @@ model Verification {
 }
 
 model TwoFactor {
-  id          String  @id @default(cuid())
+  id          String @id @default(cuid())
   userId      String
   secret      String
   backupCodes String
@@ -96,17 +96,17 @@ model TwoFactor {
 }
 
 model Passkey {
-  id             String   @id @default(cuid())
-  name           String?
-  publicKey      String
-  userId         String
-  credentialId   String   @unique
-  counter        Int
-  deviceType     String
-  backedUp       Boolean
-  transports     String?
-  createdAt      DateTime @default(now())
-  aaguid         String?
+  id           String   @id @default(cuid())
+  name         String?
+  publicKey    String
+  userId       String
+  credentialId String   @unique
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime @default(now())
+  aaguid       String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -138,35 +138,35 @@ model Location {
 }
 
 model Node {
-  id            String       @id @default(cuid())
-  displayName   String
-  host          String
-  port          Int
-  protocol      NodeProtocol @default(HTTP)
-  sftpPort      Int          @default(2022)
+  id          String       @id @default(cuid())
+  displayName String
+  host        String
+  port        Int
+  protocol    NodeProtocol @default(HTTP)
+  sftpPort    Int          @default(2022)
 
   // Resource limits for this node
-  memoryLimit   BigInt       // Total memory in bytes
-  diskLimit     BigInt       // Total disk in bytes
-  cpuLimit      Float        // Total CPU cores
-  uploadLimit   BigInt       @default(104857600) // File upload limit in bytes (default 100MB)
+  memoryLimit BigInt // Total memory in bytes
+  diskLimit   BigInt // Total disk in bytes
+  cpuLimit    Float // Total CPU cores
+  uploadLimit BigInt @default(104857600) // File upload limit in bytes (default 100MB)
 
   // Authentication
-  token         String       @unique
-  tokenHash     String
-  isOnline      Boolean      @default(false)
-  lastHeartbeat DateTime?
-  heartbeatLatency Int?      // Last heartbeat latency in ms
+  token            String    @unique
+  tokenHash        String
+  isOnline         Boolean   @default(false)
+  lastHeartbeat    DateTime?
+  heartbeatLatency Int? // Last heartbeat latency in ms
 
   // Relations
-  locationId    String
-  location      Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  allocations Allocation[]
-  servers     Server[]
+  allocations       Allocation[]
+  servers           Server[]
   outgoingTransfers ServerTransfer[] @relation("TransferSource")
   incomingTransfers ServerTransfer[] @relation("TransferTarget")
 
@@ -174,17 +174,17 @@ model Node {
 }
 
 model Allocation {
-  id        String   @id @default(cuid())
-  ip        String
-  port      Int
-  alias     String?
-  assigned  Boolean  @default(false)
+  id       String  @id @default(cuid())
+  ip       String
+  port     Int
+  alias    String?
+  assigned Boolean @default(false)
 
-  nodeId    String
-  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
-  serverId  String?
-  server    Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,53 +194,53 @@ model Allocation {
 }
 
 model Blueprint {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   category    String?
   author      String?
 
   // Docker image info (primary image)
-  imageName   String
-  imageTag    String   @default("latest")
-  registry    String?
+  imageName String
+  imageTag  String  @default("latest")
+  registry  String?
 
   // Multiple docker images with labels (Pterodactyl compatibility)
   // Format: { "Java 8": "ghcr.io/image:java_8", "Java 11": "ghcr.io/image:java_11" }
   dockerImages Json?
 
   // Startup configuration
-  startup       String?   // Startup command template (e.g., "java -Xmx{{SERVER_MEMORY}}M -jar server.jar")
-  stopCommand   String?   // Command to stop server (e.g., "stop")
+  startup     String? // Startup command template (e.g., "java -Xmx{{SERVER_MEMORY}}M -jar server.jar")
+  stopCommand String? // Command to stop server (e.g., "stop")
 
   // File configuration parsers (Pterodactyl format)
   // Format: { "server.properties": { "parser": "properties", "find": {...} } }
-  configFiles   Json?
+  configFiles Json?
 
   // Startup detection (when server is "done" starting)
   // Format: { "done": "For help, type" }
   startupDetection Json?
 
   // Installation script
-  installScript    String?   @db.Text
-  installContainer String?   // Container for installation (e.g., "alpine")
-  installEntrypoint String?  // Entrypoint for install (e.g., "ash")
+  installScript     String? @db.Text
+  installContainer  String? // Container for installation (e.g., "alpine")
+  installEntrypoint String? // Entrypoint for install (e.g., "ash")
 
   // Server variables (user-configurable)
   // Format: [{ "name": "...", "env_variable": "...", "default_value": "...", "user_viewable": true, ... }]
-  variables     Json?
+  variables Json?
 
   // Features (e.g., ["eula", "java_version", "pid_limit"])
-  features      Json?
+  features Json?
 
   // Default container configuration (JSON)
-  config      Json
+  config Json
 
   // Visibility
-  isPublic    Boolean  @default(true)
+  isPublic Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   servers Server[]
 
@@ -248,59 +248,59 @@ model Blueprint {
 }
 
 model Server {
-  id           String   @id @default(uuid())
-  shortId      String?  // First section of UUID (auto-populated by API)
-  name         String
-  description  String?
+  id          String  @id @default(uuid())
+  shortId     String? // First section of UUID (auto-populated by API)
+  name        String
+  description String?
 
   // Docker container info
-  containerId  String?
-  status       ServerStatus @default(INSTALLING)
+  containerId    String?
+  status         ServerStatus  @default(INSTALLING)
   previousStatus ServerStatus? // Stored when entering MAINTENANCE to restore later
-  suspended    Boolean      @default(false)
+  suspended      Boolean       @default(false)
 
   // Resource allocation
-  memory       BigInt   // Memory limit in MiB
-  disk         BigInt   // Disk limit in MiB
-  cpu          Float    // CPU limit as percentage (100 = 1 thread/core)
+  memory BigInt // Memory limit in MiB
+  disk   BigInt // Disk limit in MiB
+  cpu    Float // CPU limit as percentage (100 = 1 thread/core)
 
   // Advanced resource settings
-  cpuPinning   String?  // Pin to specific CPUs (e.g., "0,1,2,3" or "0-4")
-  swap         BigInt   @default(-1) // Swap in MiB: -1 = unlimited, 0 = disabled, >0 = limited
+  cpuPinning     String? // Pin to specific CPUs (e.g., "0,1,2,3" or "0-4")
+  swap           BigInt  @default(-1) // Swap in MiB: -1 = unlimited, 0 = disabled, >0 = limited
   oomKillDisable Boolean @default(false) // Disable OOM killer
 
   // Backup settings
-  backupLimit  Int      @default(3) // Maximum number of backups
+  backupLimit Int @default(3) // Maximum number of backups
 
   // Allocation settings
-  allocationLimit Int   @default(1) // Maximum number of allocations user can add
+  allocationLimit Int @default(1) // Maximum number of allocations user can add
 
   // Configuration overrides (merged with blueprint)
-  config       Json?
+  config Json?
 
   // Server-specific variable values (overrides blueprint defaults)
   // Format: { "MINECRAFT_VERSION": "1.20.4", "SERVER_JARFILE": "server.jar" }
-  variables    Json?
+  variables Json?
 
   // Selected docker image from blueprint's dockerImages
   // e.g., "ghcr.io/ptero-eggs/yolks:java_21"
-  dockerImage  String?
+  dockerImage String?
 
   // Custom startup commands to append to the generated startup command
-  customStartupCommands String?  @db.Text
+  customStartupCommands String? @db.Text
 
   // Relations
-  nodeId       String
-  node         Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
-  blueprintId  String
-  blueprint    Blueprint @relation(fields: [blueprintId], references: [id])
+  blueprintId String
+  blueprint   Blueprint @relation(fields: [blueprintId], references: [id])
 
-  ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   allocations   Allocation[]
   backups       Backup[]
@@ -322,8 +322,8 @@ model Server {
   childServers   Server[] @relation("ServerChildren")
 
   // Server members (subusers with permissions)
-  members       ServerMember[]
-  invitations   ServerInvitation[]
+  members     ServerMember[]
+  invitations ServerInvitation[]
 
   @@map("servers")
 }
@@ -345,32 +345,32 @@ enum ServerStatus {
 // ============================================
 
 model Backup {
-  id           String       @id @default(uuid())
-  name         String
+  id   String @id @default(uuid())
+  name String
 
   // Backup details
-  size         BigInt       @default(0)  // Size in bytes
-  checksum     String?                   // SHA256 checksum
-  checksumType String       @default("sha256")
+  size         BigInt  @default(0) // Size in bytes
+  checksum     String? // SHA256 checksum
+  checksumType String  @default("sha256")
 
   // Status
-  status       BackupStatus @default(IN_PROGRESS)
-  isLocked     Boolean      @default(false)
+  status   BackupStatus @default(IN_PROGRESS)
+  isLocked Boolean      @default(false)
 
   // Storage
-  storagePath  String?      // Local path or S3 key
-  uploadId     String?      // S3 multipart upload ID
+  storagePath String? // Local path or S3 key
+  uploadId    String? // S3 multipart upload ID
 
   // Relations
-  serverId     String
-  server       Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Metadata
-  ignoredFiles Json?        // Files/patterns excluded from backup
+  ignoredFiles Json? // Files/patterns excluded from backup
 
-  completedAt  DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("backups")
 }
@@ -387,57 +387,57 @@ enum BackupStatus {
 // ============================================
 
 model Schedule {
-  id          String   @id @default(uuid())
-  name        String
+  id   String @id @default(uuid())
+  name String
 
   // Cron expression (e.g., "0 0 * * *" for daily at midnight)
   cronExpression String
 
   // Whether schedule is active
-  isActive    Boolean  @default(true)
+  isActive Boolean @default(true)
 
   // When schedule processing started (null if never run)
   isProcessing Boolean @default(false)
 
   // Last run timestamp
-  lastRunAt   DateTime?
+  lastRunAt DateTime?
 
   // Next run timestamp (calculated from cron)
-  nextRunAt   DateTime?
+  nextRunAt DateTime?
 
   // Relations
-  serverId    String
-  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  tasks       ScheduleTask[]
+  tasks ScheduleTask[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("schedules")
 }
 
 model ScheduleTask {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Action type: power_start, power_stop, power_restart, backup, command
-  action      String
+  action String
 
   // Payload (command text for "command" action, backup name for "backup", etc.)
-  payload     String?
+  payload String?
 
   // Time offset in seconds from schedule start
-  timeOffset  Int      @default(0)
+  timeOffset Int @default(0)
 
   // Sequence order (tasks execute in order)
-  sequence    Int      @default(0)
+  sequence Int @default(0)
 
   // Relations
-  scheduleId  String
-  schedule    Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("schedule_tasks")
 }
@@ -447,22 +447,22 @@ model ScheduleTask {
 // ============================================
 
 model ActivityLog {
-  id         String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Event details
-  event      String   // e.g., "server:console.command", "server:power.start"
+  event String // e.g., "server:console.command", "server:power.start"
 
   // Context
-  ip         String?
-  metadata   Json?
+  ip       String?
+  metadata Json?
 
   // Relations
-  serverId   String?
-  server     Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  userId     String?
+  userId String?
 
-  timestamp  DateTime @default(now())
+  timestamp DateTime @default(now())
 
   @@index([serverId])
   @@index([event])
@@ -475,26 +475,26 @@ model ActivityLog {
 // ============================================
 
 model ServerTransfer {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Server being transferred
-  serverId      String
-  server        Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Source and target nodes
-  sourceNodeId  String
-  sourceNode    Node     @relation("TransferSource", fields: [sourceNodeId], references: [id])
-  targetNodeId  String
-  targetNode    Node     @relation("TransferTarget", fields: [targetNodeId], references: [id])
+  sourceNodeId String
+  sourceNode   Node   @relation("TransferSource", fields: [sourceNodeId], references: [id])
+  targetNodeId String
+  targetNode   Node   @relation("TransferTarget", fields: [targetNodeId], references: [id])
 
   // Transfer status
-  status        TransferStatus @default(PENDING)
-  progress      Int            @default(0) // 0-100 percentage
-  error         String?
+  status   TransferStatus @default(PENDING)
+  progress Int            @default(0) // 0-100 percentage
+  error    String?
 
   // Timestamps
-  createdAt     DateTime  @default(now())
-  completedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
 
   @@map("server_transfers")
 }
@@ -514,28 +514,28 @@ enum TransferStatus {
 // ============================================
 
 model Webhook {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Owner
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Optional server scope (null = all servers)
-  serverId   String?
-  server     Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Webhook configuration
-  url        String
-  secret     String   // HMAC-SHA256 signing secret
-  events     String[] // Array of event types to listen for
-  provider   String   @default("generic") // generic, discord, slack
+  url      String
+  secret   String // HMAC-SHA256 signing secret
+  events   String[] // Array of event types to listen for
+  provider String   @default("generic") // generic, discord, slack
 
   // Status
-  enabled    Boolean  @default(true)
+  enabled Boolean @default(true)
 
   // Timestamps
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   deliveries WebhookDelivery[]
 
@@ -543,22 +543,22 @@ model Webhook {
 }
 
 model WebhookDelivery {
-  id           String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Webhook reference
-  webhookId    String
-  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
   // Delivery details
-  event        String
-  payload      Json
-  statusCode   Int?
-  response     String?  @db.Text
-  attempts     Int      @default(0)
+  event      String
+  payload    Json
+  statusCode Int?
+  response   String? @db.Text
+  attempts   Int     @default(0)
 
   // Timestamps
-  deliveredAt  DateTime?
-  createdAt    DateTime  @default(now())
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([webhookId])
   @@index([createdAt])
@@ -570,14 +570,14 @@ model WebhookDelivery {
 // ============================================
 
 model Subdomain {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Server association (one-to-one)
-  serverId  String   @unique
-  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String @unique
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Subdomain name (e.g., "my-server" -> my-server.stellarstack.io)
-  subdomain String   @unique
+  subdomain String @unique
 
   // DNS record ID from Cloudflare (for cleanup)
   dnsRecordId String?
@@ -589,20 +589,20 @@ model Subdomain {
 }
 
 model CustomDomain {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Server association
-  serverId   String
-  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Domain configuration
-  domain     String   @unique
-  verified   Boolean  @default(false)
-  verifyCode String   // TXT record value for domain verification
+  domain     String  @unique
+  verified   Boolean @default(false)
+  verifyCode String // TXT record value for domain verification
 
   // Timestamps
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("custom_domains")
 }
@@ -622,26 +622,26 @@ enum FirewallActionEnum {
 }
 
 model FirewallRule {
-  id          String           @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
 
-  direction   FirewallDirectionEnum
+  direction FirewallDirectionEnum
 
-  action      FirewallActionEnum
+  action FirewallActionEnum
 
-  port        Int
-  protocol    String           @default("tcp")  // tcp, udp, both
+  port     Int
+  protocol String @default("tcp") // tcp, udp, both
 
-  sourceIp   String?          // Specific IP address to allow/deny (null = any)
+  sourceIp String? // Specific IP address to allow/deny (null = any)
 
-  isActive    Boolean          @default(true)
+  isActive Boolean @default(true)
 
-  serverId    String
-  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([serverId, port, protocol])
   @@map("firewall_rules")
@@ -652,11 +652,11 @@ model FirewallRule {
 // ============================================
 
 model ServerSettings {
-  id        String   @id @default(cuid())
-  serverId  String   @unique
-  motd      String?  // Message of Day
+  id       String  @id @default(cuid())
+  serverId String  @unique
+  motd     String? // Message of Day
 
-  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -669,56 +669,56 @@ model ServerSettings {
 // ============================================
 
 model ServerMember {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Server association
-  serverId    String
-  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // User association
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Permissions (stored as array of permission node strings)
   permissions String[]
 
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([serverId, userId])
   @@map("server_members")
 }
 
 model ServerInvitation {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Server association
-  serverId    String
-  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   // Inviter
-  inviterId   String
-  inviter     User     @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+  inviterId String
+  inviter   User   @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
 
   // Invitee (can be email or user ID)
-  email       String
-  inviteeId   String?
-  invitee     User?    @relation("ReceivedInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
+  email     String
+  inviteeId String?
+  invitee   User?   @relation("ReceivedInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
 
   // Permissions to grant on acceptance
   permissions String[]
 
   // Invitation status
-  status      InvitationStatus @default(PENDING)
-  token       String           @unique @default(uuid())
+  status InvitationStatus @default(PENDING)
+  token  String           @unique @default(uuid())
 
   // Expiration
-  expiresAt   DateTime
+  expiresAt DateTime
 
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("server_invitations")
 }
