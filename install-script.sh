@@ -1,0 +1,1517 @@
+#!/bin/bash
+
+# StellarStack Panel & API Installer (Docker-based)
+# https://github.com/MarquesCoding/StellarStack
+
+set -e
+
+# Version info
+INSTALLER_VERSION="1.0.0"
+INSTALLER_DATE=$(date +%Y-%m-%d)
+
+# Colors
+GREEN='\033[0;32m'
+BRIGHT_GREEN='\033[1;32m'
+DIM_GREEN='\033[2;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
+
+PRIMARY="${BRIGHT_GREEN}"
+SECONDARY="${GREEN}"
+MUTED="${DIM_GREEN}"
+ERROR="${RED}"
+WARNING="${YELLOW}"
+
+# Installation paths
+INSTALL_DIR="/opt/stellarstack"
+DOCKER_COMPOSE_FILE="${INSTALL_DIR}/docker-compose.yml"
+ENV_FILE="${INSTALL_DIR}/.env"
+NGINX_CONF_DIR="/etc/nginx/sites-available"
+NGINX_ENABLED_DIR="/etc/nginx/sites-enabled"
+
+# Docker images
+DOCKER_ORG="stellarstackoss"
+API_IMAGE="${DOCKER_ORG}/stellarstack-api"
+PANEL_IMAGE="${DOCKER_ORG}/stellarstack-web"
+
+# Installation type
+installation_type=""  # Options: panel_and_api, panel, api
+
+# Configuration
+panel_domain=""
+api_domain=""
+monitoring_domain=""
+server_ip=""
+install_monitoring="n"
+
+# PostgreSQL configuration
+postgres_user="stellarstack"
+postgres_password=""
+postgres_db="stellarstack"
+
+# Dependency installation
+install_docker="n"
+install_nginx="n"
+install_certbot="n"
+
+# Update mode
+update_mode="n"
+
+# Print functions
+print_step() {
+    echo ""
+    echo -e "${PRIMARY}  > $1${NC}"
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+}
+
+print_success() {
+    echo -e "  ${PRIMARY}[✓]${NC} $1"
+}
+
+print_error() {
+    echo -e "  ${ERROR}[✗]${NC} $1"
+}
+
+print_warning() {
+    echo -e "  ${WARNING}[!]${NC} $1"
+}
+
+print_info() {
+    echo -e "  ${SECONDARY}[i]${NC} $1"
+}
+
+print_task() {
+    echo -ne "  ${MUTED}[ ]${NC} ${MUTED}$1...${NC}"
+}
+
+print_task_done() {
+    echo -e "\r  ${PRIMARY}[■]${NC} ${PRIMARY}$1${NC}    "
+}
+
+# Ask yes/no question
+ask_yes_no() {
+    local prompt="$1"
+    local default="$2"
+    local input
+
+    if [ "$default" = "y" ]; then
+        echo -ne "  ${SECONDARY}${prompt} ${MUTED}[Y/n]${NC} "
+    else
+        echo -ne "  ${SECONDARY}${prompt} ${MUTED}[y/N]${NC} "
+    fi
+
+    read -r input </dev/tty
+
+    if [ "$default" = "y" ]; then
+        if [ "$input" = "n" ] || [ "$input" = "N" ]; then
+            return 1
+        fi
+        return 0
+    else
+        if [ "$input" = "y" ] || [ "$input" = "Y" ]; then
+            return 0
+        fi
+        return 1
+    fi
+}
+
+# Wait for user to press enter
+wait_for_enter() {
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -ne "${SECONDARY}  Press ${PRIMARY}[ENTER]${SECONDARY} to continue...${NC}"
+    read -r </dev/tty
+}
+
+# Get server's public IP address
+get_server_ip() {
+    local ip=""
+
+    if command -v curl &> /dev/null; then
+        ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null) || \
+        ip=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null) || \
+        ip=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null)
+    fi
+
+    if [ -z "$ip" ] && command -v wget &> /dev/null; then
+        ip=$(wget -qO- --timeout=5 https://api.ipify.org 2>/dev/null)
+    fi
+
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "$ip"
+        return 0
+    fi
+
+    return 1
+}
+
+# Verify domain resolves to server IP
+verify_domain_dns() {
+    local domain="$1"
+    local expected_ip="$2"
+    local resolved_ip=""
+
+    if command -v dig &> /dev/null; then
+        resolved_ip=$(dig +short "$domain" A 2>/dev/null | head -1)
+    elif command -v nslookup &> /dev/null; then
+        resolved_ip=$(nslookup "$domain" 2>/dev/null | awk '/^Address: / { print $2 }' | tail -1)
+    elif command -v host &> /dev/null; then
+        resolved_ip=$(host "$domain" 2>/dev/null | awk '/has address/ { print $4 }' | head -1)
+    elif command -v getent &> /dev/null; then
+        resolved_ip=$(getent hosts "$domain" 2>/dev/null | awk '{ print $1 }' | head -1)
+    fi
+
+    if [ -z "$resolved_ip" ]; then
+        echo "unable_to_resolve"
+        return 1
+    fi
+
+    if [ "$resolved_ip" = "$expected_ip" ]; then
+        echo "$resolved_ip"
+        return 0
+    else
+        echo "$resolved_ip"
+        return 1
+    fi
+}
+
+# Clear screen and show header
+clear_screen() {
+    clear
+    echo -e "${PRIMARY}"
+    cat << 'EOF'
+
+ ______     ______   ______     __         __         ______     ______     ______     ______   ______     ______     __  __
+/\  ___\   /\__  _\ /\  ___\   /\ \       /\ \       /\  __ \   /\  == \   /\  ___\   /\__  _\ /\  __ \   /\  ___\   /\ \/ /
+\ \___  \  \/_/\ \/ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \___  \  \/_/\ \/ \ \  __ \  \ \ \____  \ \  _"-.
+ \/\_____\    \ \_\  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \/\_____\    \ \_\  \ \_\ \_\  \ \_____\  \ \_\ \_\
+  \/_____/     \/_/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_____/     \/_/   \/_/\/_/   \/_____/   \/_/\/_/
+
+EOF
+    echo -e "${NC}"
+    echo -e "${MUTED}  ════════════════════════════════════════════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${SECONDARY}  INTERFACE 2037 // STELLARSTACK INC // DOCKER INSTALLER // v${INSTALLER_VERSION} (${INSTALLER_DATE})${NC}"
+    echo -e "${MUTED}  ════════════════════════════════════════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
+# Show welcome screen
+show_welcome() {
+    clear_screen
+    echo -e "${PRIMARY}  > INITIALIZATION SEQUENCE${NC}"
+    echo ""
+    echo -e "${SECONDARY}  This installer will set up StellarStack Panel and API using Docker.${NC}"
+    echo -e "${SECONDARY}  Fast deployment with pre-built images and optional monitoring stack.${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${PRIMARY}  SYSTEM REQUIREMENTS:${NC}"
+    echo -e "${SECONDARY}    > Ubuntu 20.04+ / Debian 11+ / RHEL 8+${NC}"
+    echo -e "${SECONDARY}    > 2GB RAM minimum (4GB+ recommended)${NC}"
+    echo -e "${SECONDARY}    > 20GB disk space${NC}"
+    echo -e "${SECONDARY}    > Docker & Docker Compose${NC}"
+    echo -e "${SECONDARY}    > nginx (for reverse proxy)${NC}"
+    echo ""
+    wait_for_enter
+}
+
+# Select installation type
+select_installation_type() {
+    clear_screen
+    echo -e "${PRIMARY}  > INSTALLATION TYPE${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Select which components to install:${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${PRIMARY}  [1]${NC} ${SECONDARY}Install Panel + API${NC}"
+    echo -e "${MUTED}      Complete StellarStack control panel with backend${NC}"
+    echo ""
+    echo -e "${PRIMARY}  [2]${NC} ${SECONDARY}Install Panel${NC}"
+    echo -e "${MUTED}      Control panel only${NC}"
+    echo ""
+    echo -e "${PRIMARY}  [3]${NC} ${SECONDARY}Install API${NC}"
+    echo -e "${MUTED}      Backend API only${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+
+    while true; do
+        echo -ne "  ${SECONDARY}Enter your choice [1-3]:${NC} "
+        read -r choice </dev/tty
+
+        case $choice in
+            1)
+                installation_type="panel_and_api"
+                print_success "Selected: Panel + API"
+                break
+                ;;
+            2)
+                installation_type="panel"
+                print_success "Selected: Panel"
+                break
+                ;;
+            3)
+                installation_type="api"
+                print_success "Selected: API"
+                break
+                ;;
+            *)
+                print_error "Invalid choice. Please enter 1, 2, or 3."
+                echo ""
+                ;;
+        esac
+    done
+
+    echo ""
+    if ask_yes_no "Install monitoring stack (Prometheus, Loki, Grafana)?" "y"; then
+        install_monitoring="y"
+        print_success "Monitoring stack will be installed"
+    else
+        print_info "Monitoring stack will not be installed"
+    fi
+
+    wait_for_enter
+}
+
+# Check for existing installation
+check_existing_installation() {
+    clear_screen
+    echo -e "${PRIMARY}  > EXISTING INSTALLATION CHECK${NC}"
+    echo ""
+
+    if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        update_mode="y"
+        print_warning "Existing installation found at ${INSTALL_DIR}"
+        print_info "System will be updated to latest version"
+    else
+        print_success "No existing installation detected"
+        print_info "Proceeding with fresh installation"
+    fi
+
+    echo ""
+    wait_for_enter
+}
+
+# Check dependencies
+check_dependencies() {
+    clear_screen
+    echo -e "${PRIMARY}  > DEPENDENCY CHECK${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Checking required dependencies...${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+
+    # Check Docker
+    if command -v docker &> /dev/null; then
+        print_success "Docker is installed"
+    else
+        print_warning "Docker is NOT installed"
+        echo ""
+        echo -e "${SECONDARY}  Docker is required to run containers.${NC}"
+        if ask_yes_no "Install Docker?" "y"; then
+            install_docker="y"
+            print_info "Docker will be installed"
+        else
+            print_error "Docker is required. Cannot continue."
+            exit 1
+        fi
+    fi
+    echo ""
+
+    # Check Docker Compose
+    if docker compose version &> /dev/null 2>&1; then
+        print_success "Docker Compose is installed"
+    elif command -v docker-compose &> /dev/null; then
+        print_success "Docker Compose (standalone) is installed"
+    else
+        print_warning "Docker Compose is NOT installed"
+        echo ""
+        if [ "$install_docker" = "y" ]; then
+            print_info "Docker Compose will be installed with Docker"
+        else
+            print_error "Docker Compose is required but not found"
+            exit 1
+        fi
+    fi
+    echo ""
+
+    # Check nginx
+    if command -v nginx &> /dev/null; then
+        print_success "nginx is installed"
+    else
+        print_warning "nginx is NOT installed"
+        echo ""
+        echo -e "${SECONDARY}  nginx is required as reverse proxy.${NC}"
+        if ask_yes_no "Install nginx?" "y"; then
+            install_nginx="y"
+            print_info "nginx will be installed"
+        else
+            print_error "nginx is required. Cannot continue."
+            exit 1
+        fi
+    fi
+    echo ""
+
+    # Check Certbot
+    if command -v certbot &> /dev/null; then
+        print_success "Certbot is installed"
+    else
+        print_warning "Certbot is NOT installed"
+        echo ""
+        echo -e "${SECONDARY}  Certbot is required for SSL certificates.${NC}"
+        if ask_yes_no "Install Certbot?" "y"; then
+            install_certbot="y"
+            print_info "Certbot will be installed"
+        else
+            print_warning "Proceeding without Certbot (SSL will be unavailable)"
+        fi
+    fi
+
+    echo ""
+    wait_for_enter
+}
+
+# Collect domain configuration
+collect_domain_config() {
+    clear_screen
+    echo -e "${PRIMARY}  > DOMAIN CONFIGURATION${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Configure domains and SSL certificates.${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+
+    # Get server IP
+    print_task "Detecting server IP address"
+    server_ip=$(get_server_ip)
+    if [ -n "$server_ip" ]; then
+        print_task_done "Detecting server IP address"
+        echo ""
+        print_info "Server IP: ${server_ip}"
+        echo ""
+    else
+        echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Could not detect server IP automatically${NC}    "
+        echo ""
+        echo -e "${SECONDARY}  Please enter your server's public IP address:${NC}"
+        echo -ne "  ${PRIMARY}>${NC} "
+        read -r server_ip </dev/tty
+        if [ -z "$server_ip" ]; then
+            print_error "Server IP is required for domain verification"
+            exit 1
+        fi
+        echo ""
+    fi
+
+    # Collect Panel domain if installing Panel
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        echo -e "${PRIMARY}  PANEL CONFIGURATION:${NC}"
+        echo ""
+        local panel_domain_verified=false
+        while [ "$panel_domain_verified" = false ]; do
+            echo -e "${SECONDARY}  Panel Domain ${MUTED}(e.g., panel.example.com)${NC}"
+            echo -ne "  ${PRIMARY}>${NC} "
+            read -r panel_domain </dev/tty
+
+            if [ -z "$panel_domain" ]; then
+                print_error "Panel domain is required"
+                echo ""
+                continue
+            fi
+
+            echo ""
+            echo -e "${SECONDARY}  Please create the following DNS record:${NC}"
+            echo ""
+            echo -e "    ${PRIMARY}Type:${NC}   A"
+            echo -e "    ${PRIMARY}Name:${NC}   ${panel_domain}"
+            echo -e "    ${PRIMARY}Value:${NC}  ${server_ip}"
+            echo -e "    ${PRIMARY}TTL:${NC}    Auto / 3600"
+            echo ""
+            echo -e "${MUTED}  Example for Cloudflare/most DNS providers:${NC}"
+            echo -e "    ${MUTED}A | ${panel_domain} | ${server_ip}${NC}"
+            echo ""
+
+            if ask_yes_no "Have you created the DNS record?" "n"; then
+                echo ""
+                print_task "Verifying DNS for ${panel_domain}"
+                sleep 2
+
+                local dns_result
+                dns_result=$(verify_domain_dns "$panel_domain" "$server_ip")
+                local dns_status=$?
+
+                if [ "$dns_result" = "unable_to_resolve" ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}Could not resolve ${panel_domain}${NC}    "
+                    echo ""
+                    print_error "The domain could not be resolved. Please check:"
+                    echo -e "    ${MUTED}- DNS record exists for this domain${NC}"
+                    echo -e "    ${MUTED}- DNS has propagated (may take 5-15 minutes)${NC}"
+                    echo ""
+                    if ! ask_yes_no "Try verifying again?" "y"; then
+                        if ask_yes_no "Skip verification and continue anyway?" "n"; then
+                            print_warning "Skipping DNS verification - SSL certificate generation may fail"
+                            panel_domain_verified=true
+                        fi
+                    fi
+                elif [ $dns_status -ne 0 ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}DNS mismatch for ${panel_domain}${NC}    "
+                    echo ""
+                    print_error "Domain resolves to: ${dns_result}"
+                    print_error "Expected (this server): ${server_ip}"
+                    echo ""
+                    if ! ask_yes_no "Try a different domain?" "y"; then
+                        if ask_yes_no "Skip verification and continue anyway?" "n"; then
+                            print_warning "Skipping DNS verification - SSL certificate generation may fail"
+                            panel_domain_verified=true
+                        fi
+                    fi
+                else
+                    print_task_done "Verifying DNS for ${panel_domain}"
+                    print_success "Domain ${panel_domain} correctly points to ${server_ip}"
+                    panel_domain_verified=true
+                fi
+            else
+                echo ""
+                if ask_yes_no "Try a different domain?" "y"; then
+                    continue
+                else
+                    print_error "Panel domain is required"
+                    exit 1
+                fi
+            fi
+        done
+        echo ""
+    fi
+
+    # Collect API domain if installing API
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        echo -e "${PRIMARY}  API CONFIGURATION:${NC}"
+        echo ""
+        local api_domain_verified=false
+        while [ "$api_domain_verified" = false ]; do
+            echo -e "${SECONDARY}  API Domain ${MUTED}(e.g., api.example.com)${NC}"
+            echo -ne "  ${PRIMARY}>${NC} "
+            read -r api_domain </dev/tty
+
+            if [ -z "$api_domain" ]; then
+                print_error "API domain is required"
+                echo ""
+                continue
+            fi
+
+            echo ""
+            echo -e "${SECONDARY}  Please create the following DNS record:${NC}"
+            echo ""
+            echo -e "    ${PRIMARY}Type:${NC}   A"
+            echo -e "    ${PRIMARY}Name:${NC}   ${api_domain}"
+            echo -e "    ${PRIMARY}Value:${NC}  ${server_ip}"
+            echo -e "    ${PRIMARY}TTL:${NC}    Auto / 3600"
+            echo ""
+            echo -e "${MUTED}  Example for Cloudflare/most DNS providers:${NC}"
+            echo -e "    ${MUTED}A | ${api_domain} | ${server_ip}${NC}"
+            echo ""
+
+            if ask_yes_no "Have you created the DNS record?" "n"; then
+                echo ""
+                print_task "Verifying DNS for ${api_domain}"
+                sleep 2
+
+                local dns_result
+                dns_result=$(verify_domain_dns "$api_domain" "$server_ip")
+                local dns_status=$?
+
+                if [ "$dns_result" = "unable_to_resolve" ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}Could not resolve ${api_domain}${NC}    "
+                    echo ""
+                    print_error "The domain could not be resolved. Please check:"
+                    echo -e "    ${MUTED}- DNS record exists for this domain${NC}"
+                    echo -e "    ${MUTED}- DNS has propagated (may take 5-15 minutes)${NC}"
+                    echo ""
+                    if ! ask_yes_no "Try verifying again?" "y"; then
+                        if ask_yes_no "Skip verification and continue anyway?" "n"; then
+                            print_warning "Skipping DNS verification - SSL certificate generation may fail"
+                            api_domain_verified=true
+                        fi
+                    fi
+                elif [ $dns_status -ne 0 ]; then
+                    echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}DNS mismatch for ${api_domain}${NC}    "
+                    echo ""
+                    print_error "Domain resolves to: ${dns_result}"
+                    print_error "Expected (this server): ${server_ip}"
+                    echo ""
+                    if ! ask_yes_no "Try a different domain?" "y"; then
+                        if ask_yes_no "Skip verification and continue anyway?" "n"; then
+                            print_warning "Skipping DNS verification - SSL certificate generation may fail"
+                            api_domain_verified=true
+                        fi
+                    fi
+                else
+                    print_task_done "Verifying DNS for ${api_domain}"
+                    print_success "Domain ${api_domain} correctly points to ${server_ip}"
+                    api_domain_verified=true
+                fi
+            else
+                echo ""
+                if ask_yes_no "Try a different domain?" "y"; then
+                    continue
+                else
+                    print_error "API domain is required"
+                    exit 1
+                fi
+            fi
+        done
+        echo ""
+    fi
+
+    # Collect monitoring domain if monitoring is enabled
+    if [ "$install_monitoring" = "y" ]; then
+        echo -e "${PRIMARY}  MONITORING CONFIGURATION:${NC}"
+        echo ""
+        local monitoring_domain_verified=false
+        while [ "$monitoring_domain_verified" = false ]; do
+            echo -e "${SECONDARY}  Monitoring Domain ${MUTED}(e.g., monitoring.example.com)${NC}"
+            echo -ne "  ${PRIMARY}>${NC} "
+            read -r monitoring_domain </dev/tty
+
+            if [ -z "$monitoring_domain" ]; then
+                print_error "Monitoring domain is required"
+                echo ""
+                continue
+            fi
+
+            echo ""
+            echo -e "${SECONDARY}  Please create the following DNS record:${NC}"
+            echo ""
+            echo -e "    ${PRIMARY}Type:${NC}   A"
+            echo -e "    ${PRIMARY}Name:${NC}   ${monitoring_domain}"
+            echo -e "    ${PRIMARY}Value:${NC}  ${server_ip}"
+            echo -e "    ${PRIMARY}TTL:${NC}    Auto / 3600"
+            echo ""
+
+            if ask_yes_no "Have you created the DNS record?" "n"; then
+                echo ""
+                print_task "Verifying DNS for ${monitoring_domain}"
+                sleep 2
+
+                local dns_result
+                dns_result=$(verify_domain_dns "$monitoring_domain" "$server_ip")
+                local dns_status=$?
+
+                if [ "$dns_result" = "unable_to_resolve" ] || [ $dns_status -ne 0 ]; then
+                    echo -e "\r  ${WARNING}[!]${NC} ${WARNING}DNS verification failed${NC}    "
+                    if ask_yes_no "Skip verification and continue anyway?" "n"; then
+                        print_warning "Skipping DNS verification for monitoring domain"
+                        monitoring_domain_verified=true
+                    fi
+                else
+                    print_task_done "Verifying DNS for ${monitoring_domain}"
+                    print_success "Domain ${monitoring_domain} correctly points to ${server_ip}"
+                    monitoring_domain_verified=true
+                fi
+            else
+                echo ""
+                if ask_yes_no "Try a different domain?" "y"; then
+                    continue
+                else
+                    print_error "Monitoring domain is required"
+                    exit 1
+                fi
+            fi
+        done
+    fi
+
+    wait_for_enter
+}
+
+# Install dependencies
+install_dependencies() {
+    print_step "INSTALLING DEPENDENCIES"
+
+    # Install Docker
+    if [ "$install_docker" = "y" ]; then
+        print_task "Installing Docker"
+        curl -fsSL https://get.docker.com | sh > /dev/null 2>&1
+        systemctl start docker
+        systemctl enable docker
+        usermod -aG docker $USER 2>/dev/null || true
+        print_task_done "Installing Docker"
+    else
+        print_success "Docker already installed"
+    fi
+
+    # Install nginx
+    if [ "$install_nginx" = "y" ]; then
+        print_task "Installing nginx"
+        if command -v apt-get &> /dev/null; then
+            apt-get update -qq && apt-get install -y nginx > /dev/null 2>&1
+        elif command -v dnf &> /dev/null; then
+            dnf install -y nginx > /dev/null 2>&1
+        elif command -v yum &> /dev/null; then
+            yum install -y nginx > /dev/null 2>&1
+        fi
+        systemctl start nginx
+        systemctl enable nginx
+        print_task_done "Installing nginx"
+    else
+        print_success "nginx already installed"
+    fi
+
+    # Install Certbot
+    if [ "$install_certbot" = "y" ]; then
+        print_task "Installing Certbot"
+        if command -v apt-get &> /dev/null; then
+            apt-get install -y certbot python3-certbot-nginx > /dev/null 2>&1
+        elif command -v dnf &> /dev/null; then
+            dnf install -y certbot python3-certbot-nginx > /dev/null 2>&1
+        elif command -v yum &> /dev/null; then
+            yum install -y certbot python3-certbot-nginx > /dev/null 2>&1
+        fi
+        print_task_done "Installing Certbot"
+    fi
+}
+
+# Generate environment file
+generate_env_file() {
+    print_step "GENERATING CONFIGURATION"
+
+    # Generate secure passwords
+    postgres_password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+    local jwt_secret=$(openssl rand -base64 32)
+
+    # Create install directory
+    mkdir -p "${INSTALL_DIR}"
+
+    # Generate .env file
+    print_task "Creating environment file"
+
+    cat > "${ENV_FILE}" << EOF
+# Database Configuration
+POSTGRES_USER=${postgres_user}
+POSTGRES_PASSWORD=${postgres_password}
+POSTGRES_DB=${postgres_db}
+DATABASE_URL=postgresql://${postgres_user}:${postgres_password}@postgres:5432/${postgres_db}
+
+# API Configuration
+PORT=3001
+HOSTNAME=::
+JWT_SECRET=${jwt_secret}
+NODE_ENV=production
+
+# Panel Configuration (Next.js)
+NEXT_PUBLIC_API_URL=https://${api_domain}
+FRONTEND_URL=https://${panel_domain}
+
+# Monitoring (if enabled)
+EOF
+
+    if [ "$install_monitoring" = "y" ]; then
+        cat >> "${ENV_FILE}" << EOF
+MONITORING_DOMAIN=${monitoring_domain}
+GRAFANA_ADMIN_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/")
+EOF
+    fi
+
+    chmod 600 "${ENV_FILE}"
+    print_task_done "Creating environment file"
+}
+
+# Generate Docker Compose file
+generate_docker_compose() {
+    print_task "Generating Docker Compose configuration"
+
+    cat > "${DOCKER_COMPOSE_FILE}" << 'COMPOSE_EOF'
+version: '3.8'
+
+networks:
+  stellarstack:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stellarstack-postgres
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+COMPOSE_EOF
+
+    # Add API service if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        cat >> "${DOCKER_COMPOSE_FILE}" << 'COMPOSE_EOF'
+  api:
+    image: stellarstackoss/stellarstack-api:latest
+    container_name: stellarstack-api
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=${PORT}
+      - HOSTNAME=${HOSTNAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - FRONTEND_URL=${FRONTEND_URL}
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+COMPOSE_EOF
+    fi
+
+    # Add Panel service if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        cat >> "${DOCKER_COMPOSE_FILE}" << 'COMPOSE_EOF'
+  panel:
+    image: stellarstackoss/stellarstack-web:latest
+    container_name: stellarstack-panel
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=${NODE_ENV}
+      - PORT=3000
+      - HOSTNAME=${HOSTNAME}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+COMPOSE_EOF
+    fi
+
+    # Add monitoring stack if enabled
+    if [ "$install_monitoring" = "y" ]; then
+        cat >> "${DOCKER_COMPOSE_FILE}" << 'COMPOSE_EOF'
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: stellarstack-prometheus
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  loki:
+    image: grafana/loki:latest
+    container_name: stellarstack-loki
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: stellarstack-promtail
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: stellarstack-grafana
+    restart: unless-stopped
+    networks:
+      - stellarstack
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=https://${MONITORING_DOMAIN}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+      - loki
+
+COMPOSE_EOF
+    fi
+
+    print_task_done "Generating Docker Compose configuration"
+}
+
+# Generate monitoring configs
+generate_monitoring_configs() {
+    if [ "$install_monitoring" != "y" ]; then
+        return
+    fi
+
+    print_task "Generating monitoring configurations"
+
+    # Prometheus config
+    cat > "${INSTALL_DIR}/prometheus.yml" << 'PROM_EOF'
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'api'
+    static_configs:
+      - targets: ['api:3001']
+    metrics_path: '/metrics'
+
+  - job_name: 'panel'
+    static_configs:
+      - targets: ['panel:3000']
+    metrics_path: '/metrics'
+PROM_EOF
+
+    # Loki config
+    cat > "${INSTALL_DIR}/loki-config.yml" << 'LOKI_EOF'
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+
+schema_config:
+  configs:
+    - from: 2020-05-15
+      store: boltdb
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 168h
+
+storage_config:
+  boltdb:
+    directory: /loki/index
+  filesystem:
+    directory: /loki/chunks
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+LOKI_EOF
+
+    # Promtail config
+    cat > "${INSTALL_DIR}/promtail-config.yml" << 'PROMTAIL_EOF'
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+PROMTAIL_EOF
+
+    # Create Grafana provisioning directory
+    mkdir -p "${INSTALL_DIR}/grafana-provisioning/datasources"
+    mkdir -p "${INSTALL_DIR}/grafana-provisioning/dashboards"
+
+    # Grafana datasources
+    cat > "${INSTALL_DIR}/grafana-provisioning/datasources/datasources.yml" << 'GRAFANA_DS_EOF'
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+GRAFANA_DS_EOF
+
+    print_task_done "Generating monitoring configurations"
+}
+
+# Configure nginx reverse proxy
+configure_nginx() {
+    print_step "CONFIGURING NGINX"
+
+    # Configure Panel nginx if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        print_task "Configuring nginx for Panel (${panel_domain})"
+
+        cat > "${NGINX_CONF_DIR}/stellarstack-panel" << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${panel_domain};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${panel_domain};
+
+    ssl_certificate /etc/letsencrypt/live/${panel_domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${panel_domain}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+        ln -sf "${NGINX_CONF_DIR}/stellarstack-panel" "${NGINX_ENABLED_DIR}/stellarstack-panel"
+        print_task_done "Configuring nginx for Panel (${panel_domain})"
+    fi
+
+    # Configure API nginx if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        print_task "Configuring nginx for API (${api_domain})"
+
+        cat > "${NGINX_CONF_DIR}/stellarstack-api" << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${api_domain};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${api_domain};
+
+    ssl_certificate /etc/letsencrypt/live/${api_domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${api_domain}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+        ln -sf "${NGINX_CONF_DIR}/stellarstack-api" "${NGINX_ENABLED_DIR}/stellarstack-api"
+        print_task_done "Configuring nginx for API (${api_domain})"
+    fi
+
+    # Configure Monitoring nginx if needed
+    if [ "$install_monitoring" = "y" ]; then
+        print_task "Configuring nginx for Monitoring (${monitoring_domain})"
+
+        cat > "${NGINX_CONF_DIR}/stellarstack-monitoring" << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${monitoring_domain};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${monitoring_domain};
+
+    ssl_certificate /etc/letsencrypt/live/${monitoring_domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${monitoring_domain}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    location / {
+        proxy_pass http://127.0.0.1:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
+        ln -sf "${NGINX_CONF_DIR}/stellarstack-monitoring" "${NGINX_ENABLED_DIR}/stellarstack-monitoring"
+        print_task_done "Configuring nginx for Monitoring (${monitoring_domain})"
+    fi
+}
+
+# Obtain SSL certificates
+obtain_ssl_certificates() {
+    print_step "OBTAINING SSL CERTIFICATES"
+
+    # Stop nginx temporarily
+    systemctl stop nginx
+
+    # Get Panel SSL if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        print_task "Obtaining SSL certificate for ${panel_domain}"
+        if certbot certonly --standalone -d "${panel_domain}" --non-interactive --agree-tos --register-unsafely-without-email > /dev/null 2>&1; then
+            print_task_done "Obtaining SSL certificate for ${panel_domain}"
+        else
+            print_warning "Failed to obtain SSL certificate for ${panel_domain}"
+        fi
+    fi
+
+    # Get API SSL if needed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        print_task "Obtaining SSL certificate for ${api_domain}"
+        if certbot certonly --standalone -d "${api_domain}" --non-interactive --agree-tos --register-unsafely-without-email > /dev/null 2>&1; then
+            print_task_done "Obtaining SSL certificate for ${api_domain}"
+        else
+            print_warning "Failed to obtain SSL certificate for ${api_domain}"
+        fi
+    fi
+
+    # Get Monitoring SSL if needed
+    if [ "$install_monitoring" = "y" ]; then
+        print_task "Obtaining SSL certificate for ${monitoring_domain}"
+        if certbot certonly --standalone -d "${monitoring_domain}" --non-interactive --agree-tos --register-unsafely-without-email > /dev/null 2>&1; then
+            print_task_done "Obtaining SSL certificate for ${monitoring_domain}"
+        else
+            print_warning "Failed to obtain SSL certificate for ${monitoring_domain}"
+        fi
+    fi
+
+    # Start nginx again
+    systemctl start nginx
+}
+
+# Show progress bar
+show_progress() {
+    local current=$1
+    local total=$2
+    local message=$3
+    local width=50
+    local percentage=$((current * 100 / total))
+    local filled=$((width * current / total))
+    local empty=$((width - filled))
+
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+    for ((i=0; i<empty; i++)); do bar="${bar}░"; done
+
+    echo -ne "\r  ${PRIMARY}[${bar}]${NC} ${percentage}% ${MUTED}${message}${NC}    "
+}
+
+# Check container health
+check_container_health() {
+    local container=$1
+    local max_attempts=60
+    local attempt=0
+
+    while [ $attempt -lt $max_attempts ]; do
+        local health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null)
+        local status=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null)
+
+        # If container has no healthcheck, just check if it's running
+        if [ -z "$health" ]; then
+            if [ "$status" = "running" ]; then
+                return 0
+            fi
+        elif [ "$health" = "healthy" ]; then
+            return 0
+        fi
+
+        # Check if container exited
+        if [ "$status" = "exited" ] || [ "$status" = "dead" ]; then
+            return 1
+        fi
+
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+
+    return 1
+}
+
+# Monitor container startup
+monitor_container_startup() {
+    local container=$1
+    local service_name=$2
+    local max_wait=60
+    local elapsed=0
+
+    echo ""
+    echo -e "  ${SECONDARY}Monitoring ${service_name}...${NC}"
+
+    while [ $elapsed -lt $max_wait ]; do
+        local health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null)
+        local status=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null)
+
+        if [ "$status" = "exited" ] || [ "$status" = "dead" ]; then
+            echo -e "  ${ERROR}[✗]${NC} ${ERROR}${service_name} failed to start${NC}"
+            echo ""
+            echo -e "  ${WARNING}Last 20 log lines:${NC}"
+            docker logs --tail 20 "$container" 2>&1 | sed 's/^/    /'
+            return 1
+        fi
+
+        # Calculate progress based on time elapsed
+        local percentage=$((elapsed * 100 / max_wait))
+
+        if [ -z "$health" ]; then
+            # No healthcheck - just show running status
+            if [ "$status" = "running" ]; then
+                show_progress $elapsed $max_wait "Starting ${service_name}"
+                sleep 1
+                show_progress $max_wait $max_wait "Starting ${service_name}"
+                echo ""
+                return 0
+            fi
+        else
+            case "$health" in
+                "starting")
+                    show_progress $elapsed $max_wait "${service_name}: running health checks"
+                    ;;
+                "healthy")
+                    show_progress $max_wait $max_wait "${service_name}: healthy"
+                    echo ""
+                    return 0
+                    ;;
+                "unhealthy")
+                    echo -e "\r  ${WARNING}[!]${NC} ${WARNING}${service_name} is unhealthy${NC}    "
+                    echo ""
+                    echo -e "  ${WARNING}Last 20 log lines:${NC}"
+                    docker logs --tail 20 "$container" 2>&1 | sed 's/^/    /'
+                    return 1
+                    ;;
+            esac
+        fi
+
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    echo -e "\r  ${WARNING}[!]${NC} ${WARNING}${service_name} timeout (but may still be starting)${NC}    "
+    echo ""
+    return 0
+}
+
+# Pull and start Docker containers
+pull_and_start() {
+    print_step "DEPLOYING CONTAINERS"
+
+    cd "${INSTALL_DIR}"
+
+    # Pull images with progress
+    echo -e "  ${SECONDARY}Pulling Docker images...${NC}"
+    echo ""
+
+    local images=()
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        images+=("${API_IMAGE}:latest")
+    fi
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        images+=("${PANEL_IMAGE}:latest")
+    fi
+    images+=("postgres:16-alpine")
+
+    if [ "$install_monitoring" = "y" ]; then
+        images+=("prom/prometheus:latest" "grafana/loki:latest" "grafana/promtail:latest" "grafana/grafana:latest")
+    fi
+
+    local total_images=${#images[@]}
+    local current=0
+
+    for image in "${images[@]}"; do
+        current=$((current + 1))
+        show_progress $current $total_images "Pulling $(basename $image)"
+        docker pull "$image" > /dev/null 2>&1
+    done
+    echo ""
+    echo ""
+
+    # Start containers
+    print_task "Starting containers"
+    docker compose up -d 2>&1 | grep -v "Pulling" > /dev/null
+    print_task_done "Starting containers"
+
+    echo ""
+    print_step "MONITORING CONTAINER HEALTH"
+
+    # Monitor postgres first (required by others)
+    if ! monitor_container_startup "stellarstack-postgres" "PostgreSQL"; then
+        print_error "PostgreSQL failed to start. Installation cannot continue."
+        echo ""
+        echo -e "${SECONDARY}  Check logs with: docker logs stellarstack-postgres${NC}"
+        exit 1
+    fi
+
+    # Monitor API if installed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        if ! monitor_container_startup "stellarstack-api" "API"; then
+            print_warning "API had issues starting. Check logs with: docker logs stellarstack-api"
+            echo ""
+
+            if ask_yes_no "Continue anyway?" "n"; then
+                echo ""
+            else
+                exit 1
+            fi
+        fi
+    fi
+
+    # Monitor Panel if installed
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        if ! monitor_container_startup "stellarstack-panel" "Panel"; then
+            print_warning "Panel had issues starting. Check logs with: docker logs stellarstack-panel"
+            echo ""
+
+            if ask_yes_no "Continue anyway?" "n"; then
+                echo ""
+            else
+                exit 1
+            fi
+        fi
+    fi
+
+    # Monitor monitoring stack if enabled
+    if [ "$install_monitoring" = "y" ]; then
+        monitor_container_startup "stellarstack-prometheus" "Prometheus" || true
+        monitor_container_startup "stellarstack-loki" "Loki" || true
+        monitor_container_startup "stellarstack-promtail" "Promtail" || true
+        monitor_container_startup "stellarstack-grafana" "Grafana" || true
+    fi
+
+    echo ""
+    print_step "FINALIZING"
+
+    # Reload nginx
+    print_task "Reloading nginx"
+    systemctl reload nginx > /dev/null 2>&1
+    print_task_done "Reloading nginx"
+
+    # Show final status
+    echo ""
+    print_info "Container status:"
+    echo ""
+    docker compose ps --format "table {{.Service}}\t{{.Status}}\t{{.Ports}}" | sed 's/^/    /'
+    echo ""
+}
+
+# Show completion screen
+show_complete() {
+    clear_screen
+    echo -e "${PRIMARY}  > DEPLOYMENT COMPLETE${NC}"
+    echo ""
+    echo -e "${SECONDARY}  StellarStack has been successfully deployed!${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${PRIMARY}  ACCESS POINTS:${NC}"
+    echo ""
+
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        echo -e "    ${PRIMARY}>${NC}  Panel:     ${PRIMARY}https://${panel_domain}${NC}"
+    fi
+
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        echo -e "    ${PRIMARY}>${NC}  API:       ${PRIMARY}https://${api_domain}${NC}"
+    fi
+
+    if [ "$install_monitoring" = "y" ]; then
+        echo -e "    ${PRIMARY}>${NC}  Monitoring: ${PRIMARY}https://${monitoring_domain}${NC}"
+    fi
+
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${PRIMARY}  USEFUL COMMANDS:${NC}"
+    echo ""
+    echo -e "    ${SECONDARY}cd ${INSTALL_DIR}${NC}"
+    echo -e "    ${SECONDARY}docker compose ps${NC}              ${MUTED}# Check container status${NC}"
+    echo -e "    ${SECONDARY}docker compose logs -f${NC}          ${MUTED}# View logs${NC}"
+    echo -e "    ${SECONDARY}docker compose restart${NC}          ${MUTED}# Restart all services${NC}"
+    echo -e "    ${SECONDARY}docker compose pull && docker compose up -d${NC} ${MUTED}# Update to latest${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${PRIMARY}  DATABASE CREDENTIALS:${NC}"
+    echo ""
+    echo -e "    ${SECONDARY}Database:${NC}     ${PRIMARY}${postgres_db}${NC}"
+    echo -e "    ${SECONDARY}Username:${NC}     ${PRIMARY}${postgres_user}${NC}"
+    echo -e "    ${SECONDARY}Password:${NC}     ${PRIMARY}${postgres_password}${NC}"
+    echo ""
+    echo -e "    ${WARNING}[!]${NC} ${WARNING}Save these credentials securely!${NC}"
+    echo ""
+
+    if [ "$install_monitoring" = "y" ]; then
+        local grafana_password=$(grep GRAFANA_ADMIN_PASSWORD "${ENV_FILE}" | cut -d= -f2)
+        echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+        echo ""
+        echo -e "${PRIMARY}  GRAFANA CREDENTIALS:${NC}"
+        echo ""
+        echo -e "    ${SECONDARY}Username:${NC}     ${PRIMARY}admin${NC}"
+        echo -e "    ${SECONDARY}Password:${NC}     ${PRIMARY}${grafana_password}${NC}"
+        echo ""
+    fi
+
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Thank you for installing StellarStack!${NC}"
+    echo -e "${MUTED}  Documentation: https://docs.stellarstack.app${NC}"
+    echo ""
+}
+
+# Main function
+main() {
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${ERROR}This script must be run as root${NC}"
+        echo -e "Run with: sudo $0"
+        exit 1
+    fi
+
+    # Welcome and configuration
+    show_welcome
+    select_installation_type
+    check_existing_installation
+    check_dependencies
+    collect_domain_config
+
+    # Install system dependencies
+    install_dependencies
+
+    # Generate configuration files
+    generate_env_file
+    generate_docker_compose
+    generate_monitoring_configs
+
+    # Configure nginx
+    configure_nginx
+
+    # Obtain SSL certificates
+    obtain_ssl_certificates
+
+    # Deploy containers
+    pull_and_start
+
+    # Show completion message
+    show_complete
+}
+
+# Run
+main
