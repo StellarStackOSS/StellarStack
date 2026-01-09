@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "../src/lib/auth";
 
@@ -67,7 +68,8 @@ async function main() {
     update: {
       imageName: "ghcr.io/ptero-eggs/yolks",
       imageTag: "java_21",
-      startup: "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+      startup:
+        "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
       stopCommand: "stop",
       startupDetection: { done: "Done" },
       installScript: `#!/bin/ash
@@ -127,7 +129,8 @@ echo "Download complete!"
       category: "gaming",
       imageName: "ghcr.io/ptero-eggs/yolks",
       imageTag: "java_21",
-      startup: "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+      startup:
+        "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
       stopCommand: "stop",
       startupDetection: { done: `{\\r\\n    \\"done\\": \\")! For help, type \\"\\r\\n}` },
       installScript: `#!/bin/ash
