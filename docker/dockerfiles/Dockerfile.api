@@ -27,7 +27,7 @@ COPY apps/api ./apps/api
 COPY turbo.json ./
 
 WORKDIR /app/apps/api
-RUN pnpm exec --filter @workspace/api prisma generate
+RUN pnpm exec --filter @workspace/api db:generate
 RUN pnpm build
 
 # ============================================
