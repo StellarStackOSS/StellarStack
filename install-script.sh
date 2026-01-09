@@ -5,6 +5,27 @@
 
 set -e
 
+# Enable debugging if DEBUG=1
+if [ "${DEBUG:-0}" = "1" ]; then
+    set -x
+fi
+
+# Error handler
+error_handler() {
+    local line_no=$1
+    echo ""
+    echo -e "${ERROR}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${ERROR}  ERROR: Script failed at line ${line_no}${NC}"
+    echo -e "${ERROR}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Please report this issue with the error details above.${NC}"
+    echo -e "${SECONDARY}  GitHub: https://github.com/MarquesCoding/StellarStack/issues${NC}"
+    echo ""
+    exit 1
+}
+
+trap 'error_handler ${LINENO}' ERR
+
 # Version info
 INSTALLER_VERSION="1.0.0"
 INSTALLER_DATE=$(date +%Y-%m-%d)
@@ -56,6 +77,10 @@ postgres_db="stellarstack"
 install_docker="n"
 install_nginx="n"
 install_certbot="n"
+
+# Configuration reuse flags
+skip_nginx_config="n"
+skip_ssl_generation="n"
 
 # Update mode
 update_mode="n"
@@ -311,6 +336,47 @@ check_dependencies() {
     # Check Docker
     if command -v docker &> /dev/null; then
         print_success "Docker is installed"
+
+        # Check if Docker is running
+        if ! docker ps &> /dev/null; then
+            print_warning "Docker is installed but not running"
+            echo ""
+            echo -e "${SECONDARY}  What would you like to do?${NC}"
+            echo -e "    ${PRIMARY}[1]${NC} Start Docker and continue"
+            echo -e "    ${PRIMARY}[2]${NC} Reinstall Docker"
+            echo -e "    ${PRIMARY}[3]${NC} Exit and fix manually"
+            echo ""
+            echo -ne "  ${SECONDARY}Enter your choice [1-3]:${NC} "
+            read -r docker_choice </dev/tty
+
+            case $docker_choice in
+                1)
+                    print_task "Starting Docker"
+                    systemctl start docker
+                    systemctl enable docker
+                    sleep 2
+                    if docker ps &> /dev/null; then
+                        print_task_done "Starting Docker"
+                    else
+                        echo ""
+                        print_error "Failed to start Docker"
+                        exit 1
+                    fi
+                    ;;
+                2)
+                    install_docker="y"
+                    print_info "Docker will be reinstalled"
+                    ;;
+                3)
+                    print_info "Please start Docker manually: systemctl start docker"
+                    exit 0
+                    ;;
+                *)
+                    print_error "Invalid choice"
+                    exit 1
+                    ;;
+            esac
+        fi
     else
         print_warning "Docker is NOT installed"
         echo ""
@@ -345,6 +411,51 @@ check_dependencies() {
     # Check nginx
     if command -v nginx &> /dev/null; then
         print_success "nginx is installed"
+
+        # Check if there are existing StellarStack configs
+        if ls /etc/nginx/sites-available/stellarstack-* &> /dev/null 2>&1; then
+            print_warning "Found existing StellarStack nginx configurations"
+            echo ""
+            echo -e "${SECONDARY}  What would you like to do?${NC}"
+            echo -e "    ${PRIMARY}[1]${NC} Keep existing nginx configs (use for updates)"
+            echo -e "    ${PRIMARY}[2]${NC} Overwrite with new configs"
+            echo -e "    ${PRIMARY}[3]${NC} Remove all StellarStack configs and start fresh"
+            echo ""
+            echo -ne "  ${SECONDARY}Enter your choice [1-3]:${NC} "
+            read -r nginx_choice </dev/tty
+
+            case $nginx_choice in
+                1)
+                    skip_nginx_config="y"
+                    print_info "Existing nginx configurations will be preserved"
+                    ;;
+                2)
+                    print_info "nginx configurations will be overwritten"
+                    ;;
+                3)
+                    print_task "Removing existing StellarStack nginx configs"
+                    rm -f /etc/nginx/sites-available/stellarstack-* 2>/dev/null || true
+                    rm -f /etc/nginx/sites-enabled/stellarstack-* 2>/dev/null || true
+                    print_task_done "Removing existing StellarStack nginx configs"
+                    ;;
+                *)
+                    print_error "Invalid choice"
+                    exit 1
+                    ;;
+            esac
+            echo ""
+        fi
+
+        # Check if nginx is running
+        if ! systemctl is-active --quiet nginx; then
+            print_warning "nginx is installed but not running"
+            if ask_yes_no "Start nginx now?" "y"; then
+                print_task "Starting nginx"
+                systemctl start nginx
+                systemctl enable nginx
+                print_task_done "Starting nginx"
+            fi
+        fi
     else
         print_warning "nginx is NOT installed"
         echo ""
@@ -362,6 +473,31 @@ check_dependencies() {
     # Check Certbot
     if command -v certbot &> /dev/null; then
         print_success "Certbot is installed"
+
+        # Check for existing certificates for our domains
+        local existing_certs=""
+        if [ -n "$panel_domain" ] && [ -d "/etc/letsencrypt/live/${panel_domain}" ]; then
+            existing_certs="${existing_certs}Panel (${panel_domain}), "
+        fi
+        if [ -n "$api_domain" ] && [ -d "/etc/letsencrypt/live/${api_domain}" ]; then
+            existing_certs="${existing_certs}API (${api_domain}), "
+        fi
+        if [ -n "$monitoring_domain" ] && [ -d "/etc/letsencrypt/live/${monitoring_domain}" ]; then
+            existing_certs="${existing_certs}Monitoring (${monitoring_domain}), "
+        fi
+
+        if [ -n "$existing_certs" ]; then
+            existing_certs=${existing_certs%, }  # Remove trailing comma
+            print_info "Found existing SSL certificates: ${existing_certs}"
+            echo ""
+            if ask_yes_no "Renew/reuse existing certificates?" "y"; then
+                skip_ssl_generation="y"
+                print_info "Existing certificates will be reused"
+            else
+                print_info "New certificates will be generated"
+            fi
+            echo ""
+        fi
     else
         print_warning "Certbot is NOT installed"
         echo ""
@@ -641,8 +777,28 @@ install_dependencies() {
         systemctl enable docker
         usermod -aG docker $USER 2>/dev/null || true
         print_task_done "Installing Docker"
+
+        # Verify Docker is working
+        print_task "Verifying Docker installation"
+        if ! docker ps > /dev/null 2>&1; then
+            echo ""
+            echo -e "${ERROR}Docker was installed but is not responding${NC}"
+            echo -e "${WARNING}Try running: systemctl restart docker${NC}"
+            exit 1
+        fi
+        print_task_done "Verifying Docker installation"
     else
         print_success "Docker already installed"
+
+        # Verify Docker is working
+        print_task "Verifying Docker is running"
+        if ! docker ps > /dev/null 2>&1; then
+            echo ""
+            echo -e "${ERROR}Docker is installed but not responding${NC}"
+            echo -e "${WARNING}Try running: systemctl start docker${NC}"
+            exit 1
+        fi
+        print_task_done "Verifying Docker is running"
     fi
 
     # Install nginx
@@ -1012,6 +1168,15 @@ GRAFANA_DS_EOF
 
 # Configure nginx reverse proxy
 configure_nginx() {
+    # Skip if user chose to keep existing configs
+    if [ "$skip_nginx_config" = "y" ]; then
+        print_step "CONFIGURING NGINX"
+        print_info "Skipping nginx configuration (using existing configs)"
+        echo ""
+        wait_for_enter
+        return
+    fi
+
     print_step "CONFIGURING NGINX"
 
     # Configure Panel nginx if needed
@@ -1160,6 +1325,15 @@ EOF
 
 # Obtain SSL certificates
 obtain_ssl_certificates() {
+    # Skip if user chose to reuse existing certificates
+    if [ "$skip_ssl_generation" = "y" ]; then
+        print_step "OBTAINING SSL CERTIFICATES"
+        print_info "Skipping SSL certificate generation (using existing certificates)"
+        echo ""
+        wait_for_enter
+        return
+    fi
+
     print_step "OBTAINING SSL CERTIFICATES"
 
     # Stop nginx temporarily
@@ -1197,23 +1371,6 @@ obtain_ssl_certificates() {
 
     # Start nginx again
     systemctl start nginx
-}
-
-# Show progress bar
-show_progress() {
-    local current=$1
-    local total=$2
-    local message=$3
-    local width=50
-    local percentage=$((current * 100 / total))
-    local filled=$((width * current / total))
-    local empty=$((width - filled))
-
-    local bar=""
-    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
-    for ((i=0; i<empty; i++)); do bar="${bar}░"; done
-
-    echo -ne "\r  ${PRIMARY}[${bar}]${NC} ${percentage}% ${MUTED}${message}${NC}    "
 }
 
 # Check container health
@@ -1254,14 +1411,14 @@ monitor_container_startup() {
     local max_wait=60
     local elapsed=0
 
-    echo ""
-    echo -e "  ${SECONDARY}Monitoring ${service_name}...${NC}"
+    print_task "Waiting for ${service_name} to be healthy"
 
     while [ $elapsed -lt $max_wait ]; do
         local health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null)
         local status=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null)
 
         if [ "$status" = "exited" ] || [ "$status" = "dead" ]; then
+            echo ""
             echo -e "  ${ERROR}[✗]${NC} ${ERROR}${service_name} failed to start${NC}"
             echo ""
             echo -e "  ${WARNING}Last 20 log lines:${NC}"
@@ -1269,30 +1426,21 @@ monitor_container_startup() {
             return 1
         fi
 
-        # Calculate progress based on time elapsed
-        local percentage=$((elapsed * 100 / max_wait))
-
         if [ -z "$health" ]; then
-            # No healthcheck - just show running status
+            # No healthcheck - just check if running
             if [ "$status" = "running" ]; then
-                show_progress $elapsed $max_wait "Starting ${service_name}"
-                sleep 1
-                show_progress $max_wait $max_wait "Starting ${service_name}"
-                echo ""
+                print_task_done "Waiting for ${service_name} to be healthy"
                 return 0
             fi
         else
             case "$health" in
-                "starting")
-                    show_progress $elapsed $max_wait "${service_name}: running health checks"
-                    ;;
                 "healthy")
-                    show_progress $max_wait $max_wait "${service_name}: healthy"
-                    echo ""
+                    print_task_done "Waiting for ${service_name} to be healthy"
                     return 0
                     ;;
                 "unhealthy")
-                    echo -e "\r  ${WARNING}[!]${NC} ${WARNING}${service_name} is unhealthy${NC}    "
+                    echo ""
+                    echo -e "  ${WARNING}[!]${NC} ${WARNING}${service_name} is unhealthy${NC}"
                     echo ""
                     echo -e "  ${WARNING}Last 20 log lines:${NC}"
                     docker logs --tail 20 "$container" 2>&1 | sed 's/^/    /'
@@ -1305,7 +1453,8 @@ monitor_container_startup() {
         elapsed=$((elapsed + 1))
     done
 
-    echo -e "\r  ${WARNING}[!]${NC} ${WARNING}${service_name} timeout (but may still be starting)${NC}    "
+    echo ""
+    echo -e "  ${WARNING}[!]${NC} ${WARNING}${service_name} timeout waiting for healthy status${NC}"
     echo ""
     return 0
 }
@@ -1316,10 +1465,7 @@ pull_and_start() {
 
     cd "${INSTALL_DIR}"
 
-    # Pull images with progress
-    echo -e "  ${SECONDARY}Pulling Docker images...${NC}"
-    echo ""
-
+    # Pull images
     local images=()
     if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
         images+=("${API_IMAGE}:latest")
@@ -1333,20 +1479,32 @@ pull_and_start() {
         images+=("prom/prometheus:latest" "grafana/loki:latest" "grafana/promtail:latest" "grafana/grafana:latest")
     fi
 
-    local total_images=${#images[@]}
-    local current=0
-
     for image in "${images[@]}"; do
-        current=$((current + 1))
-        show_progress $current $total_images "Pulling $(basename $image)"
-        docker pull "$image" > /dev/null 2>&1
+        print_task "Pulling ${image}"
+
+        # Pull image and capture any errors
+        if ! docker pull "$image" > /tmp/docker-pull.log 2>&1; then
+            echo ""
+            echo -e "${ERROR}Failed to pull image: $image${NC}"
+            echo -e "${WARNING}Error output:${NC}"
+            cat /tmp/docker-pull.log | tail -10 | sed 's/^/    /'
+            echo ""
+            exit 1
+        fi
+        print_task_done "Pulling ${image}"
     done
-    echo ""
     echo ""
 
     # Start containers
     print_task "Starting containers"
-    docker compose up -d 2>&1 | grep -v "Pulling" > /dev/null
+    if ! docker compose up -d > /tmp/docker-compose.log 2>&1; then
+        echo ""
+        echo -e "${ERROR}Failed to start containers${NC}"
+        echo -e "${WARNING}Error output:${NC}"
+        cat /tmp/docker-compose.log | sed 's/^/    /'
+        echo ""
+        exit 1
+    fi
     print_task_done "Starting containers"
 
     echo ""
