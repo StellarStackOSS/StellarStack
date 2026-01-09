@@ -524,6 +524,99 @@ collect_domain_config() {
     echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
     echo ""
 
+    # Check for existing certificates and extract domains
+    local found_existing_certs=false
+
+    # First, try to extract domains from existing .env file
+    if [ -f "${ENV_FILE}" ]; then
+        if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+            # Extract panel domain from FRONTEND_URL
+            local extracted_panel=$(grep "^FRONTEND_URL=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | sed 's|https\?://||' | sed 's|/.*||')
+            if [ -n "$extracted_panel" ] && [ -d "/etc/letsencrypt/live/${extracted_panel}" ]; then
+                panel_domain="$extracted_panel"
+                print_info "Detected existing panel domain: ${panel_domain}"
+                found_existing_certs=true
+            fi
+        fi
+
+        if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+            # Extract API domain from NEXT_PUBLIC_API_URL
+            local extracted_api=$(grep "^NEXT_PUBLIC_API_URL=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | sed 's|https\?://||' | sed 's|/.*||')
+            if [ -n "$extracted_api" ] && [ -d "/etc/letsencrypt/live/${extracted_api}" ]; then
+                api_domain="$extracted_api"
+                print_info "Detected existing API domain: ${api_domain}"
+                found_existing_certs=true
+            fi
+        fi
+
+        if [ "$install_monitoring" = "y" ]; then
+            # Extract monitoring domain from MONITORING_DOMAIN
+            local extracted_monitoring=$(grep "^MONITORING_DOMAIN=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2)
+            if [ -n "$extracted_monitoring" ] && [ -d "/etc/letsencrypt/live/${extracted_monitoring}" ]; then
+                monitoring_domain="$extracted_monitoring"
+                print_info "Detected existing monitoring domain: ${monitoring_domain}"
+                found_existing_certs=true
+            fi
+        fi
+    fi
+
+    # If domains not found in .env, try nginx config files
+    if [ -z "$panel_domain" ] && [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
+        if [ -f "${NGINX_CONF_DIR}/stellarstack-panel" ]; then
+            panel_domain=$(grep "server_name" "${NGINX_CONF_DIR}/stellarstack-panel" | head -1 | awk '{print $2}' | sed 's/;//')
+            if [ -n "$panel_domain" ] && [ -d "/etc/letsencrypt/live/${panel_domain}" ]; then
+                print_info "Detected existing panel domain from nginx: ${panel_domain}"
+                found_existing_certs=true
+            fi
+        fi
+    fi
+
+    if [ -z "$api_domain" ] && [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        if [ -f "${NGINX_CONF_DIR}/stellarstack-api" ]; then
+            api_domain=$(grep "server_name" "${NGINX_CONF_DIR}/stellarstack-api" | head -1 | awk '{print $2}' | sed 's/;//')
+            if [ -n "$api_domain" ] && [ -d "/etc/letsencrypt/live/${api_domain}" ]; then
+                print_info "Detected existing API domain from nginx: ${api_domain}"
+                found_existing_certs=true
+            fi
+        fi
+    fi
+
+    if [ -z "$monitoring_domain" ] && [ "$install_monitoring" = "y" ]; then
+        if [ -f "${NGINX_CONF_DIR}/stellarstack-monitoring" ]; then
+            monitoring_domain=$(grep "server_name" "${NGINX_CONF_DIR}/stellarstack-monitoring" | head -1 | awk '{print $2}' | sed 's/;//')
+            if [ -n "$monitoring_domain" ] && [ -d "/etc/letsencrypt/live/${monitoring_domain}" ]; then
+                print_info "Detected existing monitoring domain from nginx: ${monitoring_domain}"
+                found_existing_certs=true
+            fi
+        fi
+    fi
+
+    # If we found existing certs and have all required domains, skip domain input
+    if [ "$found_existing_certs" = true ]; then
+        local all_domains_found=true
+
+        if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]] && [ -z "$panel_domain" ]; then
+            all_domains_found=false
+        fi
+
+        if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]] && [ -z "$api_domain" ]; then
+            all_domains_found=false
+        fi
+
+        if [ "$install_monitoring" = "y" ] && [ -z "$monitoring_domain" ]; then
+            all_domains_found=false
+        fi
+
+        if [ "$all_domains_found" = true ]; then
+            echo ""
+            print_success "Using existing certificates and domains"
+            skip_ssl_generation="y"
+            echo ""
+            wait_for_enter
+            return
+        fi
+    fi
+
     # Get server IP
     print_task "Detecting server IP address"
     server_ip=$(get_server_ip)
@@ -1465,6 +1558,21 @@ pull_and_start() {
 
     cd "${INSTALL_DIR}"
 
+    # Stop and remove existing containers if they exist
+    # NOTE: This does NOT remove volumes, so database data is preserved
+    if [ -f "${DOCKER_COMPOSE_FILE}" ]; then
+        print_task "Stopping existing containers (preserving data volumes)"
+        if docker compose ps -q 2>/dev/null | grep -q .; then
+            # Use 'down' without -v flag to preserve volumes (database data, etc.)
+            docker compose down > /dev/null 2>&1 || true
+            print_task_done "Stopping existing containers (preserving data volumes)"
+            print_info "Database and persistent data preserved"
+        else
+            echo -e "\r  ${MUTED}[ ]${NC} ${MUTED}No existing containers to stop${NC}    "
+        fi
+        echo ""
+    fi
+
     # Pull images
     local images=()
     if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
@@ -1604,6 +1712,14 @@ show_complete() {
     echo -e "    ${SECONDARY}docker compose logs -f${NC}          ${MUTED}# View logs${NC}"
     echo -e "    ${SECONDARY}docker compose restart${NC}          ${MUTED}# Restart all services${NC}"
     echo -e "    ${SECONDARY}docker compose pull && docker compose up -d${NC} ${MUTED}# Update to latest${NC}"
+    echo ""
+    echo -e "${PRIMARY}  DATA MANAGEMENT:${NC}"
+    echo ""
+    echo -e "    ${SECONDARY}docker volume ls${NC}                ${MUTED}# List all data volumes${NC}"
+    echo -e "    ${SECONDARY}docker volume inspect stellarstack_postgres_data${NC} ${MUTED}# Check database volume${NC}"
+    echo ""
+    echo -e "    ${WARNING}[!]${NC} ${WARNING}Your database persists across container updates${NC}"
+    echo -e "    ${WARNING}[!]${NC} ${WARNING}To wipe all data: docker compose down -v (destructive!)${NC}"
     echo ""
     echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
     echo ""
