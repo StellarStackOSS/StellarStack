@@ -75,8 +75,14 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./package.json
 
-# Copy node_modules (includes Prisma client)
-COPY --from=deps --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules
+# Copy node_modules from builder (includes generated Prisma client)
+# Copy root node_modules which contains hoisted dependencies like Prisma
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy the generated Prisma client from apps/api/node_modules
+# This ensures the generated client is available even if it wasn't hoisted
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules/@prisma ./node_modules/@prisma
 
 # Switch to non-root user
 USER nodejs
