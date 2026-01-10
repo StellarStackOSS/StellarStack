@@ -24,12 +24,10 @@ FROM base AS builder
 WORKDIR /app
 
 # Build arguments for Next.js
-# Use placeholder URL for build - actual URL is resolved at runtime via nginx proxy
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ARG NEXT_PUBLIC_GIT_COMMIT_HASH=unknown
 
 # Set build-time environment variables
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Note: NEXT_PUBLIC_API_URL is NOT set here - it's resolved at runtime via next-public-env
 ENV NEXT_PUBLIC_GIT_COMMIT_HASH=$NEXT_PUBLIC_GIT_COMMIT_HASH
 
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml

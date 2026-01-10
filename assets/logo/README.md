@@ -1,0 +1,1 @@
+# Logo Assets\n\nPlace your StellarStack logo files here:\n\n- **stellarstack-logo.svg** - Primary logo (SVG format)\n- **stellarstack-logo.png** - Fallback logo (PNG, 512x512px)\n- **stellarstack-icon.svg** - Icon only (for favicon, etc.)\n

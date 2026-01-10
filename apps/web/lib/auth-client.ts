@@ -1,7 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 import { passkeyClient } from "@better-auth/passkey/client";
-import { getApiUrl } from "@/lib/api-url";
+import { getApiUrl } from "@/lib/public-env";
 
 // Create auth client with runtime URL - this is safe because Better Auth client
 // only validates URL format, not connectivity, during initialization
