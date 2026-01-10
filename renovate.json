@@ -7,16 +7,5 @@
 
   "commitMessagePrefix": "chore(deps):",
 
-  "labels": ["dependencies", "renovate"],
-
-  "issueTracker": "linear",
-
-  "issueTrackerProject": "StellarStack",
-  "issueTrackerTeam": "STE",
-
-  "issueTrackerLabels": ["dependencies"],
-
-  "issueTrackerTitle": "Deps: {{depName}} {{newVersion}}",
-
-  "issueTrackerState": "Todo"
+  "labels": ["dependencies", "renovate"]
 }
