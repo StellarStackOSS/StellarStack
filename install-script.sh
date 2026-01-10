@@ -929,9 +929,12 @@ install_dependencies() {
 generate_env_file() {
     print_step "GENERATING CONFIGURATION"
 
-    # Generate secure passwords
+    # Generate secure passwords and secrets
     postgres_password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
     local jwt_secret=$(openssl rand -base64 32)
+    local better_auth_secret=$(openssl rand -base64 32)
+    local download_token_secret=$(openssl rand -base64 32)
+    local encryption_key=$(openssl rand -base64 32)
 
     # Create install directory
     mkdir -p "${INSTALL_DIR}"
@@ -950,6 +953,9 @@ DATABASE_URL=postgresql://${postgres_user}:${postgres_password}@postgres:5432/${
 PORT=3001
 HOSTNAME=::
 JWT_SECRET=${jwt_secret}
+BETTER_AUTH_SECRET=${better_auth_secret}
+DOWNLOAD_TOKEN_SECRET=${download_token_secret}
+ENCRYPTION_KEY=${encryption_key}
 NODE_ENV=production
 
 # Panel Configuration (Next.js)
@@ -1022,6 +1028,9 @@ COMPOSE_EOF
       - PORT=${PORT}
       - HOSTNAME=${HOSTNAME}
       - JWT_SECRET=${JWT_SECRET}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - DOWNLOAD_TOKEN_SECRET=${DOWNLOAD_TOKEN_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - NODE_ENV=${NODE_ENV}
       - FRONTEND_URL=${FRONTEND_URL}
     ports:
@@ -1030,7 +1039,7 @@ COMPOSE_EOF
       postgres:
         condition: service_healthy
     command: >
-      sh -c "npx prisma migrate deploy && node dist/index.js"
+      sh -c "npx prisma db push --accept-data-loss && node --import tsx/esm src/index.ts"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
       interval: 30s
