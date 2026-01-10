@@ -63,7 +63,16 @@
       "Bash(docker build:*)",
       "Bash(podman run:*)",
       "Bash(podman build:*)",
-      "Bash(podman images:*)"
+      "Bash(podman images:*)",
+      "Bash(podman logs:*)",
+      "Bash(podman stop:*)",
+      "Bash(podman rm:*)",
+      "Bash(podman ps:*)",
+      "Bash(podman rmi:*)",
+      "Bash(podman exec:*)",
+      "Bash(node:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

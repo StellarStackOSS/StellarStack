@@ -5,22 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "prebuild": "prisma generate",
+    "prebuild": "pnpm prisma generate",
+    "db:generate": "pnpm prisma generate",
+    "db:push": "pnpm prisma db push",
+    "db:migrate": "pnpm prisma migrate dev",
+    "db:studio": "pnpm prisma studio",
+    "db:version": "pnpm prisma --version",
     "build": "tsc",
     "start": "tsx src/index.ts",
     "db:init": "prisma init",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:version": "prisma --version"
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.4.9",
     "@hono/node-server": "^1.13.7",
     "@hono/node-ws": "^1.2.0",
-    "@prisma/client": "^6.1.0",
+    "@prisma/client": "6.19.1",
     "bcrypt": "^6.0.0",
     "better-auth": "^1.1.14",
     "dotenv": "^16.4.7",
@@ -37,7 +37,7 @@
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^7.0.4",
     "@types/ws": "^8.18.1",
-    "prisma": "^6.1.0",
+    "prisma": "6.19.1",
     "typescript": "^5.7.2"
   }
 }
