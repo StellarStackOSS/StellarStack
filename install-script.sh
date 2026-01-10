@@ -960,9 +960,8 @@ ENCRYPTION_KEY=${encryption_key}
 NODE_ENV=production
 
 # Panel Configuration (Next.js)
-# Note: NEXT_PUBLIC_API_URL is baked into the Docker image at build time as "/api"
-# nginx proxies panel.domain.com/api/* to the API container
-# This variable is only used for local development or custom builds
+# NEXT_PUBLIC_API_URL is resolved at runtime using next-public-env
+# This value is injected into the browser at page load time
 NEXT_PUBLIC_API_URL=https://${api_domain}
 FRONTEND_URL=https://${panel_domain}
 
@@ -1099,6 +1098,7 @@ COMPOSE_EOF
       - NODE_ENV=${NODE_ENV}
       - PORT=3000
       - HOSTNAME=${HOSTNAME}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
