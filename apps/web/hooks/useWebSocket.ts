@@ -6,6 +6,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Convert HTTP URL to WebSocket URL
 const getWebSocketUrl = (): string => {
+  // If API_URL is a relative path (e.g., "/api" for nginx proxy), construct full URL from window.location
+  if (API_URL.startsWith("/")) {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}${API_URL}/ws`;
+  }
+
+  // Otherwise, API_URL is a full URL (e.g., "http://localhost:3001" for local dev)
   const url = new URL(API_URL);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/api/ws";

@@ -960,6 +960,9 @@ ENCRYPTION_KEY=${encryption_key}
 NODE_ENV=production
 
 # Panel Configuration (Next.js)
+# Note: NEXT_PUBLIC_API_URL is baked into the Docker image at build time as "/api"
+# nginx proxies panel.domain.com/api/* to the API container
+# This variable is only used for local development or custom builds
 NEXT_PUBLIC_API_URL=https://${api_domain}
 FRONTEND_URL=https://${panel_domain}
 
@@ -1093,7 +1096,6 @@ COMPOSE_EOF
     networks:
       - stellarstack
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
       - NODE_ENV=${NODE_ENV}
       - PORT=3000
       - HOSTNAME=${HOSTNAME}
@@ -1318,6 +1320,28 @@ configure_nginx() {
     if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "panel" ]]; then
         print_task "Configuring nginx for Panel (${panel_domain})"
 
+        # Determine if we need API proxy (only for panel_and_api)
+        local include_api_proxy=""
+        if [[ "$installation_type" == "panel_and_api" ]]; then
+            include_api_proxy="
+    # Proxy API requests to API container
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \\\$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \\\$host;
+        proxy_set_header X-Real-IP \\\$remote_addr;
+        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\\$scheme;
+        proxy_cache_bypass \\\$http_upgrade;
+
+        # WebSocket support
+        proxy_read_timeout 86400;
+    }
+"
+        fi
+
         cat > "${NGINX_CONF_DIR}/stellarstack-panel" << EOF
 server {
     listen 80;
@@ -1343,7 +1367,8 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
-
+${include_api_proxy}
+    # Panel frontend
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -1600,12 +1625,6 @@ pull_and_start() {
 
     cd "${INSTALL_DIR}"
 
-    # Check if postgres volume exists
-    local postgres_volume_exists=false
-    if docker volume inspect stellarstack_postgres_data &>/dev/null; then
-        postgres_volume_exists=true
-    fi
-
     # Stop and remove existing containers if they exist
     # NOTE: This does NOT remove volumes, so database data is preserved
     if [ -f "${DOCKER_COMPOSE_FILE}" ]; then
@@ -1619,28 +1638,6 @@ pull_and_start() {
             echo -e "\r  ${MUTED}[ ]${NC} ${MUTED}No existing containers to stop${NC}    "
         fi
         echo ""
-    fi
-
-    # If this is update mode and postgres volume exists, skip volume cleanup
-    # If this is NOT update mode but postgres volume exists, it's likely from failed install attempts
-    if [ "$postgres_volume_exists" = true ] && [ "$update_mode" = "n" ]; then
-        echo ""
-        print_warning "Found existing PostgreSQL data volume from previous installation attempt"
-        echo ""
-        echo -e "${SECONDARY}  This volume may contain corrupted authentication data that causes login failures.${NC}"
-        echo ""
-        if ask_yes_no "Remove the existing database volume and start fresh?" "y"; then
-            print_task "Removing existing PostgreSQL volume"
-            docker compose down -v > /dev/null 2>&1 || true
-            docker volume rm stellarstack_postgres_data > /dev/null 2>&1 || true
-            print_task_done "Removing existing PostgreSQL volume"
-            print_success "Clean slate ready for fresh installation"
-            echo ""
-        else
-            print_warning "Keeping existing volume - authentication issues may persist"
-            print_info "If you encounter password errors, you'll need to manually fix them"
-            echo ""
-        fi
     fi
 
     # Pull images
@@ -1694,6 +1691,36 @@ pull_and_start() {
         echo ""
         echo -e "${SECONDARY}  Check logs with: docker logs stellarstack-postgres${NC}"
         exit 1
+    fi
+
+    # Verify PostgreSQL password and fix if needed
+    # This ensures the password works even if the container was initialized with a broken hash
+    print_task "Verifying PostgreSQL authentication"
+
+    # Test if the password works from the network (how the API will connect)
+    if ! docker run --rm --network stellarstack_stellarstack postgres:16-alpine \
+        psql "postgresql://${postgres_user}:${postgres_password}@postgres:5432/${postgres_db}" \
+        -c "SELECT 1" > /dev/null 2>&1; then
+
+        echo -e "\r  ${WARNING}[!]${NC} ${WARNING}PostgreSQL password needs to be reset${NC}    "
+        print_task "Resetting PostgreSQL password"
+
+        # Reset the password using ALTER USER (this always works)
+        docker exec stellarstack-postgres psql -U "${postgres_user}" -d "${postgres_db}" \
+            -c "ALTER USER ${postgres_user} WITH PASSWORD '${postgres_password}';" > /dev/null 2>&1
+
+        # Verify it works now
+        if docker run --rm --network stellarstack_stellarstack postgres:16-alpine \
+            psql "postgresql://${postgres_user}:${postgres_password}@postgres:5432/${postgres_db}" \
+            -c "SELECT 1" > /dev/null 2>&1; then
+            print_task_done "Resetting PostgreSQL password"
+        else
+            echo -e "\r  ${ERROR}[✗]${NC} ${ERROR}Failed to reset PostgreSQL password${NC}    "
+            print_error "PostgreSQL authentication still failing after password reset"
+            exit 1
+        fi
+    else
+        print_task_done "Verifying PostgreSQL authentication"
     fi
 
     # Monitor API if installed
@@ -1801,6 +1828,25 @@ show_complete() {
     echo ""
     echo -e "    ${WARNING}[!]${NC} ${WARNING}Save these credentials securely!${NC}"
     echo ""
+
+    if [[ "$installation_type" == "panel_and_api" || "$installation_type" == "api" ]]; then
+        local jwt_secret=$(grep "^JWT_SECRET=" "${ENV_FILE}" | cut -d= -f2)
+        local better_auth_secret=$(grep "^BETTER_AUTH_SECRET=" "${ENV_FILE}" | cut -d= -f2)
+        local download_token_secret=$(grep "^DOWNLOAD_TOKEN_SECRET=" "${ENV_FILE}" | cut -d= -f2)
+        local encryption_key=$(grep "^ENCRYPTION_KEY=" "${ENV_FILE}" | cut -d= -f2)
+
+        echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+        echo ""
+        echo -e "${PRIMARY}  API SECURITY CREDENTIALS:${NC}"
+        echo ""
+        echo -e "    ${SECONDARY}JWT Secret:${NC}            ${PRIMARY}${jwt_secret}${NC}"
+        echo -e "    ${SECONDARY}Better Auth Secret:${NC}    ${PRIMARY}${better_auth_secret}${NC}"
+        echo -e "    ${SECONDARY}Download Token Secret:${NC} ${PRIMARY}${download_token_secret}${NC}"
+        echo -e "    ${SECONDARY}Encryption Key:${NC}        ${PRIMARY}${encryption_key}${NC}"
+        echo ""
+        echo -e "    ${WARNING}[!]${NC} ${WARNING}These are stored in ${ENV_FILE}${NC}"
+        echo ""
+    fi
 
     if [ "$install_monitoring" = "y" ]; then
         local grafana_password=$(grep GRAFANA_ADMIN_PASSWORD "${ENV_FILE}" | cut -d= -f2)
