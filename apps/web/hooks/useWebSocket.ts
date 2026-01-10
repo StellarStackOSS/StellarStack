@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverKeys } from "@/hooks/queries";
-import { getApiUrl, getApiEndpoint } from "@/lib/api-url";
+import { getApiUrl, getApiEndpoint } from "@/lib/public-env";
 
 // Convert HTTP URL to WebSocket URL
 const getWebSocketUrl = (): string => {

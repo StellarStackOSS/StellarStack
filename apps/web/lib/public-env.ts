@@ -1,0 +1,33 @@
+import { createPublicEnv } from "next-public-env";
+
+export const { getPublicEnv, PublicEnv } = createPublicEnv({
+  API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+});
+
+/**
+ * Get the API URL at runtime
+ */
+export function getApiUrl(): string {
+  const env = getPublicEnv();
+  return env.API_URL;
+}
+
+/**
+ * Get the base path for API requests
+ */
+export function getApiBasePath(): string {
+  return "/api";
+}
+
+/**
+ * Get the full API endpoint URL
+ */
+export function getApiEndpoint(path: string): string {
+  const baseUrl = getApiUrl();
+  const basePath = getApiBasePath();
+
+  // Remove leading slash from path if present
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+
+  return `${baseUrl}${basePath}/${cleanPath}`;
+}
