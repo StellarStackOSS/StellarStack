@@ -27,7 +27,12 @@ export function getApiEndpoint(path: string): string {
   const basePath = getApiBasePath();
 
   // Remove leading slash from path if present
-  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  let cleanPath = path.startsWith("/") ? path.slice(1) : path;
+
+  // If path already starts with "api/", don't add basePath again
+  if (cleanPath.startsWith("api/")) {
+    return `${baseUrl}/${cleanPath}`;
+  }
 
   return `${baseUrl}${basePath}/${cleanPath}`;
 }
