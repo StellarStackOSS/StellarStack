@@ -1043,10 +1043,6 @@ NODE_ENV=production
 NEXT_PUBLIC_API_URL=https://${api_domain}
 FRONTEND_URL=https://${panel_domain}
 
-# Admin Account (Initial Setup)
-ADMIN_EMAIL=${admin_email}
-ADMIN_PASSWORD=${admin_password}
-
 # Monitoring (if enabled)
 EOF
 
@@ -1150,8 +1146,6 @@ COMPOSE_EOF
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - NODE_ENV=${NODE_ENV}
       - FRONTEND_URL=${FRONTEND_URL}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - "127.0.0.1:3001:3001"
     depends_on:
@@ -1824,21 +1818,16 @@ pull_and_start() {
                 echo ""
                 print_task "Creating admin account in database"
 
-                # Create a temporary seeding script that uses better-auth to hash the password
-                cat > "${INSTALL_DIR}/seed-admin.js" << 'SEED_EOF'
+                # Create a temporary seeding script with hardcoded credentials
+                cat > "${INSTALL_DIR}/seed-admin.js" << SEED_EOF
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (!email || !password) {
-    console.error('ADMIN_EMAIL and ADMIN_PASSWORD must be set');
-    process.exit(1);
-  }
+  const email = '${admin_email}';
+  const password = '${admin_password}';
 
   // Check if admin already exists
   const existing = await prisma.user.findUnique({
@@ -1865,7 +1854,7 @@ async function seedAdmin() {
   });
 
   console.log('Admin user created successfully');
-  await prisma.$disconnect();
+  await prisma.\$disconnect();
 }
 
 seedAdmin().catch((error) => {
