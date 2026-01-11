@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.0...v1.1.1) (2026-01-11)
+
+
+### Documentation
+
+* add Linear ticket links to CHANGELOG ([37e883b](https://github.com/StellarStackOSS/StellarStack/commit/37e883b8809057ad35b67ec9a0359a7d74af3da4))
+
 ## [1.1.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.0.1...v1.1.0) (2026-01-11)
 
 
