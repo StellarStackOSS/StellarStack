@@ -1092,8 +1092,6 @@ generate_docker_compose() {
     print_task "Generating Docker Compose configuration"
 
     cat > "${DOCKER_COMPOSE_FILE}" << 'COMPOSE_EOF'
-version: '3.8'
-
 networks:
   stellarstack:
     driver: bridge
@@ -1705,18 +1703,32 @@ pull_and_start() {
 
     # Stop and remove existing containers if they exist
     # NOTE: This does NOT remove volumes, so database data is preserved
+    print_task "Checking for existing containers"
+
+    # First, try to stop containers via docker-compose if compose file exists
     if [ -f "${DOCKER_COMPOSE_FILE}" ]; then
-        print_task "Stopping existing containers (preserving data volumes)"
         if docker compose ps -q 2>/dev/null | grep -q .; then
-            # Use 'down' without -v flag to preserve volumes (database data, etc.)
             docker compose down > /dev/null 2>&1 || true
-            print_task_done "Stopping existing containers (preserving data volumes)"
-            print_info "Database and persistent data preserved"
-        else
-            echo -e "\r  ${MUTED}[ ]${NC} ${MUTED}No existing containers to stop${NC}    "
         fi
-        echo ""
     fi
+
+    # Also check for manually created containers and remove them
+    local containers_removed=false
+    for container in stellarstack-panel stellarstack-api stellarstack-postgres stellarstack-grafana stellarstack-loki stellarstack-prometheus stellarstack-promtail; do
+        if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+            docker stop "$container" > /dev/null 2>&1 || true
+            docker rm "$container" > /dev/null 2>&1 || true
+            containers_removed=true
+        fi
+    done
+
+    if [ "$containers_removed" = true ]; then
+        print_task_done "Checking for existing containers"
+        print_info "Existing containers removed (data volumes preserved)"
+    else
+        print_task_done "Checking for existing containers"
+    fi
+    echo ""
 
     # Pull images
     local images=()
@@ -1750,7 +1762,7 @@ pull_and_start() {
 
     # Start containers
     print_task "Starting containers"
-    if ! docker compose up -d > /tmp/docker-compose.log 2>&1; then
+    if ! docker compose up -d --remove-orphans > /tmp/docker-compose.log 2>&1; then
         echo ""
         echo -e "${ERROR}Failed to start containers${NC}"
         echo -e "${WARNING}Error output:${NC}"
