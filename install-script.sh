@@ -2055,8 +2055,134 @@ show_complete() {
     echo ""
 }
 
+# Uninstall function - completely remove StellarStack
+uninstall() {
+    clear_screen
+    echo -e "${ERROR}  > UNINSTALL STELLARSTACK${NC}"
+    echo ""
+    echo -e "${WARNING}  WARNING: This will completely remove StellarStack from your system!${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${SECONDARY}  The following will be removed:${NC}"
+    echo -e "    ${MUTED}• All StellarStack Docker containers${NC}"
+    echo -e "    ${MUTED}• All Docker volumes (including database data)${NC}"
+    echo -e "    ${MUTED}• All nginx configurations${NC}"
+    echo -e "    ${MUTED}• Installation directory (${INSTALL_DIR})${NC}"
+    echo ""
+    echo -e "${PRIMARY}  The following will NOT be removed:${NC}"
+    echo -e "    ${MUTED}• Docker and nginx (system packages)${NC}"
+    echo -e "    ${MUTED}• SSL certificates in /etc/letsencrypt${NC}"
+    echo -e "    ${MUTED}• Docker images (use 'docker rmi' to remove)${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+
+    if ! ask_yes_no "Are you sure you want to uninstall StellarStack?" "n"; then
+        echo ""
+        print_info "Uninstall cancelled"
+        exit 0
+    fi
+
+    echo ""
+    if ! ask_yes_no "Type 'yes' to confirm - This will DELETE ALL DATA" "n"; then
+        echo ""
+        print_info "Uninstall cancelled"
+        exit 0
+    fi
+
+    echo ""
+    print_step "UNINSTALLING STELLARSTACK"
+
+    # Stop and remove containers
+    print_task "Stopping and removing containers"
+    cd "${INSTALL_DIR}" 2>/dev/null || true
+    if [ -f "${DOCKER_COMPOSE_FILE}" ]; then
+        docker compose down -v > /dev/null 2>&1 || true
+    fi
+
+    # Remove individual containers if they still exist
+    for container in stellarstack-panel stellarstack-api stellarstack-postgres stellarstack-grafana stellarstack-loki stellarstack-prometheus stellarstack-promtail stellarstack-certbot stellarstack-nginx; do
+        docker stop "$container" > /dev/null 2>&1 || true
+        docker rm "$container" > /dev/null 2>&1 || true
+    done
+    print_task_done "Stopping and removing containers"
+
+    # Remove Docker volumes
+    print_task "Removing Docker volumes"
+    docker volume rm stellarstack_postgres_data > /dev/null 2>&1 || true
+    docker volume rm stellarstack_prometheus_data > /dev/null 2>&1 || true
+    docker volume rm stellarstack_grafana_data > /dev/null 2>&1 || true
+    docker volume rm stellarstack_loki_data > /dev/null 2>&1 || true
+    docker volume rm stellarstack_certbot_www > /dev/null 2>&1 || true
+    docker volume rm stellarstack_certbot_conf > /dev/null 2>&1 || true
+    print_task_done "Removing Docker volumes"
+
+    # Remove Docker network
+    print_task "Removing Docker network"
+    docker network rm stellarstack > /dev/null 2>&1 || true
+    print_task_done "Removing Docker network"
+
+    # Remove nginx configurations
+    print_task "Removing nginx configurations"
+    rm -f /etc/nginx/sites-available/stellarstack-* 2>/dev/null || true
+    rm -f /etc/nginx/sites-enabled/stellarstack-* 2>/dev/null || true
+    systemctl reload nginx > /dev/null 2>&1 || true
+    print_task_done "Removing nginx configurations"
+
+    # Remove installation directory
+    print_task "Removing installation directory"
+    rm -rf "${INSTALL_DIR}" 2>/dev/null || true
+    print_task_done "Removing installation directory"
+
+    echo ""
+    echo -e "${PRIMARY}  ✓ StellarStack has been completely uninstalled${NC}"
+    echo ""
+    echo -e "${MUTED}  ────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "${SECONDARY}  Optional cleanup:${NC}"
+    echo ""
+    echo -e "    ${MUTED}# Remove Docker images (optional)${NC}"
+    echo -e "    ${SECONDARY}docker rmi stellarstackoss/stellarstack-api:latest${NC}"
+    echo -e "    ${SECONDARY}docker rmi stellarstackoss/stellarstack-web:latest${NC}"
+    echo ""
+    echo -e "    ${MUTED}# Remove SSL certificates (optional)${NC}"
+    echo -e "    ${SECONDARY}certbot delete --cert-name yourdomain.com${NC}"
+    echo ""
+    echo -e "    ${MUTED}# Remove Docker and nginx (optional)${NC}"
+    echo -e "    ${SECONDARY}apt-get remove docker-ce docker-ce-cli containerd.io nginx${NC}"
+    echo ""
+}
+
+# Show usage information
+show_usage() {
+    echo -e "${PRIMARY}StellarStack Installer${NC}"
+    echo ""
+    echo -e "${SECONDARY}Usage:${NC}"
+    echo -e "  ${PRIMARY}sudo $0${NC}                 ${MUTED}# Install or update StellarStack${NC}"
+    echo -e "  ${PRIMARY}sudo $0 --uninstall${NC}    ${MUTED}# Completely remove StellarStack${NC}"
+    echo -e "  ${PRIMARY}sudo $0 --help${NC}         ${MUTED}# Show this help message${NC}"
+    echo ""
+    echo -e "${SECONDARY}Options:${NC}"
+    echo -e "  ${PRIMARY}--uninstall, --remove, -u${NC}  ${MUTED}Remove all StellarStack components${NC}"
+    echo -e "  ${PRIMARY}--help, -h${NC}                 ${MUTED}Display this help message${NC}"
+    echo ""
+}
+
 # Main function
 main() {
+    # Check for help flag
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        show_usage
+        exit 0
+    fi
+
+    # Check for uninstall flag
+    if [ "$1" = "--uninstall" ] || [ "$1" = "--remove" ] || [ "$1" = "-u" ]; then
+        uninstall
+        exit 0
+    fi
+
     # Check if running as root
     if [ "$EUID" -ne 0 ]; then
         echo -e "${ERROR}This script must be run as root${NC}"
@@ -2101,4 +2227,4 @@ main() {
 }
 
 # Run
-main
+main "$@"
