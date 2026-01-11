@@ -2409,10 +2409,9 @@ SQLEOF
 create_daemon_node_token() {
     print_step "CONFIGURING DAEMON NODE"
 
-    print_task "Generating daemon authentication tokens"
-    daemon_token_id=$(openssl rand -hex 16)
-    daemon_token=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-40)
-    print_task_done "Generating daemon authentication tokens"
+    print_task "Generating daemon authentication token"
+    daemon_token=$(openssl rand -base64 48 | tr -d "=+/" | cut -c1-48)
+    print_task_done "Generating daemon authentication token"
 
     print_task "Creating location and node in database"
 
@@ -2422,82 +2421,89 @@ create_daemon_node_token() {
     # Create a seeding script that creates location, node, and syncs with daemon
     cat > "${INSTALL_DIR}/seed-all-in-one.ts" << 'SEED_EOF'
 import { PrismaClient } from '@prisma/client';
+import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
 
+// Hash token using SHA-256 (same as API)
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
 async function seedAllInOne() {
   const daemonDomain = process.env.DAEMON_DOMAIN || 'node.example.com';
-  const daemonTokenId = process.env.DAEMON_TOKEN_ID || '';
   const daemonToken = process.env.DAEMON_TOKEN || '';
   const daemonPort = process.env.DAEMON_PORT || '443';
-  const daemonScheme = process.env.DAEMON_SCHEME || 'https';
+  const daemonProtocol = process.env.DAEMON_PROTOCOL || 'HTTPS_PROXY';
 
   try {
     // Create default location
     let location = await prisma.location.findFirst({
-      where: { shortCode: 'default' }
+      where: { name: 'Default Location' }
     });
 
     if (!location) {
       console.log('Creating default location...');
       location = await prisma.location.create({
         data: {
-          shortCode: 'default',
-          longCode: 'Default Location',
+          name: 'Default Location',
+          description: 'Auto-configured default location for all-in-one installation',
         }
       });
-      console.log('Default location created:', location.shortCode);
+      console.log('Default location created:', location.name);
     } else {
-      console.log('Default location already exists:', location.shortCode);
+      console.log('Default location already exists:', location.name);
     }
+
+    // Hash the token for storage
+    const tokenHash = hashToken(daemonToken);
 
     // Create node
     let node = await prisma.node.findFirst({
-      where: { fqdn: daemonDomain }
+      where: { host: daemonDomain }
     });
 
     if (!node) {
       console.log('Creating daemon node...');
       node = await prisma.node.create({
         data: {
-          name: 'Default Node',
-          fqdn: daemonDomain,
-          scheme: daemonScheme,
-          memory: 8192,
-          memoryOverallocate: 0,
-          disk: 102400,
-          diskOverallocate: 0,
-          daemonListen: parseInt(daemonPort),
-          daemonSftp: 2022,
-          daemonBase: '/opt/stellar-daemon/volumes',
+          displayName: 'Default Node',
+          host: daemonDomain,
+          port: parseInt(daemonPort),
+          protocol: daemonProtocol as any, // HTTPS_PROXY for nginx reverse proxy
+          sftpPort: 2022,
+          memoryLimit: BigInt(8192 * 1024 * 1024), // 8GB in bytes
+          diskLimit: BigInt(102400 * 1024 * 1024), // 100GB in bytes
+          cpuLimit: 4.0, // 4 CPU cores
+          uploadLimit: BigInt(100 * 1024 * 1024), // 100MB in bytes
           locationId: location.id,
-          public: true,
-          behindProxy: true,
-          maintenanceMode: false,
-          uploadSize: 100,
-          daemonTokenId: daemonTokenId,
-          daemonToken: daemonToken,
+          token: daemonToken,
+          tokenHash: tokenHash,
         }
       });
-      console.log('Daemon node created:', node.fqdn);
+      console.log('Daemon node created:', node.host);
     } else {
-      console.log('Daemon node already exists:', node.fqdn);
+      console.log('Daemon node already exists:', node.host);
       // Update token if needed
       await prisma.node.update({
         where: { id: node.id },
         data: {
-          daemonTokenId: daemonTokenId,
-          daemonToken: daemonToken,
+          token: daemonToken,
+          tokenHash: tokenHash,
+          isOnline: false, // Force re-authentication
         }
       });
       console.log('Daemon node tokens updated');
     }
 
+    // Output node ID so install script can use it
+    console.log('NODE_ID=' + node.id);
+
     await prisma.$disconnect();
     console.log('All-in-one seeding completed successfully');
     process.exit(0);
   } catch (error) {
-    console.error('Error seeding all-in-one:', error.message);
+    console.error('Error seeding all-in-one:', error);
     console.error('Stack:', error.stack);
     await prisma.$disconnect();
     process.exit(1);
@@ -2522,18 +2528,26 @@ SEED_EOF
     echo -e "${MUTED}  Running seed script in container...${NC}"
     local seed_output
     seed_output=$(docker exec -e DAEMON_DOMAIN="${daemon_ssl_domain}" \
-        -e DAEMON_TOKEN_ID="${daemon_token_id}" \
         -e DAEMON_TOKEN="${daemon_token}" \
         -e DAEMON_PORT="443" \
-        -e DAEMON_SCHEME="https" \
+        -e DAEMON_PROTOCOL="HTTPS_PROXY" \
         stellarstack-api node --import tsx/esm seed-all-in-one.ts 2>&1) || true
     local seed_status=$?
 
     if [ $seed_status -eq 0 ]; then
         print_task_done "Creating location and node in database"
-        print_success "Daemon node configured automatically"
-        print_info "Node FQDN: ${daemon_ssl_domain}"
-        print_info "Location: Default Location"
+
+        # Extract node ID from output
+        daemon_token_id=$(echo "$seed_output" | grep "NODE_ID=" | cut -d'=' -f2)
+
+        if [ -z "$daemon_token_id" ]; then
+            print_warning "Could not extract node ID, falling back to token-only auth"
+        else
+            print_success "Daemon node configured automatically"
+            print_info "Node ID: ${daemon_token_id}"
+            print_info "Node FQDN: ${daemon_ssl_domain}"
+            print_info "Location: Default Location"
+        fi
     else
         echo ""
         echo -e "\r  ${WARNING}[!]${NC} ${WARNING}Automatic node creation failed${NC}    "
@@ -2689,7 +2703,7 @@ default = 0
 
 [remote]
 url = "${daemon_panel_url}"
-token_id = "${daemon_token_id}"
+token_id = "${daemon_token_id:-}"
 token = "${daemon_token}"
 timeout = 30
 boot_servers_per_page = 50
