@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.0...v1.1.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* added option for all-in-one for daemon ([34505e7](https://github.com/StellarStackOSS/StellarStack/commit/34505e71d656fa634f46a3211685c0f3a6dce264))
+* added option for all-in-one for daemon ([2c2fac5](https://github.com/StellarStackOSS/StellarStack/commit/2c2fac5abea4780d1d59a621396a44eaa9539e23))
+* added option for all-in-one for daemon ([2697b3a](https://github.com/StellarStackOSS/StellarStack/commit/2697b3a44cd38f467a1e11ebac1219f50a71dcc7))
+* Fixed an issue where it wasn't creating a docker network correctly ([b99facd](https://github.com/StellarStackOSS/StellarStack/commit/b99facde9f85eb2a62cb10c6147d8b1e1821637b))
+* STE-9 Fixed an issue related to inconsistency between the consol… ([0ea9623](https://github.com/StellarStackOSS/StellarStack/commit/0ea96237423888a32401981594df0bdfddcd1434))
+* STE-9 Fixed an issue related to inconsistency between the console, api & frontend ([96b6aa5](https://github.com/StellarStackOSS/StellarStack/commit/96b6aa5b6486b1927f08de3e2900b7d1e8e27832))
+
+
+### Documentation
+
+* add Linear ticket links to CHANGELOG ([37e883b](https://github.com/StellarStackOSS/StellarStack/commit/37e883b8809057ad35b67ec9a0359a7d74af3da4))
+
 ## [1.1.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.0.1...v1.1.0) (2026-01-11)
 
 
