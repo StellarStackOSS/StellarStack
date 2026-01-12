@@ -33,8 +33,8 @@ error_handler() {
 trap 'error_handler ${LINENO}' ERR
 
 # Version info (auto-updated by release-please workflow)
-INSTALLER_VERSION="1.1.1"
-INSTALLER_DATE="2026-01-11 22:12:41 UTC"
+INSTALLER_VERSION="1.1.2"
+INSTALLER_DATE="2026-01-12 23:13:41 UTC"
 
 # Colors
 GREEN='\033[0;32m'
