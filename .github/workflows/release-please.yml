@@ -94,6 +94,11 @@ jobs:
       - name: Send Discord Notification
         if: steps.release.outputs.release_created
         run: |
+          if [ -z "${{ secrets.DISCORD_WEBHOOK }}" ]; then
+            echo "⚠️  DISCORD_WEBHOOK secret not configured, skipping notification"
+            exit 0
+          fi
+          
           curl -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
@@ -141,4 +146,4 @@ jobs:
                 }
               ]
             }' \
-            "${{ secrets.DISCORD_WEBHOOK }}"
+            "${{ secrets.DISCORD_WEBHOOK }}" || echo "⚠️  Failed to send Discord notification"
