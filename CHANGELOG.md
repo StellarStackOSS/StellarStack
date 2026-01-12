@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.2](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.1...v1.1.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* Fixed an issue related to not checking if existing daemon instan… ([9742eb8](https://github.com/StellarStackOSS/StellarStack/commit/9742eb842dfa92b3f6b36d580bd240b573e3e11d))
+* Fixed an issue related to not checking if existing daemon instance is running ([f8b9da5](https://github.com/StellarStackOSS/StellarStack/commit/f8b9da5c0983e336acc6181093105ea3ec7afcf5))
+* Reverted remote changes ([6f7e278](https://github.com/StellarStackOSS/StellarStack/commit/6f7e278f5d254a7675c6e636a4d8b07f1ec3cd5e))
+
+
+### Documentation
+
+* add Linear ticket links to CHANGELOG ([5c367bb](https://github.com/StellarStackOSS/StellarStack/commit/5c367bbbce973f64a3ea5490a87dc050704e2d82))
+
 ## [1.1.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.0...v1.1.1) (2026-01-11)
 
 
