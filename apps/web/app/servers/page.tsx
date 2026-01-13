@@ -7,7 +7,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsSun, BsMoon, BsServer, BsChevronRight, BsBoxArrowRight } from "react-icons/bs";
+import { BsServer, BsChevronRight, BsBoxArrowRight } from "react-icons/bs";
 import { servers as serversApi } from "@/lib/api";
 import type { Server } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
@@ -116,13 +116,13 @@ const ServersPage = (): JSX.Element | null => {
             <div>
               <h1
                 className={cn(
-                  "text-2xl font-light tracking-wider",
+                  "text-xl font-light tracking-wider",
                   isDark ? "text-zinc-100" : "text-zinc-800"
                 )}
               >
                 YOUR SERVERS
               </h1>
-              <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+              <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
                 Select a server to manage
               </p>
             </div>
@@ -142,30 +142,7 @@ const ServersPage = (): JSX.Element | null => {
                   <span className="text-xs tracking-wider uppercase">Admin</span>
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className={cn(
-                  "gap-2 transition-all hover:scale-[1.02] active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
+              <Button size="sm" onClick={handleSignOut}>
                 <BsBoxArrowRight className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Sign Out</span>
               </Button>
@@ -184,14 +161,7 @@ const ServersPage = (): JSX.Element | null => {
                 Loading servers...
               </div>
             ) : servers.length === 0 ? (
-              <div
-                className={cn(
-                  "border py-12 text-center",
-                  isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
-                )}
-              >
-                No servers found. Contact an administrator to create one.
-              </div>
+              <div className={"text-primary py-12 text-center text-xs"}>No servers found.</div>
             ) : (
               servers.map((server) => (
                 <button
@@ -204,7 +174,6 @@ const ServersPage = (): JSX.Element | null => {
                       : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20 hover:border-zinc-400"
                   )}
                 >
-                  {/* Corner decorations */}
                   <div
                     className={cn(
                       "absolute top-0 left-0 h-3 w-3 border-t border-l",
@@ -229,7 +198,6 @@ const ServersPage = (): JSX.Element | null => {
                       isDark ? "border-zinc-500" : "border-zinc-400"
                     )}
                   />
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div
@@ -298,23 +266,6 @@ const ServersPage = (): JSX.Element | null => {
               ))
             )}
           </div>
-
-          {/* Admin-only: Add Server Button */}
-          {isAdmin && (
-            <button
-              onClick={() => router.push("/admin/servers")}
-              className={cn(
-                "relative mt-4 w-full cursor-pointer border border-dashed p-6 text-center transition-all hover:scale-[1.01]",
-                isDark
-                  ? "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
-                  : "border-zinc-300 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600"
-              )}
-            >
-              <span className="text-sm font-medium tracking-wider uppercase">
-                + Create New Server
-              </span>
-            </button>
-          )}
         </div>
       </div>
     </div>
