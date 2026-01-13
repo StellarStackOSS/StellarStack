@@ -310,7 +310,8 @@ const scheduleRetry = async (deliveryId: string, attemptNumber: number): Promise
       return;
     }
 
-    const payloadString = JSON.stringify(delivery.payload);
+    // Format payload as Discord embed (same as initial dispatch)
+    const formattedBody = JSON.stringify(formatDiscordPayload(delivery.payload as unknown as WebhookPayload));
 
     try {
       await db.webhookDelivery.update({
@@ -324,7 +325,7 @@ const scheduleRetry = async (deliveryId: string, attemptNumber: number): Promise
           "Content-Type": "application/json",
           "User-Agent": "StellarStack-Webhook/1.0",
         },
-        body: payloadString,
+        body: formattedBody,
         signal: AbortSignal.timeout(10000),
       });
 
