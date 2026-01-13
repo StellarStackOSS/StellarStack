@@ -137,7 +137,6 @@ const WebhooksPage = (): JSX.Element | null => {
       resetForm();
       toast.success("Webhook created");
       
-      // Send test message
       try {
         await webhooks.test(newWebhook.id);
         toast.success("Test message sent to webhook");

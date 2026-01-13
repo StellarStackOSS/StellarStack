@@ -744,7 +744,7 @@ impl Server {
 
         // Fix permissions on the server data directory
         // This ensures the container user (uid/gid 1000) can write to it
-        //self.fix_permissions().await?;
+        self.fix_permissions().await?;
 
         // TODO: Check disk space
         // TODO: Update configuration files

@@ -276,7 +276,7 @@ impl InstallationProcess {
         let (entrypoint, cmd) = {
             info!("Unix: using mounted script at /mnt/install/install.sh");
             (
-                vec![self.script.entrypoint.clone()],
+                vec!["/bin/sh".to_string(), "-c".to_string()],
                 vec!["/mnt/install/install.sh".to_string()],
             )
         };
