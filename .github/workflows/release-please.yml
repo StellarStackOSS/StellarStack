@@ -27,24 +27,24 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Link Linear Tickets in Changelog
-        if: steps.release.outputs.release_created
-        run: |
-          # Replace STE-XXX with linked format in CHANGELOG.md
-          sed -E 's/STE-([0-9]+)/[STE-\1](https:\/\/linear.app\/stellarstack\/issue\/STE-\1)/g' CHANGELOG.md > CHANGELOG.tmp
-          mv CHANGELOG.tmp CHANGELOG.md
-
-          # Commit the updated changelog
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "docs: add Linear ticket links to CHANGELOG" || echo "No changes to commit"
-          git push origin master || echo "Nothing to push"
-
-          # Update the release with linked changelog
-          gh release edit ${{ steps.release.outputs.tag_name }} --notes-file CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Link Linear Tickets in Changelog
+#        if: steps.release.outputs.release_created
+#        run: |
+#          # Replace STE-XXX with linked format in CHANGELOG.md
+#          sed -E 's/STE-([0-9]+)/[STE-\1](https:\/\/linear.app\/stellarstack\/issue\/STE-\1)/g' CHANGELOG.md > CHANGELOG.tmp
+#          mv CHANGELOG.tmp CHANGELOG.md
+#
+#          # Commit the updated changelog
+#          git config user.name "github-actions[bot]"
+#          git config user.email "github-actions[bot]@users.noreply.github.com"
+#          git add CHANGELOG.md
+#          git commit -m "docs: add Linear ticket links to CHANGELOG" || echo "No changes to commit"
+#          git push origin master || echo "Nothing to push"
+#
+#          # Update the release with linked changelog
+#          gh release edit ${{ steps.release.outputs.tag_name }} --notes-file CHANGELOG.md
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update install-script.sh version and timestamp
         if: steps.release.outputs.release_created

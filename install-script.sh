@@ -5,12 +5,6 @@
 
 set -e
 
-# Handle piped input (when running via curl | bash)
-# Redirect stdin from /dev/tty if available
-if [ ! -t 0 ] && [ -c /dev/tty ]; then
-    exec </dev/tty
-fi
-
 # Enable debugging if DEBUG=1
 if [ "${DEBUG:-0}" = "1" ]; then
     set -x
