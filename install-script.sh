@@ -1364,7 +1364,7 @@ collect_upload_limit_config() {
     # Check for existing upload limit configuration
     local existing_limit=""
     if [ -f "${ENV_FILE}" ]; then
-        existing_limit=$(grep "^UPLOAD_LIMIT=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2)
+        existing_limit=$(grep "^UPLOAD_LIMIT=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d '"' | xargs)
     fi
 
     # If no limit in .env, try to extract from nginx config
