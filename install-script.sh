@@ -504,6 +504,7 @@ check_dependencies() {
                     ;;
                 3)
                     skip_nginx_config="n"
+                    overwrite_nginx_config="y"
                     # Clear domain variables for fresh start
                     panel_domain=""
                     api_domain=""
