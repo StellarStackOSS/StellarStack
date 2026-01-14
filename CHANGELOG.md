@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.2...v1.2.0) (2026-01-14)
+
+
+### Features
+
+* STE-13 Webhook utility addition ([d9f14b3](https://github.com/StellarStackOSS/StellarStack/commit/d9f14b3f67a2d98c39e96cb579a7a4c7b9e610f9))
+
+
+### Bug Fixes
+
+* Reverted remote changes ([83ceaf7](https://github.com/StellarStackOSS/StellarStack/commit/83ceaf776c22d3993d2d3b78bc320a3784ebe5ed))
+* STE-16 Increase file size limit in NGINX, Keep existing NGINX co… ([#22](https://github.com/StellarStackOSS/StellarStack/issues/22)) ([39a9ed6](https://github.com/StellarStackOSS/StellarStack/commit/39a9ed63114e6ceac0bf77bfd3d6cf8ab2359db8))
+
+
+### Documentation
+
+* add Linear ticket links to CHANGELOG ([2f8761f](https://github.com/StellarStackOSS/StellarStack/commit/2f8761f12850e8d3c1c8bfa69ed0ca1982c7424b))
+
 ## [1.1.2](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.1...v1.1.2) (2026-01-12)
 
 
