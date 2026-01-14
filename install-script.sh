@@ -99,6 +99,7 @@ install_rust="n"
 # Configuration reuse flags
 skip_nginx_config="n"
 skip_ssl_generation="n"
+overwrite_nginx_config="n"
 
 # Update mode
 update_mode="n"
@@ -493,6 +494,7 @@ check_dependencies() {
                     ;;
                 2)
                     skip_nginx_config="n"
+                    overwrite_nginx_config="y"
                     # Clear domain variables so they won't be extracted from old nginx configs
                     panel_domain=""
                     api_domain=""
@@ -1372,8 +1374,8 @@ collect_upload_limit_config() {
         existing_limit=$(grep "client_max_body_size" "${NGINX_CONF_DIR}/stellarstack-panel" | grep -oP '\d+[kKmMgG]?' | head -1)
     fi
 
-    # If we found existing limit, use it
-    if [ -n "$existing_limit" ]; then
+    # If we found existing limit and we're NOT overwriting nginx configs, use it
+    if [ -n "$existing_limit" ] && [ "$overwrite_nginx_config" != "y" ]; then
         upload_limit="$existing_limit"
         echo ""
         print_success "Using existing upload limit: ${upload_limit}"
