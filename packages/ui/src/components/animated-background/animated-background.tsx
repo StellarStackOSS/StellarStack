@@ -70,11 +70,9 @@ export const AnimatedBackground = ({
     const timeSinceInteraction = now - lastInteractionRef.current;
 
     // Generate idle pulses when no interaction for 2 seconds
-    if (timeSinceInteraction > 2000 && now - lastIdlePulseRef.current > idlePulseInterval) {
-      // Randomly choose between center pulse or random location
-      const useCenter = Math.random() > 0.5;
-      const pulseX = useCenter ? width / 2 : Math.random() * width;
-      const pulseY = useCenter ? height / 2 : Math.random() * height;
+    if (timeSinceInteraction > 500 && now - lastIdlePulseRef.current > idlePulseInterval) {
+      const pulseX = Math.random() * width;
+      const pulseY = Math.random() * height;
 
       idlePulses.push({
         x: pulseX,
@@ -173,10 +171,18 @@ export const AnimatedBackground = ({
           const rippleRadius = progress * idlePulseRadius * 4;
           const rippleWidth = idlePulseRadius * 0.6;
 
-          // Create a ring effect that expands outward
+          // Global fade over lifetime (always applies)
+          const fade = Math.pow(Math.max(0, 1 - progress), 2);
+
           const distFromRipple = Math.abs(pDistance - rippleRadius);
-          if (distFromRipple < rippleWidth) {
-            const rippleIntensity = (1 - distFromRipple / rippleWidth) * (1 - progress * 0.7) * 0.6;
+
+          // Ring falloff (0 → 1)
+          const ringFalloff = Math.max(0, 1 - distFromRipple / rippleWidth);
+
+          // Even if the ring is gone, fade still eases out
+          const rippleIntensity = ringFalloff * fade * 0.6;
+
+          if (rippleIntensity > 0.001) {
             maxIntensity = Math.max(maxIntensity, rippleIntensity);
           }
         }

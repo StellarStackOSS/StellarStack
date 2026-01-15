@@ -58,12 +58,15 @@ const LoginPage = (): JSX.Element | null => {
 
   const isDark = mounted ? resolvedTheme === "dark" : true;
 
-  const handleLogin = async (values: { email: string; password: string }) => {
+  const handleLogin = async (values: { email: string; password: string; captchaToken: string }) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const result = await signIn.email(values);
+      const result = await signIn.email({
+        email: values.email,
+        password: values.password,
+      });
 
       if (result.error) {
         const message = result.error.message || "Invalid email or password";

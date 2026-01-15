@@ -15,6 +15,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { toast } from "sonner";
 import { servers } from "@/lib/api";
 import type { ConsoleLine } from "@/hooks/useServerWebSocket";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 // Patterns that indicate EULA acceptance is required
 const EULA_PATTERNS = [
@@ -99,7 +100,6 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
 
       // Restart the server
       await onRestart();
-
     } catch (error) {
       console.error("Failed to accept EULA:", error);
       toast.error("Failed to accept EULA. Please try manually editing eula.txt");
@@ -115,18 +115,20 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
 
   return (
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
-      <DialogContent isDark={isDark} className="max-w-lg">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle isDark={isDark}>Minecraft EULA Required</DialogTitle>
-          <DialogDescription isDark={isDark} className="pt-2">
+          <DialogTitle>Minecraft EULA Required</DialogTitle>
+          <DialogDescription className="pt-2">
             To run a Minecraft server, you must accept the Minecraft End User License Agreement.
           </DialogDescription>
         </DialogHeader>
 
-        <div className={cn(
-          "p-4 text-sm space-y-3",
-          isDark ? "bg-zinc-900/50 border border-zinc-800" : "bg-zinc-100 border border-zinc-200"
-        )}>
+        <div
+          className={cn(
+            "space-y-3 rounded-lg p-4 text-sm",
+            isDark ? "border border-zinc-800 bg-white/5" : "border border-zinc-200 bg-zinc-100"
+          )}
+        >
           <p className={isDark ? "text-zinc-300" : "text-zinc-700"}>
             By clicking &quot;Accept&quot;, you agree to the{" "}
             <a
@@ -142,39 +144,18 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
             </a>
             .
           </p>
-          <p className={cn(
-            "text-xs",
-            isDark ? "text-zinc-500" : "text-zinc-500"
-          )}>
+          <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
             This will update the eula.txt file and restart your server.
           </p>
         </div>
 
         <DialogFooter className="pt-2">
-          <Button
-            variant="outline"
-            onClick={handleDecline}
-            disabled={isAccepting}
-            className={cn(
-              isDark
-                ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-            )}
-          >
+          <TextureButton variant="minimal" onClick={handleDecline} disabled={isAccepting}>
             Decline
-          </Button>
-          <Button
-            onClick={handleAcceptEula}
-            disabled={isAccepting}
-            className={cn(
-              "transition-all",
-              isDark
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-green-600 hover:bg-green-700 text-white"
-            )}
-          >
+          </TextureButton>
+          <TextureButton variant="success" onClick={handleAcceptEula} disabled={isAccepting}>
             {isAccepting ? "Accepting..." : "Accept EULA"}
-          </Button>
+          </TextureButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

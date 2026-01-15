@@ -42,21 +42,23 @@ import { WaveText } from "@/components/wave-text";
 import { useServer } from "@/components/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { CpuIcon, HardDriveIcon, MemoryStickIcon } from "lucide-react";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsArrowLeft } from "react-icons/bs";
 
 // Navigation items - href will be prefixed with /servers/[id]
 const navItems = [
-  { title: "Overview", icon: LayoutDashboardIcon, href: "/overview" },
-  { title: "Files", icon: FolderIcon, href: "/files" },
-  { title: "Backups", icon: ArchiveIcon, href: "/backups" },
-  { title: "Schedules", icon: CalendarIcon, href: "/schedules" },
-  { title: "Users", icon: UsersIcon, href: "/users" },
-  { title: "Databases", icon: DatabaseIcon, href: "/databases" },
-  { title: "Network", icon: NetworkIcon, href: "/network" },
-  { title: "Webhooks", icon: WebhookIcon, href: "/webhooks" },
-  { title: "Split", icon: SplitIcon, href: "/split" },
-  { title: "Activity", icon: ActivityIcon, href: "/activity" },
-  { title: "Startup", icon: PlayIcon, href: "/startup" },
-  { title: "Settings", icon: SettingsIcon, href: "/settings" },
+  { title: "Overview", icon: <img src={"/icons/24-rect-layout-grid.svg"} />, href: "/overview" },
+  { title: "Files", icon: <img src={"/icons/24-folder.svg"} />, href: "/files" },
+  { title: "Backups", icon: <img src={"/icons/24-folders.svg"} />, href: "/backups" },
+  { title: "Schedules", icon: <img src={"/icons/24-calendar.svg"} />, href: "/schedules" },
+  { title: "Users", icon: <img src={"/icons/24-users.svg"} />, href: "/users" },
+  { title: "Databases", icon: <img src={"/icons/24-storage.svg"} />, href: "/databases" },
+  { title: "Network", icon: <img src={"/icons/24-connect.svg"} />, href: "/network" },
+  { title: "Webhooks", icon: <img src={"/icons/24-circle-power-off.svg"} />, href: "/webhooks" },
+  { title: "Split", icon: <img src={"/icons/24-circle-power-off.svg"} />, href: "/split" },
+  { title: "Activity", icon: <img src={"/icons/24-circle-power-off.svg"} />, href: "/activity" },
+  { title: "Startup", icon: <img src={"/icons/24-circle-power-off.svg"} />, href: "/startup" },
+  { title: "Settings", icon: <img src={"/icons/24-circle-power-off.svg"} />, href: "/settings" },
 ];
 
 interface AppSidebarProps {
@@ -66,19 +68,17 @@ interface AppSidebarProps {
 export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
   const serverId = params.id as string;
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user: authUser, signOut, isAdmin } = useAuth();
   const { server, consoleInfo } = useServer();
 
-  // Get real-time stats from WebSocket
   const { stats: statsData } = useServerWebSocket({
     consoleInfo,
     enabled: !!consoleInfo,
   });
 
-  // Calculate stats percentages (similar to overview page)
+  /*TODO: This can be extracted into it's own function */
   const stats = statsData.current;
   const cpuPercent = stats?.cpu_absolute ?? 0;
   const cpuLimit = server?.cpu ?? 100;
@@ -91,14 +91,12 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
   const diskLimit = server?.disk ? server.disk / 1024 : 10;
   const diskPercent = diskLimit > 0 ? (diskUsed / diskLimit) * 100 : 0;
 
-  // Helper to get color based on usage percentage
   const getUsageColor = (percent: number) => {
     if (percent >= 85) return isDark ? "text-red-400" : "text-red-600";
     if (percent >= 70) return isDark ? "text-amber-400" : "text-amber-600";
     return isDark ? "text-emerald-400" : "text-emerald-600";
   };
 
-  // User data from auth
   const user = authUser
     ? {
         name: authUser.name || "User",
@@ -111,7 +109,6 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
         initials: "G",
       };
 
-  // User menu items - dynamic based on role
   const userMenuItems = [
     { title: "Account Settings", icon: UserIcon, href: "/account" },
     { title: "Notifications", icon: BellIcon, href: "/account/notifications" },
@@ -136,50 +133,12 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
       <SidebarHeader
         className={cn("border-b p-4", isDark ? "border-zinc-200/10" : "border-zinc-300")}
       >
-        {/* Back to Servers */}
-        <Link
-          href="/servers"
-          className={cn(
-            "group relative flex w-full items-center gap-2 border px-3 py-2 text-left transition-colors",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
-          )}
-        >
-          <ArrowLeftIcon
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform group-hover:-translate-x-0.5",
-              isDark ? "text-zinc-500" : "text-zinc-400"
-            )}
-          />
-          <span className="text-xs font-medium tracking-wider uppercase">All Servers</span>
-
-          {/* Corner accents */}
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-        </Link>
+        <TextureButton variant="minimal">
+          <Link href="/servers" className="flex flex-row gap-2">
+            <BsArrowLeft className="h-4 w-4" />
+            <span className="text-xs font-medium tracking-wider uppercase">All Servers</span>
+          </Link>
+        </TextureButton>
 
         {/* Current Server Display */}
         <div
@@ -218,19 +177,19 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
                       asChild
                       isActive={isActive}
                       className={cn(
-                        "rounded-none text-xs transition-colors",
+                        "text-xs transition-colors",
                         isDark
                           ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
                           : "text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900 data-[active=true]:bg-zinc-200/80 data-[active=true]:text-zinc-900"
                       )}
                     >
                       <Link href={fullHref}>
-                        <item.icon className="h-4 w-4" />
+                        {item.icon}
                         <span
                           className={
                             isActive
-                              ? "uppercase opacity-100 hover:opacity-100"
-                              : "uppercase opacity-50 hover:opacity-100"
+                              ? "ml-2 uppercase opacity-100 hover:opacity-100"
+                              : "ml-2 uppercase opacity-50 hover:opacity-100"
                           }
                         >
                           {item.title}
@@ -362,32 +321,6 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
                 isUserMenuOpen && "rotate-180"
               )}
             />
-
-            {/* Corner accents */}
-            <div
-              className={cn(
-                "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
           </button>
 
           {/* User Dropdown Menu */}
@@ -400,32 +333,6 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
                   : "border-zinc-200 bg-white shadow-zinc-200/40"
               )}
             >
-              {/* Corner accents on dropdown */}
-              <div
-                className={cn(
-                  "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-
               {userMenuItems.map((item) => (
                 <Link
                   key={item.title}

@@ -9,9 +9,8 @@ import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
 import { Console } from "@workspace/ui/components/console";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsSun, BsMoon, BsGrid } from "react-icons/bs";
+import { BsGrid } from "react-icons/bs";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { Badge } from "@workspace/ui/components/badge";
 import { BsExclamationTriangle } from "react-icons/bs";
 import {
   Sheet,
@@ -28,50 +27,39 @@ import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
 import { SystemInformationCard } from "@workspace/ui/components/system-information-card";
 import { NetworkInfoCard } from "@workspace/ui/components/network-info-card";
 import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
-import { ContainerControlsCard } from "@workspace/ui/components/container-controls-card";
 import { ContainerUptimeCard } from "@workspace/ui/components/container-uptime-card";
 import { PlayersOnlineCard } from "@workspace/ui/components/players-online-card";
 import { RecentLogsCard } from "@workspace/ui/components/recent-logs-card";
 import { CardPreview } from "@workspace/ui/components/card-preview";
 import type { ContainerStatus } from "@workspace/ui/components/dashboard-cards-types";
-import { ThemeContext } from "../../../../contexts/ThemeContext";
-import { useLabels } from "../../../../hooks";
-import { defaultGridItems, defaultHiddenCards } from "../../../../constants";
+import { ThemeContext } from "@/contexts";
+import { useLabels } from "@/hooks";
+import { defaultGridItems, defaultHiddenCards } from "@/constants";
 import { useServer } from "@/components/server-provider";
 import { useServerWebSocket, type StatsWithHistory } from "@/hooks/useServerWebSocket";
 import { EulaExtension } from "../extensions/eula";
 import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
 import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder";
+import { ServerStatusBadge } from "@/components/ServerStatusBadge/ServerStatusBadge";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { LightBoard } from "@workspace/ui/components/Lightboard/Lightboard";
 
-// Build display data from real server and stats (with history)
 const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
   const stats = statsData.current;
 
-  // New daemon stats format: memory_bytes, memory_limit_bytes, cpu_absolute, disk_bytes, disk_limit_bytes
   const cpuPercent = stats?.cpu_absolute ?? 0;
-  // CPU limit from server config (100 = 1 core, so 400 = 4 cores)
   const cpuLimit = server?.cpu ?? 100;
-
   const memUsed = stats?.memory_bytes ? stats.memory_bytes / (1024 * 1024 * 1024) : 0;
-  // Always use server.memory for limit (MiB to GiB) - daemon's memory_limit_bytes can be unreliable
   const memLimit = server?.memory ? server.memory / 1024 : 1;
   const memPercent = memLimit > 0 ? (memUsed / memLimit) * 100 : 0;
-
-  // Disk usage from real disk usage API (daemon stats has disk_bytes: 0 TODO)
   const diskUsed = realDiskUsageBytes / (1024 * 1024 * 1024);
-  // Always use server.disk for limit (MiB to GiB) - daemon's disk_limit_bytes can have unit issues
   const diskLimit = server?.disk ? server.disk / 1024 : 10;
   const diskPercent = diskLimit > 0 ? (diskUsed / diskLimit) * 100 : 0;
-
-  // Use network rate from statsData (bytes/sec)
   const netRxRate = statsData.networkRxRate ?? 0;
   const netTxRate = statsData.networkTxRate ?? 0;
-
-  // Uptime from daemon (in seconds)
   const uptime = stats?.uptime ?? 0;
 
-  // Build location string from node's location
   const getLocationString = () => {
     if (server?.node?.location) {
       const loc = server.node.location;
@@ -83,15 +71,11 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsag
 
   return {
     name: server?.name || "Server",
-    // Use daemon's real-time state if available, otherwise fall back to database status
-    status: (stats?.state?.toLowerCase() ||
-      server?.status?.toLowerCase() ||
-      "stopped") as ContainerStatus,
+    status: server?.status.toLowerCase() as ContainerStatus,
     cpu: {
       usage: { percentage: cpuPercent, history: statsData.cpuHistory },
-      limit: cpuLimit, // CPU limit as percentage (100 = 1 core)
-      cores: Math.ceil((server?.cpu ?? 100) / 100), // For display purposes
-      frequency: 3.5,
+      limit: cpuLimit,
+      cores: Math.ceil((server?.cpu ?? 100) / 100),
       model: "CPU",
       architecture: "x86_64",
       baseFrequency: 3.5,
@@ -99,26 +83,24 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsag
       tdp: 65,
       cache: "16MB",
       coreUsage: [] as { id: number; percentage: number; frequency: number }[],
-      // Formatted display string: "X% / Y%"
       displayValue: `${cpuPercent.toFixed(0)}% / ${cpuLimit}%`,
     },
     memory: {
       usage: { percentage: memPercent, history: statsData.memoryPercentHistory },
       used: parseFloat(memUsed.toFixed(2)),
       total: parseFloat(memLimit.toFixed(2)),
-      type: "DDR4",
-      speed: 3200,
+      type: "",
+      speed: 0,
       channels: "Dual",
       slots: "2/4",
       timings: "16-18-18-36",
-      // Formatted display string: "X GiB / Y GiB"
       displayValue: `${memUsed.toFixed(2)} / ${memLimit.toFixed(2)} GiB`,
     },
     disk: {
       usage: { percentage: diskPercent, history: statsData.diskPercentHistory },
       used: parseFloat(diskUsed.toFixed(2)),
       total: parseFloat(diskLimit.toFixed(2)),
-      type: "NVMe SSD",
+      type: "",
       model: "Storage",
       interface: "NVMe",
       readSpeed: "3500 MB/s",
@@ -126,8 +108,8 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsag
       health: 100,
     },
     network: {
-      download: Math.round(netRxRate / 1024), // KB/s
-      upload: Math.round(netTxRate / 1024), // KB/s
+      download: Math.round(netRxRate / 1024),
+      upload: Math.round(netTxRate / 1024),
       downloadHistory: statsData.networkRxHistory.map((b) => Math.round(b / 1024)),
       uploadHistory: statsData.networkTxHistory.map((b) => Math.round(b / 1024)),
     },
@@ -174,7 +156,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isCardSheetOpen, setIsCardSheetOpen] = useState(false);
-  const { setTheme, resolvedTheme } = useNextTheme();
+  const { resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [showConnectionBanner, setShowConnectionBanner] = useState(false);
   const [hasAttemptedConnection, setHasAttemptedConnection] = useState(false);
@@ -193,11 +175,10 @@ const ServerOverviewPage = (): JSX.Element | null => {
     powerActionLoading,
   } = useServer();
 
-  // Enable WebSocket if we have consoleInfo - this means the API approved the connection
-  // The daemon will report the actual server state via WebSocket events
+  console.log(server?.status);
+
   const wsEnabled = !!consoleInfo;
 
-  // Combined WebSocket for console + stats (single connection)
   const {
     lines: rawConsoleLines,
     stats: statsData,
@@ -209,16 +190,13 @@ const ServerOverviewPage = (): JSX.Element | null => {
     enabled: wsEnabled,
   });
 
-  // Fetch real disk usage (WebSocket stats has disk_bytes: 0 TODO in daemon)
   const [realDiskUsageBytes, setRealDiskUsageBytes] = useState<number>(0);
   useEffect(() => {
     const fetchDiskUsage = async () => {
       try {
         const usage = await servers.files.diskUsage(serverId);
         setRealDiskUsageBytes(usage.used_bytes || 0);
-      } catch {
-        // Ignore errors, will show 0
-      }
+      } catch {}
     };
 
     fetchDiskUsage();
@@ -226,7 +204,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     return () => clearInterval(interval);
   }, [serverId]);
 
-  // Transform console lines to the format expected by Console component
   const consoleLines = rawConsoleLines.map((line, index) => ({
     id: `${line.timestamp.getTime()}-${index}`,
     timestamp: line.timestamp.getTime(),
@@ -242,22 +219,18 @@ const ServerOverviewPage = (): JSX.Element | null => {
     setMounted(true);
   }, []);
 
-  // Delay showing connection banner to prevent flash on page load
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // Mark that we've attempted a connection after a brief delay
     if (wsEnabled && !hasAttemptedConnection) {
       setTimeout(() => setHasAttemptedConnection(true), 1000);
     }
 
     if (wsEnabled && !wsConnected && !wsConnecting && hasAttemptedConnection) {
-      // Wait 3 seconds before showing the banner (only after we've attempted connection)
       timeoutId = setTimeout(() => {
         setShowConnectionBanner(true);
       }, 3000);
     } else {
-      // Hide banner immediately when connected
       setShowConnectionBanner(false);
     }
 
@@ -286,7 +259,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     defaultHiddenCards: defaultHiddenCards,
   });
 
-  // Build display data from real server and WebSocket stats
   const displayData = buildDisplayData(server, statsData, realDiskUsageBytes);
   const isOffline = !server || server.status === "STOPPED" || server.status === "ERROR";
 
@@ -298,46 +270,26 @@ const ServerOverviewPage = (): JSX.Element | null => {
     status: displayData.status,
     handleStart: async () => {
       await start();
-      refetch();
+      await refetch();
     },
     handleStop: async () => {
       await stop();
-      refetch();
+      await refetch();
     },
     handleKill: async () => {
       await kill();
-      refetch();
+      await refetch();
     },
     handleRestart: async () => {
       await restart();
-      refetch();
+      await refetch();
     },
-  };
-
-  const getStatusLabel = (): string => {
-    if (!server) return labels.status.offline;
-    // Note: SUSPENDED and MAINTENANCE are handled by placeholders and never reach here
-    switch (server.status) {
-      case "RUNNING":
-        return labels.status.online;
-      case "STARTING":
-        return labels.status.starting;
-      case "STOPPING":
-        return labels.status.stopping;
-      case "STOPPED":
-        return labels.status.stopped;
-      case "ERROR":
-        return "ERROR";
-      default:
-        return labels.status.stopped;
-    }
   };
 
   if (!mounted || !isLoaded) {
     return null;
   }
 
-  // Show installing placeholder if server is being installed
   if (isInstalling) {
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
@@ -346,7 +298,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     );
   }
 
-  // Show suspended placeholder if server is suspended
   if (server?.status === "SUSPENDED") {
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
@@ -355,7 +306,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     );
   }
 
-  // Show maintenance placeholder if server is under maintenance
   if (server?.status === "MAINTENANCE") {
     return (
       <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
@@ -364,7 +314,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     );
   }
 
-  // Show loading spinner only if loading AND not connected to WebSocket
   if (isLoading && !wsConnected) {
     return (
       <div
@@ -385,10 +334,10 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   return (
     <ThemeContext.Provider value={{ isDark }}>
-      <div className="relative min-h-svh transition-colors">
-        {/* Background is now rendered in the layout for persistence */}
-
-        {/* Connection error banner */}
+      <div className="relative w-full transition-colors">
+        <FadeIn direction={"down"} delay={500} duration={400}>
+          <LightBoard gap={2} text={server?.name || "Server"} font="default" updateInterval={25} />
+        </FadeIn>
         {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
           <div
             className={cn(
@@ -406,9 +355,9 @@ const ServerOverviewPage = (): JSX.Element | null => {
           </div>
         )}
 
-        <div className="relative p-8">
+        <div className="relative h-full px-4 py-6">
           <FadeIn delay={0}>
-            <div className="mx-auto mb-6 flex max-w-7xl items-center justify-between">
+            <div className="mx-auto mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger
                   className={cn(
@@ -418,19 +367,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                       : "text-zinc-600 hover:text-zinc-900"
                   )}
                 />
-                <div>
-                  <h1
-                    className={cn(
-                      "text-2xl font-light tracking-wider",
-                      isDark ? "text-zinc-100" : "text-zinc-800"
-                    )}
-                  >
-                    OVERVIEW
-                  </h1>
-                  <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                    {server?.name || `Server ${serverId}`}
-                  </p>
-                </div>
               </div>
               <div className="flex items-center gap-2">
                 {isEditing && (
@@ -464,8 +400,8 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     </Button>
                   </>
                 )}
-                <Button
-                  variant={isEditing ? "default" : "outline"}
+                <TextureButton
+                  variant={isEditing ? "primary" : "minimal"}
                   size="sm"
                   onClick={() => setIsEditing(!isEditing)}
                   className={cn(
@@ -481,35 +417,8 @@ const ServerOverviewPage = (): JSX.Element | null => {
                   )}
                 >
                   {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
-                </Button>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "bg-transparent text-xs font-medium uppercase",
-                    server?.status === "ERROR" && "border-red-500 text-red-500",
-                    server?.status === "RUNNING" && "border-green-500 text-green-500",
-                    server?.status === "STOPPED" && "border-zinc-500 text-zinc-500",
-                    server?.status === "STARTING" && "border-amber-500 text-amber-500",
-                    server?.status === "STOPPING" && "border-amber-500 text-amber-500",
-                    server?.status === "INSTALLING" && "border-blue-500 text-blue-500"
-                    // Note: SUSPENDED and MAINTENANCE are handled by placeholders and never reach here
-                  )}
-                >
-                  {getStatusLabel()}
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(isDark ? "light" : "dark")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
-                >
-                  {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-                </Button>
+                </TextureButton>
+                <ServerStatusBadge status={server?.status} />
               </div>
             </div>
           </FadeIn>
@@ -564,7 +473,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
           </Sheet>
 
           <DragDropGrid
-            className="mx-auto max-w-7xl"
+            className="mx-auto"
             items={visibleItems}
             allItems={items}
             savedLayouts={layouts}
@@ -585,17 +494,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="instance-name"
                     isDark={isDark}
                     instanceName={displayData.name}
-                  />
-                </GridItem>
-              </div>
-            )}
-
-            {!hiddenCards.includes("container-controls") && (
-              <div key="container-controls" className="h-full">
-                <GridItem itemId="container-controls">
-                  <ContainerControlsCard
-                    itemId="container-controls"
-                    isDark={isDark}
                     isOffline={isOffline}
                     status={containerControls.status}
                     onStart={containerControls.handleStart}
@@ -645,10 +543,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="cpu"
                     percentage={displayData.cpu.usage.percentage}
                     primaryValue={displayData.cpu.displayValue}
-                    details={[
-                      `${displayData.cpu.cores} ${labels.cpu.cores || "CORES"}`,
-                      `${displayData.cpu.frequency} GHz`,
-                    ]}
                     history={displayData.cpu.usage.history}
                     coreUsage={displayData.cpu.coreUsage}
                     isDark={isDark}
@@ -666,10 +560,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="ram"
                     percentage={displayData.memory.usage.percentage}
                     primaryValue={displayData.memory.displayValue}
-                    details={[
-                      `${displayData.memory.usage.percentage.toFixed(1)}% used`,
-                      displayData.memory.type || "",
-                    ]}
                     history={displayData.memory.usage.history}
                     isDark={isDark}
                     isOffline={isOffline}
@@ -686,10 +576,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="disk"
                     percentage={displayData.disk.usage.percentage}
                     primaryValue={`${displayData.disk.used.toFixed(2)} / ${displayData.disk.total.toFixed(0)} GiB`}
-                    details={[
-                      `${displayData.disk.usage.percentage.toFixed(1)}% used`,
-                      displayData.disk.type || "",
-                    ]}
                     history={displayData.disk.usage.history}
                     isDark={isDark}
                     isOffline={isOffline}

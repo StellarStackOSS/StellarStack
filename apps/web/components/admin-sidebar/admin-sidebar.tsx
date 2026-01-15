@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "@/components/auth-provider";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsArrowLeft } from "react-icons/bs";
 
 // Admin navigation items
 const navItems = [
@@ -84,49 +86,12 @@ export const AdminSidebar = ({ isDark = true }: AdminSidebarProps) => {
         className={cn("border-b p-4", isDark ? "border-zinc-200/10" : "border-zinc-300")}
       >
         {/* Back to Servers */}
-        <Link
-          href="/servers"
-          className={cn(
-            "group relative flex w-full items-center gap-2 border px-3 py-2 text-left transition-colors",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
-          )}
-        >
-          <ArrowLeftIcon
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform group-hover:-translate-x-0.5",
-              isDark ? "text-zinc-500" : "text-zinc-400"
-            )}
-          />
-          <span className="text-xs font-medium tracking-wider uppercase">Back to Panel</span>
-
-          {/* Corner accents */}
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-        </Link>
+        <TextureButton>
+          <Link href="/servers" className="flex flex-row gap-2">
+            <BsArrowLeft className="h-4 w-4" />
+            <span className="text-xs font-medium tracking-wider uppercase">Back to Panel</span>
+          </Link>
+        </TextureButton>
 
         {/* Admin Panel Title */}
         <div

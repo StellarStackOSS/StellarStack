@@ -39,7 +39,7 @@ app.use(
   "/api/auth/*",
   cors({
     origin: FRONTEND_URL,
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     credentials: true,
   })
