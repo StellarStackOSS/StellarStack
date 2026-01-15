@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2, File } from "lucide-react";
+import { ArrowLeft, File, Loader2, Save } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { CodeEditor, detectLanguage } from "@/components/code-editor";
+import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
-import { useServer } from "@/components/server-provider";
 
 export default function FileEditPage() {
   const params = useParams();
@@ -22,8 +21,6 @@ export default function FileEditPage() {
   const serverId = params.id as string;
   const filePath = searchParams.get("path") || "";
   const fileName = filePath.split("/").pop() || "file";
-
-  const { server } = useServer();
 
   // Fetch file content
   const { data: originalContent, isLoading, error } = useFileContent(serverId, filePath);
@@ -257,7 +254,6 @@ export default function FileEditPage() {
                     </div>
                   </div>
                 )}
-
                 {isAudio && (
                   <div className="flex w-full max-w-2xl flex-col items-center gap-6">
                     <div className="w-full rounded-xl border-2 border-zinc-700/30 p-12">
@@ -274,7 +270,7 @@ export default function FileEditPage() {
               </div>
             </div>
           ) : (
-            <CodeEditor
+            <FileEditor
               value={content}
               onChange={handleContentChange}
               filename={fileName}

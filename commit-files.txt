@@ -84,7 +84,7 @@ COMMIT:1cc9805d2a1974cd442a76923c50a907571559f5|init
 .claude/settings.local.json
 stack/apps/web/app/layout.tsx
 stack/apps/web/app/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/package.json
 stack/apps/web/stores/connectionStore.ts
 stack/apps/web/types/server.ts
@@ -106,7 +106,7 @@ stack/pnpm-lock.yaml
 COMMIT:17ece0a93ea3740d41a29a13e937adf89fa4cee8|init
 
 stack/apps/web/app/files/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/package.json
 stack/packages/ui/package.json
 stack/packages/ui/src/components/checkbox.tsx
@@ -191,7 +191,7 @@ COMMIT:99a6bb4eac3addcbd81f71e24d6d0301d2830fee|init
 
 stack/apps/web/app/files/page.tsx
 stack/apps/web/app/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/constants/gridConfig.ts
 stack/apps/web/hooks/useContainerControls.ts
 stack/apps/web/hooks/useLabels.ts
@@ -229,7 +229,7 @@ COMMIT:736aeb8721debaa910f67e9f220cd6290a09b3c1|- Added touch screen support
 stack/packages/ui/src/components/shared/DragDropGrid/DragDropGrid.tsx
 COMMIT:13cf628c81439525da453b2fa8c8431c04d8cdd5|- Added version control
 
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/next.config.mjs
 COMMIT:7d7d34e2b12e96dc82a0abc44d0d7262cb8d4407|- Potential scroll issue on tablet for the sidebar
 
@@ -238,7 +238,7 @@ COMMIT:f71e92407edb9eb9aad865e075cc4d0f98bc8e21|- Minor style changes + model fo
 
 stack/apps/web/app/files/page.tsx
 stack/apps/web/app/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/constants/gridConfig.ts
 stack/apps/web/hooks/useLabels.ts
 stack/apps/web/locales/en-GB.json
@@ -268,7 +268,7 @@ stack/apps/web/app/servers/[id]/template.tsx
 stack/apps/web/app/servers/[id]/users/page.tsx
 stack/apps/web/app/servers/page.tsx
 stack/apps/web/app/template.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/packages/ui/package.json
 stack/packages/ui/src/components/shared/AnimatedBackground/AnimatedBackground.tsx
 stack/packages/ui/src/components/shared/PageTransition/PageTransition.tsx
@@ -310,7 +310,7 @@ stack/apps/web/app/servers/[id]/settings/page.tsx
 stack/apps/web/app/servers/[id]/startup/page.tsx
 stack/apps/web/app/servers/[id]/users/page.tsx
 stack/apps/web/app/servers/page.tsx
-stack/apps/web/components/account-sidebar.tsx
+stack/apps/web/components/AccountSidebar.tsx
 stack/apps/web/constants/gridConfig.ts
 stack/apps/web/package.json
 stack/packages/ui/package.json
@@ -620,8 +620,8 @@ stack/apps/web/app/servers/[id]/schedules/page.tsx
 stack/apps/web/app/servers/[id]/settings/page.tsx
 stack/apps/web/app/servers/[id]/startup/page.tsx
 stack/apps/web/app/servers/page.tsx
-stack/apps/web/components/admin-sidebar.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AdminSidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/components/auth-provider.tsx
 stack/apps/web/components/providers.tsx
 stack/apps/web/components/server-provider.tsx
@@ -687,9 +687,9 @@ stack/apps/web/app/servers/[id]/schedules/page.tsx
 stack/apps/web/app/servers/[id]/settings/page.tsx
 stack/apps/web/app/servers/[id]/startup/page.tsx
 stack/apps/web/app/servers/[id]/users/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/components/auth-provider.tsx
-stack/apps/web/components/code-editor.tsx
+stack/apps/web/components/FileEditor.tsx
 stack/apps/web/components/command-palette.tsx
 stack/apps/web/components/providers.tsx
 stack/apps/web/components/query-provider.tsx
@@ -760,7 +760,7 @@ stack/apps/web/app/servers/[id]/extensions/eula.tsx
 stack/apps/web/app/servers/[id]/files/[[...path]]/page.tsx
 stack/apps/web/app/servers/[id]/files/edit/page.tsx
 stack/apps/web/app/servers/[id]/overview/page.tsx
-stack/apps/web/components/code-editor.tsx
+stack/apps/web/components/FileEditor.tsx
 stack/apps/web/components/server-installing-placeholder.tsx
 stack/apps/web/components/server-provider.tsx
 stack/apps/web/hooks/queries/use-servers.ts
@@ -876,7 +876,7 @@ stack/apps/daemon/src/environment/docker/container.rs
 stack/apps/daemon/src/environment/docker/power.rs
 stack/apps/daemon/src/environment/traits.rs
 stack/apps/daemon/src/server/server.rs
-stack/apps/web/components/code-editor.tsx
+stack/apps/web/components/FileEditor.tsx
 stack/apps/web/lib/codemirror-extensions.ts
 COMMIT:d5f87a53e417e587daee325d5e7ffe5063b0f91c|- minor fixes to the daemon
 
@@ -965,7 +965,7 @@ stack/apps/web/app/servers/[id]/split/page.tsx
 stack/apps/web/app/servers/[id]/startup/page.tsx
 stack/apps/web/app/servers/[id]/users/page.tsx
 stack/apps/web/app/servers/[id]/webhooks/page.tsx
-stack/apps/web/components/app-sidebar.tsx
+stack/apps/web/components/AppSidebar.tsx
 stack/apps/web/components/server-provider.tsx
 stack/apps/web/hooks/usePermissions.ts
 stack/apps/web/lib/api.ts
@@ -1044,19 +1044,19 @@ stack/apps/web/app/servers/[id]/webhooks/page.tsx
 stack/apps/web/app/servers/page.tsx
 stack/apps/web/app/template.tsx
 stack/apps/web/components/account-sidebar/account-sidebar.spec.tsx
-stack/apps/web/components/account-sidebar/account-sidebar.tsx
+stack/apps/web/components/account-sidebar/AccountSidebar.tsx
 stack/apps/web/components/account-sidebar/index.ts
 stack/apps/web/components/admin-sidebar/admin-sidebar.spec.tsx
-stack/apps/web/components/admin-sidebar/admin-sidebar.tsx
+stack/apps/web/components/admin-sidebar/AdminSidebar.tsx
 stack/apps/web/components/admin-sidebar/index.ts
 stack/apps/web/components/app-sidebar/app-sidebar.spec.tsx
-stack/apps/web/components/app-sidebar/app-sidebar.tsx
+stack/apps/web/components/app-sidebar/AppSidebar.tsx
 stack/apps/web/components/app-sidebar/index.ts
 stack/apps/web/components/auth-provider/auth-provider.spec.tsx
 stack/apps/web/components/auth-provider/auth-provider.tsx
 stack/apps/web/components/auth-provider/index.ts
 stack/apps/web/components/code-editor/code-editor.spec.tsx
-stack/apps/web/components/code-editor/code-editor.tsx
+stack/apps/web/components/code-editor/FileEditor.tsx
 stack/apps/web/components/code-editor/index.ts
 stack/apps/web/components/command-palette/command-palette.spec.tsx
 stack/apps/web/components/command-palette/command-palette.tsx
@@ -1536,19 +1536,19 @@ apps/web/app/template.tsx
 apps/web/components.json
 apps/web/components/.gitkeep
 apps/web/components/account-sidebar/account-sidebar.spec.tsx
-apps/web/components/account-sidebar/account-sidebar.tsx
+apps/web/components/account-sidebar/AccountSidebar.tsx
 apps/web/components/account-sidebar/index.ts
 apps/web/components/admin-sidebar/admin-sidebar.spec.tsx
-apps/web/components/admin-sidebar/admin-sidebar.tsx
+apps/web/components/admin-sidebar/AdminSidebar.tsx
 apps/web/components/admin-sidebar/index.ts
 apps/web/components/app-sidebar/app-sidebar.spec.tsx
-apps/web/components/app-sidebar/app-sidebar.tsx
+apps/web/components/app-sidebar/AppSidebar.tsx
 apps/web/components/app-sidebar/index.ts
 apps/web/components/auth-provider/auth-provider.spec.tsx
 apps/web/components/auth-provider/auth-provider.tsx
 apps/web/components/auth-provider/index.ts
 apps/web/components/code-editor/code-editor.spec.tsx
-apps/web/components/code-editor/code-editor.tsx
+apps/web/components/code-editor/FileEditor.tsx
 apps/web/components/code-editor/index.ts
 apps/web/components/command-palette/command-palette.spec.tsx
 apps/web/components/command-palette/command-palette.tsx
@@ -1922,8 +1922,8 @@ apps/docs/.source/index.ts
 apps/web/app/admin/users/page.tsx
 apps/web/app/servers/[id]/console/page.tsx
 apps/web/app/servers/[id]/users/page.tsx
-apps/web/components/admin-sidebar/admin-sidebar.tsx
-apps/web/components/app-sidebar/app-sidebar.tsx
+apps/web/components/admin-sidebar/AdminSidebar.tsx
+apps/web/components/app-sidebar/AppSidebar.tsx
 apps/web/hooks/queries/index.ts
 apps/web/hooks/queries/use-users.ts
 apps/web/lib/api.ts
@@ -1940,7 +1940,7 @@ apps/daemon/src/sftp/handler.rs
 apps/daemon/src/sftp/mod.rs
 apps/daemon/src/sftp/server.rs
 apps/web/app/servers/[id]/console/page.tsx
-apps/web/components/app-sidebar/app-sidebar.tsx
+apps/web/components/app-sidebar/AppSidebar.tsx
 install.sh
 COMMIT:a03425cec086b7a6219fc63ee558260ce9b8c6c1|- SFTP implementation and cleanup / removal of console page in frontend
 
@@ -2099,7 +2099,7 @@ apps/daemon/config.toml
 apps/web/app/servers/[id]/files/[[...path]]/page.tsx
 apps/web/app/servers/[id]/overview/page.tsx
 apps/web/app/servers/[id]/schedules/page.tsx
-apps/web/components/app-sidebar/app-sidebar.tsx
+apps/web/components/app-sidebar/AppSidebar.tsx
 apps/web/lib/api.ts
 packages/ui/src/components/console/console.tsx
 packages/ui/src/components/console/types.ts

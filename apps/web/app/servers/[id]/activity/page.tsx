@@ -27,9 +27,9 @@ import {
   BsGlobe,
   BsTrash,
 } from "react-icons/bs";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useActivity } from "@/hooks/queries";
 import type { ActivityLog } from "@/lib/api";
 

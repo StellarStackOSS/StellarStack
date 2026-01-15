@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
-import { SidebarProvider, SidebarInset } from "@workspace/ui/components/sidebar";
-import { AdminSidebar } from "@/components/admin-sidebar";
-import { useAuth } from "@/components/auth-provider";
+import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
+import { useAuth } from "hooks/auth-provider";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { cn } from "@workspace/ui/lib/utils";
+import { AdminSidebar } from "@/components/AdminSidebar/AdminSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {

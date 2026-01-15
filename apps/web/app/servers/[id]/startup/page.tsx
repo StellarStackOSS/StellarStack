@@ -11,9 +11,9 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { BsSun, BsMoon, BsInfoCircle, BsCheckCircle, BsArrowRepeat } from "react-icons/bs";
 import { servers } from "@/lib/api";
 import type { StartupVariable, DockerImageOption } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
@@ -447,7 +447,7 @@ const StartupPage = (): JSX.Element | null => {
             />
             <div
               className={cn(
-                "absolute bottom-0 right-0 h-2 w-2 border-b border-r",
+                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
                 isDark ? "border-zinc-500" : "border-zinc-400"
               )}
             />
@@ -459,13 +459,9 @@ const StartupPage = (): JSX.Element | null => {
             >
               Custom Startup Commands
             </label>
-            <p
-              className={cn(
-                "mt-1 mb-3 text-xs",
-                isDark ? "text-zinc-400" : "text-zinc-500"
-              )}
-            >
-              Additional commands to append to the startup command. These will be executed after the main command.
+            <p className={cn("mt-1 mb-3 text-xs", isDark ? "text-zinc-400" : "text-zinc-500")}>
+              Additional commands to append to the startup command. These will be executed after the
+              main command.
             </p>
             <textarea
               value={customStartupCommands}
@@ -473,7 +469,7 @@ const StartupPage = (): JSX.Element | null => {
               placeholder="e.g., && echo 'Server started' || --additional-flag"
               rows={3}
               className={cn(
-                "w-full resize-y border p-3 font-mono text-xs outline-none transition-colors",
+                "w-full resize-y border p-3 font-mono text-xs transition-colors outline-none",
                 isDark
                   ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-300 placeholder:text-zinc-600 focus:border-zinc-500"
                   : "border-zinc-200 bg-zinc-100 text-zinc-700 placeholder:text-zinc-400 focus:border-zinc-400"

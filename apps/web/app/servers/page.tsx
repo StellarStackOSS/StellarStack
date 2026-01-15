@@ -10,7 +10,7 @@ import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { BsServer, BsChevronRight, BsBoxArrowRight } from "react-icons/bs";
 import { servers as serversApi } from "@/lib/api";
 import type { Server } from "@/lib/api";
-import { useAuth } from "@/components/auth-provider";
+import { useAuth } from "hooks/auth-provider";
 import { toast } from "sonner";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 

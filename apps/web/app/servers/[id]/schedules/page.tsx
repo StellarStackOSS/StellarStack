@@ -28,9 +28,9 @@ import {
 } from "react-icons/bs";
 import { servers } from "@/lib/api";
 import type { Schedule, ScheduleTask, CreateScheduleData } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";

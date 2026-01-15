@@ -79,10 +79,10 @@ import {
 } from "react-icons/bs";
 import { servers } from "@/lib/api";
 import type { FileInfo } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { useAuth } from "@/components/auth-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
 import { useUploads, type UploadProgress } from "@/components/upload-provider";

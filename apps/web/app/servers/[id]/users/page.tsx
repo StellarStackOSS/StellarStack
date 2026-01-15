@@ -22,10 +22,10 @@ import {
   BsClock,
 } from "react-icons/bs";
 import { toast } from "sonner";
-import { useServer } from "@/components/server-provider";
-import { useAuth } from "@/components/auth-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import {
   useServerMembers,
   useServerInvitations,
@@ -245,9 +245,7 @@ const UsersPage = (): JSX.Element | null => {
           onClick={toggleAllPermissions}
           className={cn(
             "text-xs tracking-wider uppercase transition-colors",
-            isDark
-              ? "text-zinc-400 hover:text-zinc-100"
-              : "text-zinc-600 hover:text-zinc-900"
+            isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
           )}
         >
           {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}

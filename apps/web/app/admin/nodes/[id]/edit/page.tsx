@@ -9,10 +9,9 @@ import { AnimatedBackground } from "@workspace/ui/components/animated-background
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { ArrowLeftIcon, SaveIcon, PlusIcon, TrashIcon, NetworkIcon, KeyIcon, CopyIcon, CheckIcon } from "lucide-react";
-import { useNode, useNodeMutations, useLocations } from "@/hooks/queries";
+import { ArrowLeftIcon, SaveIcon, PlusIcon, TrashIcon, NetworkIcon, KeyIcon } from "lucide-react";
+import { useNode, useNodeMutations } from "@/hooks/queries";
 import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Allocation } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function EditNodePage() {
@@ -23,12 +22,15 @@ export default function EditNodePage() {
 
   // React Query hooks
   const { data: node, isLoading, refetch } = useNode(nodeId);
-  const { data: locationsList = [] } = useLocations();
-  const { update, regenerateToken, addAllocation, addAllocationRange, deleteAllocation } = useNodeMutations();
+  const { update, regenerateToken, addAllocation, addAllocationRange, deleteAllocation } =
+    useNodeMutations();
 
   // Token state
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
-  const [newToken, setNewToken] = useState<string | null>(null);
+  const [newToken, setNewToken] = useState<{
+    token: string;
+    token_id: string;
+  } | null>(null);
   const [copiedToken, setCopiedToken] = useState(false);
 
   // Allocation state
@@ -85,7 +87,7 @@ export default function EditNodePage() {
   const handleRegenerateToken = async () => {
     try {
       const result = await regenerateToken.mutateAsync(nodeId);
-      setNewToken(result.token);
+      setNewToken(result);
       setShowRegenerateConfirm(false);
       toast.success("Token regenerated successfully");
     } catch (error: any) {
@@ -136,20 +138,11 @@ export default function EditNodePage() {
     try {
       await deleteAllocation.mutateAsync({ nodeId, allocationId });
       toast.success("Allocation deleted successfully");
-      refetch();
+      await refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete allocation");
     } finally {
       setDeletingAllocationId(null);
-    }
-  };
-
-  const copyToken = async () => {
-    if (newToken) {
-      await navigator.clipboard.writeText(newToken);
-      setCopiedToken(true);
-      toast.success("Token copied to clipboard");
-      setTimeout(() => setCopiedToken(false), 2000);
     }
   };
 
@@ -162,16 +155,26 @@ export default function EditNodePage() {
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+      <div
+        className={cn(
+          "relative flex min-h-svh items-center justify-center",
+          isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+        )}
+      >
         <AnimatedBackground isDark={isDark} />
-        <Spinner className="w-6 h-6" />
+        <Spinner className="h-6 w-6" />
       </div>
     );
   }
 
   if (!node) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+      <div
+        className={cn(
+          "relative flex min-h-svh items-center justify-center",
+          isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+        )}
+      >
         <AnimatedBackground isDark={isDark} />
         <p className={isDark ? "text-zinc-400" : "text-zinc-600"}>Node not found</p>
       </div>
@@ -179,15 +182,20 @@ export default function EditNodePage() {
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
+    <div
+      className={cn(
+        "relative min-h-svh transition-colors",
+        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      )}
+    >
       <AnimatedBackground isDark={isDark} />
       <FloatingDots isDark={isDark} count={15} />
 
       <div className="relative p-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="mx-auto max-w-3xl">
           <FadeIn delay={0}>
             {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="mb-8 flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -197,19 +205,18 @@ export default function EditNodePage() {
                   isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
                 )}
               >
-                <ArrowLeftIcon className="w-4 h-4" />
+                <ArrowLeftIcon className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className={cn(
-                  "text-2xl font-light tracking-wider",
-                  isDark ? "text-zinc-100" : "text-zinc-800"
-                )}>
+                <h1
+                  className={cn(
+                    "text-2xl font-light tracking-wider",
+                    isDark ? "text-zinc-100" : "text-zinc-800"
+                  )}
+                >
                   EDIT NODE
                 </h1>
-                <p className={cn(
-                  "text-sm mt-1",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
-                )}>
+                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
                   {node.displayName} - {node.host}:{node.port}
                 </p>
               </div>
@@ -218,12 +225,14 @@ export default function EditNodePage() {
 
           <FadeIn delay={0.1}>
             <form onSubmit={handleSubmit}>
-              <div className={cn(
-                "relative p-6 border",
-                isDark
-                  ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 shadow-lg shadow-black/20"
-                  : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300 shadow-lg shadow-zinc-400/20"
-              )}>
+              <div
+                className={cn(
+                  "relative border p-6",
+                  isDark
+                    ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
+                    : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20"
+                )}
+              >
                 <CornerAccents isDark={isDark} size="sm" />
 
                 <div className="space-y-4">
@@ -256,7 +265,9 @@ export default function EditNodePage() {
                       <input
                         type="number"
                         value={formData.port}
-                        onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 3001 })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, port: parseInt(e.target.value) || 3001 })
+                        }
                         className={inputClasses}
                         min={1}
                         max={65535}
@@ -270,7 +281,9 @@ export default function EditNodePage() {
                       <label className={labelClasses}>Protocol</label>
                       <select
                         value={formData.protocol}
-                        onChange={(e) => setFormData({ ...formData, protocol: e.target.value as any })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, protocol: e.target.value as any })
+                        }
                         className={selectClasses}
                       >
                         <option value="HTTP">HTTP</option>
@@ -283,7 +296,9 @@ export default function EditNodePage() {
                       <input
                         type="number"
                         value={formData.sftpPort}
-                        onChange={(e) => setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })
+                        }
                         className={inputClasses}
                         min={1}
                         max={65535}
@@ -293,8 +308,18 @@ export default function EditNodePage() {
                   </div>
 
                   {/* Resource Limits */}
-                  <div className={cn("pt-4 border-t", isDark ? "border-zinc-700/50" : "border-zinc-200")}>
-                    <h3 className={cn("text-sm font-medium uppercase tracking-wider mb-4", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                  <div
+                    className={cn(
+                      "border-t pt-4",
+                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                    )}
+                  >
+                    <h3
+                      className={cn(
+                        "mb-4 text-sm font-medium tracking-wider uppercase",
+                        isDark ? "text-zinc-300" : "text-zinc-700"
+                      )}
+                    >
                       Resource Limits
                     </h3>
 
@@ -304,12 +329,16 @@ export default function EditNodePage() {
                         <input
                           type="number"
                           value={formData.memoryLimit}
-                          onChange={(e) => setFormData({ ...formData, memoryLimit: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, memoryLimit: parseInt(e.target.value) || 0 })
+                          }
                           className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p
+                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                        >
                           {formatBytes(formData.memoryLimit)}
                         </p>
                       </div>
@@ -318,24 +347,30 @@ export default function EditNodePage() {
                         <input
                           type="number"
                           value={formData.diskLimit}
-                          onChange={(e) => setFormData({ ...formData, diskLimit: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, diskLimit: parseInt(e.target.value) || 0 })
+                          }
                           className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p
+                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                        >
                           {formatBytes(formData.diskLimit)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
                         <label className={labelClasses}>CPU Limit (cores)</label>
                         <input
                           type="number"
                           value={formData.cpuLimit}
-                          onChange={(e) => setFormData({ ...formData, cpuLimit: parseFloat(e.target.value) || 1 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, cpuLimit: parseFloat(e.target.value) || 1 })
+                          }
                           className={inputClasses}
                           min={0.1}
                           step={0.1}
@@ -347,12 +382,16 @@ export default function EditNodePage() {
                         <input
                           type="number"
                           value={formData.uploadLimit}
-                          onChange={(e) => setFormData({ ...formData, uploadLimit: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, uploadLimit: parseInt(e.target.value) || 0 })
+                          }
                           className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p
+                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                        >
                           {formatBytes(formData.uploadLimit)}
                         </p>
                       </div>
@@ -360,9 +399,19 @@ export default function EditNodePage() {
                   </div>
 
                   {/* Token Management */}
-                  <div className={cn("pt-4 border-t", isDark ? "border-zinc-700/50" : "border-zinc-200")}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={cn("text-sm font-medium uppercase tracking-wider", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                  <div
+                    className={cn(
+                      "border-t pt-4",
+                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                    )}
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3
+                        className={cn(
+                          "text-sm font-medium tracking-wider uppercase",
+                          isDark ? "text-zinc-300" : "text-zinc-700"
+                        )}
+                      >
                         Daemon Token
                       </h3>
                       <Button
@@ -377,25 +426,21 @@ export default function EditNodePage() {
                             : "border-amber-400 text-amber-600 hover:border-amber-500"
                         )}
                       >
-                        <KeyIcon className="w-3 h-3" />
+                        <KeyIcon className="h-3 w-3" />
                         Regenerate
                       </Button>
                     </div>
                     {newToken && (
-                      <div className={cn(
-                        "p-3 font-mono text-xs break-all border flex items-center justify-between gap-2",
-                        isDark ? "bg-zinc-950 border-zinc-700 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
-                      )}>
-                        <span className="flex-1">{newToken}</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={copyToken}
-                          className={cn("shrink-0", isDark ? "border-zinc-700" : "border-zinc-300")}
-                        >
-                          {copiedToken ? <CheckIcon className={cn("w-4 h-4", isDark ? "text-zinc-300" : "text-zinc-700")} /> : <CopyIcon className="w-4 h-4" />}
-                        </Button>
+                      <div
+                        className={cn(
+                          "flex flex-col justify-between gap-2 border p-3 font-mono text-xs break-all",
+                          isDark
+                            ? "border-zinc-700 bg-zinc-950 text-zinc-300"
+                            : "border-zinc-200 bg-zinc-50 text-zinc-700"
+                        )}
+                      >
+                        <span className="flex-1">TOKENID: {newToken.token_id}</span>
+                        <span>TOKEN: {newToken.token}</span>
                       </div>
                     )}
                     {!newToken && (
@@ -406,9 +451,19 @@ export default function EditNodePage() {
                   </div>
 
                   {/* Allocations */}
-                  <div className={cn("pt-4 border-t", isDark ? "border-zinc-700/50" : "border-zinc-200")}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={cn("text-sm font-medium uppercase tracking-wider", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                  <div
+                    className={cn(
+                      "border-t pt-4",
+                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                    )}
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3
+                        className={cn(
+                          "text-sm font-medium tracking-wider uppercase",
+                          isDark ? "text-zinc-300" : "text-zinc-700"
+                        )}
+                      >
                         Allocations ({node.allocations?.length || 0})
                       </h3>
                       <div className="flex items-center gap-2">
@@ -424,7 +479,7 @@ export default function EditNodePage() {
                               : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
                           )}
                         >
-                          <PlusIcon className="w-3 h-3" />
+                          <PlusIcon className="h-3 w-3" />
                           Add
                         </Button>
                         <Button
@@ -439,16 +494,21 @@ export default function EditNodePage() {
                               : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
                           )}
                         >
-                          <PlusIcon className="w-3 h-3" />
+                          <PlusIcon className="h-3 w-3" />
                           Add Range
                         </Button>
                       </div>
                     </div>
 
                     {/* Allocations list */}
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
                       {!node.allocations || node.allocations.length === 0 ? (
-                        <p className={cn("text-sm py-4 text-center", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                        <p
+                          className={cn(
+                            "py-4 text-center text-sm",
+                            isDark ? "text-zinc-500" : "text-zinc-400"
+                          )}
+                        >
                           No allocations configured
                         </p>
                       ) : (
@@ -456,29 +516,46 @@ export default function EditNodePage() {
                           <div
                             key={allocation.id}
                             className={cn(
-                              "flex items-center justify-between p-3 border",
+                              "flex items-center justify-between border p-3",
                               isDark
-                                ? "bg-zinc-900/50 border-zinc-800"
-                                : "bg-zinc-50 border-zinc-200"
+                                ? "border-zinc-800 bg-zinc-900/50"
+                                : "border-zinc-200 bg-zinc-50"
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <NetworkIcon className={cn("w-4 h-4", isDark ? "text-zinc-500" : "text-zinc-400")} />
-                              <span className={cn("font-mono text-sm", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                              <NetworkIcon
+                                className={cn(
+                                  "h-4 w-4",
+                                  isDark ? "text-zinc-500" : "text-zinc-400"
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  "font-mono text-sm",
+                                  isDark ? "text-zinc-200" : "text-zinc-700"
+                                )}
+                              >
                                 {allocation.ip}:{allocation.port}
                               </span>
                               {allocation.assigned && (
-                                <span className={cn(
-                                  "px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium border",
-                                  isDark
-                                    ? "border-zinc-600 text-zinc-400"
-                                    : "border-zinc-400 text-zinc-600"
-                                )}>
+                                <span
+                                  className={cn(
+                                    "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                                    isDark
+                                      ? "border-zinc-600 text-zinc-400"
+                                      : "border-zinc-400 text-zinc-600"
+                                  )}
+                                >
                                   In Use
                                 </span>
                               )}
                               {allocation.alias && (
-                                <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                                <span
+                                  className={cn(
+                                    "text-xs",
+                                    isDark ? "text-zinc-500" : "text-zinc-400"
+                                  )}
+                                >
                                   ({allocation.alias})
                                 </span>
                               )}
@@ -487,22 +564,28 @@ export default function EditNodePage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              disabled={allocation.assigned || deletingAllocationId === allocation.id}
+                              disabled={
+                                allocation.assigned || deletingAllocationId === allocation.id
+                              }
                               onClick={() => handleDeleteAllocation(allocation.id)}
                               className={cn(
-                                "p-1 h-auto",
+                                "h-auto p-1",
                                 allocation.assigned
-                                  ? "opacity-30 cursor-not-allowed"
+                                  ? "cursor-not-allowed opacity-30"
                                   : isDark
-                                    ? "text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                                    : "text-zinc-400 hover:text-red-600 hover:bg-red-50"
+                                    ? "text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
+                                    : "text-zinc-400 hover:bg-red-50 hover:text-red-600"
                               )}
-                              title={allocation.assigned ? "Cannot delete assigned allocation" : "Delete allocation"}
+                              title={
+                                allocation.assigned
+                                  ? "Cannot delete assigned allocation"
+                                  : "Delete allocation"
+                              }
                             >
                               {deletingAllocationId === allocation.id ? (
-                                <Spinner className="w-4 h-4" />
+                                <Spinner className="h-4 w-4" />
                               ) : (
-                                <TrashIcon className="w-4 h-4" />
+                                <TrashIcon className="h-4 w-4" />
                               )}
                             </Button>
                           </div>
@@ -512,13 +595,18 @@ export default function EditNodePage() {
 
                     {/* Add single allocation form */}
                     {showAddAllocation && (
-                      <div className={cn(
-                        "mt-4 p-4 border",
-                        isDark
-                          ? "bg-zinc-900/50 border-zinc-700"
-                          : "bg-zinc-50 border-zinc-200"
-                      )}>
-                        <p className={cn("text-sm mb-3 font-medium", isDark ? "text-zinc-300" : "text-zinc-600")}>
+                      <div
+                        className={cn(
+                          "mt-4 border p-4",
+                          isDark ? "border-zinc-700 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
+                        )}
+                      >
+                        <p
+                          className={cn(
+                            "mb-3 text-sm font-medium",
+                            isDark ? "text-zinc-300" : "text-zinc-600"
+                          )}
+                        >
                           Add Single Allocation
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -527,7 +615,9 @@ export default function EditNodePage() {
                             <input
                               type="text"
                               value={allocationForm.ip}
-                              onChange={(e) => setAllocationForm({ ...allocationForm, ip: e.target.value })}
+                              onChange={(e) =>
+                                setAllocationForm({ ...allocationForm, ip: e.target.value })
+                              }
                               className={inputClasses}
                               placeholder="0.0.0.0"
                               required
@@ -538,7 +628,12 @@ export default function EditNodePage() {
                             <input
                               type="number"
                               value={allocationForm.port}
-                              onChange={(e) => setAllocationForm({ ...allocationForm, port: parseInt(e.target.value) || 25565 })}
+                              onChange={(e) =>
+                                setAllocationForm({
+                                  ...allocationForm,
+                                  port: parseInt(e.target.value) || 25565,
+                                })
+                              }
                               className={inputClasses}
                               min={1}
                               max={65535}
@@ -550,13 +645,15 @@ export default function EditNodePage() {
                             <input
                               type="text"
                               value={allocationForm.alias}
-                              onChange={(e) => setAllocationForm({ ...allocationForm, alias: e.target.value })}
+                              onChange={(e) =>
+                                setAllocationForm({ ...allocationForm, alias: e.target.value })
+                              }
                               className={inputClasses}
                               placeholder="game1"
                             />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="mt-3 flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -565,7 +662,12 @@ export default function EditNodePage() {
                               setShowAddAllocation(false);
                               setAllocationForm({ ip: "", port: 25565, alias: "" });
                             }}
-                            className={cn("text-xs", isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600")}
+                            className={cn(
+                              "text-xs",
+                              isDark
+                                ? "border-zinc-700 text-zinc-400"
+                                : "border-zinc-300 text-zinc-600"
+                            )}
                           >
                             Cancel
                           </Button>
@@ -581,7 +683,7 @@ export default function EditNodePage() {
                                 : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
                             )}
                           >
-                            {addAllocation.isPending ? <Spinner className="w-3 h-3" /> : "Add"}
+                            {addAllocation.isPending ? <Spinner className="h-3 w-3" /> : "Add"}
                           </Button>
                         </div>
                       </div>
@@ -589,13 +691,18 @@ export default function EditNodePage() {
 
                     {/* Add range form */}
                     {showAddRange && (
-                      <div className={cn(
-                        "mt-4 p-4 border",
-                        isDark
-                          ? "bg-zinc-900/50 border-zinc-700"
-                          : "bg-zinc-50 border-zinc-200"
-                      )}>
-                        <p className={cn("text-sm mb-3 font-medium", isDark ? "text-zinc-300" : "text-zinc-600")}>
+                      <div
+                        className={cn(
+                          "mt-4 border p-4",
+                          isDark ? "border-zinc-700 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
+                        )}
+                      >
+                        <p
+                          className={cn(
+                            "mb-3 text-sm font-medium",
+                            isDark ? "text-zinc-300" : "text-zinc-600"
+                          )}
+                        >
                           Add Allocation Range
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -615,7 +722,12 @@ export default function EditNodePage() {
                             <input
                               type="number"
                               value={rangeForm.startPort}
-                              onChange={(e) => setRangeForm({ ...rangeForm, startPort: parseInt(e.target.value) || 25565 })}
+                              onChange={(e) =>
+                                setRangeForm({
+                                  ...rangeForm,
+                                  startPort: parseInt(e.target.value) || 25565,
+                                })
+                              }
                               className={inputClasses}
                               min={1}
                               max={65535}
@@ -627,7 +739,12 @@ export default function EditNodePage() {
                             <input
                               type="number"
                               value={rangeForm.endPort}
-                              onChange={(e) => setRangeForm({ ...rangeForm, endPort: parseInt(e.target.value) || 25575 })}
+                              onChange={(e) =>
+                                setRangeForm({
+                                  ...rangeForm,
+                                  endPort: parseInt(e.target.value) || 25575,
+                                })
+                              }
                               className={inputClasses}
                               min={1}
                               max={65535}
@@ -635,10 +752,13 @@ export default function EditNodePage() {
                             />
                           </div>
                         </div>
-                        <p className={cn("text-xs mt-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                          This will create {Math.max(0, rangeForm.endPort - rangeForm.startPort + 1)} allocations
+                        <p
+                          className={cn("mt-2 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}
+                        >
+                          This will create{" "}
+                          {Math.max(0, rangeForm.endPort - rangeForm.startPort + 1)} allocations
                         </p>
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="mt-3 flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -647,7 +767,12 @@ export default function EditNodePage() {
                               setShowAddRange(false);
                               setRangeForm({ ip: "", startPort: 25565, endPort: 25575 });
                             }}
-                            className={cn("text-xs", isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600")}
+                            className={cn(
+                              "text-xs",
+                              isDark
+                                ? "border-zinc-700 text-zinc-400"
+                                : "border-zinc-300 text-zinc-600"
+                            )}
                           >
                             Cancel
                           </Button>
@@ -663,7 +788,11 @@ export default function EditNodePage() {
                                 : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
                             )}
                           >
-                            {addAllocationRange.isPending ? <Spinner className="w-3 h-3" /> : "Add Range"}
+                            {addAllocationRange.isPending ? (
+                              <Spinner className="h-3 w-3" />
+                            ) : (
+                              "Add Range"
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -673,13 +802,13 @@ export default function EditNodePage() {
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="mt-6 flex justify-end gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/admin/nodes")}
                   className={cn(
-                    "text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
+                    "text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
                     isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
                   )}
                 >
@@ -689,16 +818,16 @@ export default function EditNodePage() {
                   type="submit"
                   disabled={update.isPending}
                   className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
+                    "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
                     isDark
                       ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
                       : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
                   )}
                 >
                   {update.isPending ? (
-                    <Spinner className="w-4 h-4" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
-                    <SaveIcon className="w-4 h-4" />
+                    <SaveIcon className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
                 </Button>
