@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { servers } from "@/lib/api";
@@ -9,15 +9,14 @@ import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
 import { Console } from "@workspace/ui/components/console";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsGrid } from "react-icons/bs";
+import { BsExclamationTriangle, BsGrid } from "react-icons/bs";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { BsExclamationTriangle } from "react-icons/bs";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@workspace/ui/components/sheet";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -35,15 +34,16 @@ import type { ContainerStatus } from "@workspace/ui/components/dashboard-cards-t
 import { ThemeContext } from "@/contexts";
 import { useLabels } from "@/hooks";
 import { defaultGridItems, defaultHiddenCards } from "@/constants";
-import { useServer } from "@/components/server-provider";
-import { useServerWebSocket, type StatsWithHistory } from "@/hooks/useServerWebSocket";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { EulaExtension } from "../extensions/eula";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
-import { ServerMaintenancePlaceholder } from "@/components/server-maintenance-placeholder";
-import { ServerStatusBadge } from "@/components/ServerStatusBadge/ServerStatusBadge";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder";
 import { TextureButton } from "@workspace/ui/components/texture-button";
-import { LightBoard } from "@workspace/ui/components/Lightboard/Lightboard";
+import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
+import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
+// import {LightBoard} from "@workspace/ui/components/Lightboard/Lightboard"
 
 const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
   const stats = statsData.current;
@@ -193,10 +193,8 @@ const ServerOverviewPage = (): JSX.Element | null => {
   const [realDiskUsageBytes, setRealDiskUsageBytes] = useState<number>(0);
   useEffect(() => {
     const fetchDiskUsage = async () => {
-      try {
-        const usage = await servers.files.diskUsage(serverId);
-        setRealDiskUsageBytes(usage.used_bytes || 0);
-      } catch {}
+      const usage = await servers.files.diskUsage(serverId);
+      setRealDiskUsageBytes(usage.used_bytes || 0);
     };
 
     fetchDiskUsage();
@@ -336,7 +334,12 @@ const ServerOverviewPage = (): JSX.Element | null => {
     <ThemeContext.Provider value={{ isDark }}>
       <div className="relative w-full transition-colors">
         <FadeIn direction={"down"} delay={500} duration={400}>
-          <LightBoard gap={2} text={server?.name || "Server"} font="default" updateInterval={25} />
+          <LightBoard
+            gap={2}
+            text={server?.name || "Server"}
+            font="default"
+            updateInterval={50000}
+          />
         </FadeIn>
         {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
           <div
@@ -418,7 +421,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 >
                   {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
                 </TextureButton>
-                <ServerStatusBadge status={server?.status} />
+                <ServerStatusBadge server={server} />
               </div>
             </div>
           </FadeIn>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, createContext, useContext } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { Layout, Layouts } from "react-grid-layout";
 import { Responsive, WidthProvider } from "react-grid-layout";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsGripVertical, BsArrowsFullscreen, BsX } from "react-icons/bs";
+import { BsArrowsFullscreen, BsGripVertical, BsX } from "react-icons/bs";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../dialog";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type {
-  GridSize,
-  GridSizeConfig,
-  GridItemConfig,
-  RemoveConfirmLabels,
   DragDropGridContextValue,
   DragDropGridProps,
+  GridItemConfig,
   GridItemProps,
+  GridSize,
+  GridSizeConfig,
+  RemoveConfirmLabels,
 } from "./types";
-import type { Layout, Layouts } from "react-grid-layout";
+// Import react-grid-layout styles
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 export type {
   GridSize,
@@ -35,11 +38,6 @@ export type {
   Layout,
   Layouts,
 };
-
-// Import react-grid-layout styles
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-import { TextureButton } from "@workspace/ui/components/texture-button";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -137,9 +135,7 @@ export const DragDropGrid = ({
   isEditing = false,
   savedLayouts,
   removeConfirmLabels,
-  isDark = true,
   isDroppable = false,
-  allItems,
   ...props
 }: DragDropGridProps) => {
   const [items, setItems] = useState<GridItemConfig[]>(externalItems);
@@ -300,7 +296,6 @@ export const DragDropGrid = ({
         canResize,
         removeItem,
         isEditing,
-        isDark,
         removeConfirmLabels,
       }}
     >
@@ -325,7 +320,7 @@ export const DragDropGrid = ({
         </ResponsiveGridLayout>
       </div>
 
-      <style global>{`
+      <style>{`
         .drag-drop-grid .react-grid-item {
           transition: all 200ms ease;
           transition-property: left, top, width, height;
@@ -392,15 +387,8 @@ export const GridItem = ({
   showRemoveHandle = true,
   ...props
 }: GridItemProps) => {
-  const {
-    cycleItemSize,
-    getItemSize,
-    canResize,
-    removeItem,
-    isEditing,
-    isDark,
-    removeConfirmLabels,
-  } = useDragDropGrid();
+  const { cycleItemSize, getItemSize, canResize, removeItem, isEditing, removeConfirmLabels } =
+    useDragDropGrid();
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const size = getItemSize(itemId);
   const isResizable = canResize(itemId);
@@ -441,12 +429,7 @@ export const GridItem = ({
           style={{ touchAction: "none" }}
           title="Drag to reorder"
         >
-          <BsGripVertical
-            className={cn(
-              "pointer-events-none h-3.5 w-3.5",
-              isDark ? "text-zinc-400" : "text-zinc-600"
-            )}
-          />
+          <BsGripVertical className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
         </TextureButton>
       )}
 
@@ -459,20 +442,12 @@ export const GridItem = ({
             handleResize(e as unknown as React.MouseEvent);
           }}
           className={cn(
-            "absolute top-2 right-2 z-20 cursor-pointer border p-1.5",
-            isDark
-              ? "border-zinc-700 bg-zinc-800/80 hover:border-zinc-600 hover:bg-zinc-700"
-              : "border-zinc-300 bg-zinc-200/80 hover:border-zinc-400 hover:bg-zinc-300"
+            "absolute top-2 right-2 z-20 cursor-pointer border border-zinc-700 bg-zinc-800/80 p-1.5 hover:border-zinc-600 hover:bg-zinc-700"
           )}
           title={`Size: ${size.toUpperCase()} (click to cycle)`}
           type="button"
         >
-          <BsArrowsFullscreen
-            className={cn(
-              "pointer-events-none h-3.5 w-3.5",
-              isDark ? "text-zinc-400" : "text-zinc-600"
-            )}
-          />
+          <BsArrowsFullscreen className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
         </button>
       )}
 
@@ -510,10 +485,10 @@ export const GridItem = ({
 
       {/* Remove confirmation dialog */}
       <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
-        <DialogContent isDark={isDark} showCloseButton={false}>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle isDark={isDark}>{removeConfirmLabels?.title ?? "Remove Card"}</DialogTitle>
-            <DialogDescription isDark={isDark}>
+            <DialogTitle>{removeConfirmLabels?.title ?? "Remove Card"}</DialogTitle>
+            <DialogDescription>
               {removeConfirmLabels?.description ??
                 "Are you sure you want to remove this card from the dashboard?"}
             </DialogDescription>

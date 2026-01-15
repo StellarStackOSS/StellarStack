@@ -12,7 +12,7 @@ import { Button } from "@workspace/ui/components/button";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { Switch } from "@workspace/ui/components/switch";
 import { servers } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider";
 
 export default function FirewallPage() {
   const params = useParams();

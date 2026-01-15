@@ -24,9 +24,9 @@ import {
 } from "react-icons/bs";
 import { useBackups, useBackupMutations } from "@/hooks/queries";
 import type { Backup } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 
 const BackupsPage = (): JSX.Element | null => {

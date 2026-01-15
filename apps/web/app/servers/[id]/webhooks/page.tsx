@@ -21,9 +21,9 @@ import {
   BsArrowRepeat,
 } from "react-icons/bs";
 import { TbWand } from "react-icons/tb";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { webhooks, type Webhook, type WebhookEvent } from "@/lib/api";
 import { toast } from "sonner";
 

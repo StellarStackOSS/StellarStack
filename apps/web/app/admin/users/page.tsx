@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useUsers, useUserMutations } from "@/hooks/queries";
 import { useAdminTheme } from "@/hooks/use-admin-theme";
-import { useAuth } from "@/components/auth-provider";
+import { useAuth } from "hooks/auth-provider";
 import type { User } from "@/lib/api";
 import { toast } from "sonner";
 

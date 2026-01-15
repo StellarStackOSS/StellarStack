@@ -1,28 +1,24 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsSun, BsMoon } from "react-icons/bs";
 import { signIn } from "@/lib/auth-client";
-import { useAuth } from "@/components/auth-provider";
+import { useAuth } from "hooks/auth-provider";
 import { setup } from "@/lib/api";
 import { toast } from "sonner";
-import LoginForm from "@/components/login-form/login-form";
 import { Spinner } from "@workspace/ui/components";
+import LoginForm from "@/components/LoginForm/LoginForm";
 
 const LoginPage = (): JSX.Element | null => {
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useNextTheme();
+  const { resolvedTheme } = useNextTheme();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 

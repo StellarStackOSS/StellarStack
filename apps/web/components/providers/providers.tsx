@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { AuthProvider } from "@/components/auth-provider"
-import { QueryProvider } from "@/components/query-provider"
-import { WebSocketProvider } from "@/components/websocket-provider"
-import { CommandPalette } from "@/components/command-palette"
+import * as React from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { AuthProvider } from "hooks/auth-provider";
+import { QueryProvider } from "components/providers/query-provider";
+import { WebSocketProvider } from "@/components/websocket-provider";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -18,10 +17,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
     >
       <QueryProvider>
         <AuthProvider>
-          <WebSocketProvider>
-            {children}
-            <CommandPalette />
-          </WebSocketProvider>
+          <WebSocketProvider>{children}</WebSocketProvider>
         </AuthProvider>
       </QueryProvider>
     </NextThemesProvider>

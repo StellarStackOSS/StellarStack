@@ -1,4 +1,4 @@
-import { Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
 
 import "@workspace/ui/globals.css";
 import { Providers } from "@/components/providers";
