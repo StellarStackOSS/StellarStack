@@ -1,45 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef, type JSX } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { useTheme as useNextTheme } from "next-themes";
-import { motion, useInView } from "framer-motion";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import "swiper/css";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { Switch } from "@workspace/ui/components/switch";
-import { Label } from "@workspace/ui/components/label";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/ui/components/tooltip";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { LiquidMetal } from "@paper-design/shaders-react";
-import { CpuCard } from "@workspace/ui/components/cpu-card";
-import { UsageMetricCard } from "@workspace/ui/components/usage-metric-card";
-import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
-import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
-import { ContainerControlsCard } from "@workspace/ui/components/container-controls-card";
-import { Console } from "@workspace/ui/components/console";
-import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
 import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
 import {
   BsServer,
   BsShieldCheck,
   BsLightningCharge,
-  BsGlobe,
   BsGithub,
-  BsDiscord,
-  BsTwitterX,
   BsArrowRight,
-  BsCheckCircle,
   BsCheck,
   BsTerminal,
   BsDatabase,
-  BsHddNetwork,
   BsPeople,
   BsPersonWorkspace,
   BsCodeSlash,
@@ -69,6 +47,16 @@ import {
 } from "react-icons/si";
 import { Footer } from "@/components/Footer";
 import { Navigation } from "@/components/Navigation";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import {
+  TextureCard,
+  TextureCardContent,
+  TextureCardHeader,
+  TextureSeparator,
+} from "@workspace/ui/components/texture-card";
+import { Mail } from "lucide-react";
+import { AnimatedBackground, FloatingDots } from "@workspace/ui/components";
+import { Dithering } from "@paper-design/shaders-react";
 
 // Technology stack
 const technologies = [
@@ -255,7 +243,7 @@ const initialServerData = {
 
 // Grid items config for the landing page preview
 const previewGridItems: GridItemConfig[] = [
-  { i: "instance-name", size: "xxs-wide", minSize: "xxs-wide", maxSize: "xxs-wide" },
+  { i: "instance-name", size: "xxl-wide", minSize: "xxl-wide", maxSize: "xxl-wide" },
   { i: "container-controls", size: "xxs-wide", minSize: "xxs-wide", maxSize: "xxs-wide" },
   { i: "cpu", size: "xs", minSize: "xxs", maxSize: "lg" },
   { i: "ram", size: "xs", minSize: "xxs", maxSize: "sm" },
@@ -375,10 +363,22 @@ const LandingPage = (): JSX.Element | null => {
     },
   ]);
   const lineIdRef = useRef(5);
+  const [currentScreenshot, setCurrentScreenshot] = useState(1);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Toggle between screenshots
+  useEffect(() => {
+    if (!mounted) return;
+
+    const interval = setInterval(() => {
+      setCurrentScreenshot((prev) => (prev === 1 ? 2 : 1));
+    }, 5000); // Change every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [mounted]);
 
   // Randomly update server data and add console lines
   useEffect(() => {
@@ -475,1102 +475,82 @@ const LandingPage = (): JSX.Element | null => {
         isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
       )}
     >
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={20} />
+      <AnimatedBackground />
       <Navigation links={homeNavLinks} />
 
-      <section className="relative px-6 pt-32 pb-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mt-24 max-w-4xl text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mb-6 text-5xl leading-[1.1] font-extralight tracking-tight md:text-7xl"
-            >
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage: isDark
-                    ? "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)"
-                    : "linear-gradient(135deg, #18181b 0%, #3f3f46 50%, #52525b 100%)",
-                }}
+      <section className="relative flex flex-row items-center justify-center px-6 pt-32 pb-20">
+        <div className="flex max-w-[50%] flex-col items-center justify-center gap-18">
+          <div className="flex flex-col items-center justify-center">
+            <div></div>
+            <div className="mt-24 flex flex-col">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="mb-6 text-center text-5xl leading-[1.1] font-extralight tracking-tight md:text-8xl"
               >
-                Deploy Game Servers
-              </span>
-              <br />
-              <span
-                className="bg-clip-text font-light text-transparent"
-                style={{
-                  backgroundImage: isDark
-                    ? "linear-gradient(135deg, #a1a1aa 0%, #71717a 50%, #52525b 100%)"
-                    : "linear-gradient(135deg, #52525b 0%, #71717a 50%, #a1a1aa 100%)",
-                }}
-              >
-                in Seconds
-              </span>
-            </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className={cn(
-                "mx-auto mb-10 max-w-2xl text-lg leading-relaxed md:text-xl",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              The modern, open-source game server management panel. Self-host on your VPS or
-              dedicated server with our install scripts. Works out of the box for anyone comfortable
-              with Linux.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mb-16 flex flex-col items-center justify-center gap-4 sm:flex-row"
-            >
-              {/* Liquid Metal Border Button - Docs */}
-              <a href="https://docs.stellarstack.app" target="_blank" rel="noopener noreferrer">
-                <div className="group relative h-[56px] w-[220px] transition-all hover:scale-[1.02]">
-                  {/* Liquid Metal Border */}
-                  <div className="absolute inset-0 overflow-hidden">
-                    <LiquidMetal
-                      width={220}
-                      height={56}
-                      colorBack="#aaaaac00"
-                      colorTint="#ffffff"
-                      shape="none"
-                      repetition={2}
-                      softness={0.1}
-                      shiftRed={0}
-                      shiftBlue={0}
-                      distortion={0.07}
-                      contour={0.4}
-                      angle={70}
-                      speed={0.2}
-                      scale={5}
-                      rotation={0}
-                      fit="contain"
-                    />
-                  </div>
-                  {/* Inner Button */}
-                  <div
-                    className={cn(
-                      "absolute inset-[2px] flex items-center justify-center gap-2 text-sm font-medium tracking-wider uppercase",
-                      isDark
-                        ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] text-zinc-100"
-                        : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 text-zinc-900"
-                    )}
-                  >
-                    Read the Docs
-                    <BsArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </a>
-
-              {/* Regular Outline Button - GitHub */}
-              <a
-                href="https://github.com/stellarstack/stellarstack"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "gap-2 px-8 py-6 text-sm tracking-wider uppercase transition-all hover:scale-[1.02]",
-                    isDark
-                      ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800/50"
-                      : "border-zinc-300 text-zinc-700 hover:border-zinc-400 hover:bg-white"
-                  )}
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage: isDark
+                      ? "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)"
+                      : "linear-gradient(135deg, #18181b 0%, #3f3f46 50%, #52525b 100%)",
+                  }}
                 >
-                  <BsGithub className="h-4 w-4" />
-                  View on GitHub
-                </Button>
-              </a>
-            </motion.div>
-          </div>
-
-          {/* Hero Image/Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="relative mx-auto mt-20 max-w-7xl"
-          >
-            {/* Floating Interactive Hint */}
-            <div className="absolute -top-3 left-1/2 z-20 -translate-x-1/2">
-              <div
-                className={cn(
-                  "relative border px-4 py-2 backdrop-blur-sm",
-                  isDark
-                    ? "border-zinc-700 bg-zinc-900/90 text-zinc-300"
-                    : "border-zinc-300 bg-white/90 text-zinc-700"
-                )}
-              >
-                {/* Corner accents */}
-                <div
-                  className={cn(
-                    "absolute -top-px -left-px h-2 w-2 border-t border-l",
-                    isDark ? "border-green-500" : "border-green-600"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute -top-px -right-px h-2 w-2 border-t border-r",
-                    isDark ? "border-green-500" : "border-green-600"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute -bottom-px -left-px h-2 w-2 border-b border-l",
-                    isDark ? "border-green-500" : "border-green-600"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute -right-px -bottom-px h-2 w-2 border-r border-b",
-                    isDark ? "border-green-500" : "border-green-600"
-                  )}
-                />
-
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-2 w-2">
-                    <span
-                      className={cn(
-                        "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
-                        isDark ? "bg-green-400" : "bg-green-500"
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "relative inline-flex h-2 w-2 rounded-full",
-                        isDark ? "bg-green-500" : "bg-green-600"
-                      )}
-                    />
-                  </span>
-                  <span className="text-xs font-medium tracking-wider uppercase">
-                    Interactive Demo
-                  </span>
-                  <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                    —
-                  </span>
-                  <span className={cn("text-xs", isDark ? "text-zinc-400" : "text-zinc-500")}>
-                    Drag cards & resize
-                  </span>
-                </div>
-
-                {/* Animated arrow pointing down */}
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 animate-bounce">
-                  <svg
-                    width="12"
-                    height="8"
-                    viewBox="0 0 12 8"
-                    className={isDark ? "text-green-500" : "text-green-600"}
-                    fill="currentColor"
-                  >
-                    <path d="M6 8L0 0h12L6 8z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Preview Container */}
-            <div
-              className={cn(
-                "relative overflow-hidden border",
-                isDark
-                  ? "border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-black/50"
-                  : "border-zinc-200 bg-white shadow-2xl shadow-zinc-400/20"
-              )}
-            >
-              {/* Window Controls */}
-              <div
-                className={cn(
-                  "flex items-center gap-2 border-b px-4 py-3",
-                  isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-zinc-50"
-                )}
-              >
-                <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                <div className="h-3 w-3 rounded-full bg-green-500/80" />
-                <span className={cn("ml-4 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
-                  app.stellarstack.app/servers
+                  The infrastructure behind your game servers, simplified.
                 </span>
-              </div>
-              {/* Dashboard Preview with Actual Components - matches default overview layout */}
-              <div className="p-6">
-                <DragDropGrid
-                  className="w-full"
-                  items={previewGridItems}
-                  allItems={previewGridItems}
-                  rowHeight={50}
-                  gap={16}
-                  isEditing={true}
-                  isDark={isDark}
-                  isDroppable={false}
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className={cn(
+                  "mx-auto mb-10 max-w-2xl text-center text-lg leading-relaxed md:text-lg",
+                  isDark ? "text-zinc-400" : "text-zinc-600"
+                )}
+              >
+                A modern, open-source game server management panel designed for self-hosting on your
+                own infrastructure.
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="mb-16 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              >
+                <a
+                  href="https://github.com/stellarstack/stellarstack"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <div key="instance-name" className="h-full">
-                    <GridItem itemId="instance-name" showRemoveHandle={false}>
-                      <InstanceNameCard
-                        itemId="instance-name"
-                        isDark={isDark}
-                        instanceName={serverData.name}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="container-controls" className="h-full">
-                    <GridItem itemId="container-controls" showRemoveHandle={false}>
-                      <ContainerControlsCard
-                        itemId="container-controls"
-                        isDark={isDark}
-                        isOffline={false}
-                        status="running"
-                        onStart={() => {}}
-                        onStop={() => {}}
-                        onKill={() => {}}
-                        onRestart={() => {}}
-                        labels={{ start: "Start", stop: "Stop", kill: "Kill", restart: "Restart" }}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="cpu" className="h-full">
-                    <GridItem itemId="cpu" showRemoveHandle={false}>
-                      <CpuCard
-                        itemId="cpu"
-                        percentage={serverData.cpu.usage.percentage}
-                        details={[
-                          `${serverData.cpu.cores} CORES`,
-                          `${serverData.cpu.frequency} GHz`,
-                        ]}
-                        history={serverData.cpu.usage.history}
-                        isDark={isDark}
-                        isOffline={false}
-                        labels={{ title: "CPU", coreUsage: "Core Usage", cores: "Cores" }}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="ram" className="h-full">
-                    <GridItem itemId="ram" showRemoveHandle={false}>
-                      <UsageMetricCard
-                        itemId="ram"
-                        percentage={serverData.memory.usage.percentage}
-                        details={[
-                          `${serverData.memory.used} / ${serverData.memory.total} GB`,
-                          serverData.memory.type,
-                        ]}
-                        history={serverData.memory.usage.history}
-                        isDark={isDark}
-                        isOffline={false}
-                        labels={{ title: "RAM" }}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="disk" className="h-full">
-                    <GridItem itemId="disk" showRemoveHandle={false}>
-                      <UsageMetricCard
-                        itemId="disk"
-                        percentage={serverData.disk.usage.percentage}
-                        details={[
-                          `${serverData.disk.used} / ${serverData.disk.total} GB`,
-                          serverData.disk.type,
-                        ]}
-                        history={serverData.disk.usage.history}
-                        isDark={isDark}
-                        isOffline={false}
-                        labels={{ title: "DISK" }}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="network-usage" className="h-full">
-                    <GridItem itemId="network-usage" showRemoveHandle={false}>
-                      <NetworkUsageCard
-                        itemId="network-usage"
-                        download={serverData.network.download}
-                        upload={serverData.network.upload}
-                        downloadHistory={serverData.network.downloadHistory}
-                        uploadHistory={serverData.network.uploadHistory}
-                        isDark={isDark}
-                        isOffline={false}
-                        labels={{ title: "NETWORK", download: "Download", upload: "Upload" }}
-                      />
-                    </GridItem>
-                  </div>
-
-                  <div key="console" className="h-full">
-                    <GridItem itemId="console" showRemoveHandle={false}>
-                      <Console lines={consoleLines} isDark={isDark} isOffline={false} />
-                    </GridItem>
-                  </div>
-                </DragDropGrid>
-              </div>
+                  <TextureButton variant="primary">
+                    Read the Docs
+                    <BsArrowRight className="ml-2 h-4 w-4" />
+                  </TextureButton>
+                </a>
+              </motion.div>
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="relative px-6 py-32">
-        <div className="mx-auto max-w-7xl">
-          <AnimatedSection className="mb-16 text-center">
-            <h2
-              className={cn(
-                "mb-4 text-3xl font-extralight tracking-tight md:text-5xl",
-                isDark ? "text-zinc-100" : "text-zinc-900"
-              )}
-            >
-              Everything You Need
-            </h2>
-            <p
-              className={cn(
-                "mx-auto max-w-2xl text-lg",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              A complete solution for game server hosting with powerful features out of the box.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, i) => (
-              <AnimatedSection key={i} delay={i * 0.1} className="h-full">
-                <div
-                  className={cn(
-                    "group relative flex h-full flex-col border p-8 transition-all hover:scale-[1.02]",
-                    isDark
-                      ? "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-lg"
-                  )}
-                >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-3 w-3 border-t border-l transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-3 w-3 border-t border-r transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-3 w-3 border-b border-l transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-3 w-3 border-r border-b transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-
-                  <feature.icon
-                    className={cn(
-                      "mb-6 h-8 w-8 flex-shrink-0",
-                      isDark ? "text-zinc-400" : "text-zinc-600"
-                    )}
-                  />
-                  <h3
-                    className={cn(
-                      "mb-3 flex-shrink-0 text-lg font-medium",
-                      isDark ? "text-zinc-100" : "text-zinc-900"
-                    )}
-                  >
-                    {feature.title}
-                  </h3>
-                  <p
-                    className={cn(
-                      "flex-grow text-sm leading-relaxed",
-                      isDark ? "text-zinc-400" : "text-zinc-600"
-                    )}
-                  >
-                    {feature.description}
-                  </p>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section
-        className={cn(
-          "relative border-y px-6 py-20",
-          isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
-        )}
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {[
-              { value: "100%", label: "Open Source" },
-              { value: "50+", label: "Game Templates" },
-              { value: "MIT", label: "Licensed" },
-              { value: "∞", label: "Self-Hosted" },
-            ].map((stat, i) => (
-              <AnimatedSection key={i} delay={i * 0.1} className="text-center">
-                <div
-                  className={cn(
-                    "mb-2 text-4xl font-light md:text-5xl",
-                    isDark ? "text-zinc-100" : "text-zinc-900"
-                  )}
-                >
-                  {stat.value}
-                </div>
-                <div
-                  className={cn(
-                    "text-sm tracking-wider uppercase",
-                    isDark ? "text-zinc-500" : "text-zinc-500"
-                  )}
-                >
-                  {stat.label}
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Who It's For Section */}
-      <section
-        className={cn(
-          "relative border-y px-6 py-32",
-          isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
-        )}
-      >
-        <div className="mx-auto max-w-7xl">
-          <AnimatedSection className="mb-16 text-center">
-            <h2
-              className={cn(
-                "mb-4 text-3xl font-extralight tracking-tight md:text-5xl",
-                isDark ? "text-zinc-100" : "text-zinc-900"
-              )}
-            >
-              Built For Everyone
-            </h2>
-            <p
-              className={cn(
-                "mx-auto max-w-2xl text-lg",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Whether you&apos;re running a hosting business or managing servers for your gaming
-              community.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {targetUsers.map((user, i) => (
-              <AnimatedSection key={i} delay={i * 0.1} className="h-full">
-                <div
-                  className={cn(
-                    "group relative flex h-full flex-col border p-6 text-center transition-all hover:scale-[1.02]",
-                    isDark
-                      ? "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-lg"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "mx-auto mb-4 flex h-14 w-14 items-center justify-center border",
-                      isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-200 bg-zinc-50"
-                    )}
-                  >
-                    <user.icon
-                      className={cn("h-7 w-7", isDark ? "text-zinc-400" : "text-zinc-600")}
-                    />
-                  </div>
-                  <h3
-                    className={cn(
-                      "mb-2 flex-shrink-0 text-base font-medium",
-                      isDark ? "text-zinc-100" : "text-zinc-900"
-                    )}
-                  >
-                    {user.title}
-                  </h3>
-                  <p
-                    className={cn(
-                      "flex-grow text-sm leading-relaxed",
-                      isDark ? "text-zinc-400" : "text-zinc-600"
-                    )}
-                  >
-                    {user.description}
-                  </p>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section id="gallery" className="relative px-6 py-32">
-        <div className="mx-auto max-w-7xl">
-          <AnimatedSection className="mb-16 text-center">
-            <h2
-              className={cn(
-                "mb-4 text-3xl font-extralight tracking-tight md:text-5xl",
-                isDark ? "text-zinc-100" : "text-zinc-900"
-              )}
-            >
-              See It In Action
-            </h2>
-            <p
-              className={cn(
-                "mx-auto max-w-2xl text-lg",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Screenshots and demos showcasing the StellarStack experience. Click to zoom.
-            </p>
-          </AnimatedSection>
-
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                id: 1,
-                title: "Dashboard Overview",
-                image: "https://placehold.co/800x450/18181b/71717a?text=Dashboard+Overview",
-              },
-              {
-                id: 2,
-                title: "Server Console",
-                image: "https://placehold.co/800x450/18181b/71717a?text=Server+Console",
-              },
-              {
-                id: 3,
-                title: "File Manager",
-                image: "https://placehold.co/800x450/18181b/71717a?text=File+Manager",
-              },
-              {
-                id: 4,
-                title: "Node Management",
-                image: "https://placehold.co/800x450/18181b/71717a?text=Node+Management",
-              },
-              {
-                id: 5,
-                title: "User Permissions",
-                image: "https://placehold.co/800x450/18181b/71717a?text=User+Permissions",
-              },
-              {
-                id: 6,
-                title: "Monitoring",
-                image: "https://placehold.co/800x450/18181b/71717a?text=Monitoring",
-              },
-            ].map((item) => (
-              <AnimatedSection key={item.id} delay={item.id * 0.05} className="h-full">
-                <div
-                  className={cn(
-                    "group relative border transition-all hover:scale-[1.02]",
-                    isDark
-                      ? "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700"
-                      : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"
-                  )}
-                >
-                  {item.image ? (
-                    <Zoom>
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        width={800}
-                        height={450}
-                        className="block h-auto w-full"
-                      />
-                    </Zoom>
-                  ) : (
-                    /* Placeholder content */
-                    <div className="flex aspect-video flex-col items-center justify-center">
-                      <BsImage
-                        className={cn("mb-3 h-12 w-12", isDark ? "text-zinc-700" : "text-zinc-300")}
-                      />
-                      <span
-                        className={cn(
-                          "mb-1 text-sm font-medium",
-                          isDark ? "text-zinc-500" : "text-zinc-400"
-                        )}
-                      >
-                        {item.title}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-xs tracking-wider uppercase",
-                          isDark ? "text-zinc-600" : "text-zinc-400"
-                        )}
-                      >
-                        Coming Soon
-                      </span>
-                    </div>
-                  )}
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute top-0 left-0 h-3 w-3 border-t border-l transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute top-0 right-0 h-3 w-3 border-t border-r transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute bottom-0 left-0 h-3 w-3 border-b border-l transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute right-0 bottom-0 h-3 w-3 border-r border-b transition-colors",
-                      isDark
-                        ? "border-zinc-700 group-hover:border-zinc-500"
-                        : "border-zinc-300 group-hover:border-zinc-400"
-                    )}
-                  />
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Tech Stack Carousel */}
-      <section
-        id="tech"
-        className={cn(
-          "relative border-y py-24",
-          isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
-        )}
-      >
-        <AnimatedSection className="mx-auto mb-12 max-w-7xl px-6">
-          <div className="text-center">
-            <h2
-              className={cn(
-                "mb-4 text-2xl font-extralight tracking-tight md:text-3xl",
-                isDark ? "text-zinc-100" : "text-zinc-900"
-              )}
-            >
-              Built with Modern Technology
-            </h2>
-            <p
-              className={cn("mx-auto max-w-xl text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
-            >
-              Powered by the best tools in the ecosystem for performance, reliability, and developer
-              experience.
-            </p>
-          </div>
-        </AnimatedSection>
-
-        {/* Swiper Carousel */}
-        <div className="relative">
-          {/* Fade edges */}
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-24",
-              isDark
-                ? "bg-gradient-to-r from-[#0b0b0a] to-transparent"
-                : "bg-gradient-to-r from-zinc-50 to-transparent"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-24",
-              isDark
-                ? "bg-gradient-to-l from-[#0b0b0a] to-transparent"
-                : "bg-gradient-to-l from-zinc-50 to-transparent"
-            )}
-          />
-
-          <Swiper
-            modules={[Autoplay]}
-            slidesPerView="auto"
-            spaceBetween={48}
-            loop={true}
-            speed={8000}
-            autoplay={{
-              delay: 1,
-              disableOnInteraction: false,
-              pauseOnMouseEnter: true,
-            }}
-            onSwiper={(swiper) => {
-              swiper.autoplay.start();
-            }}
-            allowTouchMove={false}
-            className="[&_.swiper-wrapper]:!ease-linear"
-          >
-            {[...technologies, ...technologies, ...technologies].map((tech, i) => (
-              <SwiperSlide key={i} className="!w-auto">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "flex cursor-pointer items-center justify-center transition-all hover:scale-110",
-                        isDark
-                          ? "text-zinc-500 hover:text-zinc-200"
-                          : "text-zinc-400 hover:text-zinc-700"
-                      )}
-                    >
-                      <tech.Icon className="h-10 w-10" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>{tech.name}</TooltipContent>
-                </Tooltip>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      </section>
-
-      {/* Comparison Section */}
-      <section className="relative px-6 py-32">
-        <div className="mx-auto max-w-7xl">
-          <AnimatedSection className="mb-16 text-center">
-            <h2
-              className={cn(
-                "mb-4 text-3xl font-extralight tracking-tight md:text-5xl",
-                isDark ? "text-zinc-100" : "text-zinc-900"
-              )}
-            >
-              Why StellarStack?
-            </h2>
-            <p
-              className={cn(
-                "mx-auto max-w-2xl text-lg",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              See how we compare to other game server management solutions.
-            </p>
-          </AnimatedSection>
-
-          <AnimatedSection delay={0.2}>
             <div
               className={cn(
-                "overflow-x-auto border",
+                "relative overflow-hidden rounded-lg border-4",
                 isDark ? "border-zinc-800" : "border-zinc-200"
               )}
             >
-              {/* Table Header */}
-              <div
-                className={cn(
-                  "grid grid-cols-[2fr_repeat(6,1fr)] gap-0 border-b text-xs font-medium",
-                  isDark
-                    ? "border-zinc-800 bg-zinc-900/50 text-zinc-300"
-                    : "border-zinc-200 bg-zinc-50 text-zinc-700"
-                )}
-              >
-                <div className={cn("border-r p-4", isDark ? "border-zinc-800" : "border-zinc-200")}>
-                  Feature
-                </div>
-                <div
-                  className={cn(
-                    "border-r p-4 text-center",
-                    isDark ? "border-zinc-800 bg-green-900/20" : "border-zinc-200 bg-green-50"
-                  )}
-                >
-                  StellarStack
-                </div>
-                <div
-                  className={cn(
-                    "border-r p-4 text-center",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
-                  )}
-                >
-                  Pterodactyl
-                </div>
-                <div
-                  className={cn(
-                    "border-r p-4 text-center",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
-                  )}
-                >
-                  Pelican
-                </div>
-                <div
-                  className={cn(
-                    "border-r p-4 text-center",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
-                  )}
-                >
-                  PufferPanel
-                </div>
-                <div
-                  className={cn(
-                    "border-r p-4 text-center",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
-                  )}
-                >
-                  Crafty
-                </div>
-                <div className="p-4 text-center">AMP</div>
-              </div>
-
-              {/* Table Rows */}
-              {[
-                {
-                  feature: "Free & Open Source",
-                  stellar: true,
-                  ptero: true,
-                  pelican: true,
-                  puffer: true,
-                  crafty: true,
-                  amp: false,
-                },
-                {
-                  feature: "File Manager",
-                  stellar: true,
-                  ptero: true,
-                  pelican: true,
-                  puffer: true,
-                  crafty: true,
-                  amp: true,
-                },
-                {
-                  feature: "Scheduled Tasks",
-                  stellar: true,
-                  ptero: true,
-                  pelican: true,
-                  puffer: false,
-                  crafty: true,
-                  amp: true,
-                },
-                {
-                  feature: "Database Management",
-                  stellar: true,
-                  ptero: true,
-                  pelican: true,
-                  puffer: false,
-                  crafty: false,
-                  amp: true,
-                },
-                {
-                  feature: "OAuth / SSO",
-                  stellar: true,
-                  ptero: false,
-                  pelican: true,
-                  puffer: true,
-                  crafty: true,
-                  amp: true,
-                },
-                {
-                  feature: "Webhooks",
-                  stellar: true,
-                  ptero: false,
-                  pelican: true,
-                  puffer: false,
-                  crafty: true,
-                  amp: true,
-                },
-                {
-                  feature: "Roles & Permissions",
-                  stellar: true,
-                  ptero: false,
-                  pelican: true,
-                  puffer: false,
-                  crafty: true,
-                  amp: true,
-                },
-                {
-                  feature: "Remote Backups",
-                  stellar: true,
-                  ptero: true,
-                  pelican: true,
-                  puffer: false,
-                  crafty: false,
-                  amp: true,
-                },
-                {
-                  feature: "One-Command Install",
-                  stellar: true,
-                  ptero: false,
-                  pelican: false,
-                  puffer: false,
-                  crafty: false,
-                  amp: false,
-                },
-                {
-                  feature: "Modern Stack (Next.js)",
-                  stellar: true,
-                  ptero: false,
-                  pelican: false,
-                  puffer: false,
-                  crafty: false,
-                  amp: false,
-                },
-                {
-                  feature: "Rust Daemon",
-                  stellar: true,
-                  ptero: false,
-                  pelican: false,
-                  puffer: false,
-                  crafty: false,
-                  amp: false,
-                },
-                {
-                  feature: "Built-in Monitoring",
-                  stellar: true,
-                  ptero: false,
-                  pelican: false,
-                  puffer: false,
-                  crafty: false,
-                  amp: false,
-                },
-              ].map((row, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "grid grid-cols-[2fr_repeat(6,1fr)] gap-0 border-b text-xs last:border-b-0",
-                    isDark ? "border-zinc-800" : "border-zinc-200",
-                    i % 2 === 0
-                      ? isDark
-                        ? "bg-zinc-900/30"
-                        : "bg-white"
-                      : isDark
-                        ? "bg-zinc-900/10"
-                        : "bg-zinc-50/50"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "border-r p-4",
-                      isDark ? "border-zinc-800 text-zinc-300" : "border-zinc-200 text-zinc-700"
-                    )}
-                  >
-                    {row.feature}
-                  </div>
-                  <div
-                    className={cn(
-                      "border-r p-4 text-center",
-                      isDark ? "border-zinc-800 bg-green-900/10" : "border-zinc-200 bg-green-50/50"
-                    )}
-                  >
-                    {row.stellar ? (
-                      <BsCheck
-                        className={cn(
-                          "mx-auto h-5 w-5",
-                          isDark ? "text-green-500" : "text-green-600"
-                        )}
-                      />
-                    ) : (
-                      <span className={isDark ? "text-zinc-600" : "text-zinc-400"}>—</span>
-                    )}
-                  </div>
-                  {[row.ptero, row.pelican, row.puffer, row.crafty, row.amp].map((val, j) => (
-                    <div
-                      key={j}
-                      className={cn(
-                        "border-r p-4 text-center last:border-r-0",
-                        isDark ? "border-zinc-800" : "border-zinc-200"
-                      )}
-                    >
-                      {val ? (
-                        <BsCheck
-                          className={cn(
-                            "mx-auto h-5 w-5",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
-                          )}
-                        />
-                      ) : (
-                        <span className={isDark ? "text-zinc-600" : "text-zinc-400"}>—</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentScreenshot}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1 }}
+                  src={`/screenshot-${currentScreenshot}.png`}
+                  className="aspect w-full"
+                />
+              </AnimatePresence>
             </div>
-          </AnimatedSection>
+          </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section
-        className={cn(
-          "relative border-t px-6 py-32",
-          isDark ? "border-zinc-800" : "border-zinc-200"
-        )}
-      >
-        <AnimatedSection className="mx-auto max-w-4xl text-center">
-          <h2
-            className={cn(
-              "mb-6 text-3xl font-extralight tracking-tight md:text-5xl",
-              isDark ? "text-zinc-100" : "text-zinc-900"
-            )}
-          >
-            Ready to Self-Host?
-          </h2>
-          <p
-            className={cn(
-              "mx-auto mb-10 max-w-xl text-lg",
-              isDark ? "text-zinc-400" : "text-zinc-600"
-            )}
-          >
-            Run the install script on your VPS or dedicated server. Basic Linux knowledge required.
-            Free and open source forever.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a href="https://docs.stellarstack.app" target="_blank" rel="noopener noreferrer">
-              <Button
-                className={cn(
-                  "gap-2 px-8 py-6 text-sm tracking-wider uppercase transition-all hover:scale-[1.02]",
-                  isDark
-                    ? "bg-zinc-100 text-zinc-900 hover:bg-white"
-                    : "bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
-                )}
-              >
-                Read the Docs
-                <BsArrowRight className="h-4 w-4" />
-              </Button>
-            </a>
-            <a
-              href="https://github.com/stellarstack/stellarstack"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button
-                variant="outline"
-                className={cn(
-                  "gap-2 px-8 py-6 text-sm tracking-wider uppercase",
-                  isDark
-                    ? "border-zinc-700 text-zinc-300 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-700 hover:border-zinc-400"
-                )}
-              >
-                <BsGithub className="h-4 w-4" />
-                View on GitHub
-              </Button>
-            </a>
-          </div>
-        </AnimatedSection>
-      </section>
-
       <Footer isDark={isDark} />
     </div>
   );

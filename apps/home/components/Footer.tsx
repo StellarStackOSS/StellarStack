@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@workspace/ui/lib/utils";
 import { BsGithub, BsDiscord, BsTwitterX } from "react-icons/bs";
+import { LightBoard } from "@workspace/ui/components/Lightboard/Lightboard";
 
 interface FooterProps {
   isDark: boolean;
@@ -35,6 +36,7 @@ export const Footer = ({ isDark }: FooterProps) => {
         isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-white"
       )}
     >
+      <LightBoard gap={2} text="STELLARSTACK" font="default" updateInterval={25} />
       {/* Main Footer Content */}
       <div className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
@@ -43,10 +45,11 @@ export const Footer = ({ isDark }: FooterProps) => {
             <Link
               href="/"
               className={cn(
-                "mb-4 block text-lg font-light tracking-[0.2em]",
+                "mb-4 block flex flex-row items-center gap-2 text-lg font-light tracking-[0.2em]",
                 isDark ? "text-zinc-100" : "text-zinc-800"
               )}
             >
+              <img src="/logo.png" className="-ml-2 w-10 p-0" />
               STELLARSTACK
             </Link>
             <p className={cn("mb-6 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>

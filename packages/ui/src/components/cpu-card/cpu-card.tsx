@@ -15,14 +15,12 @@ interface CpuCardComponentProps extends CpuCardProps {
   isDark: boolean;
   isOffline: boolean;
   labels: CpuCardLabels;
-  /** Custom primary display value (e.g., "6% / 400%") - if provided, replaces percentage display */
   primaryValue?: string;
 }
 
 export const CpuCard = ({
   itemId,
   percentage,
-  details,
   tooltipContent,
   history,
   coreUsage,
@@ -142,29 +140,6 @@ export const CpuCard = ({
                 <AnimatedNumber value={percentage} suffix="%" />
               )}
             </span>
-            {!isXs && !showCoreGrid && (
-              <div
-                className={cn(
-                  "tracking-wide",
-                  isDark ? "text-zinc-400" : "text-zinc-600",
-                  isCompact ? "mt-2 text-xs" : "mt-1 text-sm"
-                )}
-              >
-                {details.map((detail, i) => (
-                  <div key={i}>{isOffline ? "--" : detail}</div>
-                ))}
-              </div>
-            )}
-            {showCoreGrid && (
-              <div
-                className={cn(
-                  "mt-0.5 text-[10px] tracking-wide",
-                  isDark ? "text-zinc-500" : "text-zinc-600"
-                )}
-              >
-                {details[0]}
-              </div>
-            )}
           </div>
         </div>
 

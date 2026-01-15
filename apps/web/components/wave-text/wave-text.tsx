@@ -19,7 +19,7 @@ export const WaveText = ({
 }: WaveTextProps) => {
   const [waveIndex, setWaveIndex] = useState(-1);
   const isAnimatingRef = useRef(false);
-
+  const WAVE_WIDTH = 4;
   // Start wave animation at random intervals (3-8 seconds)
   useEffect(() => {
     const startWave = () => {
@@ -45,20 +45,18 @@ export const WaveText = ({
     };
   }, []);
 
-  // Animate through each character
   useEffect(() => {
-    if (waveIndex >= 0 && waveIndex < text.length) {
+    if (waveIndex >= 0 && waveIndex < text.length + WAVE_WIDTH) {
       const timer = setTimeout(() => {
         setWaveIndex(waveIndex + 1);
-      }, 50); // Speed of wave propagation
+      }, 50);
 
       return () => clearTimeout(timer);
-    } else if (waveIndex >= text.length) {
-      // Wave complete, wait then reset
+    } else if (waveIndex >= text.length + WAVE_WIDTH) {
       const resetTimer = setTimeout(() => {
         setWaveIndex(-1);
         isAnimatingRef.current = false;
-      }, 500);
+      }, 300);
 
       return () => clearTimeout(resetTimer);
     }

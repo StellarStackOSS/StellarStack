@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui/components/texture-card";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import { FadeIn, Input, Spinner } from "@workspace/ui/components";
-import { BsApple, BsDiscord, BsGoogle } from "react-icons/bs";
+import { BsApple, BsArrowRight, BsDiscord, BsGoogle } from "react-icons/bs";
 import { ArrowRight } from "lucide-react";
 
 import { z } from "zod";
@@ -24,7 +24,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { FunctionComponent } from "react";
+import { FunctionComponent, useState } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+import { LiquidMetal } from "@paper-design/shaders-react";
+import { Turnstile } from "../turnstile";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -36,10 +39,12 @@ type LoginValues = z.infer<typeof loginSchema>;
 interface LoginFormProps {
   isLoading?: boolean;
   error?: string;
-  handleLogin?: (values: LoginValues) => Promise<void>;
+  handleLogin?: (values: LoginValues & { captchaToken: string }) => Promise<void>;
 }
 
 const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handleLogin }) => {
+  const [captchaToken, setCaptchaToken] = useState<string>("");
+
   const form = useForm<LoginValues>({
     //@ts-ignore
     resolver: zodResolver(loginSchema),
@@ -52,16 +57,15 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: LoginValues) {
-    await handleLogin?.(values);
+    await handleLogin?.({ ...values, captchaToken });
   }
 
   return (
     <FadeIn>
       <div className="z-10 flex flex-col items-center justify-center gap-8 py-4 duration-300 hover:scale-101">
-        <img src="/logo.png" className="w-12" />
         <TextureCardStyled className="bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]">
-          <TextureCardHeader className="py-2 text-sm first:pt-2">
-            <p className="text-center">Sign in to your account</p>
+          <TextureCardHeader className="flex items-center justify-center py-2 text-sm first:pt-2">
+            <img src="/logo.png" className="w-18" />
           </TextureCardHeader>
 
           <TextureSeparator />
@@ -95,12 +99,7 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="example@stellarstack.app"
-                          type="email"
-                          autoComplete="email"
-                          {...field}
-                        />
+                        <Input type="email" autoComplete="email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -124,10 +123,40 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
                 <TextureButton
                   type="submit"
                   variant="primary"
-                  className="w-full"
                   disabled={isSubmitting || isLoading}
+                  className="relative h-[46px] w-full overflow-hidden p-0 transition-transform duration-200 hover:scale-[1.01]"
                 >
-                  <div className="flex items-center justify-center gap-1">
+                  <div className="pointer-events-none absolute inset-0">
+                    <LiquidMetal
+                      width={600}
+                      height={56}
+                      colorBack="#aaaaac00"
+                      colorTint="#ffffff"
+                      shape="none"
+                      repetition={2}
+                      softness={1}
+                      shiftRed={0.3}
+                      shiftBlue={0.3}
+                      distortion={0}
+                      contour={1}
+                      angle={70}
+                      speed={0.2}
+                      scale={5}
+                      rotation={0}
+                      fit="contain"
+                    />
+                  </div>
+                  <div
+                    className={cn(
+                      "absolute inset-[2px] z-10",
+                      "flex items-center justify-center",
+                      "rounded-[inherit]",
+                      "bg-black/40 dark:bg-white/60",
+                      "backdrop-blur-md backdrop-saturate-150",
+                      "border border-white/10 dark:border-black/10",
+                      "text-sm font-medium tracking-wider uppercase"
+                    )}
+                  >
                     {isSubmitting || isLoading ? (
                       <Spinner />
                     ) : (
@@ -138,7 +167,11 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
                     )}
                   </div>
                 </TextureButton>
-
+                <Turnstile
+                  onVerify={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken("")}
+                  onError={() => setCaptchaToken("")}
+                />
                 {error && <p className="text-center text-xs text-red-400">{error}</p>}
               </form>
             </Form>
@@ -159,5 +192,4 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
     </FadeIn>
   );
 };
-
 export default LoginForm;

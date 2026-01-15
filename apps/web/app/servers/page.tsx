@@ -12,6 +12,7 @@ import { servers as serversApi } from "@/lib/api";
 import type { Server } from "@/lib/api";
 import { useAuth } from "@/components/auth-provider";
 import { toast } from "sonner";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 type ServerStatus =
   | "INSTALLING"
@@ -109,7 +110,6 @@ const ServersPage = (): JSX.Element | null => {
       <AnimatedBackground isDark={isDark} />
       <FloatingDots isDark={isDark} count={15} />
 
-      {/* Header */}
       <div className="relative p-8">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 flex items-center justify-between">
@@ -126,26 +126,15 @@ const ServersPage = (): JSX.Element | null => {
                 Select a server to manage
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-1/4 items-center gap-2">
               {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "gap-2 transition-all hover:scale-[1.02] active:scale-95",
-                    isDark
-                      ? "border-amber-700 text-amber-400 hover:border-amber-500 hover:text-amber-300"
-                      : "border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                  )}
-                >
-                  <span className="text-xs tracking-wider uppercase">Admin</span>
-                </Button>
+                <TextureButton onClick={() => router.push("/admin")} variant="minimal">
+                  <span className="uppercase">Admin</span>
+                </TextureButton>
               )}
-              <Button size="sm" onClick={handleSignOut}>
-                <BsBoxArrowRight className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">Sign Out</span>
-              </Button>
+              <TextureButton onClick={handleSignOut}>
+                <span className="uppercase">Sign Out</span>
+              </TextureButton>
             </div>
           </div>
 
@@ -174,30 +163,6 @@ const ServersPage = (): JSX.Element | null => {
                       : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20 hover:border-zinc-400"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-3 w-3 border-t border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-3 w-3 border-t border-r",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-3 w-3 border-b border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-3 w-3 border-r border-b",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div

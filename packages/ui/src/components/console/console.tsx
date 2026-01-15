@@ -6,6 +6,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import { TimestampColumnTooltip } from "./timestamp-tooltip";
 import { ScrollContext } from "./scroll-context";
+import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
 
 const formatTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -175,7 +176,7 @@ export const Console = ({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col border transition-colors",
+        "relative flex h-full flex-col rounded-lg border transition-colors",
         isDark
           ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
           : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20",
@@ -184,32 +185,6 @@ export const Console = ({
       )}
       onClick={handleConsoleClick}
     >
-      {/* Corner accents */}
-      <div
-        className={cn(
-          "pointer-events-none absolute top-0 left-0 h-3 w-3 border-t border-l",
-          isDark ? "border-zinc-500" : "border-zinc-400"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute top-0 right-0 h-3 w-3 border-t border-r",
-          isDark ? "border-zinc-500" : "border-zinc-400"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute bottom-0 left-0 h-3 w-3 border-b border-l",
-          isDark ? "border-zinc-500" : "border-zinc-400"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute right-0 bottom-0 h-3 w-3 border-r border-b",
-          isDark ? "border-zinc-500" : "border-zinc-400"
-        )}
-      />
-
       {/* Header */}
       <div
         className={cn(
@@ -217,14 +192,11 @@ export const Console = ({
           isDark ? "border-zinc-200/10" : "border-zinc-300"
         )}
       >
-        <span
-          className={cn(
-            "text-xs font-medium tracking-wider uppercase",
-            isDark ? "text-zinc-400" : "text-zinc-600"
-          )}
-        >
-          Console
-        </span>
+        <div className="flex flex-row gap-2">
+          <TextureBadge>All logs (96)</TextureBadge>
+          <TextureBadge variant="secondary">Errors (3)</TextureBadge>
+          <TextureBadge variant="secondary">Warnings (96)</TextureBadge>
+        </div>
         <div className="flex items-center gap-2">
           {!autoScroll && (
             <button
