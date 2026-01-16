@@ -7,9 +7,17 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
+use chrono::Utc;
 
 /// Default number of log lines to buffer
 const DEFAULT_BUFFER_SIZE: usize = 500;
+
+/// A buffered log entry with timestamp
+#[derive(Clone, Debug)]
+pub struct LogEntry {
+    pub data: Vec<u8>,
+    pub timestamp: i64, // milliseconds since epoch
+}
 
 /// A pool of sinks for broadcasting data to multiple subscribers.
 ///
@@ -22,8 +30,8 @@ pub struct SinkPool {
     sender: broadcast::Sender<Vec<u8>>,
     // Keep a receiver to prevent the channel from closing
     _receiver: broadcast::Receiver<Vec<u8>>,
-    // Ring buffer for recent messages (shared across clones via Arc)
-    buffer: Arc<RwLock<VecDeque<Vec<u8>>>>,
+    // Ring buffer for recent messages with timestamps (shared across clones via Arc)
+    buffer: Arc<RwLock<VecDeque<LogEntry>>>,
     // Maximum buffer size
     buffer_size: usize,
 }
@@ -63,10 +71,10 @@ impl SinkPool {
         self.sender.subscribe()
     }
 
-    /// Get buffered history of recent messages
+    /// Get buffered history of recent messages with timestamps
     ///
     /// Returns a copy of the ring buffer contents (oldest to newest)
-    pub fn get_history(&self) -> Vec<Vec<u8>> {
+    pub fn get_history(&self) -> Vec<LogEntry> {
         self.buffer.read().iter().cloned().collect()
     }
 
@@ -75,7 +83,16 @@ impl SinkPool {
         self.buffer
             .read()
             .iter()
-            .map(|data| String::from_utf8_lossy(data).to_string())
+            .map(|entry| String::from_utf8_lossy(&entry.data).to_string())
+            .collect()
+    }
+
+    /// Get buffered history with timestamps as JSON objects
+    pub fn get_history_with_timestamps(&self) -> Vec<(String, i64)> {
+        self.buffer
+            .read()
+            .iter()
+            .map(|entry| (String::from_utf8_lossy(&entry.data).to_string(), entry.timestamp))
             .collect()
     }
 
@@ -84,17 +101,25 @@ impl SinkPool {
         self.buffer.write().clear();
     }
 
-    /// Push data to all subscribers and buffer
+    /// Push data to all subscribers and buffer with current timestamp
     ///
     /// If there are no subscribers, the data is still buffered.
     pub fn push(&self, data: Vec<u8>) {
+        self.push_with_timestamp(data, Utc::now().timestamp_millis());
+    }
+
+    /// Push data to all subscribers and buffer with specified timestamp
+    pub fn push_with_timestamp(&self, data: Vec<u8>, timestamp: i64) {
         // Add to ring buffer
         {
             let mut buffer = self.buffer.write();
             if buffer.len() >= self.buffer_size {
                 buffer.pop_front();
             }
-            buffer.push_back(data.clone());
+            buffer.push_back(LogEntry {
+                data: data.clone(),
+                timestamp,
+            });
         }
 
         // Broadcast to subscribers (ignore send errors - no receivers)
@@ -104,6 +129,11 @@ impl SinkPool {
     /// Push a string to all subscribers
     pub fn push_string(&self, data: &str) {
         self.push(data.as_bytes().to_vec());
+    }
+
+    /// Push a string to all subscribers with specified timestamp
+    pub fn push_string_with_timestamp(&self, data: &str, timestamp: i64) {
+        self.push_with_timestamp(data.as_bytes().to_vec(), timestamp);
     }
 
     /// Get the number of active subscribers
