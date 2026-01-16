@@ -1,27 +1,27 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {BsArrowRepeat, BsCheckCircle, BsInfoCircle, BsMoon, BsSun} from "react-icons/bs";
-import type {DockerImageOption, StartupVariable} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
+import { type JSX, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
+import type { DockerImageOption, StartupVariable } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
+import { useServerPageSetup } from "@/hooks/useServerPageSetup";
+import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
 
 const StartupPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, setTheme } = useServerPageSetup();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -40,10 +40,6 @@ const StartupPage = (): JSX.Element | null => {
   const [reinstallModalOpen, setReinstallModalOpen] = useState(false);
   const [isReinstalling, setIsReinstalling] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (serverId) {
@@ -70,8 +66,6 @@ const StartupPage = (): JSX.Element | null => {
       setIsLoading(false);
     }
   };
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
 
@@ -274,19 +268,10 @@ const StartupPage = (): JSX.Element | null => {
                 <BsArrowRepeat className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Reinstall</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
+              <ThemeToggleButton
+                isDark={isDark}
+                onToggle={() => setTheme(isDark ? "light" : "dark")}
+              />
             </div>
           </div>
 
@@ -300,30 +285,7 @@ const StartupPage = (): JSX.Element | null => {
                   : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
               )}
             >
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
+              <CornerDecorations isDark={isDark} />
 
               <label
                 className={cn(
