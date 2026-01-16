@@ -2,7 +2,6 @@
 
 import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -15,12 +14,10 @@ import {
   BsArrowRepeat,
   BsClock,
   BsCloudUpload,
-  BsMoon,
   BsPencil,
   BsPlayFill,
   BsPlus,
   BsStopFill,
-  BsSun,
   BsTerminal,
   BsTrash,
   BsX,
@@ -31,6 +28,8 @@ import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
+import { useServerPageSetup } from "@/hooks/useServerPageSetup";
+import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
 
@@ -74,8 +73,7 @@ const SchedulesPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, setTheme } = useServerPageSetup();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -91,10 +89,6 @@ const SchedulesPage = (): JSX.Element | null => {
   const [formTasks, setFormTasks] = useState<LocalTask[]>([]);
   const [formCron, setFormCron] = useState("0 4 * * *");
   const [formEnabled, setFormEnabled] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -150,8 +144,6 @@ const SchedulesPage = (): JSX.Element | null => {
     const option = actionOptions.find((o) => o.value === action);
     return option?.label || action;
   }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   const isFormValid =
     formName.trim() !== "" &&
@@ -570,19 +562,10 @@ const SchedulesPage = (): JSX.Element | null => {
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Schedule</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
+              <ThemeToggleButton
+                isDark={isDark}
+                onToggle={() => setTheme(isDark ? "light" : "dark")}
+              />
             </div>
           </div>
 
@@ -619,31 +602,7 @@ const SchedulesPage = (): JSX.Element | null => {
                     !schedule.isActive && "opacity-50"
                   )}
                 >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
+                  <CornerDecorations isDark={isDark} />
 
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
