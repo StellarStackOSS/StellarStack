@@ -1,17 +1,18 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { signIn } from "@/lib/auth-client";
-import { useAuth } from "hooks/auth-provider";
-import { setup } from "@/lib/api";
-import { toast } from "sonner";
-import { Spinner } from "@workspace/ui/components";
+import {type JSX, useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {signIn} from "@/lib/auth-client";
+import {useAuth} from "hooks/auth-provider";
+import {setup} from "@/lib/api";
+import {toast} from "sonner";
+import {Spinner} from "@workspace/ui/components";
 import LoginForm from "@/components/LoginForm/LoginForm";
+import GridLoader from "@/components/LoadingGrid/LoadingGrid";
 
 const LoginPage = (): JSX.Element | null => {
   const router = useRouter();
@@ -114,6 +115,7 @@ const LoginPage = (): JSX.Element | null => {
       <FloatingDots isDark={isDark} count={15} />
 
       <LoginForm handleLogin={handleLogin} isLoading={isLoading} error={error} />
+      <GridLoader pattern="frame" color="peach" speed={0.5}/>
 
       {/*/!* Login Card *!/*/}
       {/*<div*/}

@@ -19,16 +19,15 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import {
-  ArrowLeftIcon,
   CheckIcon,
   CopyIcon,
   CpuIcon,
   EditIcon,
   PlusIcon,
-  SearchIcon,
   SettingsIcon,
   TrashIcon,
 } from "lucide-react";
+import {AdminPageHeader, AdminSearchBar, AdminEmptyState} from "components/AdminPageComponents";
 import {useLocations, useNodeMutations, useNodes} from "@/hooks/queries";
 import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import type {CreateNodeData, Node} from "@/lib/api";
@@ -154,74 +153,26 @@ export default function NodesPage() {
       <div className="relative p-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark
-                      ? "text-zinc-400 hover:text-zinc-100"
-                      : "text-zinc-600 hover:text-zinc-900"
-                  )}
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                </Button>
-                <div>
-                  <h1
-                    className={cn(
-                      "text-2xl font-light tracking-wider",
-                      isDark ? "text-zinc-100" : "text-zinc-800"
-                    )}
-                  >
-                    NODES
-                  </h1>
-                  <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                    Manage daemon nodes
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => {
+            <AdminPageHeader
+              title="NODES"
+              description="Manage daemon nodes"
+              isDark={isDark}
+              action={{
+                label: "Add Node",
+                icon: <PlusIcon className="h-4 w-4" />,
+                onClick: () => {
                   resetForm();
                   setIsModalOpen(true);
-                }}
-                className={cn(
-                  "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
-                  isDark
-                    ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                    : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-                )}
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add Node
-              </Button>
-            </div>
+                },
+              }}
+            />
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <SearchIcon
-                className={cn(
-                  "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
-                )}
-              />
-              <input
-                type="text"
-                placeholder="Search nodes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full border py-2.5 pr-4 pl-10 text-sm transition-colors focus:outline-none",
-                  isDark
-                    ? "border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
-                    : "border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
-                )}
-              />
-            </div>
+            <AdminSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search nodes..."
+              isDark={isDark}
+            />
           </FadeIn>
 
           {/* Nodes List */}
@@ -232,16 +183,10 @@ export default function NodesPage() {
                   <Spinner className="h-6 w-6" />
                 </div>
               ) : filteredNodes.length === 0 ? (
-                <div
-                  className={cn(
-                    "border py-12 text-center",
-                    isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
-                  )}
-                >
-                  {searchQuery
-                    ? "No nodes match your search."
-                    : "No nodes configured. Add your first node to get started."}
-                </div>
+                <AdminEmptyState
+                  message={searchQuery ? "No nodes match your search." : "No nodes configured. Add your first node to get started."}
+                  isDark={isDark}
+                />
               ) : (
                 filteredNodes.map((node, index) => (
                   <FadeIn key={node.id} delay={0.1 + index * 0.05}>

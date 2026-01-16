@@ -13,7 +13,7 @@ import { ServerRestoringPlaceholder } from "@/components/ServerStatusPages/serve
 import { cn } from "@workspace/ui/lib/utils";
 import { UploadProvider } from "@/components/upload-provider";
 import { UploadProgressIndicator } from "@/components/upload-progress-indicator";
-import { AppSidebar } from "@/components/AppSidebar/AppSidebar";
+import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
@@ -82,7 +82,7 @@ export default function ServerLayout({
         <PersistentBackground isDark={isDark} />
 
         <SidebarProvider>
-          <AppSidebar />
+          <UnifiedSidebar />
           <SidebarInset>
             <ServerStatusWrapper isDark={isDark}>
               {children}
