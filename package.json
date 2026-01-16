@@ -18,7 +18,8 @@
     "start:docs": "pnpm --filter docs start -p 8080",
     "start:home": "pnpm --filter home start -p 8080",
     "typecheck": "turbo typecheck",
-    "check:duplicates": "jscpd --reporters '[\"json\",\"console\"]' \"apps/web/components\""
+    "check:duplicates": "jscpd --reporters '[\"json\",\"console\"]' \"apps/web/components\"",
+    "validate-egg": "node scripts/validate-startup-patterns.js"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",

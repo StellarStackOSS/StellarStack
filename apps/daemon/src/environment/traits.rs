@@ -124,7 +124,7 @@ impl Default for EnvironmentConfiguration {
 }
 
 /// Resource limits for the container
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ResourceLimits {
     /// Memory limit in bytes (0 for unlimited)
     pub memory: u64,
@@ -152,6 +152,63 @@ pub struct ResourceLimits {
 
     /// Disk space limit in bytes (enforced by daemon, not Docker)
     pub disk_space: u64,
+}
+
+impl Default for ResourceLimits {
+    fn default() -> Self {
+        Self {
+            memory: 0,
+            memory_swap: 0,
+            cpu_quota: 0,
+            cpu_period: 0,
+            cpu_shares: 0,
+            cpuset_cpus: None,
+            io_weight: 500,
+            pids_limit: 512,  // Pterodactyl-style sensible default
+            disk_space: 0,
+        }
+    }
+}
+
+impl ResourceLimits {
+    /// Calculate memory overhead multiplier (Pterodactyl-style)
+    ///
+    /// Java and other JVMs tend to run over their memory limit. This function
+    /// returns an overhead multiplier to add buffer space:
+    /// - < 2GB: 15% overhead
+    /// - < 4GB: 10% overhead
+    /// - >= 4GB: 5% overhead
+    ///
+    /// This prevents unexpected OOM kills when processes exceed their nominal limit.
+    pub fn memory_overhead_multiplier(&self) -> f64 {
+        let memory_mb = self.memory / (1024 * 1024);
+
+        if memory_mb < 2048 {
+            1.15
+        } else if memory_mb < 4096 {
+            1.10
+        } else {
+            1.05
+        }
+    }
+
+    /// Calculate the actual memory limit with overhead applied
+    pub fn bounded_memory_limit(&self) -> i64 {
+        let multiplier = self.memory_overhead_multiplier();
+        ((self.memory as f64 * multiplier).round()) as i64
+    }
+
+    /// Calculate total swap available
+    ///
+    /// Docker's memory swap is the total memory + swap space.
+    /// If swap is -1, it's unlimited (same as memory limit).
+    pub fn converted_swap(&self) -> i64 {
+        if self.memory_swap < 0 {
+            -1
+        } else {
+            self.memory_swap + self.bounded_memory_limit()
+        }
+    }
 }
 
 /// Volume mount configuration
