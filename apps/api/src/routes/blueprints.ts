@@ -11,27 +11,41 @@ const blueprints = new Hono<{ Variables: Variables }>();
 const blueprintConfigSchema = z.object({
   stdin_open: z.boolean().optional(),
   tty: z.boolean().optional(),
-  ports: z.array(z.object({
-    container_port: z.number(),
-    host_port: z.number().optional(),
-    protocol: z.string().optional(),
-  })).optional(),
+  ports: z
+    .array(
+      z.object({
+        container_port: z.number(),
+        host_port: z.number().optional(),
+        protocol: z.string().optional(),
+      })
+    )
+    .optional(),
   environment: z.record(z.string()).optional(),
-  resources: z.object({
-    memory: z.number().optional(),
-    cpus: z.number().optional(),
-    cpuset_cpus: z.string().optional(),
-  }).optional(),
-  mounts: z.array(z.object({
-    source: z.string(),
-    target: z.string(),
-    read_only: z.boolean().optional(),
-  })).optional(),
-  volumes: z.array(z.object({
-    name: z.string(),
-    target: z.string(),
-    read_only: z.boolean().optional(),
-  })).optional(),
+  resources: z
+    .object({
+      memory: z.number().optional(),
+      cpus: z.number().optional(),
+      cpuset_cpus: z.string().optional(),
+    })
+    .optional(),
+  mounts: z
+    .array(
+      z.object({
+        source: z.string(),
+        target: z.string(),
+        read_only: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  volumes: z
+    .array(
+      z.object({
+        name: z.string(),
+        target: z.string(),
+        read_only: z.boolean().optional(),
+      })
+    )
+    .optional(),
   command: z.array(z.string()).optional(),
   entrypoint: z.array(z.string()).optional(),
   working_dir: z.string().optional(),
@@ -53,10 +67,12 @@ const updateBlueprintSchema = createBlueprintSchema.partial();
 
 // Pterodactyl egg schema
 const pterodactylEggSchema = z.object({
-  meta: z.object({
-    version: z.string(),
-    update_url: z.string().nullable().optional(),
-  }).optional(),
+  meta: z
+    .object({
+      version: z.string(),
+      update_url: z.string().nullable().optional(),
+    })
+    .optional(),
   name: z.string(),
   author: z.string().optional(),
   description: z.string().nullable().optional(),
@@ -64,50 +80,62 @@ const pterodactylEggSchema = z.object({
   docker_images: z.record(z.string()).optional(),
   file_denylist: z.array(z.string()).optional(),
   startup: z.string().optional(),
-  config: z.object({
-    files: z.string().optional(),
-    startup: z.string().optional(),
-    logs: z.string().optional(),
-    stop: z.string().optional(),
-  }).optional(),
-  scripts: z.object({
-    installation: z.object({
-      script: z.string(),
-      container: z.string().optional(),
-      entrypoint: z.string().optional(),
-    }).optional(),
-  }).optional(),
-  variables: z.array(z.object({
-    name: z.string(),
-    description: z.string().optional(),
-    env_variable: z.string(),
-    default_value: z.string(),
-    user_viewable: z.boolean().optional(),
-    user_editable: z.boolean().optional(),
-    rules: z.string().optional(),
-    field_type: z.string().optional(),
-  })).optional(),
+  config: z
+    .object({
+      files: z.string().optional(),
+      startup: z.string().optional(),
+      logs: z.string().optional(),
+      stop: z.string().optional(),
+    })
+    .optional(),
+  scripts: z
+    .object({
+      installation: z
+        .object({
+          script: z.string(),
+          container: z.string().optional(),
+          entrypoint: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  variables: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        env_variable: z.string(),
+        default_value: z.string(),
+        user_viewable: z.boolean().optional(),
+        user_editable: z.boolean().optional(),
+        rules: z.string().optional(),
+        field_type: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 // Helper to parse Pterodactyl docker image string
-const parseDockerImage = (imageStr: string): { registry: string | undefined; name: string; tag: string } => {
+const parseDockerImage = (
+  imageStr: string
+): { registry: string | undefined; name: string; tag: string } => {
   // Remove escape sequences
-  const cleaned = imageStr.replace(/\\\//g, '/');
+  const cleaned = imageStr.replace(/\\\//g, "/");
 
   // Parse image parts
-  const parts = cleaned.split('/');
+  const parts = cleaned.split("/");
   let registry: string | undefined = undefined;
   let nameWithTag: string;
 
-  if (parts.length >= 2 && (parts[0].includes('.') || parts[0].includes(':'))) {
+  if (parts.length >= 2 && (parts[0].includes(".") || parts[0].includes(":"))) {
     registry = parts[0];
-    nameWithTag = parts.slice(1).join('/');
+    nameWithTag = parts.slice(1).join("/");
   } else {
     nameWithTag = cleaned;
   }
 
   // Split name and tag
-  const [name, tag = 'latest'] = nameWithTag.split(':');
+  const [name, tag = "latest"] = nameWithTag.split(":");
 
   return { registry, name, tag };
 };
@@ -234,7 +262,7 @@ blueprints.post("/import/egg", requireAdmin, async (c) => {
     if (entries.length > 0) {
       // Clean up docker images and store them
       for (const [label, image] of entries) {
-        dockerImages[label] = image.replace(/\\\//g, '/');
+        dockerImages[label] = image.replace(/\\\//g, "/");
       }
       // Use first image as primary
       primaryImage = parseDockerImage(entries[0][1]);
@@ -251,11 +279,20 @@ blueprints.post("/import/egg", requireAdmin, async (c) => {
     }
   }
 
-  // Parse startup detection
+  // Parse startup detection - convert to array format following Pterodactyl's structure
+  // Pterodactyl stores: { "done": ["pattern1", "pattern2"], ... }
+  // We store: ["pattern1", "pattern2"]
   let startupDetection: any = null;
   if (egg.config?.startup) {
     try {
-      startupDetection = JSON.parse(egg.config.startup);
+      const config = JSON.parse(egg.config.startup);
+      if (Array.isArray(config.done)) {
+        // Already an array of patterns
+        startupDetection = config.done;
+      } else if (typeof config.done === "string") {
+        // Single pattern string, convert to array
+        startupDetection = [config.done];
+      }
     } catch {
       // Invalid JSON, skip
     }
@@ -306,11 +343,14 @@ blueprints.post("/import/egg", requireAdmin, async (c) => {
     },
   });
 
-  return c.json({
-    success: true,
-    blueprint,
-    message: `Successfully imported "${egg.name}" from Pterodactyl egg`,
-  }, 201);
+  return c.json(
+    {
+      success: true,
+      blueprint,
+      message: `Successfully imported "${egg.name}" from Pterodactyl egg`,
+    },
+    201
+  );
 });
 
 // Export blueprint as Pterodactyl egg format (admin only)
@@ -326,7 +366,8 @@ blueprints.get("/:id/export/egg", requireAdmin, async (c) => {
   }
 
   // Build docker_images
-  const dockerImages: Record<string, string> = blueprint.dockerImages as Record<string, string> || {};
+  const dockerImages: Record<string, string> =
+    (blueprint.dockerImages as Record<string, string>) || {};
   if (Object.keys(dockerImages).length === 0) {
     const fullImage = blueprint.registry
       ? `${blueprint.registry}/${blueprint.imageName}:${blueprint.imageTag}`
@@ -334,10 +375,16 @@ blueprints.get("/:id/export/egg", requireAdmin, async (c) => {
     dockerImages["Default"] = fullImage;
   }
 
-  // Build config
+  // Build config - convert array format back to Pterodactyl's format
+  // We store: ["pattern1", "pattern2"]
+  // Pterodactyl expects: { "done": ["pattern1", "pattern2"], "user_interaction": [] }
+  const startupConfig = Array.isArray(blueprint.startupDetection)
+    ? { done: blueprint.startupDetection, user_interaction: [] }
+    : {};
+
   const config: any = {
     files: blueprint.configFiles ? JSON.stringify(blueprint.configFiles) : "{}",
-    startup: blueprint.startupDetection ? JSON.stringify(blueprint.startupDetection) : "{}",
+    startup: Object.keys(startupConfig).length > 0 ? JSON.stringify(startupConfig) : "{}",
     logs: "{}",
     stop: blueprint.stopCommand || "stop",
   };

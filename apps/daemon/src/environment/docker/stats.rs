@@ -128,19 +128,24 @@ pub async fn poll_stats(
     Ok(())
 }
 
-/// Calculate memory usage
+/// Calculate memory usage matching Docker stats output
 ///
-/// Returns the current memory usage from Docker stats.
-/// Note: Wings subtracts inactive_file from usage for more accurate reporting,
-/// but bollard's MemoryStatsStats doesn't expose those fields directly.
+/// Returns actual memory usage in bytes. The bollard library provides
+/// raw usage which includes caching, matching Docker CLI behavior.
 fn calculate_memory(stats: &bollard::container::MemoryStats) -> u64 {
     stats.usage.unwrap_or(0)
 }
 
-/// Calculate CPU percentage from Docker stats
+/// Calculate CPU percentage from Docker stats (Pterodactyl-style)
 ///
-/// CPU percentage is calculated as:
-/// (container_cpu_delta / system_cpu_delta) * num_cpus * 100
+/// Matches Docker CLI output by:
+/// 1. Calculating change in CPU usage between readings
+/// 2. Calculating change in system CPU between readings
+/// 3. Dividing container delta by system delta
+/// 4. Multiplying by number of CPUs
+/// 5. Rounding to 3 decimal places
+///
+/// See: https://github.com/docker/cli/blob/aa097cf1aa19099da70930460250797c8920b709/cli/command/container/stats_helpers.go#L166
 fn calculate_cpu(
     stats: &bollard::container::CPUStats,
     prev_cpu: &Option<u64>,
@@ -152,12 +157,19 @@ fn calculate_cpu(
     if let (Some(prev_c), Some(prev_s)) = (prev_cpu, prev_system) {
         let cpu_delta = current_cpu.saturating_sub(*prev_c);
         let system_delta = current_system.saturating_sub(*prev_s);
-        let cpus = stats.online_cpus.unwrap_or(1) as f64;
+
+        // Determine number of online CPUs (fallback to 1 if not available)
+        let cpus = stats.online_cpus.map(|c| c as f64).unwrap_or_else(|| {
+            // Fallback: count PercpuUsage length if online_cpus not available
+            stats.cpu_usage.percpu_usage.as_ref()
+                .map(|v| v.len() as f64)
+                .unwrap_or(1.0)
+        });
 
         if system_delta > 0 && cpu_delta > 0 {
-            let raw_cpu = (cpu_delta as f64 / system_delta as f64) * 100.0 * cpus;
-            // Cap CPU at 100% per core * number of cores
-            raw_cpu.min(100.0 * cpus)
+            let percent = (cpu_delta as f64 / system_delta as f64) * 100.0 * cpus;
+            // Round to 3 decimal places, matching Pterodactyl
+            (percent * 1000.0).round() / 1000.0
         } else {
             0.0
         }

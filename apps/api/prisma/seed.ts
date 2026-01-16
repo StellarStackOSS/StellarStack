@@ -70,7 +70,7 @@ async function main() {
       startup:
         "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
       stopCommand: "stop",
-      startupDetection: { done: "Done" },
+      startupDetection: ["Done"],
       installScript: `#!/bin/ash
 # Minecraft Vanilla Server Install Script
 
@@ -131,7 +131,7 @@ echo "Download complete!"
       startup:
         "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
       stopCommand: "stop",
-      startupDetection: { done: `{\\r\\n    \\"done\\": \\")! For help, type \\"\\r\\n}` },
+      startupDetection: [")! For help, type"],
       installScript: `#!/bin/ash
 # Minecraft Vanilla Server Install Script
 

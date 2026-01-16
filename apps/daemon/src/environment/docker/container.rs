@@ -1,6 +1,7 @@
 //! Container creation and destruction
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use bollard::container::{Config, CreateContainerOptions, RemoveContainerOptions};
 use bollard::models::{
@@ -87,20 +88,20 @@ pub async fn create_container(env: &DockerEnvironment) -> EnvironmentResult<()> 
         // Tmpfs
         tmpfs: Some(tmpfs),
 
-        // Resource limits
+        // Resource limits (with Pterodactyl-style memory overhead for Java, etc.)
         memory: if config.limits.memory > 0 {
-            Some(config.limits.memory as i64)
+            Some(config.limits.bounded_memory_limit())
         } else {
             None
         },
-        memory_swap: if config.limits.memory_swap != 0 {
-            Some(config.limits.memory_swap)
+        memory_swap: if config.limits.memory > 0 {
+            Some(config.limits.converted_swap())
         } else {
             None
         },
         memory_reservation: if config.limits.memory > 0 {
-            // Reserve 90% of memory limit
-            Some((config.limits.memory as f64 * 0.9) as i64)
+            // Reserve the nominal memory limit (without overhead)
+            Some(config.limits.memory as i64)
         } else {
             None
         },
@@ -151,12 +152,15 @@ pub async fn create_container(env: &DockerEnvironment) -> EnvironmentResult<()> 
         }),
 
         // Log driver - use json-file which is universally supported
+        // Use non-blocking mode to prevent Docker from blocking container I/O if the log driver is slow
         log_config: Some(bollard::models::HostConfigLogConfig {
             typ: Some("json-file".to_string()),
             config: Some({
                 let mut cfg = HashMap::new();
                 cfg.insert("max-size".to_string(), "5m".to_string());
                 cfg.insert("max-file".to_string(), "1".to_string());
+                cfg.insert("mode".to_string(), "non-blocking".to_string());
+                cfg.insert("max-buffer-size".to_string(), "4m".to_string());
                 cfg
             }),
         }),
@@ -212,15 +216,21 @@ pub async fn create_container(env: &DockerEnvironment) -> EnvironmentResult<()> 
 pub async fn destroy_container(env: &DockerEnvironment) -> EnvironmentResult<()> {
     let container_name = env.container_name();
 
+    // Clean up any attached resources first (streams, command senders)
+    env.cleanup_attached();
+
+    // Mirroring Pterodactyl's approach: force remove the container AND its volumes
+    // This ensures we have a clean slate on recreation, and ensures panel-synced data
+    // always takes precedence over cached container state
     let options = RemoveContainerOptions {
         force: true,
-        v: false, // Don't remove volumes
+        v: true,  // IMPORTANT: Remove volumes to ensure clean state on recreation
         ..Default::default()
     };
 
     match env.docker().remove_container(container_name, Some(options)).await {
         Ok(_) => {
-            info!("Destroyed container {}", container_name);
+            info!("Destroyed container {} (including volumes)", container_name);
             Ok(())
         }
         Err(bollard::errors::Error::DockerResponseServerError { status_code: 404, .. }) => {
@@ -233,18 +243,26 @@ pub async fn destroy_container(env: &DockerEnvironment) -> EnvironmentResult<()>
 
 /// Ensure the Docker image exists, pulling if necessary
 async fn ensure_image_exists(env: &DockerEnvironment, image: &str) -> EnvironmentResult<()> {
-    // Check if image exists
-    match env.docker().inspect_image(image).await {
-        Ok(_) => {
+    // Check if image exists with a timeout
+    let inspect_result = tokio::time::timeout(
+        Duration::from_secs(10),
+        env.docker().inspect_image(image)
+    ).await;
+
+    match inspect_result {
+        Ok(Ok(_)) => {
             debug!("Image {} already exists", image);
             return Ok(());
         }
-        Err(bollard::errors::Error::DockerResponseServerError { status_code: 404, .. }) => {
+        Ok(Err(bollard::errors::Error::DockerResponseServerError { status_code: 404, .. })) => {
             info!("Image {} not found, pulling...", image);
         }
-        Err(e) => {
+        Ok(Err(e)) => {
             warn!("Error inspecting image {}: {}", image, e);
             // Try to pull anyway
+        }
+        Err(_) => {
+            warn!("Timeout inspecting image {} after 10 seconds, attempting pull", image);
         }
     }
 

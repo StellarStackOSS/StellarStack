@@ -470,19 +470,54 @@ servers.post("/", requireAdmin, async (c) => {
   // Get primary allocation
   const primaryAllocation = allocations[0];
 
-  // Parse startup detection from blueprint
-  const startupDetection = (blueprint.startupDetection as any) || {};
+  // Extract startup detection patterns - following Pterodactyl's format
+  // Blueprints store startupDetection as an array of pattern strings: ["pattern1", "pattern2", ...]
   const startupDonePatterns: string[] = [];
 
-  // Handle various formats of startupDetection
-  if (typeof startupDetection.done === "string") {
-    startupDonePatterns.push(startupDetection.done);
-  } else if (Array.isArray(startupDetection.done)) {
-    startupDonePatterns.push(...startupDetection.done);
-  } else if (typeof startupDetection === "string") {
-    // Simple string format
-    startupDonePatterns.push(startupDetection);
+  if (Array.isArray(blueprint.startupDetection)) {
+    // Direct array format: ["pattern1", "pattern2"]
+    for (const pattern of blueprint.startupDetection) {
+      if (typeof pattern === "string" && pattern.trim()) {
+        startupDonePatterns.push(pattern.trim());
+      }
+    }
+    console.log(
+      `[Server Create] Found ${startupDonePatterns.length} startup patterns for ${blueprint.name}:`,
+      startupDonePatterns
+    );
+  } else if (blueprint.startupDetection) {
+    // Fallback for old format: { "done": "pattern" or ["pattern"] }
+    const detection = blueprint.startupDetection as any;
+    if (Array.isArray(detection.done)) {
+      for (const pattern of detection.done) {
+        if (typeof pattern === "string" && pattern.trim()) {
+          startupDonePatterns.push(pattern.trim());
+        }
+      }
+    } else if (typeof detection.done === "string" && detection.done.trim()) {
+      startupDonePatterns.push(detection.done.trim());
+    }
+    if (startupDonePatterns.length > 0) {
+      console.log(
+        `[Server Create] Converted old format startupDetection for ${blueprint.name}:`,
+        startupDonePatterns
+      );
+    }
   }
+
+  // Log startup patterns for debugging
+  if (startupDonePatterns.length === 0) {
+    console.error(
+      `⚠️  [Server Create] WARNING: No startup patterns found for ${blueprint.name}! Server will be marked as RUNNING immediately when it starts.`
+    );
+    console.error(
+      `⚠️  [Server Create] Make sure blueprint has valid startupDetection configuration.`
+    );
+  }
+  console.log(
+    `[Server Create] Startup detection patterns for ${blueprint.name}:`,
+    startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
+  );
 
   // Build daemon request in the format the Rust daemon expects
   const daemonRequest_body = {
@@ -1875,40 +1910,32 @@ servers.get("/:serverId/backups", requireServerAccess, async (c) => {
   const server = c.get("server");
 
   try {
-    const fullServer = await getServerWithNode(server.id);
-    const response = await daemonRequest(
-      fullServer.node,
-      "GET",
-      `/api/servers/${server.id}/backup`
-    );
-    // Get backups array from response
-    const rawBackups = response.backups || response || [];
+    // List backups from database (source of truth)
+    const dbBackups = await db.backup.findMany({
+      where: { serverId: server.id },
+      orderBy: { createdAt: "desc" },
+    });
 
-    // Transform daemon response to expected frontend format
-    const backups = rawBackups.map((backup: any) => ({
-      id: backup.uuid || backup.id,
-      name: backup.name || `Backup ${new Date(backup.created_at * 1000).toLocaleDateString()}`,
-      size: backup.size || 0,
+    // Transform database records to expected frontend format
+    const backups = dbBackups.map((backup) => ({
+      id: backup.id,
+      name: backup.name,
+      size: Number(backup.size), // BigInt to number
       checksum: backup.checksum,
-      checksumType: "sha256",
-      status: backup.status || "COMPLETED",
-      isLocked: backup.is_locked || backup.isLocked || false,
-      storagePath: backup.storage_path,
-      serverId: server.id,
-      ignoredFiles: backup.ignored_files || [],
-      completedAt: backup.completed_at
-        ? new Date(backup.completed_at * 1000).toISOString()
-        : undefined,
-      createdAt: backup.created_at
-        ? new Date(backup.created_at * 1000).toISOString()
-        : new Date().toISOString(),
-      updatedAt: backup.updated_at
-        ? new Date(backup.updated_at * 1000).toISOString()
-        : new Date().toISOString(),
+      checksumType: backup.checksumType,
+      status: backup.status,
+      isLocked: backup.isLocked,
+      storagePath: backup.storagePath,
+      serverId: backup.serverId,
+      ignoredFiles: backup.ignoredFiles || [],
+      completedAt: backup.completedAt?.toISOString(),
+      createdAt: backup.createdAt.toISOString(),
+      updatedAt: backup.updatedAt.toISOString(),
     }));
 
     return c.json(backups);
   } catch (error: any) {
+    console.error(`[Backup List] Failed to list backups for server ${server.id}:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1928,6 +1955,27 @@ servers.post("/:serverId/backups", requireServerAccess, requireNotSuspended, asy
       `/api/servers/${server.id}/backup`,
       { uuid: backupUuid, ignore: body.ignore || [] }
     );
+
+    // Save backup record to database
+    if (backup.success) {
+      const backupName = body.name || `Backup ${new Date().toLocaleDateString()}`;
+      await db.backup.create({
+        data: {
+          id: backupUuid,
+          name: backupName,
+          size: backup.size || 0,
+          checksum: backup.checksum,
+          checksumType: "sha256",
+          status: "COMPLETED",
+          isLocked: body.locked || false,
+          serverId: server.id,
+          ignoredFiles: body.ignore || [],
+          completedAt: new Date(),
+        },
+      });
+      console.log(`[Backup Create] Successfully saved backup ${backupUuid} to database`);
+    }
+
     await logActivityFromContext(c, ActivityEvents.BACKUP_CREATE, {
       serverId: server.id,
       metadata: { backupId: backupUuid },
@@ -1940,8 +1988,22 @@ servers.post("/:serverId/backups", requireServerAccess, requireNotSuspended, asy
       data: { backupId: backupUuid },
     }).catch(() => {});
 
-    return c.json(backup);
+    return c.json({
+      id: backupUuid,
+      name: body.name || `Backup ${new Date().toLocaleDateString()}`,
+      size: backup.size || 0,
+      checksum: backup.checksum,
+      checksumType: "sha256",
+      status: "COMPLETED",
+      isLocked: body.locked || false,
+      serverId: server.id,
+      ignoredFiles: body.ignore || [],
+      completedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
   } catch (error: any) {
+    console.error(`[Backup Create] Failed to create backup:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1958,6 +2020,24 @@ servers.post("/:serverId/backups/restore", requireServerAccess, requireNotSuspen
   console.log(`[Backup Restore] Attempting to restore backup ${id} for server ${server.id}`);
 
   try {
+    // Check if backup exists
+    const backup = await db.backup.findUnique({
+      where: { id },
+    });
+
+    if (!backup || backup.serverId !== server.id) {
+      return c.json({ error: "Backup not found" }, 404);
+    }
+
+    // Check if backup is in a valid state
+    if (backup.status === "RESTORING" || backup.status === "IN_PROGRESS") {
+      return c.json({ error: "Backup is not ready for restoration" }, 409);
+    }
+
+    if (backup.status === "FAILED") {
+      return c.json({ error: "Cannot restore from a failed backup" }, 400);
+    }
+
     // Update backup status to RESTORING
     await db.backup.update({
       where: { id },
@@ -2101,13 +2181,41 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
   console.log(`[Backup Delete] Attempting to delete backup ${id} for server ${server.id}`);
 
   try {
-    const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "DELETE",
-      `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
-    );
-    console.log(`[Backup Delete] Successfully deleted backup ${id} from daemon`);
+    // Check if backup exists and is not locked
+    const backup = await db.backup.findUnique({
+      where: { id },
+    });
+
+    if (!backup || backup.serverId !== server.id) {
+      console.warn(`[Backup Delete] Backup ${id} not found in database`);
+      return c.json({ error: "Backup not found" }, 404);
+    }
+
+    if (backup.isLocked) {
+      console.warn(`[Backup Delete] Cannot delete locked backup ${id}`);
+      return c.json({ error: "Cannot delete locked backup" }, 403);
+    }
+
+    try {
+      const fullServer = await getServerWithNode(server.id);
+      const result = await daemonRequest(
+        fullServer.node,
+        "DELETE",
+        `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
+      );
+      console.log(`[Backup Delete] Successfully deleted backup ${id} from daemon`);
+    } catch (daemonError: any) {
+      console.warn(`[Backup Delete] Daemon error deleting backup ${id}:`, daemonError.message);
+      // If daemon file not found, still remove from database (cleanup)
+      if (daemonError.message.includes("404") || daemonError.message.includes("not found")) {
+        console.log(
+          `[Backup Delete] Backup ${id} already deleted from daemon, cleaning up database`
+        );
+      } else {
+        // If it's a different error, re-throw
+        throw daemonError;
+      }
+    }
 
     // Delete from database
     await db.backup.delete({
@@ -2127,7 +2235,7 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
       data: { backupId: id },
     }).catch(() => {});
 
-    return c.json(result);
+    return c.json({ success: true });
   } catch (error: any) {
     console.error(`[Backup Delete] Failed to delete backup ${id}:`, error.message);
     return c.json({ error: error.message }, 500);
@@ -2809,16 +2917,50 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
       invocation = invocation.replace(/\{\{SERVER_IP\}\}/g, allocation.ip);
       invocation = invocation.replace(/\{\{SERVER_MEMORY\}\}/g, String(Number(childMemory)));
 
-      // Parse startup detection from blueprint
-      const startupDetection = (blueprint?.startupDetection as any) || {};
+      // Extract startup detection patterns - following Pterodactyl's format
+      // Blueprints store startupDetection as an array of pattern strings: ["pattern1", "pattern2", ...]
       const startupDonePatterns: string[] = [];
-      if (typeof startupDetection.done === "string") {
-        startupDonePatterns.push(startupDetection.done);
-      } else if (Array.isArray(startupDetection.done)) {
-        startupDonePatterns.push(...startupDetection.done);
-      } else if (typeof startupDetection === "string") {
-        startupDonePatterns.push(startupDetection);
+
+      if (Array.isArray(blueprint?.startupDetection)) {
+        // Direct array format: ["pattern1", "pattern2"]
+        for (const pattern of blueprint.startupDetection) {
+          if (typeof pattern === "string" && pattern.trim()) {
+            startupDonePatterns.push(pattern.trim());
+          }
+        }
+        console.log(
+          `[Child Server Create] Found ${startupDonePatterns.length} startup patterns for ${childServer.name}:`,
+          startupDonePatterns
+        );
+      } else if (blueprint?.startupDetection) {
+        // Fallback for old format: { "done": "pattern" or ["pattern"] }
+        const detection = blueprint.startupDetection as any;
+        if (Array.isArray(detection.done)) {
+          for (const pattern of detection.done) {
+            if (typeof pattern === "string" && pattern.trim()) {
+              startupDonePatterns.push(pattern.trim());
+            }
+          }
+        } else if (typeof detection.done === "string" && detection.done.trim()) {
+          startupDonePatterns.push(detection.done.trim());
+        }
+        if (startupDonePatterns.length > 0) {
+          console.log(
+            `[Child Server Create] Converted old format startupDetection for ${childServer.name}:`,
+            startupDonePatterns
+          );
+        }
       }
+
+      if (startupDonePatterns.length === 0) {
+        console.error(
+          `⚠️  [Child Server Create] WARNING: No startup patterns found for ${childServer.name}! Server will be marked as RUNNING immediately when it starts.`
+        );
+      }
+      console.log(
+        `[Child Server Create] Startup detection patterns for ${childServer.name}:`,
+        startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
+      );
 
       // Build the daemon request in the format the Rust daemon expects
       const daemonRequest_body = {
