@@ -1,31 +1,30 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
+import { type JSX, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
 import {
   BsArrowRight,
   BsCpu,
   BsExclamationTriangle,
   BsHdd,
   BsMemory,
-  BsMoon,
   BsPlus,
   BsServer,
-  BsSun,
   BsTrash,
 } from "react-icons/bs";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {type ChildServer, servers} from "@/lib/api";
-import {toast} from "sonner";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { type ChildServer, servers } from "@/lib/api";
+import { toast } from "sonner";
+import { useServerPageSetup } from "@/hooks/useServerPageSetup";
+import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -42,8 +41,7 @@ const SplitPage = (): JSX.Element | null => {
   const router = useRouter();
   const serverId = params.id as string;
   const { server, isInstalling, refetch } = useServer();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, setTheme } = useServerPageSetup();
   const [children, setChildren] = useState<ChildServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [splitting, setSplitting] = useState(false);
@@ -58,10 +56,6 @@ const SplitPage = (): JSX.Element | null => {
   const [formMemoryPercent, setFormMemoryPercent] = useState(25);
   const [formDiskPercent, setFormDiskPercent] = useState(25);
   const [formCpuPercent, setFormCpuPercent] = useState(25);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (serverId) {
@@ -80,8 +74,6 @@ const SplitPage = (): JSX.Element | null => {
       setLoading(false);
     }
   };
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
 
@@ -231,19 +223,10 @@ const SplitPage = (): JSX.Element | null => {
                   <span className="text-xs tracking-wider uppercase">Split Server</span>
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
+              <ThemeToggleButton
+                isDark={isDark}
+                onToggle={() => setTheme(isDark ? "light" : "dark")}
+              />
             </div>
           </div>
 
@@ -280,31 +263,7 @@ const SplitPage = (): JSX.Element | null => {
                   : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
               )}
             >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
+              <CornerDecorations isDark={isDark} />
 
               <h3
                 className={cn(
@@ -426,31 +385,7 @@ const SplitPage = (): JSX.Element | null => {
                   : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
               )}
             >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
+              <CornerDecorations isDark={isDark} />
 
               <BsServer
                 className={cn("mx-auto mb-4 h-12 w-12", isDark ? "text-zinc-600" : "text-zinc-400")}
@@ -506,31 +441,7 @@ const SplitPage = (): JSX.Element | null => {
                       : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
                   )}
                 >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
+                  <CornerDecorations isDark={isDark} />
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
