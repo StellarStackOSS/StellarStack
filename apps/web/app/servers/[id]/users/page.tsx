@@ -1,38 +1,38 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
+import {type JSX, useEffect, useMemo, useRef, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Input} from "@workspace/ui/components/input";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
 import {
-  BsSun,
+  BsClock,
+  BsEnvelope,
   BsMoon,
-  BsPlus,
-  BsTrash,
   BsPencil,
   BsPersonFill,
+  BsPlus,
   BsShieldFill,
-  BsEnvelope,
-  BsClock,
+  BsSun,
+  BsTrash,
 } from "react-icons/bs";
-import { toast } from "sonner";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useAuth } from "hooks/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useAuth} from "hooks/auth-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
 import {
-  useServerMembers,
-  useServerInvitations,
   usePermissionDefinitions,
+  useServerInvitations,
   useServerMemberMutations,
+  useServerMembers,
 } from "@/hooks/queries";
-import type { ServerMember, ServerInvitation, PermissionCategory } from "@/lib/api";
+import type {PermissionCategory, ServerInvitation, ServerMember} from "@/lib/api";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();
@@ -758,7 +758,6 @@ const UsersPage = (): JSX.Element | null => {
         description="Send an invitation to collaborate on this server."
         onSubmit={handleInvite}
         submitLabel="Send Invitation"
-        isDark={isDark}
         isValid={isEmailValid && selectedPermissions.length > 0}
         isLoading={createInvitation.isPending}
         size="2xl"
@@ -814,7 +813,6 @@ const UsersPage = (): JSX.Element | null => {
         description={`Update permissions for ${selectedMember?.user.name}.`}
         onSubmit={handleEditPermissions}
         submitLabel="Save Changes"
-        isDark={isDark}
         isValid={selectedPermissions.length > 0}
         isLoading={updateMember.isPending}
         size="2xl"
@@ -839,7 +837,6 @@ const UsersPage = (): JSX.Element | null => {
         onConfirm={handleRemoveMember}
         confirmLabel="Remove"
         variant="danger"
-        isDark={isDark}
         isLoading={removeMember.isPending}
       />
 
@@ -852,7 +849,6 @@ const UsersPage = (): JSX.Element | null => {
         onConfirm={handleCancelInvitation}
         confirmLabel="Cancel Invitation"
         variant="danger"
-        isDark={isDark}
         isLoading={cancelInvitation.isPending}
       />
     </div>

@@ -1,27 +1,18 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsSun,
-  BsMoon,
-  BsPlus,
-  BsTrash,
-  BsEye,
-  BsEyeSlash,
-  BsClipboard,
-  BsExclamationTriangle,
-} from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsClipboard, BsExclamationTriangle, BsEye, BsEyeSlash, BsMoon, BsPlus, BsSun, BsTrash,} from "react-icons/bs";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
 
 interface Database {
   id: string;
@@ -434,7 +425,6 @@ const DatabasesPage = (): JSX.Element | null => {
         description="Create a new MySQL database for your server."
         onSubmit={handleCreate}
         submitLabel="Create Database"
-        isDark={isDark}
         isValid={isNameValid}
       >
         <div className="space-y-4">
@@ -474,7 +464,6 @@ const DatabasesPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
       />
     </div>
   );

@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { ArrowLeftIcon, SaveIcon, PlusIcon, TrashIcon, NetworkIcon, KeyIcon } from "lucide-react";
-import { useNode, useNodeMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import { toast } from "sonner";
+import {useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {ArrowLeftIcon, KeyIcon, NetworkIcon, PlusIcon, SaveIcon, TrashIcon} from "lucide-react";
+import {useNode, useNodeMutations} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import {toast} from "sonner";
 
 export default function EditNodePage() {
   const router = useRouter();
@@ -842,7 +842,6 @@ export default function EditNodePage() {
         open={showRegenerateConfirm}
         onOpenChange={setShowRegenerateConfirm}
         onConfirm={handleRegenerateToken}
-        isDark={isDark}
         title="Regenerate Token"
         description="This will invalidate the current daemon token. The daemon will need to be reconfigured with the new token. This action cannot be undone."
         confirmLabel={regenerateToken.isPending ? "Regenerating..." : "Regenerate"}

@@ -1,31 +1,30 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { Switch } from "@workspace/ui/components/switch";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Input } from "@workspace/ui/components/input";
+import {type JSX, useEffect, useState} from "react";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Input} from "@workspace/ui/components/input";
 import {
-  BsSun,
-  BsMoon,
-  BsKey,
-  BsShieldCheck,
-  BsTrash,
-  BsPlus,
   BsCheckCircle,
-  BsGoogle,
-  BsGithub,
   BsDiscord,
+  BsGithub,
+  BsGoogle,
+  BsKey,
+  BsMoon,
+  BsPlus,
+  BsShieldCheck,
+  BsSun,
+  BsTrash,
 } from "react-icons/bs";
-import { authClient, useSession } from "@/lib/auth-client";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+import {authClient, useSession} from "@/lib/auth-client";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {toast} from "sonner";
 import QRCode from "qrcode";
 
 interface Passkey {
@@ -812,7 +811,6 @@ const AccountPage = (): JSX.Element | null => {
           setBackupCodes([]);
         }}
         submitLabel="I've saved these codes"
-        isDark={isDark}
         isValid={true}
       >
         <div className="space-y-2">
@@ -838,7 +836,6 @@ const AccountPage = (): JSX.Element | null => {
         description="Register a new passkey for passwordless authentication."
         onSubmit={handleAddPasskey}
         submitLabel="Add Passkey"
-        isDark={isDark}
         isValid={newPasskeyName.trim().length >= 3}
       >
         <div className="space-y-4">
@@ -878,7 +875,6 @@ const AccountPage = (): JSX.Element | null => {
         onConfirm={handleDeletePasskey}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
       />
 
       {/* Disable 2FA Modal */}
@@ -889,7 +885,6 @@ const AccountPage = (): JSX.Element | null => {
         description="Enter your password to disable two-factor authentication. This will make your account less secure."
         onSubmit={handleDisableTwoFactor}
         submitLabel="Disable 2FA"
-        isDark={isDark}
         isValid={passwordForAction.length > 0}
       >
         <div className="space-y-4">

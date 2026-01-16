@@ -1,31 +1,21 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsSun,
-  BsMoon,
-  BsPlus,
-  BsTrash,
-  BsPencil,
-  BsGlobe,
-  BsCheck2,
-  BsX,
-  BsArrowRepeat,
-} from "react-icons/bs";
-import { TbWand } from "react-icons/tb";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { webhooks, type Webhook, type WebhookEvent } from "@/lib/api";
-import { toast } from "sonner";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsCheck2, BsGlobe, BsMoon, BsPencil, BsPlus, BsSun, BsTrash,} from "react-icons/bs";
+import {TbWand} from "react-icons/tb";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {type Webhook, type WebhookEvent, webhooks} from "@/lib/api";
+import {toast} from "sonner";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -487,7 +477,6 @@ const WebhooksPage = (): JSX.Element | null => {
         description="Create a new webhook to receive server event notifications."
         onSubmit={handleAdd}
         submitLabel="Create Webhook"
-        isDark={isDark}
         isValid={isFormValid}
       >
         <div className="space-y-4">
@@ -588,7 +577,6 @@ const WebhooksPage = (): JSX.Element | null => {
         description="Update webhook settings."
         onSubmit={handleEdit}
         submitLabel="Save Changes"
-        isDark={isDark}
         isValid={isFormValid}
       >
         <div className="space-y-4">
@@ -737,7 +725,6 @@ const WebhooksPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
       />
     </div>
   );

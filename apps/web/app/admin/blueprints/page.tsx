@@ -1,24 +1,35 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {useCallback, useMemo, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {
-  PackageIcon, PlusIcon, TrashIcon, EditIcon, EyeIcon, EyeOffIcon,
-  UploadIcon, DownloadIcon, UserIcon, ArrowLeftIcon, VariableIcon,
-  ImageIcon, TerminalIcon, SearchIcon
+  ArrowLeftIcon,
+  DownloadIcon,
+  EditIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ImageIcon,
+  PackageIcon,
+  PlusIcon,
+  SearchIcon,
+  TerminalIcon,
+  TrashIcon,
+  UploadIcon,
+  UserIcon,
+  VariableIcon
 } from "lucide-react";
-import { useBlueprints, useBlueprintMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
-import { toast } from "sonner";
+import {useBlueprintMutations, useBlueprints} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import type {Blueprint, CreateBlueprintData, PterodactylEgg} from "@/lib/api";
+import {toast} from "sonner";
 
 export default function BlueprintsPage() {
   const router = useRouter();
@@ -396,7 +407,6 @@ export default function BlueprintsPage() {
         title={editingBlueprint ? "Edit Blueprint" : "Create Blueprint"}
         submitLabel={editingBlueprint ? "Update" : "Create"}
         onSubmit={handleSubmit}
-        isDark={isDark}
         isLoading={create.isPending || update.isPending}
         isValid={formData.name.length > 0 && formData.imageName.length > 0}
         size="lg"
@@ -615,7 +625,6 @@ export default function BlueprintsPage() {
         description="Paste the contents of a Pterodactyl egg JSON file or upload a file."
         submitLabel="Import"
         onSubmit={handleImportEgg}
-        isDark={isDark}
         isLoading={importEgg.isPending}
         isValid={importJson.length > 0}
         size="lg"
@@ -658,7 +667,6 @@ export default function BlueprintsPage() {
         description={`Are you sure you want to delete "${deleteConfirmBlueprint?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />

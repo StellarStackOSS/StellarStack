@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {useMemo, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,11 +16,22 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
-import { ServerIcon, PlusIcon, TrashIcon, EditIcon, PlayIcon, SquareIcon, RefreshCwIcon, ArrowLeftIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
-import { useServers, useServerMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Server } from "@/lib/api";
-import { toast } from "sonner";
+import {
+  ArrowLeftIcon,
+  EditIcon,
+  ExternalLinkIcon,
+  PlayIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  SearchIcon,
+  ServerIcon,
+  SquareIcon,
+  TrashIcon
+} from "lucide-react";
+import {useServerMutations, useServers} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import type {Server} from "@/lib/api";
+import {toast} from "sonner";
 
 export default function AdminServersPage() {
   const router = useRouter();
@@ -386,7 +397,6 @@ export default function AdminServersPage() {
         description={`Are you sure you want to delete "${deleteConfirmServer?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />
