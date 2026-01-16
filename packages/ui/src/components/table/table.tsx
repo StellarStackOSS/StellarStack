@@ -1,21 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@workspace/ui/lib/utils"
+import { cn } from "@workspace/ui/lib/utils";
 
 const Table = ({ className, ...props }: React.ComponentProps<"table">) => {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto touch-pan-x touch-pan-y"
+      className="relative w-full touch-pan-x touch-pan-y overflow-x-auto"
     >
       <table
         data-slot="table"
-        className={cn(
-          "w-full caption-bottom text-sm select-none md:select-auto",
-          className
-        )}
+        className={cn("w-full caption-bottom text-sm select-none md:select-auto", className)}
         {...props}
       />
     </div>
@@ -23,13 +20,7 @@ const Table = ({ className, ...props }: React.ComponentProps<"table">) => {
 };
 
 const TableHeader = ({ className, ...props }: React.ComponentProps<"thead">) => {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
-      {...props}
-    />
-  );
+  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />;
 };
 
 const TableBody = ({ className, ...props }: React.ComponentProps<"tbody">) => {
@@ -46,10 +37,7 @@ const TableFooter = ({ className, ...props }: React.ComponentProps<"tfoot">) => 
   return (
     <tfoot
       data-slot="table-footer"
-      className={cn(
-        "bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
-        className
-      )}
+      className={cn("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", className)}
       {...props}
     />
   );
@@ -94,10 +82,7 @@ const TableCell = ({ className, ...props }: React.ComponentProps<"td">) => {
   );
 };
 
-const TableCaption = ({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) => {
+const TableCaption = ({ className, ...props }: React.ComponentProps<"caption">) => {
   return (
     <caption
       data-slot="table-caption"
@@ -107,13 +92,4 @@ const TableCaption = ({
   );
 };
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-}
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };

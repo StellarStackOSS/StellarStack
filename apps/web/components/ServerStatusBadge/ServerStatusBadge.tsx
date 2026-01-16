@@ -7,26 +7,27 @@ interface ServerStatusBadgeProps {
 }
 
 const convertServerStatusToBadgeVariant = (status: string) => {
-    switch (status) {
-        case "running":
-        return "success";
-        case "stopped":
-        return "destructive";
-        case "starting":
-        case "stopping":
-        return "warning";
-        default:
-        return "primary";
-    }
-}
+  switch (status) {
+    case "running":
+      return "success";
+    case "stopped":
+      return "destructive";
+    case "starting":
+    case "stopping":
+      return "warning";
+    default:
+      return "primary";
+  }
+};
 
 const ServerStatusBadge: React.FunctionComponent<ServerStatusBadgeProps> = ({ server }) => {
   return (
-      <TextureBadge
-          variant={convertServerStatusToBadgeVariant(server?.status.toLowerCase() || "unknown")}
-      >
-        {server?.status}
-      </TextureBadge>
-  )
+    <TextureBadge
+      size="default"
+      variant={convertServerStatusToBadgeVariant(server?.status.toLowerCase() || "unknown")}
+    >
+      {server?.status}
+    </TextureBadge>
+  );
 };
 export default ServerStatusBadge;

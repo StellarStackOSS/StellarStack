@@ -435,7 +435,7 @@ function LightBoard({
   );
 
   return (
-    <div ref={containerRef} style={{ width: "100%" }}>
+    <div ref={containerRef} style={{ width: "100vw" }}>
       {columns > 0 && (
         <canvas
           ref={canvasRef}

@@ -9,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 export interface FormModalProps {
   open: boolean;
@@ -70,26 +69,12 @@ export const FormModal = ({
         </DialogHeader>
         <div className="py-2">{children}</div>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-            className={cn(
-              "border-zinc-700 text-xs tracking-wider text-zinc-400 uppercase transition-all hover:border-zinc-500 hover:text-zinc-100"
-            )}
-          >
+          <TextureButton variant="secondary" onClick={handleCancel} disabled={isLoading}>
             {cancelLabel}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleSubmit}
-            disabled={isLoading || !isValid}
-            className={cn(
-              "border-zinc-600 text-xs tracking-wider text-zinc-200 uppercase transition-all hover:border-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-50"
-            )}
-          >
+          </TextureButton>
+          <TextureButton variant="success" onClick={handleSubmit} disabled={isLoading || !isValid}>
             {isLoading ? "Saving..." : submitLabel}
-          </Button>
+          </TextureButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

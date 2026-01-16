@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsGithub, BsDiscord, BsTwitterX } from "react-icons/bs";
-import { LightBoard } from "@workspace/ui/components/Lightboard/Lightboard";
+import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
+import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
 
 interface FooterProps {
   isDark: boolean;

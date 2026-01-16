@@ -7,9 +7,8 @@ import { servers } from "@/lib/api";
 import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
 import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
 import { Console } from "@workspace/ui/components/console";
-import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsExclamationTriangle, BsGrid } from "react-icons/bs";
+import { BsExclamationTriangle } from "react-icons/bs";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   Sheet,
@@ -322,9 +321,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
       >
         <div className="flex items-center gap-3">
           <Spinner className="h-5 w-5" />
-          <span className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
-            Loading server...
-          </span>
         </div>
       </div>
     );
@@ -358,9 +354,9 @@ const ServerOverviewPage = (): JSX.Element | null => {
           </div>
         )}
 
-        <div className="relative h-full px-4 py-6">
+        <div className="relative h-full p-6">
           <FadeIn delay={0}>
-            <div className="mx-auto mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger
                   className={cn(
@@ -371,57 +367,34 @@ const ServerOverviewPage = (): JSX.Element | null => {
                   )}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex w-2/3 flex-row justify-end gap-2">
                 {isEditing && (
-                  <>
-                    <Button
-                      variant="outline"
+                  <div className="flex w-1/3 flex-row gap-2">
+                    <TextureButton
+                      variant="secondary"
                       size="sm"
                       onClick={() => setIsCardSheetOpen(true)}
-                      className={cn(
-                        "transition-all hover:scale-[1.02] active:scale-95",
-                        isDark
-                          ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                          : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                      )}
                     >
-                      <BsGrid className="mr-2 h-4 w-4" />
                       {labels.dashboard.manageCards}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetLayout}
-                      className={cn(
-                        "transition-all hover:scale-[1.02] active:scale-95",
-                        isDark
-                          ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                          : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                      )}
-                    >
+                    </TextureButton>
+                    <TextureButton variant="secondary" size="sm" onClick={resetLayout}>
                       {labels.dashboard.resetLayout}
-                    </Button>
-                  </>
+                    </TextureButton>
+                  </div>
                 )}
-                <TextureButton
-                  variant={isEditing ? "primary" : "minimal"}
-                  size="sm"
-                  onClick={() => setIsEditing(!isEditing)}
-                  className={cn(
-                    "transition-all hover:scale-[1.02] active:scale-95",
-                    isEditing &&
-                      (isDark
-                        ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                        : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"),
-                    !isEditing &&
-                      (isDark
-                        ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900")
-                  )}
-                >
-                  {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
-                </TextureButton>
-                <ServerStatusBadge server={server} />
+
+                <div className="flex flex-row items-center gap-2">
+                  <TextureButton
+                    variant={isEditing ? "primary" : "minimal"}
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="w-fit"
+                  >
+                    {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
+                  </TextureButton>
+
+                  <ServerStatusBadge server={server} />
+                </div>
               </div>
             </div>
           </FadeIn>
