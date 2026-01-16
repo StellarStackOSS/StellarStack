@@ -1,30 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import {
-  UsersIcon,
-  TrashIcon,
-  EditIcon,
-  ShieldIcon,
-  UserIcon,
-  ArrowLeftIcon,
-  SearchIcon,
-  PlusIcon,
-} from "lucide-react";
-import { useUsers, useUserMutations } from "@/hooks/queries";
-import { useAdminTheme } from "@/hooks/use-admin-theme";
-import { useAuth } from "hooks/auth-provider";
-import type { User } from "@/lib/api";
-import { toast } from "sonner";
+import {useMemo, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {ArrowLeftIcon, EditIcon, PlusIcon, SearchIcon, ShieldIcon, TrashIcon, UserIcon,} from "lucide-react";
+import {useUserMutations, useUsers} from "@/hooks/queries";
+import {useAdminTheme} from "@/hooks/use-admin-theme";
+import {useAuth} from "hooks/auth-provider";
+import type {User} from "@/lib/api";
+import {toast} from "sonner";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -425,7 +416,6 @@ export default function UsersPage() {
         title={isCreateMode ? "Create User" : "Edit User"}
         submitLabel={isCreateMode ? "Create" : "Update"}
         onSubmit={handleSubmit}
-        isDark={isDark}
         isLoading={isCreateMode ? create.isPending : update.isPending}
         isValid={
           isCreateMode
@@ -514,7 +504,6 @@ export default function UsersPage() {
         description={`Are you sure you want to delete "${deleteConfirmUser?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />

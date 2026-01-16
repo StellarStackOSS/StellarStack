@@ -1,31 +1,21 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Switch } from "@workspace/ui/components/switch";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsSun,
-  BsMoon,
-  BsPlus,
-  BsTrash,
-  BsGlobe,
-  BsHddNetwork,
-  BsKey,
-  BsStar,
-  BsStarFill,
-} from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { servers, features, type Allocation, type SubdomainFeatureStatus } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {Switch} from "@workspace/ui/components/switch";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsGlobe, BsHddNetwork, BsKey, BsMoon, BsPlus, BsStar, BsStarFill, BsSun, BsTrash,} from "react-icons/bs";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {type Allocation, features, servers, type SubdomainFeatureStatus} from "@/lib/api";
+import {useSession} from "@/lib/auth-client";
 
 interface Subdomain {
   id: string;
@@ -761,7 +751,6 @@ const NetworkPage = (): JSX.Element | null => {
         onConfirm={handleDeletePort}
         confirmLabel="Remove"
         variant="danger"
-        isDark={isDark}
       />
 
       {/* Add Subdomain Modal */}
@@ -772,7 +761,6 @@ const NetworkPage = (): JSX.Element | null => {
         description="Create a subdomain pointing to your server."
         onSubmit={handleAddSubdomain}
         submitLabel="Add Subdomain"
-        isDark={isDark}
         isValid={isSubdomainValid}
       >
         <div className="space-y-4">
@@ -893,7 +881,6 @@ const NetworkPage = (): JSX.Element | null => {
         onConfirm={handleDeleteSubdomain}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
       />
 
       {/* Add Allocation Modal */}
@@ -904,7 +891,6 @@ const NetworkPage = (): JSX.Element | null => {
         description={`Add a new port allocation to your server. ${allocationsRemaining} remaining.`}
         onSubmit={handleAddAllocation}
         submitLabel={addingAllocation ? "Adding..." : "Add Allocation"}
-        isDark={isDark}
         isValid={!!selectedNewAllocation && !addingAllocation}
         isLoading={addingAllocation}
       >

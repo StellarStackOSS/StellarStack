@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useTheme } from "next-themes";
-import { toast } from "sonner";
-import { ShieldPlus, Shield, ShieldX, Plus, Trash2, Lock, Unlock } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Button } from "@workspace/ui/components/button";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { Switch } from "@workspace/ui/components/switch";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import {useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme} from "next-themes";
+import {toast} from "sonner";
+import {Plus, Shield, ShieldX, Trash2, Unlock} from "lucide-react";
+import {cn} from "@workspace/ui/lib/utils";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Button} from "@workspace/ui/components/button";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Switch} from "@workspace/ui/components/switch";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
 
 export default function FirewallPage() {
   const params = useParams();
@@ -643,7 +643,6 @@ export default function FirewallPage() {
           confirmLabel="Delete"
           variant="danger"
           onConfirm={handleDelete}
-          isDark={isDark}
         />
       </div>
     </div>

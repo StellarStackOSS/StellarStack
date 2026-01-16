@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, type JSX } from "react";
+import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
@@ -12,22 +12,21 @@ import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
-  BsSun,
+  BsArrowRepeat,
+  BsClock,
+  BsCloudUpload,
   BsMoon,
-  BsPlus,
-  BsTrash,
   BsPencil,
   BsPlayFill,
+  BsPlus,
   BsStopFill,
-  BsArrowRepeat,
+  BsSun,
   BsTerminal,
-  BsCloudUpload,
-  BsChatDots,
+  BsTrash,
   BsX,
-  BsClock,
 } from "react-icons/bs";
+import type { CreateScheduleData, Schedule } from "@/lib/api";
 import { servers } from "@/lib/api";
-import type { Schedule, ScheduleTask, CreateScheduleData } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
@@ -112,61 +111,6 @@ const SchedulesPage = (): JSX.Element | null => {
     fetchSchedules();
   }, [fetchSchedules]);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
-  if (!mounted) return null;
-
-  if (isInstalling) {
-    return (
-      <div className="min-h-svh">
-        {/* Background is now rendered in the layout for persistence */}
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
-      </div>
-    );
-  }
-
-  if (server?.status === "SUSPENDED") {
-    return (
-      <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
-      </div>
-    );
-  }
-
-  const resetForm = () => {
-    setFormName("");
-    setFormTasks([]);
-    setFormCron("0 4 * * *");
-    setFormEnabled(true);
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setCreateModalOpen(true);
-  };
-
-  const openEditModal = (schedule: Schedule) => {
-    setSelectedSchedule(schedule);
-    setFormName(schedule.name);
-    setFormTasks(
-      schedule.tasks.map((t, i) => ({
-        id: t.id || `task-${i}-${Date.now()}`,
-        action: t.action as ActionType,
-        payload: t.payload,
-        sequence: t.sequence,
-        timeOffset: t.timeOffset,
-      }))
-    );
-    setFormCron(schedule.cronExpression);
-    setFormEnabled(schedule.isActive);
-    setEditModalOpen(true);
-  };
-
-  const openDeleteModal = (schedule: Schedule) => {
-    setSelectedSchedule(schedule);
-    setDeleteModalOpen(true);
-  };
-
   const MAX_TASKS = 12;
 
   const addTask = useCallback((action: ActionType) => {
@@ -197,91 +141,6 @@ const SchedulesPage = (): JSX.Element | null => {
     setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, timeOffset: offset } : t)));
   }, []);
 
-  const handleCreate = async () => {
-    setIsSaving(true);
-    try {
-      const data: CreateScheduleData = {
-        name: formName,
-        cronExpression: formCron,
-        isActive: formEnabled,
-        tasks: formTasks.map((t, i) => ({
-          action: t.action,
-          payload: t.payload,
-          sequence: i,
-          timeOffset: t.timeOffset,
-        })),
-      };
-      await servers.schedules.create(serverId, data);
-      toast.success("Schedule created");
-      setCreateModalOpen(false);
-      resetForm();
-      fetchSchedules();
-    } catch (error) {
-      toast.error("Failed to create schedule");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!selectedSchedule) return;
-    setIsSaving(true);
-    try {
-      const data: CreateScheduleData = {
-        name: formName,
-        cronExpression: formCron,
-        isActive: formEnabled,
-        tasks: formTasks.map((t, i) => ({
-          action: t.action,
-          payload: t.payload,
-          sequence: i,
-          timeOffset: t.timeOffset,
-        })),
-      };
-      await servers.schedules.update(serverId, selectedSchedule.id, data);
-      toast.success("Schedule updated");
-      setEditModalOpen(false);
-      setSelectedSchedule(null);
-      fetchSchedules();
-    } catch (error) {
-      toast.error("Failed to update schedule");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedSchedule) return;
-    try {
-      await servers.schedules.delete(serverId, selectedSchedule.id);
-      toast.success("Schedule deleted");
-      setDeleteModalOpen(false);
-      setSelectedSchedule(null);
-      fetchSchedules();
-    } catch (error) {
-      toast.error("Failed to delete schedule");
-    }
-  };
-
-  const toggleSchedule = async (schedule: Schedule) => {
-    try {
-      await servers.schedules.update(serverId, schedule.id, {
-        name: schedule.name,
-        cronExpression: schedule.cronExpression,
-        isActive: !schedule.isActive,
-        tasks: schedule.tasks.map((t) => ({
-          action: t.action,
-          payload: t.payload,
-          sequence: t.sequence,
-          timeOffset: t.timeOffset,
-        })),
-      });
-      fetchSchedules();
-    } catch (error) {
-      toast.error("Failed to update schedule");
-    }
-  };
-
   const getActionIcon = useCallback((action: string) => {
     const option = actionOptions.find((o) => o.value === action);
     return option?.icon || null;
@@ -292,19 +151,7 @@ const SchedulesPage = (): JSX.Element | null => {
     return option?.label || action;
   }, []);
 
-  const formatNextRun = (schedule: Schedule): string => {
-    if (schedule.nextRunAt) {
-      return new Date(schedule.nextRunAt).toLocaleString();
-    }
-    return "Not scheduled";
-  };
-
-  const formatLastRun = (schedule: Schedule): string => {
-    if (schedule.lastRunAt) {
-      return new Date(schedule.lastRunAt).toLocaleString();
-    }
-    return "Never";
-  };
+  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   const isFormValid =
     formName.trim() !== "" &&
@@ -525,6 +372,158 @@ const SchedulesPage = (): JSX.Element | null => {
       getActionLabel,
     ]
   );
+
+  if (!mounted) return null;
+
+  if (isInstalling) {
+    return (
+      <div className="min-h-svh">
+        {/* Background is now rendered in the layout for persistence */}
+        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  if (server?.status === "SUSPENDED") {
+    return (
+      <div className="min-h-svh">
+        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+      </div>
+    );
+  }
+
+  const resetForm = () => {
+    setFormName("");
+    setFormTasks([]);
+    setFormCron("0 4 * * *");
+    setFormEnabled(true);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setCreateModalOpen(true);
+  };
+
+  const openEditModal = (schedule: Schedule) => {
+    setSelectedSchedule(schedule);
+    setFormName(schedule.name);
+    setFormTasks(
+      schedule.tasks.map((t, i) => ({
+        id: t.id || `task-${i}-${Date.now()}`,
+        action: t.action as ActionType,
+        payload: t.payload,
+        sequence: t.sequence,
+        timeOffset: t.timeOffset,
+      }))
+    );
+    setFormCron(schedule.cronExpression);
+    setFormEnabled(schedule.isActive);
+    setEditModalOpen(true);
+  };
+
+  const openDeleteModal = (schedule: Schedule) => {
+    setSelectedSchedule(schedule);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCreate = async () => {
+    setIsSaving(true);
+    try {
+      const data: CreateScheduleData = {
+        name: formName,
+        cronExpression: formCron,
+        isActive: formEnabled,
+        tasks: formTasks.map((t, i) => ({
+          action: t.action,
+          payload: t.payload,
+          sequence: i,
+          timeOffset: t.timeOffset,
+        })),
+      };
+      await servers.schedules.create(serverId, data);
+      toast.success("Schedule created");
+      setCreateModalOpen(false);
+      resetForm();
+      fetchSchedules();
+    } catch (error) {
+      toast.error("Failed to create schedule");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!selectedSchedule) return;
+    setIsSaving(true);
+    try {
+      const data: CreateScheduleData = {
+        name: formName,
+        cronExpression: formCron,
+        isActive: formEnabled,
+        tasks: formTasks.map((t, i) => ({
+          action: t.action,
+          payload: t.payload,
+          sequence: i,
+          timeOffset: t.timeOffset,
+        })),
+      };
+      await servers.schedules.update(serverId, selectedSchedule.id, data);
+      toast.success("Schedule updated");
+      setEditModalOpen(false);
+      setSelectedSchedule(null);
+      fetchSchedules();
+    } catch (error) {
+      toast.error("Failed to update schedule");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedSchedule) return;
+    try {
+      await servers.schedules.delete(serverId, selectedSchedule.id);
+      toast.success("Schedule deleted");
+      setDeleteModalOpen(false);
+      setSelectedSchedule(null);
+      fetchSchedules();
+    } catch (error) {
+      toast.error("Failed to delete schedule");
+    }
+  };
+
+  const toggleSchedule = async (schedule: Schedule) => {
+    try {
+      await servers.schedules.update(serverId, schedule.id, {
+        name: schedule.name,
+        cronExpression: schedule.cronExpression,
+        isActive: !schedule.isActive,
+        tasks: schedule.tasks.map((t) => ({
+          action: t.action,
+          payload: t.payload,
+          sequence: t.sequence,
+          timeOffset: t.timeOffset,
+        })),
+      });
+      fetchSchedules();
+    } catch (error) {
+      toast.error("Failed to update schedule");
+    }
+  };
+
+  const formatNextRun = (schedule: Schedule): string => {
+    if (schedule.nextRunAt) {
+      return new Date(schedule.nextRunAt).toLocaleString();
+    }
+    return "Not scheduled";
+  };
+
+  const formatLastRun = (schedule: Schedule): string => {
+    if (schedule.lastRunAt) {
+      return new Date(schedule.lastRunAt).toLocaleString();
+    }
+    return "Never";
+  };
 
   return (
     <div className="relative min-h-full transition-colors">
@@ -769,7 +768,6 @@ const SchedulesPage = (): JSX.Element | null => {
         description="Set up a new scheduled task sequence for your server."
         onSubmit={handleCreate}
         submitLabel={isSaving ? "Creating..." : "Create"}
-        isDark={isDark}
         isValid={isFormValid && !isSaving}
         size="lg"
       >
@@ -784,7 +782,6 @@ const SchedulesPage = (): JSX.Element | null => {
         description={`Modify "${selectedSchedule?.name}" schedule.`}
         onSubmit={handleEdit}
         submitLabel={isSaving ? "Saving..." : "Save Changes"}
-        isDark={isDark}
         isValid={isFormValid && !isSaving}
         size="lg"
       >
@@ -800,7 +797,6 @@ const SchedulesPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
       />
     </div>
   );

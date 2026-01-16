@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@workspace/ui/components/dialog";
+import {useMemo, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,20 +19,20 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import {
-  CpuIcon,
-  PlusIcon,
-  TrashIcon,
-  EditIcon,
-  CopyIcon,
-  CheckIcon,
-  SettingsIcon,
   ArrowLeftIcon,
+  CheckIcon,
+  CopyIcon,
+  CpuIcon,
+  EditIcon,
+  PlusIcon,
   SearchIcon,
+  SettingsIcon,
+  TrashIcon,
 } from "lucide-react";
-import { useNodes, useNodeMutations, useLocations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Node, CreateNodeData } from "@/lib/api";
-import { toast } from "sonner";
+import {useLocations, useNodeMutations, useNodes} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import type {CreateNodeData, Node} from "@/lib/api";
+import {toast} from "sonner";
 
 export default function NodesPage() {
   const router = useRouter();
@@ -420,7 +414,6 @@ export default function NodesPage() {
         title="Create Node"
         submitLabel="Create"
         onSubmit={handleSubmit}
-        isDark={isDark}
         isLoading={create.isPending}
         isValid={isFormValid}
       >
@@ -686,7 +679,6 @@ export default function NodesPage() {
         description={`Are you sure you want to delete "${deleteConfirmNode?.displayName}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />

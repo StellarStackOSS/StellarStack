@@ -1,29 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import {useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {
   ArrowLeftIcon,
-  SaveIcon,
-  RefreshCwIcon,
-  PlusIcon,
-  TrashIcon,
-  NetworkIcon,
-  SplitIcon,
   ExternalLinkIcon,
+  NetworkIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  SaveIcon,
+  SplitIcon,
+  TrashIcon,
 } from "lucide-react";
-import { useServer, useServerMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { toast } from "sonner";
-import { servers, Allocation, Blueprint, blueprints, nodes } from "@/lib/api";
-import type { Node } from "@/lib/api";
+import {useServer, useServerMutations} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {toast} from "sonner";
+import type {Node} from "@/lib/api";
+import {Allocation, Blueprint, blueprints, nodes, servers} from "@/lib/api";
 
 export default function EditServerPage() {
   const router = useRouter();
@@ -1102,7 +1102,6 @@ export default function EditServerPage() {
         open={reinstallModalOpen}
         onOpenChange={setReinstallModalOpen}
         onConfirm={handleReinstall}
-        isDark={isDark}
         title="Reinstall Server"
         description="This will completely wipe the server's files and run the installation script again. All data will be lost. This action cannot be undone."
         confirmLabel={isReinstalling ? "Reinstalling..." : "Reinstall"}

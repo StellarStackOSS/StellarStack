@@ -1,31 +1,31 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
+import {type JSX, useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
 import {
-  BsSun,
+  BsArrowRight,
+  BsCpu,
+  BsExclamationTriangle,
+  BsHdd,
+  BsMemory,
   BsMoon,
   BsPlus,
-  BsTrash,
   BsServer,
-  BsExclamationTriangle,
-  BsArrowRight,
-  BsMemory,
-  BsHdd,
-  BsCpu,
+  BsSun,
+  BsTrash,
 } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { servers, type ChildServer } from "@/lib/api";
-import { toast } from "sonner";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {type ChildServer, servers} from "@/lib/api";
+import {toast} from "sonner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -632,7 +632,6 @@ const SplitPage = (): JSX.Element | null => {
         description="Create a child server by allocating a portion of this server's resources."
         onSubmit={handleSplit}
         submitLabel={splitting ? "Splitting..." : "Create Child Server"}
-        isDark={isDark}
         isValid={isFormValid && !splitting}
       >
         <div className="space-y-6">
@@ -810,7 +809,6 @@ const SplitPage = (): JSX.Element | null => {
         onConfirm={handleDeleteChild}
         confirmLabel="Delete Server"
         variant="danger"
-        isDark={isDark}
       />
     </div>
   );

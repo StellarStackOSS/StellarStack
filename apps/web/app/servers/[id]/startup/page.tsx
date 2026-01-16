@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { BsSun, BsMoon, BsInfoCircle, BsCheckCircle, BsArrowRepeat } from "react-icons/bs";
-import { servers } from "@/lib/api";
-import type { StartupVariable, DockerImageOption } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {BsArrowRepeat, BsCheckCircle, BsInfoCircle, BsMoon, BsSun} from "react-icons/bs";
+import type {DockerImageOption, StartupVariable} from "@/lib/api";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
   const params = useParams();
@@ -606,7 +606,6 @@ const StartupPage = (): JSX.Element | null => {
         description="Are you sure you want to save these startup parameter changes? The server will need to be reinstalled for changes to take effect."
         onConfirm={handleSave}
         confirmLabel="Save"
-        isDark={isDark}
         isLoading={isSaving}
       />
 
@@ -619,7 +618,6 @@ const StartupPage = (): JSX.Element | null => {
         onConfirm={handleReinstall}
         confirmLabel="Reinstall"
         variant="danger"
-        isDark={isDark}
         isLoading={isReinstalling}
       />
     </div>

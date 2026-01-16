@@ -1,37 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {type JSX, useCallback, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {useTheme as useNextTheme} from "next-themes";
+import {motion} from "framer-motion";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Slider} from "@workspace/ui/components/slider";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@workspace/ui/components/dialog";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Slider } from "@workspace/ui/components/slider";
-import {
-  BsSun,
-  BsMoon,
-  BsExclamationTriangle,
-  BsCheckCircle,
-  BsGlobe,
-  BsGeoAlt,
   BsCheck,
+  BsCheckCircle,
+  BsExclamationTriangle,
+  BsGeoAlt,
+  BsGlobe,
   BsLayers,
+  BsMoon,
+  BsSun,
 } from "react-icons/bs";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
 
 interface ServerSettings {
   name: string;
@@ -823,7 +817,6 @@ const SettingsPage = (): JSX.Element | null => {
         description="Are you sure you want to save these settings? Some changes may require a server restart to take effect."
         onConfirm={handleSave}
         confirmLabel="Save"
-        isDark={isDark}
       />
 
       {/* Reinstall Confirmation Modal */}
@@ -835,7 +828,6 @@ const SettingsPage = (): JSX.Element | null => {
         onConfirm={handleReinstall}
         confirmLabel="Reinstall"
         variant="danger"
-        isDark={isDark}
         isLoading={isReinstalling}
       />
 
@@ -1108,7 +1100,6 @@ const SettingsPage = (): JSX.Element | null => {
         onConfirm={confirmTransfer}
         confirmLabel="Transfer"
         variant="danger"
-        isDark={isDark}
       />
 
       {/* Server Split Modal */}

@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { MapPinIcon, PlusIcon, TrashIcon, EditIcon, ArrowLeftIcon, SearchIcon } from "lucide-react";
-import { useLocations, useLocationMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Location, CreateLocationData } from "@/lib/api";
-import { toast } from "sonner";
+import {useMemo, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {Button} from "@workspace/ui/components/button";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {ArrowLeftIcon, EditIcon, MapPinIcon, PlusIcon, SearchIcon, TrashIcon} from "lucide-react";
+import {useLocationMutations, useLocations} from "@/hooks/queries";
+import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
+import type {CreateLocationData, Location} from "@/lib/api";
+import {toast} from "sonner";
 
 export default function LocationsPage() {
   const router = useRouter();
@@ -266,7 +266,6 @@ export default function LocationsPage() {
         title={editingLocation ? "Edit Location" : "Create Location"}
         submitLabel={editingLocation ? "Update" : "Create"}
         onSubmit={handleSubmit}
-        isDark={isDark}
         isLoading={create.isPending || update.isPending}
         isValid={formData.name.length > 0}
       >
@@ -327,7 +326,6 @@ export default function LocationsPage() {
         description={`Are you sure you want to delete "${deleteConfirmLocation?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />
