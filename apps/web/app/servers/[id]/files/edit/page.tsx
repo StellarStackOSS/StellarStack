@@ -10,6 +10,8 @@ import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
 
 export default function FileEditPage() {
   const params = useParams();
@@ -169,28 +171,14 @@ export default function FileEditPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "border px-2 py-1 text-xs tracking-wider uppercase",
-                  isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
-                )}
-              >
+              <TextureBadge variant="accent" className="uppercase">
                 {language}
-              </span>
+              </TextureBadge>
 
-              <button
+              <TextureButton
+                variant="minimal"
                 onClick={handleSave}
                 disabled={!hasChanges || write.isPending}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors",
-                  hasChanges && !write.isPending
-                    ? isDark
-                      ? "bg-white text-black hover:bg-zinc-200"
-                      : "bg-zinc-900 text-white hover:bg-zinc-800"
-                    : isDark
-                      ? "cursor-not-allowed bg-zinc-800 text-zinc-500"
-                      : "cursor-not-allowed bg-zinc-200 text-zinc-400"
-                )}
               >
                 {write.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -198,7 +186,7 @@ export default function FileEditPage() {
                   <Save className="h-4 w-4" />
                 )}
                 Save
-              </button>
+              </TextureButton>
             </div>
           </header>
         </FadeIn>

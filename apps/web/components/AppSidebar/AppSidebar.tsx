@@ -1,63 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useParams, useRouter } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
+  SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 import {
-  ServerIcon,
-  LayoutDashboardIcon,
-  SettingsIcon,
-  UsersIcon,
-  FolderIcon,
-  DatabaseIcon,
-  ActivityIcon,
-  NetworkIcon,
-  ArchiveIcon,
-  CalendarIcon,
-  PlayIcon,
-  ArrowLeftIcon,
-  UserIcon,
-  LogOutIcon,
   BellIcon,
   ChevronUpIcon,
+  CpuIcon,
+  HardDriveIcon,
+  LogOutIcon,
+  MemoryStickIcon,
+  ServerIcon,
   ShieldIcon,
-  WebhookIcon,
-  SplitIcon,
+  UserIcon,
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "hooks/auth-provider";
 import { WaveText } from "@/components/wave-text";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";
-import { CpuIcon, HardDriveIcon, MemoryStickIcon } from "lucide-react";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import { BsArrowLeft } from "react-icons/bs";
+import { motion } from "framer-motion";
 
 const navItems = [
-  { title: "Overview", icon: LayoutDashboardIcon, href: "/overview" },
-  { title: "Files", icon: FolderIcon, href: "/files" },
-  { title: "Backups", icon: ArchiveIcon, href: "/backups" },
-  { title: "Schedules", icon: CalendarIcon, href: "/schedules" },
-  { title: "Users", icon: UsersIcon, href: "/users" },
-  { title: "Databases", icon: DatabaseIcon, href: "/databases" },
-  { title: "Network", icon: NetworkIcon, href: "/network" },
-  { title: "Webhooks", icon: WebhookIcon, href: "/webhooks" },
-  { title: "Split", icon: SplitIcon, href: "/split" },
-  { title: "Activity", icon: ActivityIcon, href: "/activity" },
-  { title: "Startup", icon: PlayIcon, href: "/startup" },
-  { title: "Settings", icon: SettingsIcon, href: "/settings" },
+  { title: "Overview", icon: <img alt="icon" src="/icons/24-grid-2.svg" />, href: "/overview" },
+  { title: "Files", icon: <img alt="icon" src="/icons/24-folder.svg" />, href: "/files" },
+  { title: "Backups", icon: <img alt="icon" src="/icons/24-folders.svg" />, href: "/backups" },
+  { title: "Schedules", icon: <img alt="icon" src="/icons/24-calendar.svg" />, href: "/schedules" },
+  { title: "Users", icon: <img alt="icon" src="/icons/24-users.svg" />, href: "/users" },
+  { title: "Databases", icon: <img alt="icon" src="/icons/24-storage.svg" />, href: "/databases" },
+  { title: "Network", icon: <img alt="icon" src="/icons/24-connect.svg" />, href: "/network" },
+  { title: "Webhooks", icon: <img alt="icon" src="/icons/24-bell.svg" />, href: "/webhooks" },
+  { title: "Split", icon: <img alt="icon" src="/icons/24-move-down-right.svg" />, href: "/split" },
+  {
+    title: "Activity",
+    icon: <img alt="icon" src="/icons/24-bullet-list.svg" />,
+    href: "/activity",
+  },
+  {
+    title: "Startup",
+    icon: <img alt="icon" src="/icons/24-circle-power-off.svg" />,
+    href: "/startup",
+  },
+  { title: "Settings", icon: <img alt="icon" src="/icons/24-gear.svg" />, href: "/settings" },
 ];
 
 interface AppSidebarProps {
@@ -169,26 +167,35 @@ export const AppSidebar = ({ isDark = true }: AppSidebarProps) => {
               {navItems.map((item) => {
                 const fullHref = getFullHref(item.href);
                 const isActive = pathname === fullHref || pathname.startsWith(fullHref + "/");
+
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.title} className="relative">
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active-item"
+                        className="absolute inset-0 rounded-md bg-zinc-800/80"
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 30,
+                        }}
+                      />
+                    )}
+
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       className={cn(
-                        "text-xs transition-colors",
-                        isDark
-                          ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
-                          : "text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900 data-[active=true]:bg-zinc-200/80 data-[active=true]:text-zinc-900"
+                        "relative z-10 text-xs text-zinc-400 transition-colors hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:text-zinc-100"
                       )}
                     >
                       <Link href={fullHref}>
-                        <item.icon />
+                        <span className="w-5">{item.icon}</span>
                         <span
-                          className={
-                            isActive
-                              ? "ml-2 uppercase opacity-100 hover:opacity-100"
-                              : "ml-2 uppercase opacity-50 hover:opacity-100"
-                          }
+                          className={cn(
+                            "ml-2 tracking-wider uppercase",
+                            isActive ? "opacity-100" : "opacity-50"
+                          )}
                         >
                           {item.title}
                         </span>
