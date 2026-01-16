@@ -1,33 +1,31 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTheme as useNextTheme } from "next-themes";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
-  BsSun,
-  BsMoon,
+  BsCheckCircle,
   BsCloudDownload,
   BsDownload,
-  BsTrash,
-  BsPlus,
-  BsCheckCircle,
   BsLock,
+  BsPlus,
+  BsTrash,
   BsUnlock,
 } from "react-icons/bs";
-import { useBackups, useBackupMutations } from "@/hooks/queries";
+import { useBackupMutations, useBackups } from "@/hooks/queries";
 import type { Backup } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 const BackupsPage = (): JSX.Element | null => {
   const params = useParams();
@@ -53,6 +51,7 @@ const BackupsPage = (): JSX.Element | null => {
     setMounted(true);
   }, []);
 
+  // TODO: Extract to utils
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 B";
     const k = 1024;
@@ -174,6 +173,7 @@ const BackupsPage = (): JSX.Element | null => {
     }
   };
 
+  // TODO: Extract to a utils
   const getStatusIcon = (status: Backup["status"]) => {
     switch (status) {
       case "COMPLETED":
@@ -197,33 +197,18 @@ const BackupsPage = (): JSX.Element | null => {
         <div className="mx-auto max-w-6xl">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between gap-4">
               <SidebarTrigger
                 className={cn(
                   "transition-all hover:scale-110 active:scale-95",
                   isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
                 )}
               />
-              <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )}
-                >
-                  BACKUPS
-                </h1>
-                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                  {server?.name || `Server ${serverId}`} • {completedBackups} / {backupLimit} backup
-                  {backupLimit !== 1 ? "s" : ""} used
-                </p>
-              </div>
             </div>
             <div className="flex items-center gap-2">
               {!backupsDisabled && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={openCreateModal}
                   disabled={!canCreateBackup}
                   title={
@@ -243,21 +228,8 @@ const BackupsPage = (): JSX.Element | null => {
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Create Backup</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
             </div>
           </div>
 
@@ -271,7 +243,6 @@ const BackupsPage = (): JSX.Element | null => {
                 )}
               >
                 <Spinner className="h-4 w-4" />
-                Loading backups...
               </div>
             ) : backupsDisabled ? (
               <div
@@ -303,38 +274,12 @@ const BackupsPage = (): JSX.Element | null => {
                     exit={{ opacity: 0, x: -100, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className={cn(
-                      "relative border p-6",
+                      "relative rounded-lg border p-6",
                       isDark
                         ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] hover:border-zinc-700"
                         : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 hover:border-zinc-400"
                     )}
                   >
-                    {/* Corner decorations */}
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
-                      )}
-                    />
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         {getStatusIcon(backup.status)}
@@ -396,17 +341,10 @@ const BackupsPage = (): JSX.Element | null => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <TextureButton
+                          variant="minimal"
                           onClick={() => handleToggleLock(backup)}
                           disabled={lock.isPending}
-                          className={cn(
-                            "p-2 transition-all",
-                            isDark
-                              ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                              : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                          )}
                           title={backup.isLocked ? "Unlock backup" : "Lock backup"}
                         >
                           {backup.isLocked ? (
@@ -414,59 +352,44 @@ const BackupsPage = (): JSX.Element | null => {
                           ) : (
                             <BsLock className="h-4 w-4" />
                           )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        </TextureButton>
+                        <TextureButton
+                          variant="minimal"
                           onClick={() => handleDownload(backup)}
                           disabled={getDownloadToken.isPending}
-                          className={cn(
-                            "gap-2 transition-all",
-                            isDark
-                              ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                              : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                          )}
                           title="Download backup"
                         >
                           <BsDownload className="h-4 w-4" />
                           <span className="text-xs tracking-wider uppercase">Download</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openRestoreModal(backup)}
-                          className={cn(
-                            "gap-2 transition-all",
-                            isDark
-                              ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                              : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                          )}
-                        >
+                        </TextureButton>
+                        <TextureButton variant="minimal" onClick={() => openRestoreModal(backup)}>
                           <BsCloudDownload className="h-4 w-4" />
                           <span className="text-xs tracking-wider uppercase">Restore</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        </TextureButton>
+                        <TextureButton
+                          variant="destructive"
                           disabled={backup.isLocked}
                           onClick={() => openDeleteModal(backup)}
-                          className={cn(
-                            "p-2 transition-all",
-                            backup.isLocked
-                              ? "cursor-not-allowed opacity-30"
-                              : isDark
-                                ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                                : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700"
-                          )}
                         >
                           <BsTrash className="h-4 w-4" />
-                        </Button>
+                        </TextureButton>
                       </div>
                     </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
             )}
+            <div>
+              <p
+                className={cn(
+                  "pt-2 text-center text-xs uppercase opacity-75",
+                  isDark ? "text-zinc-500" : "text-zinc-500"
+                )}
+              >
+                {completedBackups} / {backupLimit} backup
+                {backupLimit !== 1 ? "s" : ""} used
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -479,7 +402,6 @@ const BackupsPage = (): JSX.Element | null => {
         description="Create a new manual backup of your server."
         onSubmit={handleCreate}
         submitLabel={create.isPending ? "Creating..." : "Create Backup"}
-        isDark={isDark}
         isValid={!create.isPending}
         isLoading={create.isPending}
       >
@@ -521,7 +443,6 @@ const BackupsPage = (): JSX.Element | null => {
         onConfirm={handleRestore}
         confirmLabel="Restore"
         variant="danger"
-        isDark={isDark}
         isLoading={restore.isPending}
       />
 
@@ -534,7 +455,6 @@ const BackupsPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
         variant="danger"
-        isDark={isDark}
         isLoading={remove.isPending}
       />
     </div>

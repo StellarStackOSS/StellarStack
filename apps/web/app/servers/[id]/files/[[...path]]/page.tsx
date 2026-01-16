@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme as useNextTheme } from "next-themes";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  SortingState,
   useReactTable,
+  VisibilityState,
 } from "@tanstack/react-table";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
@@ -53,39 +53,39 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
-  BsSun,
-  BsMoon,
-  BsFolder,
-  BsFileEarmark,
-  BsUpload,
-  BsDownload,
-  BsTrash,
   BsArrowLeft,
-  BsPlus,
-  BsChevronUp,
   BsChevronDown,
   BsChevronExpand,
-  BsThreeDotsVertical,
-  BsPencil,
-  BsFileText,
-  BsHddFill,
-  BsX,
+  BsChevronUp,
+  BsClipboard,
   BsCloudUpload,
+  BsDownload,
   BsEye,
   BsEyeSlash,
+  BsFileEarmark,
+  BsFileText,
+  BsFolder,
+  BsHddFill,
+  BsPencil,
+  BsPlus,
   BsSearch,
   BsTerminal,
-  BsClipboard,
+  BsThreeDotsVertical,
+  BsTrash,
+  BsUpload,
+  BsX,
 } from "react-icons/bs";
-import { servers } from "@/lib/api";
 import type { FileInfo } from "@/lib/api";
+import { servers } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { useAuth } from "hooks/auth-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
-import { useUploads, type UploadProgress } from "@/components/upload-provider";
+import { useUploads } from "@/components/upload-provider";
+import { Input } from "@workspace/ui/components";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 interface FileItem {
   id: string;
@@ -1047,11 +1047,11 @@ const FilesPage = (): JSX.Element | null => {
   }
 
   return (
-    <div className="relative min-h-svh transition-colors">
+    <div className="relative transition-colors">
       {/* Background is now rendered in the layout for persistence */}
 
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="relative h-full p-6">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1062,19 +1062,7 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )}
-                >
-                  FILE MANAGER
-                </h1>
-                {/* Breadcrumb Navigation */}
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  <span className={cn("text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                    {server?.name || `Server ${serverId}`} -
-                  </span>
+                <div className="flex flex-wrap items-center gap-1">
                   <Link
                     href={getBasePath()}
                     className={cn(
@@ -1088,7 +1076,7 @@ const FilesPage = (): JSX.Element | null => {
                           : "text-zinc-500 hover:text-zinc-700"
                     )}
                   >
-                    /
+                    / home
                   </Link>
                   {breadcrumbSegments.map((segment, index) => {
                     const pathUpToHere = "/" + breadcrumbSegments.slice(0, index + 1).join("/");
@@ -1123,55 +1111,12 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className={cn(
-                "p-2 transition-all hover:scale-110 active:scale-95",
-                isDark
-                  ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-              )}
-            >
-              {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-            </Button>
           </div>
-
-          {/* Storage Indicator */}
           <div
             className={cn(
-              "relative mb-6 border p-4",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
             <div className="flex items-center gap-4">
               <BsHddFill className={cn("h-5 w-5", isDark ? "text-zinc-400" : "text-zinc-500")} />
               <div className="flex-1">
@@ -1208,86 +1153,32 @@ const FilesPage = (): JSX.Element | null => {
           {/* Toolbar */}
           <div
             className={cn(
-              "relative mb-6 border p-4",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   disabled={currentPath === "/"}
                   onClick={navigateUp}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-30"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30"
-                  )}
+                  className="w-fit"
                 >
                   <BsArrowLeft className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewFolder}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
-                >
+                </TextureButton>
+                <TextureButton variant="minimal" onClick={handleNewFile} className="w-fit">
                   <BsPlus className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New Folder
                   </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewFile}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
-                >
+                </TextureButton>
+                <TextureButton variant="minimal" onClick={handleNewFile} className="w-fit">
                   <BsFileText className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New File
                   </span>
-                </Button>
+                </TextureButton>
                 {selectedCount > 0 && (
                   <span className={cn("ml-2 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
                     {selectedCount} selected
@@ -1295,7 +1186,6 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {/* Search Input */}
                 <div className="relative">
                   <BsSearch
                     className={cn(
@@ -1303,7 +1193,7 @@ const FilesPage = (): JSX.Element | null => {
                       isDark ? "text-zinc-500" : "text-zinc-400"
                     )}
                   />
-                  <input
+                  <Input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1316,85 +1206,60 @@ const FilesPage = (): JSX.Element | null => {
                     )}
                   />
                   {searchQuery && (
-                    <button
+                    <Button
+                      size="icon"
+                      className="absolute right-0"
+                      variant="ghost"
                       onClick={() => setSearchQuery("")}
-                      className={cn(
-                        "absolute top-1/2 right-2 -translate-y-1/2 transition-colors",
-                        isDark
-                          ? "text-zinc-500 hover:text-zinc-300"
-                          : "text-zinc-400 hover:text-zinc-600"
-                      )}
                     >
                       <BsX className="h-4 w-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={() => setSftpModalOpen(true)}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
+                  className="w-fit"
                   title="SFTP Connection"
                 >
                   <BsTerminal className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </TextureButton>
+                <TextureButton
+                  variant="minimal"
                   onClick={handleUploadClick}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
+                  className="w-fit"
                   title="Upload Files"
                 >
                   <BsUpload className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </TextureButton>
+                <TextureButton
+                  variant="minimal"
                   onClick={handleToggleHiddenFiles}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                  )}
                   title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
+                  className="w-fit"
                 >
-                  {showHiddenFiles ? (
-                    <BsEye className="h-4 w-4" />
-                  ) : (
-                    <BsEyeSlash className="h-4 w-4" />
-                  )}
-                  <span className="text-xs tracking-wider uppercase">
+                  <div>
+                    {showHiddenFiles ? (
+                      <BsEye className="h-4 w-4" />
+                    ) : (
+                      <BsEyeSlash className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="text-xs tracking-wider uppercase">
                     {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                  </div>
+                </TextureButton>
+                <TextureButton
+                  variant="destructive"
                   disabled={selectedCount === 0}
                   onClick={handleBulkDelete}
-                  className={cn(
-                    "gap-2 transition-all",
-                    isDark
-                      ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300 disabled:opacity-30"
-                      : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700 disabled:opacity-30"
-                  )}
+                  className="w-fit"
                 >
                   <BsTrash className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Delete</span>
-                </Button>
+                </TextureButton>
               </div>
             </div>
           </div>
@@ -1402,121 +1267,106 @@ const FilesPage = (): JSX.Element | null => {
           {/* Data Table */}
           <div
             className={cn(
-              "relative border",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+              "relative rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 z-10 h-3 w-3 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 z-10 h-3 w-3 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 z-10 h-3 w-3 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 z-10 h-3 w-3 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
-            <div>
-              <Table>
-                <TableHeader className="sticky top-0 z-20">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow
-                      key={headerGroup.id}
-                      className={cn(
-                        "border-b",
-                        isDark
-                          ? "border-zinc-700/50 bg-[#0a0a0a] hover:bg-transparent"
-                          : "border-zinc-200 bg-white hover:bg-transparent"
-                      )}
-                    >
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          className={cn(
-                            "px-4 text-[10px] font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
-                          )}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
+            <Table>
+              <TableHeader className="sticky top-0 z-20">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
                         className={cn(
-                          "h-24 text-center text-sm",
+                          "px-4 text-[10px] font-medium tracking-wider uppercase",
                           isDark ? "text-zinc-500" : "text-zinc-400"
                         )}
                       >
-                        <div className="flex items-center justify-center gap-2">
-                          <Spinner className="h-4 w-4" />
-                          Loading files...
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <AnimatePresence mode="popLayout">
-                      {table.getRowModel().rows?.length ? (
-                        table.getRowModel().rows.map((row) => {
-                          const file = row.original;
-                          return (
-                            <ContextMenu key={row.original.id}>
-                              <ContextMenuTrigger asChild>
-                                <motion.tr
-                                  layout
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                                  transition={{ duration: 0.2, ease: "easeOut" }}
-                                  data-state={row.getIsSelected() && "selected"}
-                                  className={cn(
-                                    "cursor-pointer border-b transition-colors",
-                                    isDark
-                                      ? "border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50"
-                                      : "border-zinc-100 hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-200/50"
-                                  )}
-                                >
-                                  {row.getVisibleCells().map((cell) => (
-                                    <TableCell key={cell.id} className="px-4 py-3">
-                                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                    </TableCell>
-                                  ))}
-                                </motion.tr>
-                              </ContextMenuTrigger>
-                              <ContextMenuContent
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className={cn(
+                        "h-24 text-center text-sm",
+                        isDark ? "text-zinc-500" : "text-zinc-400"
+                      )}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Spinner className="h-4 w-4" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => {
+                        const file = row.original;
+                        return (
+                          <ContextMenu key={row.original.id}>
+                            <ContextMenuTrigger asChild>
+                              <motion.tr
+                                layout
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                data-state={row.getIsSelected() && "selected"}
                                 className={cn(
-                                  "min-w-[160px]",
+                                  "cursor-pointer border-b transition-colors",
                                   isDark
-                                    ? "border-zinc-700 bg-zinc-900"
-                                    : "border-zinc-200 bg-white"
+                                    ? "border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50"
+                                    : "border-zinc-100 hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-200/50"
                                 )}
                               >
+                                {row.getVisibleCells().map((cell) => (
+                                  <TableCell key={cell.id} className="px-4 py-3">
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  </TableCell>
+                                ))}
+                              </motion.tr>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent
+                              className={cn(
+                                "min-w-[160px]",
+                                isDark ? "border-zinc-700 bg-zinc-900" : "border-zinc-200 bg-white"
+                              )}
+                            >
+                              <ContextMenuItem
+                                onClick={() => handleRename(file)}
+                                className={cn(
+                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                                  isDark
+                                    ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                                    : "text-zinc-700 focus:bg-zinc-100"
+                                )}
+                              >
+                                <BsPencil className="h-3 w-3" />
+                                Rename
+                              </ContextMenuItem>
+                              <ContextMenuItem
+                                onClick={() => handleEditPermissions(file)}
+                                className={cn(
+                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                                  isDark
+                                    ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                                    : "text-zinc-700 focus:bg-zinc-100"
+                                )}
+                              >
+                                <BsTerminal className="h-3 w-3" />
+                                Permissions
+                              </ContextMenuItem>
+                              {file.type === "file" && isEditable(file.name) && (
                                 <ContextMenuItem
-                                  onClick={() => handleRename(file)}
+                                  onClick={() => handleEdit(file)}
                                   className={cn(
                                     "cursor-pointer gap-2 text-xs tracking-wider uppercase",
                                     isDark
@@ -1524,11 +1374,26 @@ const FilesPage = (): JSX.Element | null => {
                                       : "text-zinc-700 focus:bg-zinc-100"
                                   )}
                                 >
-                                  <BsPencil className="h-3 w-3" />
-                                  Rename
+                                  <BsFileText className="h-3 w-3" />
+                                  Edit
                                 </ContextMenuItem>
+                              )}
+                              {file.type === "file" && (
                                 <ContextMenuItem
-                                  onClick={() => handleEditPermissions(file)}
+                                  onClick={async () => {
+                                    try {
+                                      const { downloadUrl } = await servers.files.getDownloadToken(
+                                        serverId,
+                                        file.path
+                                      );
+                                      window.open(
+                                        `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
+                                        "_blank"
+                                      );
+                                    } catch (error) {
+                                      toast.error("Failed to generate download link");
+                                    }
+                                  }}
                                   className={cn(
                                     "cursor-pointer gap-2 text-xs tracking-wider uppercase",
                                     isDark
@@ -1536,87 +1401,48 @@ const FilesPage = (): JSX.Element | null => {
                                       : "text-zinc-700 focus:bg-zinc-100"
                                   )}
                                 >
-                                  <BsTerminal className="h-3 w-3" />
-                                  Permissions
+                                  <BsDownload className="h-3 w-3" />
+                                  Download
                                 </ContextMenuItem>
-                                {file.type === "file" && isEditable(file.name) && (
-                                  <ContextMenuItem
-                                    onClick={() => handleEdit(file)}
-                                    className={cn(
-                                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                      isDark
-                                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                        : "text-zinc-700 focus:bg-zinc-100"
-                                    )}
-                                  >
-                                    <BsFileText className="h-3 w-3" />
-                                    Edit
-                                  </ContextMenuItem>
+                              )}
+                              <ContextMenuSeparator
+                                className={isDark ? "bg-zinc-700" : "bg-zinc-200"}
+                              />
+                              <ContextMenuItem
+                                onClick={() => handleDelete(file)}
+                                className={cn(
+                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                                  isDark
+                                    ? "text-red-400 focus:bg-red-950/50 focus:text-red-300"
+                                    : "text-red-600 focus:bg-red-50"
                                 )}
-                                {file.type === "file" && (
-                                  <ContextMenuItem
-                                    onClick={async () => {
-                                      try {
-                                        const { downloadUrl } =
-                                          await servers.files.getDownloadToken(serverId, file.path);
-                                        window.open(
-                                          `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
-                                          "_blank"
-                                        );
-                                      } catch (error) {
-                                        toast.error("Failed to generate download link");
-                                      }
-                                    }}
-                                    className={cn(
-                                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                      isDark
-                                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                        : "text-zinc-700 focus:bg-zinc-100"
-                                    )}
-                                  >
-                                    <BsDownload className="h-3 w-3" />
-                                    Download
-                                  </ContextMenuItem>
-                                )}
-                                <ContextMenuSeparator
-                                  className={isDark ? "bg-zinc-700" : "bg-zinc-200"}
-                                />
-                                <ContextMenuItem
-                                  onClick={() => handleDelete(file)}
-                                  className={cn(
-                                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                    isDark
-                                      ? "text-red-400 focus:bg-red-950/50 focus:text-red-300"
-                                      : "text-red-600 focus:bg-red-50"
-                                  )}
-                                >
-                                  <BsTrash className="h-3 w-3" />
-                                  Delete
-                                </ContextMenuItem>
-                              </ContextMenuContent>
-                            </ContextMenu>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={columns.length}
-                            className={cn(
-                              "h-24 text-center text-sm",
-                              isDark ? "text-zinc-500" : "text-zinc-400"
-                            )}
-                          >
-                            {searchQuery
-                              ? `No files matching "${searchQuery}" found.`
-                              : "No files found."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </AnimatePresence>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                              >
+                                <BsTrash className="h-3 w-3" />
+                                Delete
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className={cn(
+                            "h-24 text-center text-sm",
+                            isDark ? "text-zinc-500" : "text-zinc-400"
+                          )}
+                        >
+                          {searchQuery
+                            ? `No files matching "${searchQuery}" found.`
+                            : "No files found."}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </AnimatePresence>
+                )}
+              </TableBody>
+            </Table>
           </div>
 
           {/* Footer */}
@@ -1626,7 +1452,6 @@ const FilesPage = (): JSX.Element | null => {
         </div>
       </div>
 
-      {/* Drag and Drop Overlay */}
       <AnimatePresence>
         {isDraggingOver && (
           <motion.div
@@ -1677,7 +1502,6 @@ const FilesPage = (): JSX.Element | null => {
         )}
       </AnimatePresence>
 
-      {/* Delete Single File Modal */}
       <ConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
@@ -1686,7 +1510,6 @@ const FilesPage = (): JSX.Element | null => {
         confirmLabel="Delete"
         variant="danger"
         onConfirm={confirmDelete}
-        isDark={isDark}
       />
 
       {/* Bulk Delete Modal */}
@@ -1698,7 +1521,6 @@ const FilesPage = (): JSX.Element | null => {
         confirmLabel="Delete All"
         variant="danger"
         onConfirm={confirmBulkDelete}
-        isDark={isDark}
       />
 
       {/* Rename Modal */}
@@ -1709,10 +1531,9 @@ const FilesPage = (): JSX.Element | null => {
         description={`Enter a new name for "${fileToRename?.name}"`}
         submitLabel="Rename"
         onSubmit={confirmRename}
-        isDark={isDark}
         isValid={newFileName.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFileName}
           onChange={(e) => setNewFileName(e.target.value)}
@@ -1734,7 +1555,6 @@ const FilesPage = (): JSX.Element | null => {
         description="Enter a name for the new folder"
         submitLabel="Create"
         onSubmit={confirmNewFolder}
-        isDark={isDark}
         isValid={newFolderName.trim().length > 0}
       >
         <input
@@ -1759,10 +1579,9 @@ const FilesPage = (): JSX.Element | null => {
         description="Enter a name for the new file"
         submitLabel="Create"
         onSubmit={confirmNewFile}
-        isDark={isDark}
         isValid={newFileNameInput.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFileNameInput}
           onChange={(e) => setNewFileNameInput(e.target.value)}
@@ -2290,26 +2109,21 @@ const FilesPage = (): JSX.Element | null => {
         description="Upload files to the current directory."
         onSubmit={confirmUpload}
         submitLabel={isUploading ? "Uploading..." : "Upload"}
-        isDark={isDark}
         isValid={uploadFiles.length > 0 && !isUploading}
       >
         <div className="space-y-4">
-          {/* Drop zone */}
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             className={cn(
-              "relative border-2 border-dashed p-8 text-center transition-colors",
-              isDark
-                ? "border-zinc-700 bg-zinc-900/30 hover:border-zinc-500"
-                : "border-zinc-300 bg-zinc-50 hover:border-zinc-400"
+              "relative rounded-lg border-2 border-dashed border-zinc-700/50 bg-zinc-900/30 p-8 text-center transition-colors hover:border-zinc-500"
             )}
           >
-            <input
+            <Input
               type="file"
               multiple
               onChange={handleFileSelect}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              className="absolute inset-0 h-full w-full cursor-pointer rounded-lg opacity-0"
             />
             <BsCloudUpload
               className={cn("mx-auto mb-3 h-10 w-10", isDark ? "text-zinc-600" : "text-zinc-400")}

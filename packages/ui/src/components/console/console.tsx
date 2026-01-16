@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { cn } from "@workspace/ui/lib/utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
@@ -49,9 +49,7 @@ export const Console = ({
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number } | null>(
     null
   );
-  const timestampColumnRef = useRef<HTMLTableCellElement>(null);
 
-  // Auto-scroll to bottom when new lines are added (smooth)
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTo({

@@ -9,36 +9,36 @@ const buttonVariantsOuter = cva("", {
   variants: {
     variant: {
       primary:
-        "transition-all duration-300 w-full border border-[1px] dark:border-[2px] border-black/10 dark:border-black bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border border-[1px] dark:border-[2px] border-black/10 dark:border-black bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px] ease-in-out",
 
       accent:
-        "transition-all duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px] ease-in-out",
 
       destructive:
-        "transition-all duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px] ease-in-out",
 
       secondary:
-        "transition-all duration-300 w-full border-[1px] dark:border-[2px] border-black/20 bg-white/50 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/20 bg-white/50 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px] ease-in-out",
 
       minimal:
-        "transition-all duration-300 group w-full border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group w-full border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
 
-      icon: "transition-all duration-300 group rounded-full border border-black/10 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/50 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-700 dark:hover:to-neutral-600 active:bg-neutral-200 dark:active:bg-neutral-800",
+      icon: "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group rounded-full border border-black/10 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/50 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-700 dark:hover:to-neutral-600 active:bg-neutral-200 dark:active:bg-neutral-800",
 
       ghost:
-        "transition-all duration-300 w-full border border-transparent bg-transparent p-[1px] hover:bg-neutral-100/40 dark:hover:bg-neutral-800/40",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border border-transparent bg-transparent p-[1px] hover:bg-neutral-100/40 dark:hover:bg-neutral-800/40",
 
       success:
-        "transition-all duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px] ease-in-out",
 
       warning:
-        "transition-all duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px] ease-in-out",
 
       disabled:
-        "w-full border border-black/10 dark:border-neutral-900 bg-neutral-200/60 dark:bg-neutral-800/60 p-[1px] opacity-60 cursor-not-allowed pointer-events-none",
+        "w-full border disabled:opacity-50 disabled:cursor-not-allowed  border-black/10 dark:border-neutral-900 bg-neutral-200/60 dark:bg-neutral-800/60 p-[1px] opacity-60 cursor-not-allowed pointer-events-none",
     },
     size: {
-      sm: "rounded-[2px]",
+      sm: "rounded-[8px] text-xs",
       default: "rounded-[8px]",
       lg: "rounded-[12px]",
       icon: "rounded-full",
@@ -63,10 +63,10 @@ const innerDivVariants = cva("w-full h-full flex items-center justify-center", {
         "transition-all duration-300 gap-2 bg-gradient-to-b from-red-400/60 to-red-500/60 text-sm text-white/90 hover:from-red-400/70 hover:to-red-600/70 active:from-red-400/80 active:to-red-600/80",
 
       secondary:
-        "transition-all duration-300 bg-gradient-to-b from-neutral-100/80 to-neutral-200/50 dark:from-neutral-800 dark:to-neutral-700/50 text-sm hover:from-neutral-200/40 hover:to-neutral-300/60 active:from-neutral-200/60 active:to-neutral-300/70",
+        "transition-all duration-300 gap-2 bg-gradient-to-b from-neutral-100/80 to-neutral-200/50 dark:from-neutral-800 dark:to-neutral-700/50 text-sm hover:from-neutral-200/40 hover:to-neutral-300/60 active:from-neutral-200/60 active:to-neutral-300/70",
 
       minimal:
-        "transition-all duration-300 bg-gradient-to-b from-white to-neutral-50/50 dark:from-neutral-800 dark:to-neutral-700/50 text-sm group-hover:from-neutral-50/50 group-hover:to-neutral-100/60 dark:group-hover:from-neutral-700 dark:group-hover:to-neutral-700/60 group-active:from-neutral-100/60 group-active:to-neutral-100/90",
+        "transition-all gap-2 duration-300 bg-gradient-to-b from-white to-neutral-50/50 dark:from-neutral-800 dark:to-neutral-700/50 text-sm group-hover:from-neutral-50/50 group-hover:to-neutral-100/60 dark:group-hover:from-neutral-700 dark:group-hover:to-neutral-700/60 group-active:from-neutral-100/60 group-active:to-neutral-100/90",
 
       icon: "transition-all duration-300 bg-gradient-to-b from-white to-neutral-50/50 dark:from-neutral-800 dark:to-neutral-700/50 rounded-full group-active:bg-neutral-200 dark:group-active:bg-neutral-800",
 
@@ -82,7 +82,7 @@ const innerDivVariants = cva("w-full h-full flex items-center justify-center", {
       disabled: "bg-transparent text-sm text-neutral-400 dark:text-neutral-500",
     },
     size: {
-      sm: "text-xs rounded-[4px] px-4 py-1",
+      sm: "text-xs rounded-[10px] px-4 py-1",
       default: "text-sm rounded-[10px] px-4 py-2",
       lg: "text-base rounded-[10px] px-4 py-2",
       icon: "rounded-full p-1",
