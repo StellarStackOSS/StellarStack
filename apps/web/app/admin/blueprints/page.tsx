@@ -11,7 +11,6 @@ import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {FormModal} from "@workspace/ui/components/form-modal";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {
-  ArrowLeftIcon,
   DownloadIcon,
   EditIcon,
   EyeIcon,
@@ -19,20 +18,19 @@ import {
   ImageIcon,
   PackageIcon,
   PlusIcon,
-  SearchIcon,
   TerminalIcon,
   TrashIcon,
   UploadIcon,
   UserIcon,
   VariableIcon
 } from "lucide-react";
+import {AdminPageHeader, AdminSearchBar, AdminCard, AdminEmptyState} from "components/AdminPageComponents";
 import {useBlueprintMutations, useBlueprints} from "@/hooks/queries";
 import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import type {Blueprint, CreateBlueprintData, PterodactylEgg} from "@/lib/api";
 import {toast} from "sonner";
 
 export default function BlueprintsPage() {
-  const router = useRouter();
   const { mounted, isDark, inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
@@ -192,78 +190,37 @@ export default function BlueprintsPage() {
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
-                  )}
-                >
-                  <ArrowLeftIcon className="w-4 h-4" />
-                </Button>
-                <div>
-                  <h1 className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )}>
-                    BLUEPRINTS
-                  </h1>
-                  <p className={cn("text-sm mt-1", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                    Docker container templates
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsImportModalOpen(true)}
-                  variant="outline"
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                    isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
-                  )}
-                >
-                  <UploadIcon className="w-4 h-4" />
-                  Import Egg
-                </Button>
-                <Button
-                  onClick={() => { resetForm(); setIsModalOpen(true); }}
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                    isDark
-                      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                      : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-                  )}
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Add Blueprint
-                </Button>
-              </div>
+            <AdminPageHeader
+              title="BLUEPRINTS"
+              description="Docker container templates"
+              isDark={isDark}
+              action={{
+                label: "Add Blueprint",
+                icon: <PlusIcon className="w-4 h-4" />,
+                onClick: () => { resetForm(); setIsModalOpen(true); },
+              }}
+            />
+
+            <div className="flex gap-2 mb-6">
+              <Button
+                onClick={() => setIsImportModalOpen(true)}
+                variant="outline"
+                className={cn(
+                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
+                  isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                )}
+              >
+                <UploadIcon className="w-4 h-4" />
+                Import Egg
+              </Button>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <SearchIcon className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                isDark ? "text-zinc-500" : "text-zinc-400"
-              )} />
-              <input
-                type="text"
-                placeholder="Search blueprints..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none",
-                  isDark
-                    ? "bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
-                    : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
-                )}
-              />
-            </div>
+            <AdminSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search blueprints..."
+              isDark={isDark}
+            />
           </FadeIn>
 
           {/* Blueprints Grid */}
@@ -274,12 +231,10 @@ export default function BlueprintsPage() {
                   <Spinner className="w-6 h-6" />
                 </div>
               ) : filteredBlueprints.length === 0 ? (
-                <div className={cn(
-                  "col-span-full text-center py-12 border",
-                  isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
-                )}>
-                  {searchQuery ? "No blueprints match your search." : "No blueprints configured. Add your first blueprint."}
-                </div>
+                <AdminEmptyState
+                  message={searchQuery ? "No blueprints match your search." : "No blueprints configured. Add your first blueprint."}
+                  isDark={isDark}
+                />
               ) : (
                 filteredBlueprints.map((blueprint) => (
                   <div

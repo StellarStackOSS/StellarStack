@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useTheme as useNextTheme } from "next-themes";
+import { useState, type JSX } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { BsSun, BsMoon, BsBell, BsCheck, BsCheckAll, BsExclamationTriangle, BsInfoCircle, BsServer, BsShieldExclamation } from "react-icons/bs";
+import { BsBell, BsCheck, BsCheckAll, BsExclamationTriangle, BsInfoCircle, BsServer, BsShieldExclamation } from "react-icons/bs";
+import { useAccountTheme } from "@/hooks/useAccountTheme";
+import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
 
 type NotificationType = "info" | "warning" | "error" | "success" | "server" | "security";
 
@@ -82,15 +83,8 @@ const mockNotifications: Notification[] = [
 ];
 
 const NotificationsPage = (): JSX.Element | null => {
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, setTheme } = useAccountTheme();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted) return null;
 
@@ -182,19 +176,7 @@ const NotificationsPage = (): JSX.Element | null => {
                   <span className="text-xs uppercase tracking-wider">Mark All Read</span>
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95 p-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
-                )}
-              >
-                {isDark ? <BsSun className="w-4 h-4" /> : <BsMoon className="w-4 h-4" />}
-              </Button>
+              <ThemeToggleButton isDark={isDark} onToggle={() => setTheme(isDark ? "light" : "dark")} />
             </div>
           </div>
 
@@ -205,11 +187,7 @@ const NotificationsPage = (): JSX.Element | null => {
               ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
               : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
           )}>
-            {/* Corner decorations */}
-            <div className={cn("absolute top-0 left-0 w-3 h-3 border-t border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute top-0 right-0 w-3 h-3 border-t border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l", isDark ? "border-zinc-500" : "border-zinc-400")} />
-            <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r", isDark ? "border-zinc-500" : "border-zinc-400")} />
+            <CornerDecorations isDark={isDark} />
 
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">

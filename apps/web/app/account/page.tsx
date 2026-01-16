@@ -1,31 +1,31 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Input} from "@workspace/ui/components/input";
+import { type JSX, useEffect, useState } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Input } from "@workspace/ui/components/input";
 import {
   BsCheckCircle,
   BsDiscord,
   BsGithub,
   BsGoogle,
   BsKey,
-  BsMoon,
   BsPlus,
   BsShieldCheck,
-  BsSun,
   BsTrash,
 } from "react-icons/bs";
-import {authClient, useSession} from "@/lib/auth-client";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {toast} from "sonner";
+import { authClient, useSession } from "@/lib/auth-client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import QRCode from "qrcode";
+import { useAccountTheme } from "@/hooks/useAccountTheme";
+import { AccountSectionCard, SectionTitle } from "@/components/AccountPageComponents";
+import { ThemeToggleButton } from "@/components/ServerPageComponents";
+import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { FloatingDots } from "@workspace/ui/components/floating-particles";
 
 interface Passkey {
   id: string;
@@ -35,8 +35,7 @@ interface Passkey {
 }
 
 const AccountPage = (): JSX.Element | null => {
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, setTheme } = useAccountTheme();
   const queryClient = useQueryClient();
   const { data: session, isPending: sessionLoading } = useSession();
 
@@ -61,10 +60,6 @@ const AccountPage = (): JSX.Element | null => {
   const [selectedPasskey, setSelectedPasskey] = useState<Passkey | null>(null);
   const [newPasskeyName, setNewPasskeyName] = useState("");
   const [disableTwoFactorModalOpen, setDisableTwoFactorModalOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -93,8 +88,6 @@ const AccountPage = (): JSX.Element | null => {
       setPasskeys(passkeyData as unknown as Passkey[]);
     }
   }, [passkeyData]);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   if (!mounted || sessionLoading) return null;
 
@@ -258,63 +251,12 @@ const AccountPage = (): JSX.Element | null => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className={cn(
-                "p-2 transition-all hover:scale-110 active:scale-95",
-                isDark
-                  ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-              )}
-            >
-              {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-            </Button>
+            <ThemeToggleButton isDark={isDark} onToggle={() => setTheme(isDark ? "light" : "dark")} />
           </div>
 
           {/* Profile Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
-            <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase",
-                isDark ? "text-zinc-300" : "text-zinc-700"
-              )}
-            >
-              Profile
-            </h2>
+          <AccountSectionCard isDark={isDark}>
+            <SectionTitle isDark={isDark}>Profile</SectionTitle>
 
             <div className="space-y-4">
               <div>
@@ -389,50 +331,11 @@ const AccountPage = (): JSX.Element | null => {
                 <span className="text-xs tracking-wider uppercase">Update Profile</span>
               )}
             </Button>
-          </div>
+          </AccountSectionCard>
 
           {/* Connected Accounts Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
-            <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase",
-                isDark ? "text-zinc-300" : "text-zinc-700"
-              )}
-            >
-              Connected Accounts
-            </h2>
+          <AccountSectionCard isDark={isDark}>
+            <SectionTitle isDark={isDark}>Connected Accounts</SectionTitle>
 
             <p className={cn("mb-4 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
               Connect your social accounts for quick sign-in.
@@ -482,53 +385,14 @@ const AccountPage = (): JSX.Element | null => {
                 <span className="text-xs tracking-wider uppercase">Discord</span>
               </Button>
             </div>
-          </div>
+          </AccountSectionCard>
 
           {/* Passkeys Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
+          <AccountSectionCard isDark={isDark}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BsKey className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-600")} />
-                <h2
-                  className={cn(
-                    "text-sm font-medium tracking-wider uppercase",
-                    isDark ? "text-zinc-300" : "text-zinc-700"
-                  )}
-                >
-                  Passkeys
-                </h2>
+                <SectionTitle isDark={isDark} className="mb-0">Passkeys</SectionTitle>
               </div>
               <Button
                 variant="outline"
@@ -596,54 +460,15 @@ const AccountPage = (): JSX.Element | null => {
                 ))
               )}
             </div>
-          </div>
+          </AccountSectionCard>
 
           {/* Two-Factor Authentication Section */}
-          <div
-            className={cn(
-              "relative border p-6",
-              isDark
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                isDark ? "border-zinc-500" : "border-zinc-400"
-              )}
-            />
-
+          <AccountSectionCard isDark={isDark}>
             <div className="mb-6 flex items-center gap-2">
               <BsShieldCheck
                 className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-600")}
               />
-              <h2
-                className={cn(
-                  "text-sm font-medium tracking-wider uppercase",
-                  isDark ? "text-zinc-300" : "text-zinc-700"
-                )}
-              >
-                Two-Factor Authentication
-              </h2>
+              <SectionTitle isDark={isDark} className="mb-0">Two-Factor Authentication</SectionTitle>
             </div>
 
             <p className={cn("mb-4 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
@@ -796,7 +621,7 @@ const AccountPage = (): JSX.Element | null => {
                 </div>
               </div>
             )}
-          </div>
+          </AccountSectionCard>
         </div>
       </div>
 

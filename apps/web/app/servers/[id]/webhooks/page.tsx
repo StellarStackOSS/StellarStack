@@ -6,14 +6,16 @@ import {useTheme as useNextTheme} from "next-themes";
 import {cn} from "@workspace/ui/lib/utils";
 import {Button} from "@workspace/ui/components/button";
 import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {FormModal} from "@workspace/ui/components/form-modal";
-import {BsCheck2, BsGlobe, BsMoon, BsPencil, BsPlus, BsSun, BsTrash,} from "react-icons/bs";
+import {BsGlobe, BsPencil, BsPlus, BsTrash,} from "react-icons/bs";
 import {TbWand} from "react-icons/tb";
 import {useServer} from "components/ServerStatusPages/server-provider";
 import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
 import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {PageHeader, EmptyState, CardWithCorners, StatusBadge, FormFieldLabel} from "components/ServerPageComponents";
+import {WebhookEventSelector} from "./WebhookEventSelector";
+import {WebhookUrlField} from "./WebhookUrlField";
 import {type Webhook, type WebhookEvent, webhooks} from "@/lib/api";
 import {toast} from "sonner";
 
@@ -201,30 +203,11 @@ const WebhooksPage = (): JSX.Element | null => {
 
       <div className="relative p-8">
         <div className="mx-auto max-w-6xl">
-          {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
-                )}
-              />
-              <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
-                  )}
-                >
-                  WEBHOOKS
-                </h1>
-                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                  Server {serverId} • {webhookList.length} webhooks
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
+          <PageHeader
+            title="WEBHOOKS"
+            subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
+            isDark={isDark}
+            actions={
               <Button
                 variant="outline"
                 size="sm"
@@ -239,21 +222,9 @@ const WebhooksPage = (): JSX.Element | null => {
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Webhook</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
+            }
+            onThemeToggle={() => setTheme(isDark ? "light" : "dark")}
+          />
 
           {/* Loading State */}
           {loading ? (
@@ -261,108 +232,18 @@ const WebhooksPage = (): JSX.Element | null => {
               Loading webhooks...
             </div>
           ) : webhookList.length === 0 ? (
-            <div
-              className={cn(
-                "relative border p-8 text-center",
-                isDark
-                  ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                  : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-              )}
-            >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-
-              <BsGlobe
-                className={cn("mx-auto mb-4 h-12 w-12", isDark ? "text-zinc-600" : "text-zinc-400")}
-              />
-              <h3
-                className={cn(
-                  "mb-2 text-lg font-medium",
-                  isDark ? "text-zinc-300" : "text-zinc-700"
-                )}
-              >
-                No Webhooks
-              </h3>
-              <p className={cn("mb-4 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                Add a webhook to receive notifications about server events.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openAddModal}
-                className={cn(
-                  "gap-2",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
-                )}
-              >
-                <BsPlus className="h-4 w-4" />
-                Add Webhook
-              </Button>
-            </div>
+            <EmptyState
+              icon={<BsGlobe className="h-12 w-12" />}
+              title="No Webhooks"
+              description="Add a webhook to receive notifications about server events."
+              action={{ label: "Add Webhook", onClick: openAddModal }}
+              isDark={isDark}
+            />
           ) : (
             /* Webhooks List */
             <div className="space-y-4">
               {webhookList.map((webhook) => (
-                <div
-                  key={webhook.id}
-                  className={cn(
-                    "relative border p-6 transition-all",
-                    isDark
-                      ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                      : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-                  )}
-                >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      isDark ? "border-zinc-500" : "border-zinc-400"
-                    )}
-                  />
-
+                <CardWithCorners key={webhook.id} isDark={isDark}>
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex items-center gap-3">
@@ -387,35 +268,20 @@ const WebhooksPage = (): JSX.Element | null => {
                           >
                             {webhook.url}
                           </span>
-                          <span
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                              webhook.enabled
-                                ? isDark
-                                  ? "border-green-700/50 text-green-400"
-                                  : "border-green-300 text-green-600"
-                                : isDark
-                                  ? "border-zinc-700 text-zinc-500"
-                                  : "border-zinc-300 text-zinc-400"
-                            )}
-                          >
-                            {webhook.enabled ? "Active" : "Disabled"}
-                          </span>
+                          <StatusBadge
+                            label={webhook.enabled ? "Active" : "Disabled"}
+                            color={webhook.enabled ? "green" : "zinc"}
+                            isDark={isDark}
+                          />
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {webhook.events.map((event) => (
-                          <span
+                          <StatusBadge
                             key={event}
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                              isDark
-                                ? "border-zinc-700 text-zinc-400"
-                                : "border-zinc-300 text-zinc-500"
-                            )}
-                          >
-                            {event.replace(/_/g, " ")}
-                          </span>
+                            label={event.replace(/_/g, " ")}
+                            isDark={isDark}
+                          />
                         ))}
                       </div>
                     </div>
@@ -462,7 +328,7 @@ const WebhooksPage = (): JSX.Element | null => {
                       </Button>
                     </div>
                   </div>
-                </div>
+                </CardWithCorners>
               ))}
             </div>
           )}
@@ -480,91 +346,15 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} isDark={isDark} />
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Discord Webhook URL
-            </label>
-            <Input
-              type="url"
-              value={formUrl}
-              onChange={(e) => setFormUrl(e.target.value)}
-              placeholder="https://discordapp.com/api/webhooks/..."
-              className={cn(
-                "font-mono text-sm transition-all",
-                isDark
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
-              )}
+            <FormFieldLabel label="Events" isDark={isDark} />
+            <WebhookEventSelector
+              events={webhookEvents}
+              selectedEvents={formEvents}
+              onToggle={toggleEvent}
+              isDark={isDark}
             />
-            <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
-              Get this from your Discord server's webhook settings
-            </p>
-          </div>
-          <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Events
-            </label>
-            <div className="space-y-2">
-              {webhookEvents.map((event) => (
-                <button
-                  key={event.value}
-                  type="button"
-                  onClick={() => toggleEvent(event.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
-                    formEvents.includes(event.value)
-                      ? isDark
-                        ? "border-zinc-500 bg-zinc-800"
-                        : "border-zinc-400 bg-zinc-100"
-                      : isDark
-                        ? "border-zinc-700 hover:border-zinc-600"
-                        : "border-zinc-300 hover:border-zinc-400"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded border",
-                      formEvents.includes(event.value)
-                        ? isDark
-                          ? "border-green-500 bg-green-500/20"
-                          : "border-green-400 bg-green-50"
-                        : isDark
-                          ? "border-zinc-600"
-                          : "border-zinc-300"
-                    )}
-                  >
-                    {formEvents.includes(event.value) && (
-                      <BsCheck2
-                        className={cn("h-3 w-3", isDark ? "text-green-400" : "text-green-600")}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div
-                      className={cn(
-                        "text-sm font-medium",
-                        isDark ? "text-zinc-200" : "text-zinc-800"
-                      )}
-                    >
-                      {event.label}
-                    </div>
-                    <div className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                      {event.description}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </FormModal>
@@ -580,40 +370,9 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} isDark={isDark} />
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Discord Webhook URL
-            </label>
-            <Input
-              type="url"
-              value={formUrl}
-              onChange={(e) => setFormUrl(e.target.value)}
-              placeholder="https://discordapp.com/api/webhooks/..."
-              className={cn(
-                "font-mono text-sm transition-all",
-                isDark
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
-              )}
-            />
-            <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
-              Get this from your Discord server's webhook settings
-            </p>
-          </div>
-          <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Status
-            </label>
+            <FormFieldLabel label="Status" isDark={isDark} />
             <button
               type="button"
               onClick={() => setFormEnabled(!formEnabled)}
@@ -653,65 +412,13 @@ const WebhooksPage = (): JSX.Element | null => {
             </button>
           </div>
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
-              )}
-            >
-              Events
-            </label>
-            <div className="space-y-2">
-              {webhookEvents.map((event) => (
-                <button
-                  key={event.value}
-                  type="button"
-                  onClick={() => toggleEvent(event.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
-                    formEvents.includes(event.value)
-                      ? isDark
-                        ? "border-zinc-500 bg-zinc-800"
-                        : "border-zinc-400 bg-zinc-100"
-                      : isDark
-                        ? "border-zinc-700 hover:border-zinc-600"
-                        : "border-zinc-300 hover:border-zinc-400"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded border",
-                      formEvents.includes(event.value)
-                        ? isDark
-                          ? "border-green-500 bg-green-500/20"
-                          : "border-green-400 bg-green-50"
-                        : isDark
-                          ? "border-zinc-600"
-                          : "border-zinc-300"
-                    )}
-                  >
-                    {formEvents.includes(event.value) && (
-                      <BsCheck2
-                        className={cn("h-3 w-3", isDark ? "text-green-400" : "text-green-600")}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div
-                      className={cn(
-                        "text-sm font-medium",
-                        isDark ? "text-zinc-200" : "text-zinc-800"
-                      )}
-                    >
-                      {event.label}
-                    </div>
-                    <div className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
-                      {event.description}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <FormFieldLabel label="Events" isDark={isDark} />
+            <WebhookEventSelector
+              events={webhookEvents}
+              selectedEvents={formEvents}
+              onToggle={toggleEvent}
+              isDark={isDark}
+            />
           </div>
         </div>
       </FormModal>

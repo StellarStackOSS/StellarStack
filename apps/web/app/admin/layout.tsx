@@ -8,7 +8,7 @@ import { useAuth } from "hooks/auth-provider";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { cn } from "@workspace/ui/lib/utils";
-import { AdminSidebar } from "@/components/AdminSidebar/AdminSidebar";
+import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
@@ -73,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       <PersistentBackground isDark={isDark} />
       <SidebarProvider>
-        <AdminSidebar isDark={isDark} />
+        <UnifiedSidebar isDark={isDark} />
         <SidebarInset
           className={cn("transition-colors", isDark ? "bg-transparent" : "bg-transparent")}
         >
