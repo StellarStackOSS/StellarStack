@@ -344,29 +344,37 @@ pub async fn wait_for_stop(
     Ok(())
 }
 
-/// Wait for container to exit
+/// Wait for container to exit using polling
 pub async fn wait_for_container_exit(env: &DockerEnvironment, _ctx: CancellationToken) -> EnvironmentResult<()> {
     let container_name = env.container_name();
+    let poll_interval = Duration::from_millis(100); // Poll every 100ms
+    let max_polls = 600; // 60 seconds total (100ms * 600)
 
-    let options = WaitContainerOptions {
-        condition: "not-running",
-    };
-
-    let mut stream = env.docker().wait_container(container_name, Some(options));
-
-    while let Some(result) = stream.next().await {
-        match result {
-            Ok(response) => {
-                debug!("Container {} exited with code {}", container_name, response.status_code);
+    for _ in 0..max_polls {
+        match env.is_running().await {
+            Ok(running) => {
+                if !running {
+                    debug!("Container {} has exited", container_name);
+                    return Ok(());
+                }
+            }
+            Err(EnvironmentError::ContainerNotFound(_)) => {
+                // Container doesn't exist anymore - it's definitely stopped
+                debug!("Container {} not found - already removed", container_name);
                 return Ok(());
             }
             Err(e) => {
-                return Err(EnvironmentError::Docker(e));
+                warn!("Error checking container status: {}", e);
+                // Continue polling on transient errors
             }
         }
+
+        tokio::time::sleep(poll_interval).await;
     }
 
-    Ok(())
+    // Timeout reached
+    warn!("Timeout waiting for container {} to exit after 60 seconds", container_name);
+    Err(EnvironmentError::Timeout)
 }
 
 /// Terminate the container with a signal
