@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FadeIn } from "@workspace/ui/components/fade-in";
@@ -28,7 +27,6 @@ const InputField = ({
   value,
   onChange,
   placeholder,
-  isDark,
   disabled,
   helperText,
 }: {
@@ -37,13 +35,12 @@ const InputField = ({
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  isDark: boolean;
   disabled?: boolean;
   helperText?: string;
 }) => {
   return (
     <div>
-      <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
+      <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
         {label}
       </label>
       <input
@@ -53,14 +50,11 @@ const InputField = ({
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
-          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50",
-          isDark
-            ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500"
-            : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500"
+          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500",
         )}
       />
       {helperText && (
-        <p className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>{helperText}</p>
+        <p className={cn("text-xs mt-1 text-zinc-500")}>{helperText}</p>
       )}
     </div>
   );
@@ -70,13 +64,11 @@ const Toggle = ({
   label,
   checked,
   onChange,
-  isDark,
   disabled,
 }: {
   label: string;
   checked: boolean;
   onChange: (value: boolean) => void;
-  isDark: boolean;
   disabled?: boolean;
 }) => {
   return (
@@ -85,12 +77,8 @@ const Toggle = ({
         className={cn(
           "relative w-10 h-5 rounded-full transition-colors",
           checked
-            ? isDark
-              ? "bg-green-600"
-              : "bg-green-500"
-            : isDark
-              ? "bg-zinc-700"
-              : "bg-zinc-300",
+            ? "bg-green-600"
+            : "bg-zinc-700",
           disabled && "opacity-50 cursor-not-allowed"
         )}
         onClick={() => !disabled && onChange(!checked)}
@@ -102,7 +90,7 @@ const Toggle = ({
           )}
         />
       </div>
-      <span className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}>{label}</span>
+      <span className={cn("text-sm text-zinc-300")}>{label}</span>
     </label>
   );
 };
@@ -112,19 +100,17 @@ const Select = ({
   value,
   onChange,
   options,
-  isDark,
   disabled,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
-  isDark: boolean;
   disabled?: boolean;
 }) => {
   return (
     <div>
-      <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
+      <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
         {label}
       </label>
       <select
@@ -132,10 +118,7 @@ const Select = ({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className={cn(
-          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50",
-          isDark
-            ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500"
-            : "bg-white border-zinc-300 text-zinc-900 focus:border-zinc-500"
+          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50 bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500",
         )}
       >
         {options.map((opt) => (
@@ -153,7 +136,6 @@ const SettingsSection = ({
   description,
   icon: Icon,
   children,
-  isDark,
   onSave,
   onTest,
   isSaving,
@@ -164,7 +146,6 @@ const SettingsSection = ({
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
-  isDark: boolean;
   onSave: () => void;
   onTest?: () => void;
   isSaving: boolean;
@@ -174,22 +155,21 @@ const SettingsSection = ({
   return (
     <div
       className={cn(
-        "relative p-6 border",
-        isDark ? "bg-zinc-900/50 border-zinc-700/50" : "bg-white border-zinc-200"
+        "relative p-6 border bg-zinc-900/50 border-zinc-700/50",
       )}
     >
       {/* Corner accents */}
-      <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", isDark ? "border-zinc-700" : "border-zinc-300")} />
-      <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", isDark ? "border-zinc-700" : "border-zinc-300")} />
-      <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", isDark ? "border-zinc-700" : "border-zinc-300")} />
-      <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", isDark ? "border-zinc-700" : "border-zinc-300")} />
+      <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700")} />
+      <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700")} />
+      <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700")} />
+      <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700")} />
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <Icon className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-600")} />
+        <Icon className={cn("w-5 h-5 text-zinc-400")} />
         <div>
-          <h2 className={cn("font-medium", isDark ? "text-zinc-100" : "text-zinc-800")}>{title}</h2>
-          <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>{description}</p>
+          <h2 className={cn("font-medium text-zinc-100")}>{title}</h2>
+          <p className={cn("text-xs text-zinc-500")}>{description}</p>
         </div>
       </div>
 
@@ -202,12 +182,8 @@ const SettingsSection = ({
           className={cn(
             "flex items-center gap-2 p-3 mb-4 border text-sm",
             testResult.success
-              ? isDark
-                ? "border-green-700/50 bg-green-900/20 text-green-400"
-                : "border-green-300 bg-green-50 text-green-700"
-              : isDark
-                ? "border-red-700/50 bg-red-900/20 text-red-400"
-                : "border-red-300 bg-red-50 text-red-700"
+              ? "border-green-700/50 bg-green-900/20 text-green-400"
+              : "border-red-700/50 bg-red-900/20 text-red-400"
           )}
         >
           {testResult.success ? (
@@ -225,10 +201,7 @@ const SettingsSection = ({
           onClick={onSave}
           disabled={isSaving}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50",
-            isDark
-              ? "bg-zinc-800 border border-zinc-600 text-zinc-100 hover:bg-zinc-700"
-              : "bg-zinc-100 border border-zinc-300 text-zinc-800 hover:bg-zinc-200"
+            "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 bg-zinc-800 border border-zinc-600 text-zinc-100 hover:bg-zinc-700",
           )}
         >
           {isSaving ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <SaveIcon className="w-4 h-4" />}
@@ -239,10 +212,7 @@ const SettingsSection = ({
             onClick={onTest}
             disabled={isTesting}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50",
-              isDark
-                ? "bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                : "bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-50"
+              "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-800",
             )}
           >
             {isTesting ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <TestTube2Icon className="w-4 h-4" />}
@@ -255,7 +225,6 @@ const SettingsSection = ({
 };
 
 export default function AdminSettingsPage() {
-  const { resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -438,20 +407,18 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <Loader2Icon className={cn("w-8 h-8 animate-spin", isDark ? "text-zinc-400" : "text-zinc-600")} />
+      <div className={cn("min-h-svh flex items-center justify-center bg-[#0b0b0a]")}>
+        <Loader2Icon className={cn("w-8 h-8 animate-spin text-zinc-400")} />
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-4xl mx-auto">
@@ -461,17 +428,16 @@ export default function AdminSettingsPage() {
               <Link
                 href="/admin"
                 className={cn(
-                  "inline-flex items-center gap-2 text-xs uppercase tracking-wider mb-4 hover:opacity-70 transition-opacity",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
+                  "inline-flex items-center gap-2 text-xs uppercase tracking-wider mb-4 hover:opacity-70 transition-opacity text-zinc-500",
                 )}
               >
                 <ArrowLeftIcon className="w-4 h-4" />
                 Back to Dashboard
               </Link>
-              <h1 className={cn("text-2xl font-light tracking-wider", isDark ? "text-zinc-100" : "text-zinc-800")}>
+              <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
                 SETTINGS
               </h1>
-              <p className={cn("text-sm mt-1", isDark ? "text-zinc-500" : "text-zinc-500")}>
+              <p className={cn("text-sm mt-1 text-zinc-500")}>
                 Configure system-wide settings
               </p>
             </div>
@@ -484,7 +450,6 @@ export default function AdminSettingsPage() {
                 title="Cloudflare"
                 description="Configure Cloudflare API for DNS management"
                 icon={CloudIcon}
-                isDark={isDark}
                 onSave={handleSaveCloudflare}
                 onTest={handleTestCloudflare}
                 isSaving={savingCloudflare}
@@ -495,7 +460,6 @@ export default function AdminSettingsPage() {
                   label="Enable Cloudflare Integration"
                   checked={cloudflare.enabled}
                   onChange={(v) => setCloudflare({ ...cloudflare, enabled: v })}
-                  isDark={isDark}
                 />
                 <InputField
                   label="API Token"
@@ -503,7 +467,6 @@ export default function AdminSettingsPage() {
                   value={cloudflare.apiToken}
                   onChange={(v) => setCloudflare({ ...cloudflare, apiToken: v })}
                   placeholder="Enter Cloudflare API token"
-                  isDark={isDark}
                   helperText="Create a token with Zone:Read and DNS:Edit permissions"
                 />
                 <InputField
@@ -511,14 +474,12 @@ export default function AdminSettingsPage() {
                   value={cloudflare.zoneId}
                   onChange={(v) => setCloudflare({ ...cloudflare, zoneId: v })}
                   placeholder="Enter zone ID"
-                  isDark={isDark}
                 />
                 <InputField
                   label="Domain"
                   value={cloudflare.domain}
                   onChange={(v) => setCloudflare({ ...cloudflare, domain: v })}
                   placeholder="example.com"
-                  isDark={isDark}
                 />
               </SettingsSection>
             </FadeIn>
@@ -528,7 +489,6 @@ export default function AdminSettingsPage() {
                 title="Subdomains"
                 description="Configure automatic subdomain provisioning for servers"
                 icon={GlobeIcon}
-                isDark={isDark}
                 onSave={handleSaveSubdomains}
                 isSaving={savingSubdomains}
               >
@@ -536,14 +496,12 @@ export default function AdminSettingsPage() {
                   label="Enable Subdomains"
                   checked={subdomains.enabled}
                   onChange={(v) => setSubdomains({ ...subdomains, enabled: v })}
-                  isDark={isDark}
                 />
                 <InputField
                   label="Base Domain"
                   value={subdomains.baseDomain}
                   onChange={(v) => setSubdomains({ ...subdomains, baseDomain: v })}
                   placeholder="servers.example.com"
-                  isDark={isDark}
                   helperText="Subdomains will be created under this domain (e.g., myserver.servers.example.com)"
                 />
                 <Select
@@ -554,14 +512,12 @@ export default function AdminSettingsPage() {
                     { value: "manual", label: "Manual DNS" },
                     { value: "cloudflare", label: "Cloudflare (automatic)" },
                   ]}
-                  isDark={isDark}
                 />
                 {subdomains.dnsProvider === "cloudflare" && (
                   <Toggle
                     label="Auto-provision DNS records"
                     checked={subdomains.autoProvision}
-                    onChange={(v) => setSubdomains({ ...subdomains, autoProvision: v })}
-                    isDark={isDark}
+                    onChange={(v) => setSubdomains({ ...subdomains, autoProvision: v })}                  
                   />
                 )}
               </SettingsSection>
@@ -572,7 +528,6 @@ export default function AdminSettingsPage() {
                 title="Email"
                 description="Configure email settings for notifications and invitations"
                 icon={MailIcon}
-                isDark={isDark}
                 onSave={handleSaveEmail}
                 onTest={handleTestEmail}
                 isSaving={savingEmail}
@@ -589,7 +544,6 @@ export default function AdminSettingsPage() {
                     { value: "sendgrid", label: "SendGrid" },
                     { value: "mailgun", label: "Mailgun" },
                   ]}
-                  isDark={isDark}
                 />
                 <InputField
                   label="From Email"
@@ -597,14 +551,12 @@ export default function AdminSettingsPage() {
                   value={email.fromEmail}
                   onChange={(v) => setEmail({ ...email, fromEmail: v })}
                   placeholder="noreply@example.com"
-                  isDark={isDark}
                 />
                 <InputField
                   label="From Name"
                   value={email.fromName}
                   onChange={(v) => setEmail({ ...email, fromName: v })}
                   placeholder="StellarStack"
-                  isDark={isDark}
                 />
 
                 {email.provider === "smtp" && (
@@ -614,7 +566,6 @@ export default function AdminSettingsPage() {
                       value={email.smtp?.host || ""}
                       onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, host: v } })}
                       placeholder="smtp.example.com"
-                      isDark={isDark}
                     />
                     <InputField
                       label="SMTP Port"
@@ -622,20 +573,17 @@ export default function AdminSettingsPage() {
                       value={String(email.smtp?.port || 587)}
                       onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, port: parseInt(v) || 587 } })}
                       placeholder="587"
-                      isDark={isDark}
                     />
                     <Toggle
                       label="Use TLS/SSL"
                       checked={email.smtp?.secure || false}
                       onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, secure: v } })}
-                      isDark={isDark}
                     />
                     <InputField
                       label="SMTP Username"
                       value={email.smtp?.username || ""}
                       onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, username: v } })}
                       placeholder="username"
-                      isDark={isDark}
                     />
                     <InputField
                       label="SMTP Password"
@@ -643,7 +591,6 @@ export default function AdminSettingsPage() {
                       value={email.smtp?.password || ""}
                       onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, password: v } })}
                       placeholder="••••••••"
-                      isDark={isDark}
                     />
                   </>
                 )}
@@ -655,7 +602,6 @@ export default function AdminSettingsPage() {
                     value={email.apiKey || ""}
                     onChange={(v) => setEmail({ ...email, apiKey: v })}
                     placeholder="Enter API key"
-                    isDark={isDark}
                   />
                 )}
 
@@ -665,7 +611,6 @@ export default function AdminSettingsPage() {
                   value={testEmailAddress}
                   onChange={setTestEmailAddress}
                   placeholder="test@example.com"
-                  isDark={isDark}
                   helperText="Enter an email address to send a test email"
                 />
               </SettingsSection>
@@ -676,7 +621,6 @@ export default function AdminSettingsPage() {
                 title="Branding"
                 description="Customize the appearance and branding of your panel"
                 icon={PaletteIcon}
-                isDark={isDark}
                 onSave={handleSaveBranding}
                 isSaving={savingBranding}
               >
@@ -685,7 +629,6 @@ export default function AdminSettingsPage() {
                   value={branding.appName}
                   onChange={(v) => setBranding({ ...branding, appName: v })}
                   placeholder="StellarStack"
-                  isDark={isDark}
                   helperText="The name displayed throughout the application"
                 />
                 <InputField
@@ -693,7 +636,6 @@ export default function AdminSettingsPage() {
                   value={branding.logoUrl || ""}
                   onChange={(v) => setBranding({ ...branding, logoUrl: v || null })}
                   placeholder="https://example.com/logo.png"
-                  isDark={isDark}
                   helperText="URL to your logo image (recommended: 200x50px)"
                 />
                 <InputField
@@ -701,11 +643,10 @@ export default function AdminSettingsPage() {
                   value={branding.faviconUrl || ""}
                   onChange={(v) => setBranding({ ...branding, faviconUrl: v || null })}
                   placeholder="https://example.com/favicon.ico"
-                  isDark={isDark}
                   helperText="URL to your favicon"
                 />
                 <div>
-                  <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
+                  <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
                     Primary Color
                   </label>
                   <div className="flex items-center gap-3">
@@ -721,10 +662,7 @@ export default function AdminSettingsPage() {
                       onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
                       placeholder="#22c55e"
                       className={cn(
-                        "flex-1 px-4 py-2 text-sm border focus:outline-none transition-colors",
-                        isDark
-                          ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500"
-                          : "bg-white border-zinc-300 text-zinc-900 focus:border-zinc-500"
+                        "flex-1 px-4 py-2 text-sm border focus:outline-none transition-colors bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500",
                       )}
                     />
                   </div>
@@ -735,38 +673,33 @@ export default function AdminSettingsPage() {
                   value={branding.supportEmail}
                   onChange={(v) => setBranding({ ...branding, supportEmail: v })}
                   placeholder="support@example.com"
-                  isDark={isDark}
                 />
                 <InputField
                   label="Support URL"
                   value={branding.supportUrl || ""}
                   onChange={(v) => setBranding({ ...branding, supportUrl: v || null })}
                   placeholder="https://support.example.com"
-                  isDark={isDark}
                 />
                 <InputField
                   label="Terms of Service URL"
                   value={branding.termsUrl || ""}
                   onChange={(v) => setBranding({ ...branding, termsUrl: v || null })}
                   placeholder="https://example.com/terms"
-                  isDark={isDark}
                 />
                 <InputField
                   label="Privacy Policy URL"
                   value={branding.privacyUrl || ""}
                   onChange={(v) => setBranding({ ...branding, privacyUrl: v || null })}
                   placeholder="https://example.com/privacy"
-                  isDark={isDark}
                 />
                 <InputField
                   label="Footer Text"
                   value={branding.footerText}
                   onChange={(v) => setBranding({ ...branding, footerText: v })}
                   placeholder="Powered by StellarStack"
-                  isDark={isDark}
                 />
                 <div>
-                  <label className={cn("block text-xs uppercase tracking-wider mb-2", isDark ? "text-zinc-400" : "text-zinc-600")}>
+                  <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
                     Custom CSS
                   </label>
                   <textarea
@@ -775,13 +708,10 @@ export default function AdminSettingsPage() {
                     placeholder="/* Custom CSS styles */"
                     rows={6}
                     className={cn(
-                      "w-full px-4 py-2 text-sm font-mono border focus:outline-none transition-colors resize-y",
-                      isDark
-                        ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500"
-                        : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500"
+                      "w-full px-4 py-2 text-sm font-mono border focus:outline-none transition-colors resize-y bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500",
                     )}
                   />
-                  <p className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                  <p className={cn("text-xs mt-1 text-zinc-500")}>
                     Advanced: Add custom CSS to override default styles (admins only)
                   </p>
                 </div>

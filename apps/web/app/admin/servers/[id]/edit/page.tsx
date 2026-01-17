@@ -29,7 +29,7 @@ export default function EditServerPage() {
   const router = useRouter();
   const params = useParams();
   const serverId = params.id as string;
-  const { mounted, isDark, inputClasses, labelClasses } = useAdminTheme();
+  const { mounted, inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: server, isLoading, refetch } = useServer(serverId);
@@ -319,11 +319,10 @@ export default function EditServerPage() {
     return (
       <div
         className={cn(
-          "relative flex min-h-svh items-center justify-center",
-          isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+          "relative flex min-h-svh items-center justify-center bg-[#0b0b0a]",
         )}
       >
-        <AnimatedBackground isDark={isDark} />
+        <AnimatedBackground />
         <Spinner className="h-6 w-6" />
       </div>
     );
@@ -332,12 +331,11 @@ export default function EditServerPage() {
   return (
     <div
       className={cn(
-        "relative min-h-svh transition-colors",
-        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+        "relative min-h-svh transition-colors bg-[#0b0b0a]",
       )}
     >
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground  />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="mx-auto max-w-2xl">
@@ -349,8 +347,7 @@ export default function EditServerPage() {
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
                 className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                  "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
                 )}
               >
                 <ArrowLeftIcon className="h-4 w-4" />
@@ -358,13 +355,12 @@ export default function EditServerPage() {
               <div>
                 <h1
                   className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-2xl font-light tracking-wider text-zinc-100",
                   )}
                 >
                   EDIT SERVER
                 </h1>
-                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                <p className={cn("mt-1 text-sm text-zinc-500")}>
                   {server?.name} ({server?.shortId})
                 </p>
               </div>
@@ -375,13 +371,10 @@ export default function EditServerPage() {
             <form onSubmit={handleSubmit}>
               <div
                 className={cn(
-                  "relative border p-6",
-                  isDark
-                    ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
-                    : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20"
+                  "relative border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
                 )}
               >
-                <CornerAccents isDark={isDark} size="sm" />
+                <CornerAccents size="sm" />
 
                 <div className="space-y-4">
                   {/* Basic Info */}
@@ -409,14 +402,12 @@ export default function EditServerPage() {
                   {/* Resources */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase",
-                        isDark ? "text-zinc-300" : "text-zinc-700"
+                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
                       )}
                     >
                       Resources
@@ -435,7 +426,7 @@ export default function EditServerPage() {
                           required
                         />
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-600")}
                         >
                           100 = 1 thread
                         </p>
@@ -470,14 +461,12 @@ export default function EditServerPage() {
                   {/* Advanced */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase",
-                        isDark ? "text-zinc-300" : "text-zinc-700"
+                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
                       )}
                     >
                       Advanced
@@ -503,7 +492,7 @@ export default function EditServerPage() {
                           className={inputClasses}
                         />
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-600")}
                         >
                           -1 = unlimited, 0 = disabled
                         </p>
@@ -535,7 +524,7 @@ export default function EditServerPage() {
                         />
                         <label
                           htmlFor="oomKillDisable"
-                          className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}
+                          className={cn("text-sm text-zinc-300")}
                         >
                           Disable OOM Killer
                         </label>
@@ -546,14 +535,12 @@ export default function EditServerPage() {
                   {/* Server Management */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase",
-                        isDark ? "text-zinc-300" : "text-zinc-700"
+                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
                       )}
                     >
                       Server Management
@@ -577,7 +564,7 @@ export default function EditServerPage() {
                           <option value="ERROR">Error</option>
                         </select>
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-600")}
                         >
                           Manually override server status
                         </p>
@@ -588,10 +575,7 @@ export default function EditServerPage() {
                           variant="outline"
                           onClick={() => setReinstallModalOpen(true)}
                           className={cn(
-                            "flex w-full items-center justify-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
-                            isDark
-                              ? "border-amber-700/50 text-amber-400 hover:border-amber-500 hover:text-amber-300"
-                              : "border-amber-400 text-amber-600 hover:border-amber-500"
+                            "flex w-full items-center justify-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 border-amber-700/50 text-amber-400 hover:border-amber-500 hover:text-amber-300",
                           )}
                         >
                           <RefreshCwIcon className="h-4 w-4" />
@@ -599,8 +583,7 @@ export default function EditServerPage() {
                         </Button>
                         <p
                           className={cn(
-                            "mt-1 text-center text-xs",
-                            isDark ? "text-zinc-600" : "text-zinc-400"
+                            "mt-1 text-center text-xs text-zinc-600",
                           )}
                         >
                           Wipes server and runs install script
@@ -612,22 +595,20 @@ export default function EditServerPage() {
                   {/* Blueprint Change */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-300" : "text-zinc-700"
+                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
                           )}
                         >
                           Game Type
                         </h3>
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-500")}
                         >
                           {server?.blueprint?.name || "No blueprint selected"}
                         </p>
@@ -638,10 +619,7 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => setShowBlueprintModal(true)}
                         className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase",
-                          isDark
-                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
                         )}
                       >
                         Change Blueprint
@@ -652,15 +630,13 @@ export default function EditServerPage() {
                   {/* Allocations */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <h3
                         className={cn(
-                          "text-sm font-medium tracking-wider uppercase",
-                          isDark ? "text-zinc-300" : "text-zinc-700"
+                          "text-sm font-medium tracking-wider uppercase text-zinc-300",
                         )}
                       >
                         Allocations
@@ -674,10 +650,7 @@ export default function EditServerPage() {
                           loadAvailableAllocations();
                         }}
                         className={cn(
-                          "flex items-center gap-1 text-xs",
-                          isDark
-                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                          "flex items-center gap-1 text-xs border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
                         )}
                       >
                         <PlusIcon className="h-3 w-3" />
@@ -694,8 +667,7 @@ export default function EditServerPage() {
                       ) : allocations.length === 0 ? (
                         <p
                           className={cn(
-                            "py-4 text-center text-sm",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
+                            "py-4 text-center text-sm text-zinc-500"
                           )}
                         >
                           No allocations assigned
@@ -705,23 +677,18 @@ export default function EditServerPage() {
                           <div
                             key={allocation.id}
                             className={cn(
-                              "flex items-center justify-between border p-3",
-                              isDark
-                                ? "border-zinc-800 bg-zinc-900/50"
-                                : "border-zinc-200 bg-zinc-50"
+                              "flex items-center justify-between border p-3 border-zinc-800 bg-zinc-900/50",
                             )}
                           >
                             <div className="flex items-center gap-3">
                               <NetworkIcon
                                 className={cn(
-                                  "h-4 w-4",
-                                  isDark ? "text-zinc-500" : "text-zinc-400"
+                                  "h-4 w-4 text-zinc-500",
                                 )}
                               />
                               <span
                                 className={cn(
-                                  "font-mono text-sm",
-                                  isDark ? "text-zinc-200" : "text-zinc-700"
+                                  "font-mono text-sm text-zinc-200",
                                 )}
                               >
                                 {allocation.ip}:{allocation.port}
@@ -729,10 +696,7 @@ export default function EditServerPage() {
                               {index === 0 && (
                                 <span
                                   className={cn(
-                                    "px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                    isDark
-                                      ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
-                                      : "border border-emerald-200 bg-emerald-100 text-emerald-700"
+                                    "px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase border border-emerald-500/30 bg-emerald-500/20 text-emerald-400",
                                   )}
                                 >
                                   Primary
@@ -741,8 +705,7 @@ export default function EditServerPage() {
                               {allocation.alias && (
                                 <span
                                   className={cn(
-                                    "text-xs",
-                                    isDark ? "text-zinc-500" : "text-zinc-400"
+                                    "text-xs text-zinc-500",
                                   )}
                                 >
                                   ({allocation.alias})
@@ -759,9 +722,7 @@ export default function EditServerPage() {
                                 "h-auto p-1",
                                 index === 0
                                   ? "cursor-not-allowed opacity-30"
-                                  : isDark
-                                    ? "text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
-                                    : "text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                                  : "text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
                               )}
                               title={
                                 index === 0
@@ -784,12 +745,11 @@ export default function EditServerPage() {
                     {showAddAllocation && (
                       <div
                         className={cn(
-                          "mt-4 border p-4",
-                          isDark ? "border-zinc-700 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
+                          "mt-4 border p-4 border-zinc-700 bg-zinc-900/50",
                         )}
                       >
                         <p
-                          className={cn("mb-3 text-sm", isDark ? "text-zinc-300" : "text-zinc-600")}
+                          className={cn("mb-3 text-sm text-zinc-300")}
                         >
                           Select an available allocation to add:
                         </p>
@@ -809,8 +769,7 @@ export default function EditServerPage() {
                         {availableAllocations.length === 0 && (
                           <p
                             className={cn(
-                              "mt-2 text-xs",
-                              isDark ? "text-zinc-500" : "text-zinc-400"
+                              "mt-2 text-xs text-zinc-500",
                             )}
                           >
                             No available allocations on this node
@@ -826,10 +785,7 @@ export default function EditServerPage() {
                               setSelectedAllocationId("");
                             }}
                             className={cn(
-                              "text-xs",
-                              isDark
-                                ? "border-zinc-700 text-zinc-400"
-                                : "border-zinc-300 text-zinc-600"
+                              "text-xs border-zinc-700 text-zinc-400",
                             )}
                           >
                             Cancel
@@ -840,10 +796,7 @@ export default function EditServerPage() {
                             disabled={!selectedAllocationId || isAddingAllocation}
                             onClick={handleAddAllocation}
                             className={cn(
-                              "text-xs",
-                              isDark
-                                ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                                : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                              "text-xs bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                             )}
                           >
                             {isAddingAllocation ? (
@@ -863,22 +816,20 @@ export default function EditServerPage() {
                   {/* Server Splitting */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-300" : "text-zinc-700"
+                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
                           )}
                         >
                           Server Splitting
                         </h3>
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-500")}
                         >
                           {server?.parentServerId
                             ? "This is a child server"
@@ -891,10 +842,7 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => router.push(`/servers/${serverId}/split`)}
                         className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase",
-                          isDark
-                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
                         )}
                       >
                         <SplitIcon className="h-4 w-4" />
@@ -907,22 +855,20 @@ export default function EditServerPage() {
                   {/* Server Transfer */}
                   <div
                     className={cn(
-                      "border-t pt-4",
-                      isDark ? "border-zinc-700/50" : "border-zinc-200"
+                      "border-t pt-4 border-zinc-700/50",
                     )}
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-300" : "text-zinc-700"
+                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
                           )}
                         >
                           Server Transfer
                         </h3>
                         <p
-                          className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}
+                          className={cn("mt-1 text-xs text-zinc-500")}
                         >
                           Transfer server to another node
                         </p>
@@ -933,10 +879,7 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => setShowTransferHistory(!showTransferHistory)}
                         className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase",
-                          isDark
-                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
                         )}
                       >
                         {showTransferHistory ? "Hide History" : "Show History"}
@@ -947,14 +890,12 @@ export default function EditServerPage() {
                     {showTransferHistory && transferStatus && (
                       <div
                         className={cn(
-                          "mb-4 border p-4",
-                          isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50"
+                          "mb-4 border p-4 border-zinc-800 bg-zinc-900/50",
                         )}
                       >
                         <div
                           className={cn(
-                            "mb-2 flex items-center justify-between",
-                            isDark ? "text-zinc-300" : "text-zinc-700"
+                            "mb-2 flex items-center justify-between text-zinc-300",
                           )}
                         >
                           <span className="text-sm">Transfer Status</span>
@@ -976,8 +917,7 @@ export default function EditServerPage() {
                         {transferStatus.progress > 0 && (
                           <div
                             className={cn(
-                              "mb-2 h-2 overflow-hidden rounded-full",
-                              isDark ? "bg-zinc-800" : "bg-zinc-200"
+                              "mb-2 h-2 overflow-hidden rounded-full bg-zinc-800",
                             )}
                           >
                             <div
@@ -988,24 +928,24 @@ export default function EditServerPage() {
                         )}
                         <div className="space-y-2 text-xs">
                           <div>
-                            <span className={cn(isDark ? "text-zinc-500" : "text-zinc-600")}>
+                            <span className={cn("text-zinc-500")}>
                               From:
                             </span>{" "}
-                            <span className={cn(isDark ? "text-zinc-300" : "text-zinc-800")}>
+                            <span className={cn("text-zinc-300")}>
                               {transferStatus.sourceNode?.displayName || "Unknown"}
                             </span>
                           </div>
                           <div>
-                            <span className={cn(isDark ? "text-zinc-500" : "text-zinc-600")}>
+                            <span className={cn("text-zinc-500")}>
                               To:
                             </span>{" "}
-                            <span className={cn(isDark ? "text-zinc-300" : "text-zinc-800")}>
+                            <span className={cn("text-zinc-300")}>
                               {transferStatus.targetNode?.displayName || "Unknown"}
                             </span>
                           </div>
                           {transferStatus.error && (
                             <div>
-                              <span className={cn(isDark ? "text-zinc-500" : "text-zinc-600")}>
+                              <span className={cn("text-zinc-500")}>
                                 Error:
                               </span>{" "}
                               <span className="text-red-400">{transferStatus.error}</span>
@@ -1021,10 +961,7 @@ export default function EditServerPage() {
                                 size="sm"
                                 onClick={handleCancelTransfer}
                                 className={cn(
-                                  "text-xs tracking-wider uppercase",
-                                  isDark
-                                    ? "border-red-700/50 text-red-400 hover:border-red-600 hover:text-red-300"
-                                    : "border-red-200 text-red-600 hover:border-red-400"
+                                  "text-xs tracking-wider uppercase border-red-700/50 text-red-400 hover:border-red-600 hover:text-red-300",
                                 )}
                               >
                                 Cancel Transfer
@@ -1047,10 +984,7 @@ export default function EditServerPage() {
                             transferStatus.status !== "FAILED"
                           }
                           className={cn(
-                            "flex w-full items-center gap-2 text-xs tracking-wider uppercase",
-                            isDark
-                              ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-                              : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                            "flex w-full items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40",
                           )}
                         >
                           Start Transfer
@@ -1068,8 +1002,7 @@ export default function EditServerPage() {
                   variant="outline"
                   onClick={() => router.push("/admin/servers")}
                   className={cn(
-                    "text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
-                    isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
+                    "text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400",
                   )}
                 >
                   Cancel
@@ -1078,10 +1011,7 @@ export default function EditServerPage() {
                   type="submit"
                   disabled={update.isPending}
                   className={cn(
-                    "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95",
-                    isDark
-                      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                      : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                    "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                   )}
                 >
                   {update.isPending ? (
@@ -1102,7 +1032,6 @@ export default function EditServerPage() {
         open={reinstallModalOpen}
         onOpenChange={setReinstallModalOpen}
         onConfirm={handleReinstall}
-        isDark={isDark}
         title="Reinstall Server"
         description="This will completely wipe the server's files and run the installation script again. All data will be lost. This action cannot be undone."
         confirmLabel={isReinstalling ? "Reinstalling..." : "Reinstall"}
@@ -1115,16 +1044,15 @@ export default function EditServerPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
             className={cn(
-              "w-full max-w-md border p-6 shadow-2xl",
-              isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+              "w-full max-w-md border p-6 shadow-2xl border-zinc-800 bg-zinc-900",
             )}
           >
             <h2
-              className={cn("mb-4 text-lg font-medium", isDark ? "text-zinc-100" : "text-zinc-900")}
+              className={cn("mb-4 text-lg font-medium text-zinc-100")}
             >
               Change Game Type
             </h2>
-            <p className={cn("mb-4 text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
+            <p className={cn("mb-4 text-sm text-zinc-400")}>
               Select a new blueprint for this server. Changing the blueprint will update the
               server's game type and configuration.
             </p>
@@ -1161,12 +1089,12 @@ export default function EditServerPage() {
                   />
                   <label
                     htmlFor="reinstallOnBlueprintChange"
-                    className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}
+                    className={cn("text-sm text-zinc-300")}
                   >
                     Reinstall server after changing blueprint
                   </label>
                 </div>
-                <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                <p className={cn("text-xs text-zinc-500")}>
                   Warning: Reinstalling will wipe all server files. Uncheck if you only want to
                   change the blueprint configuration.
                 </p>
@@ -1184,8 +1112,7 @@ export default function EditServerPage() {
                 }}
                 disabled={isChangingBlueprint}
                 className={cn(
-                  "text-xs tracking-wider uppercase",
-                  isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
+                  "text-xs tracking-wider uppercase border-zinc-700 text-zinc-400",
                 )}
               >
                 Cancel
@@ -1195,10 +1122,7 @@ export default function EditServerPage() {
                 disabled={!selectedBlueprintId || isChangingBlueprint}
                 onClick={handleChangeBlueprint}
                 className={cn(
-                  "text-xs tracking-wider uppercase",
-                  isDark
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
+                  "text-xs tracking-wider uppercase bg-blue-600 text-white hover:bg-blue-700",
                 )}
               >
                 {isChangingBlueprint ? "Changing..." : "Change Blueprint"}
@@ -1213,16 +1137,15 @@ export default function EditServerPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
             className={cn(
-              "w-full max-w-md border p-6 shadow-2xl",
-              isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+              "w-full max-w-md border p-6 shadow-2xl border-zinc-800 bg-zinc-900",
             )}
           >
             <h2
-              className={cn("mb-4 text-lg font-medium", isDark ? "text-zinc-100" : "text-zinc-900")}
+              className={cn("mb-4 text-lg font-medium text-zinc-100")}
             >
               Transfer Server
             </h2>
-            <p className={cn("mb-6 text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
+            <p className={cn("mb-6 text-sm text-zinc-400")}>
               Select a target node to transfer this server to. The server will be archived and moved
               to the new node.
             </p>
@@ -1250,7 +1173,7 @@ export default function EditServerPage() {
                       ))}
                   </select>
                   {server?.node && (
-                    <p className={cn("mt-2 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                    <p className={cn("mt-2 text-xs text-zinc-500")}>
                       Current node: {server.node.displayName}
                     </p>
                   )}
@@ -1266,8 +1189,7 @@ export default function EditServerPage() {
                     }}
                     disabled={isTransferring}
                     className={cn(
-                      "text-xs tracking-wider uppercase",
-                      isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
+                      "text-xs tracking-wider uppercase border-zinc-700 text-zinc-400",
                     )}
                   >
                     Cancel
@@ -1277,10 +1199,7 @@ export default function EditServerPage() {
                     disabled={!selectedTargetNodeId || isTransferring}
                     onClick={handleStartTransfer}
                     className={cn(
-                      "text-xs tracking-wider uppercase",
-                      isDark
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                      "text-xs tracking-wider uppercase bg-blue-600 text-white hover:bg-blue-700",
                     )}
                   >
                     {isTransferring ? "Transferring..." : "Start Transfer"}

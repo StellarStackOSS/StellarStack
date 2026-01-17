@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export default function LocationsPage() {
   const router = useRouter();
-  const { mounted, isDark, inputClasses, labelClasses } = useAdminTheme();
+  const { mounted, inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: locationsList = [], isLoading } = useLocations();
@@ -101,9 +101,9 @@ export default function LocationsPage() {
   if (!mounted) return null;
 
   return (
-    <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -116,22 +116,19 @@ export default function LocationsPage() {
                   size="sm"
                   onClick={() => router.push("/admin")}
                   className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
                   )}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                 </Button>
                 <div>
                   <h1 className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-2xl font-light tracking-wider text-zinc-100",
                   )}>
                     LOCATIONS
                   </h1>
                   <p className={cn(
-                    "text-sm mt-1",
-                    isDark ? "text-zinc-500" : "text-zinc-500"
+                    "text-sm mt-1 text-zinc-500",
                   )}>
                     Manage geographic locations for nodes
                   </p>
@@ -140,10 +137,7 @@ export default function LocationsPage() {
               <Button
                 onClick={() => { resetForm(); setIsModalOpen(true); }}
                 className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                  isDark
-                    ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                    : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                 )}
               >
                 <PlusIcon className="w-4 h-4" />
@@ -154,8 +148,7 @@ export default function LocationsPage() {
             {/* Search Bar */}
             <div className="relative mb-6">
               <SearchIcon className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                isDark ? "text-zinc-500" : "text-zinc-400"
+                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500",
               )} />
               <input
                 type="text"
@@ -163,10 +156,7 @@ export default function LocationsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cn(
-                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none",
-                  isDark
-                    ? "bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
-                    : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
+                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
                 )}
               />
             </div>
@@ -181,8 +171,7 @@ export default function LocationsPage() {
                 </div>
               ) : filteredLocations.length === 0 ? (
                 <div className={cn(
-                  "col-span-full text-center py-12 border",
-                  isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+                  "col-span-full text-center py-12 border border-zinc-800 text-zinc-500",
                 )}>
                   {searchQuery ? "No locations match your search." : "No locations configured. Add your first location."}
                 </div>
@@ -191,33 +180,30 @@ export default function LocationsPage() {
                   <div
                     key={location.id}
                     className={cn(
-                      "relative p-4 border transition-colors",
-                      isDark
-                        ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 hover:border-zinc-700"
-                        : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300 hover:border-zinc-400"
+                      "relative p-4 border transition-colors bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 hover:border-zinc-700",
                     )}
                   >
-                    <CornerAccents isDark={isDark} size="sm" />
+                    <CornerAccents size="sm" />
 
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <MapPinIcon className={cn("w-6 h-6 mt-0.5", isDark ? "text-zinc-400" : "text-zinc-600")} />
+                        <MapPinIcon className={cn("w-6 h-6 mt-0.5 text-zinc-400")} />
                         <div>
-                          <div className={cn("font-medium", isDark ? "text-zinc-100" : "text-zinc-800")}>
+                          <div className={cn("font-medium text-zinc-100")}>
                             {location.name}
                           </div>
                           {(location.city || location.country) && (
-                            <div className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                            <div className={cn("text-xs mt-1 text-zinc-500")}>
                               {[location.city, location.country].filter(Boolean).join(", ")}
                             </div>
                           )}
                           {location.description && (
-                            <div className={cn("text-xs mt-2", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                            <div className={cn("text-xs mt-2 text-zinc-600")}>
                               {location.description}
                             </div>
                           )}
                           {location.nodes && location.nodes.length > 0 && (
-                            <div className={cn("text-xs mt-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                            <div className={cn("text-xs mt-2 text-zinc-500")}>
                               {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
                             </div>
                           )}
@@ -229,8 +215,7 @@ export default function LocationsPage() {
                           size="sm"
                           onClick={() => handleEdit(location)}
                           className={cn(
-                            "text-xs p-1.5",
-                            isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                           )}
                         >
                           <EditIcon className="w-3 h-3" />
@@ -240,8 +225,7 @@ export default function LocationsPage() {
                           size="sm"
                           onClick={() => setDeleteConfirmLocation(location)}
                           className={cn(
-                            "text-xs p-1.5",
-                            isDark ? "border-red-900/50 text-red-400 hover:bg-red-900/20" : "border-red-200 text-red-600 hover:bg-red-50"
+                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
                           )}
                         >
                           <TrashIcon className="w-3 h-3" />
@@ -266,7 +250,6 @@ export default function LocationsPage() {
         title={editingLocation ? "Edit Location" : "Create Location"}
         submitLabel={editingLocation ? "Update" : "Create"}
         onSubmit={handleSubmit}
-        isDark={isDark}
         isLoading={create.isPending || update.isPending}
         isValid={formData.name.length > 0}
       >
@@ -327,7 +310,6 @@ export default function LocationsPage() {
         description={`Are you sure you want to delete "${deleteConfirmLocation?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />
