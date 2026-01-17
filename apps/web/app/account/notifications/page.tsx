@@ -7,7 +7,6 @@ import { AnimatedBackground } from "@workspace/ui/components/animated-background
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { BsBell, BsCheck, BsCheckAll, BsExclamationTriangle, BsInfoCircle, BsServer, BsShieldExclamation } from "react-icons/bs";
-import { useAccountTheme } from "@/hooks/useAccountTheme";
 import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
 
 type NotificationType = "info" | "warning" | "error" | "success" | "server" | "security";
@@ -83,10 +82,7 @@ const mockNotifications: Notification[] = [
 ];
 
 const NotificationsPage = (): JSX.Element | null => {
-  const { isDark, mounted, setTheme } = useAccountTheme();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-
-  if (!mounted) return null;
 
   const markAsRead = (id: string) => {
     setNotifications(prev => prev.map(n =>
@@ -119,11 +115,10 @@ const NotificationsPage = (): JSX.Element | null => {
 
   return (
     <div className={cn(
-      "min-h-svh transition-colors relative",
-      isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      "min-h-svh transition-colors relative bg-[#0b0b0a]",
     )}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -131,29 +126,25 @@ const NotificationsPage = (): JSX.Element | null => {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <SidebarTrigger className={cn(
-                "transition-all hover:scale-110 active:scale-95",
-                isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                "transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
               )} />
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-2xl font-light tracking-wider text-zinc-100",
                   )}>
                     NOTIFICATIONS
                   </h1>
                   {unreadCount > 0 && (
                     <span className={cn(
-                      "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                      isDark ? "border-blue-500/50 text-blue-400" : "border-blue-400 text-blue-600"
+                      "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border border-blue-500/50 text-blue-400",
                     )}>
                       {unreadCount} new
                     </span>
                   )}
                 </div>
                 <p className={cn(
-                  "text-sm mt-1",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
+                  "text-sm mt-1 text-zinc-500",
                 )}>
                   Stay updated on your servers and account
                 </p>
@@ -166,35 +157,31 @@ const NotificationsPage = (): JSX.Element | null => {
                   size="sm"
                   onClick={markAllAsRead}
                   className={cn(
-                    "transition-all gap-2",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-                      : "border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-400"
+                    "transition-all gap-2 border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500",
                   )}
                 >
                   <BsCheckAll className="w-4 h-4" />
                   <span className="text-xs uppercase tracking-wider">Mark All Read</span>
                 </Button>
               )}
-              <ThemeToggleButton isDark={isDark} onToggle={() => setTheme(isDark ? "light" : "dark")} />
             </div>
           </div>
 
           {/* Notifications List */}
           <div className={cn(
-            "relative border",
-            isDark
-              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10"
-              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300"
+            "relative border bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10",
           )}>
-            <CornerDecorations isDark={isDark} />
+            {/* Corner decorations */}
+            <div className={cn("absolute top-0 left-0 w-3 h-3 border-t border-l border-zinc-500")} />
+            <div className={cn("absolute top-0 right-0 w-3 h-3 border-t border-r border-zinc-500")} />
+            <div className={cn("absolute bottom-0 left-0 w-3 h-3 border-b border-l border-zinc-500")} />
+            <div className={cn("absolute bottom-0 right-0 w-3 h-3 border-b border-r border-zinc-500")} />
 
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <BsBell className={cn("w-12 h-12 mb-4", isDark ? "text-zinc-700" : "text-zinc-300")} />
+                <BsBell className={cn("w-12 h-12 mb-4 text-zinc-700")} />
                 <p className={cn(
-                  "text-sm",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
+                  "text-sm text-zinc-500",
                 )}>
                   No notifications yet
                 </p>
@@ -205,23 +192,20 @@ const NotificationsPage = (): JSX.Element | null => {
                   key={notification.id}
                   onClick={() => markAsRead(notification.id)}
                   className={cn(
-                    "w-full flex items-start gap-4 px-6 py-4 transition-colors text-left",
-                    index !== notifications.length - 1 && (isDark ? "border-b border-zinc-800/50" : "border-b border-zinc-200"),
-                    !notification.read && (isDark ? "bg-zinc-800/20" : "bg-blue-50/50"),
-                    isDark ? "hover:bg-zinc-800/30" : "hover:bg-zinc-50"
+                    "w-full flex items-start gap-4 px-6 py-4 transition-colors text-left hover:bg-zinc-800/30",
+                    index !== notifications.length - 1 && ("border-b border-zinc-800/50"),
+                    !notification.read && ("bg-zinc-800/20"),
                   )}
                 >
                   <div className={cn(
-                    "w-8 h-8 flex items-center justify-center border shrink-0 mt-0.5",
-                    isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
+                    "w-8 h-8 flex items-center justify-center border shrink-0 mt-0.5 border-zinc-700 bg-zinc-800/50",
                   )}>
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
                       <span className={cn(
-                        "text-sm font-medium",
-                        isDark ? "text-zinc-200" : "text-zinc-700"
+                        "text-sm font-medium text-zinc-200",
                       )}>
                         {notification.title}
                       </span>
@@ -230,23 +214,20 @@ const NotificationsPage = (): JSX.Element | null => {
                       )}
                     </div>
                     <p className={cn(
-                      "text-xs mt-1",
-                      isDark ? "text-zinc-400" : "text-zinc-500"
+                      "text-xs mt-1 text-zinc-400",
                     )}>
                       {notification.message}
                     </p>
                     {notification.serverName && (
                       <span className={cn(
-                        "inline-block text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 mt-2 border",
-                        isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500"
+                        "inline-block text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 mt-2 border border-zinc-700 text-zinc-500",
                       )}>
                         {notification.serverName}
                       </span>
                     )}
                   </div>
                   <span className={cn(
-                    "text-xs shrink-0",
-                    isDark ? "text-zinc-600" : "text-zinc-400"
+                    "text-xs shrink-0 text-zinc-600",
                   )}>
                     {notification.timestamp}
                   </span>

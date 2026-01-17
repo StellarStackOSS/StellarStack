@@ -31,8 +31,6 @@ const WebhooksPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
   const [webhookList, setWebhookList] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,10 +44,6 @@ const WebhooksPage = (): JSX.Element | null => {
   const [formUrl, setFormUrl] = useState("");
   const [formEvents, setFormEvents] = useState<WebhookEvent[]>([]);
   const [formEnabled, setFormEnabled] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (serverId) {
@@ -71,15 +65,11 @@ const WebhooksPage = (): JSX.Element | null => {
     }
   };
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
-  if (!mounted) return null;
-
   if (isInstalling) {
     return (
       <div className="min-h-svh">
         {/* Background is now rendered in the layout for persistence */}
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -87,7 +77,7 @@ const WebhooksPage = (): JSX.Element | null => {
   if (server?.status === "SUSPENDED") {
     return (
       <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -128,7 +118,7 @@ const WebhooksPage = (): JSX.Element | null => {
       setAddModalOpen(false);
       resetForm();
       toast.success("Webhook created");
-
+      
       try {
         await webhooks.test(newWebhook.id);
         toast.success("Test message sent to webhook");
@@ -206,7 +196,6 @@ const WebhooksPage = (): JSX.Element | null => {
           <PageHeader
             title="WEBHOOKS"
             subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
-            isDark={isDark}
             actions={
               <Button
                 variant="outline"
@@ -214,21 +203,18 @@ const WebhooksPage = (): JSX.Element | null => {
                 onClick={openAddModal}
                 className={cn(
                   "gap-2 transition-all",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
                 )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Webhook</span>
               </Button>
             }
-            onThemeToggle={() => setTheme(isDark ? "light" : "dark")}
           />
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center", isDark ? "text-zinc-500" : "text-zinc-400")}>
+            <div className={cn("py-12 text-center", "text-zinc-500")}>
               Loading webhooks...
             </div>
           ) : webhookList.length === 0 ? (
@@ -250,20 +236,18 @@ const WebhooksPage = (): JSX.Element | null => {
                         <div
                           className={cn(
                             "flex h-8 w-8 items-center justify-center border",
-                            isDark
-                              ? "border-zinc-700 bg-zinc-800/50"
-                              : "border-zinc-300 bg-zinc-100"
+                            "border-zinc-700 bg-zinc-800/50"
                           )}
                         >
                           <BsGlobe
-                            className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-500")}
+                            className={cn("h-4 w-4", "text-zinc-400")}
                           />
                         </div>
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
                               "max-w-[400px] truncate font-mono text-xs",
-                              isDark ? "text-zinc-400" : "text-zinc-600"
+                              "text-zinc-400"
                             )}
                           >
                             {webhook.url}
@@ -292,9 +276,7 @@ const WebhooksPage = (): JSX.Element | null => {
                         onClick={() => openEditModal(webhook)}
                         className={cn(
                           "p-2 transition-all",
-                          isDark
-                            ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                            : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
                         )}
                       >
                         <BsPencil className="h-4 w-4" />
@@ -305,9 +287,7 @@ const WebhooksPage = (): JSX.Element | null => {
                         onClick={() => handleTestWebhook(webhook)}
                         className={cn(
                           "p-2 transition-all",
-                          isDark
-                            ? "border-blue-900/60 text-blue-400/80 hover:border-blue-700 hover:text-blue-300"
-                            : "border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+                          "border-blue-900/60 text-blue-400/80 hover:border-blue-700 hover:text-blue-300"
                         )}
                         title="Send test message to webhook"
                       >
@@ -319,9 +299,7 @@ const WebhooksPage = (): JSX.Element | null => {
                         onClick={() => openDeleteModal(webhook)}
                         className={cn(
                           "p-2 transition-all",
-                          isDark
-                            ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                            : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700"
+                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
                         )}
                       >
                         <BsTrash className="h-4 w-4" />
@@ -379,24 +357,16 @@ const WebhooksPage = (): JSX.Element | null => {
               className={cn(
                 "flex w-full items-center gap-3 border p-3 transition-all",
                 formEnabled
-                  ? isDark
-                    ? "border-green-700/50 bg-green-900/20"
-                    : "border-green-300 bg-green-50"
-                  : isDark
-                    ? "border-zinc-700"
-                    : "border-zinc-300"
+                  ? "border-green-700/50 bg-green-900/20"
+                  : "border-zinc-700"
               )}
             >
               <div
                 className={cn(
                   "relative h-5 w-10 rounded-full transition-colors",
                   formEnabled
-                    ? isDark
-                      ? "bg-green-600"
-                      : "bg-green-500"
-                    : isDark
-                      ? "bg-zinc-700"
-                      : "bg-zinc-300"
+                    ? "bg-green-600"
+                    : "bg-zinc-700"
                 )}
               >
                 <div
@@ -406,7 +376,7 @@ const WebhooksPage = (): JSX.Element | null => {
                   )}
                 />
               </div>
-              <span className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}>
+              <span className={cn("text-sm", "text-zinc-300")}>
                 {formEnabled ? "Enabled" : "Disabled"}
               </span>
             </button>

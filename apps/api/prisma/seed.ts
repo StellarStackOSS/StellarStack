@@ -61,17 +61,8 @@ async function main() {
     console.error("Failed to create admin user");
   }
 
-  // Create a sample blueprint (Pterodactyl-compatible)
-  const blueprint = await prisma.blueprint.upsert({
-    where: { id: "minecraft-vanilla" },
-    update: {
-      imageName: "ghcr.io/ptero-eggs/yolks",
-      imageTag: "java_21",
-      startup:
-        "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
-      stopCommand: "stop",
-      startupDetection: ["Done"],
-      installScript: `#!/bin/ash
+  // Create a sample blueprint (Native Pterodactyl format)
+  const installScript = `#!/bin/ash
 # Minecraft Vanilla Server Install Script
 
 cd /mnt/server
@@ -97,92 +88,87 @@ SERVER_URL=$(curl -s $VERSION_URL | jq -r '.downloads.server.url')
 curl -o server.jar $SERVER_URL
 
 echo "Download complete!"
-`,
-      installContainer: "ghcr.io/ptero-eggs/installers:alpine",
-      installEntrypoint: "ash",
-      variables: [
-        {
-          name: "Server Jar File",
-          description: "The name of the server jarfile to run",
-          env_variable: "SERVER_JARFILE",
-          default_value: "server.jar",
-          user_viewable: true,
-          user_editable: true,
-          rules: "required|string|max:50",
+`;
+
+  const variables = [
+    {
+      name: "Server Jar File",
+      description: "The name of the server jarfile to run",
+      env_variable: "SERVER_JARFILE",
+      default_value: "server.jar",
+      user_viewable: true,
+      user_editable: true,
+      rules: "required|string|max:50",
+    },
+    {
+      name: "Minecraft Version",
+      description: "The version of Minecraft to install",
+      env_variable: "VANILLA_VERSION",
+      default_value: "1.21.4",
+      user_viewable: true,
+      user_editable: true,
+      rules: "required|string|max:20",
+    },
+  ];
+
+  const blueprint = await prisma.blueprint.upsert({
+    where: { id: "minecraft-vanilla" },
+    update: {
+      dockerImages: { "Java 21": "ghcr.io/ptero-eggs/yolks:java_21" },
+      startup:
+        "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+      config: {
+        stop: "stop",
+        startup: JSON.stringify({
+          done: [")! For help, type"],
+          user_interaction: [],
+          strip_ansi: false,
+        }),
+      },
+      scripts: {
+        installation: {
+          script: installScript,
+          container: "ghcr.io/ptero-eggs/installers:alpine",
+          entrypoint: "ash",
         },
-        {
-          name: "Minecraft Version",
-          description: "The version of Minecraft to install",
-          env_variable: "VANILLA_VERSION",
-          default_value: "1.21.4",
-          user_viewable: true,
-          user_editable: true,
-          rules: "required|string|max:20",
-        },
-      ],
+      },
+      variables,
     },
     create: {
       id: "minecraft-vanilla",
       name: "Minecraft Vanilla",
       description: "Vanilla Minecraft Java Edition server",
       category: "gaming",
-      imageName: "ghcr.io/ptero-eggs/yolks",
-      imageTag: "java_21",
+      author: "Mojang",
+      metaVersion: "PTDL_v2",
+      dockerImages: { "Java 21": "ghcr.io/ptero-eggs/yolks:java_21" },
       startup:
         "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
-      stopCommand: "stop",
-      startupDetection: [")! For help, type"],
-      installScript: `#!/bin/ash
-# Minecraft Vanilla Server Install Script
-
-cd /mnt/server
-
-# Download vanilla server
-LATEST_VERSION=\${VANILLA_VERSION:-"1.21.4"}
-
-echo "Downloading Minecraft server version \${LATEST_VERSION}..."
-
-# Get version manifest
-MANIFEST_URL="https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
-VERSION_URL=$(curl -s $MANIFEST_URL | jq -r ".versions[] | select(.id == \\"$LATEST_VERSION\\") | .url")
-
-if [ -z "$VERSION_URL" ]; then
-  echo "Version $LATEST_VERSION not found, using latest release..."
-  VERSION_URL=$(curl -s $MANIFEST_URL | jq -r '.latest.release as $ver | .versions[] | select(.id == $ver) | .url')
-fi
-
-# Get server download URL
-SERVER_URL=$(curl -s $VERSION_URL | jq -r '.downloads.server.url')
-
-# Download server
-curl -o server.jar $SERVER_URL
-
-echo "Download complete!"
-`,
-      installContainer: "ghcr.io/ptero-eggs/installers:alpine",
-      installEntrypoint: "ash",
-      variables: [
-        {
-          name: "Server Jar File",
-          description: "The name of the server jarfile to run",
-          env_variable: "SERVER_JARFILE",
-          default_value: "server.jar",
-          user_viewable: true,
-          user_editable: true,
-          rules: "required|string|max:50",
+      fileDenylist: [],
+      config: {
+        stop: "stop",
+        startup: JSON.stringify({
+          done: [")! For help, type"],
+          user_interaction: [],
+          strip_ansi: false,
+        }),
+      },
+      scripts: {
+        installation: {
+          script: installScript,
+          container: "ghcr.io/ptero-eggs/installers:alpine",
+          entrypoint: "ash",
         },
-        {
-          name: "Minecraft Version",
-          description: "The version of Minecraft to install",
-          env_variable: "VANILLA_VERSION",
-          default_value: "1.21.4",
-          user_viewable: true,
-          user_editable: true,
-          rules: "required|string|max:20",
-        },
-      ],
+      },
+      variables,
+      features: [],
+      dockerConfig: {
+        stdin_open: true,
+        tty: true,
+        environment: {},
+        volumes: [{ name: "data", target: "/home/container" }],
+      },
       isPublic: true,
-      config: {},
     },
   });
   console.log("Created blueprint:", blueprint.name);

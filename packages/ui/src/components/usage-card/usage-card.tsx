@@ -1,7 +1,7 @@
 import { ComponentPropsWithoutRef } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 
-type CardProps = ComponentPropsWithoutRef<"div"> & { isDark?: boolean };
+type CardProps = ComponentPropsWithoutRef<"div">;
 
 const UsageCardTitle = ({ className, children, isDark = true, ...props }: CardProps) => {
   return (
@@ -26,29 +26,26 @@ const UsageCardContent = ({ className, children, ...props }: CardProps) => {
   );
 };
 
-const UsageCardFooter = ({ className, children, isDark = true, ...props }: CardProps) => {
-  return (
-    <div
-      className={cn(
-        "mt-6 border-t pt-4 text-sm",
-        isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  );
+const UsageCardFooter = ({ className, children, ...props }: CardProps) => {
+    return (
+        <div
+            className={cn(
+                "mt-6 pt-4 border-t text-sm",
+                "border-zinc-700 text-zinc-400",
+                className
+            )}
+            {...props}
+        >
+            {children}
+        </div>
+    );
 };
 
-const UsageCard = ({ className, children, isDark = true, ...props }: CardProps) => {
+const UsageCard = ({ className, children, ...props }: CardProps) => {
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-lg border p-8 transition-colors",
-        isDark
-          ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
-          : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20",
+        "relative flex flex-col rounded-lg border p-8 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
         className
       )}
       {...props}

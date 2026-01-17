@@ -16,24 +16,24 @@ import { UploadProgressIndicator } from "@/components/upload-progress-indicator"
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
-const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
+const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
     </>
   );
 });
 
 // Wrapper component that checks server status and shows placeholder if needed
-function ServerStatusWrapper({ children, isDark }: { children: React.ReactNode; isDark: boolean }) {
+function ServerStatusWrapper({ children }: { children: React.ReactNode }) {
   const { server } = useServer();
 
   // Show suspended placeholder if server is suspended
   if (server?.status === "SUSPENDED") {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -41,8 +41,8 @@ function ServerStatusWrapper({ children, isDark }: { children: React.ReactNode; 
   // Show maintenance placeholder if server is under maintenance
   if (server?.status === "MAINTENANCE") {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerMaintenancePlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerMaintenancePlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -50,8 +50,8 @@ function ServerStatusWrapper({ children, isDark }: { children: React.ReactNode; 
   // Show restoring placeholder if server is being restored from backup
   if (server?.status === "RESTORING") {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerRestoringPlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerRestoringPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -66,25 +66,17 @@ export default function ServerLayout({
 }>) {
   const params = useParams();
   const serverId = params.id as string;
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   return (
     <UploadProvider>
       <ServerProvider serverId={serverId}>
         {/* Persistent background that doesn't re-render on navigation */}
-        <PersistentBackground isDark={isDark} />
+        <PersistentBackground />
 
         <SidebarProvider>
           <UnifiedSidebar />
           <SidebarInset>
-            <ServerStatusWrapper isDark={isDark}>
+            <ServerStatusWrapper>
               {children}
               <UploadProgressIndicator />
             </ServerStatusWrapper>

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsX } from "react-icons/bs";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsX} from "react-icons/bs";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -91,11 +91,18 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+const DialogTitle = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) => {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn(
+        "text-sm font-medium uppercase tracking-wider",
+        "text-zinc-100",
+        className
+      )}
       {...props}
     />
   );
@@ -108,7 +115,11 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn(
+        "text-sm",
+        "text-zinc-400",
+        className
+      )}
       {...props}
     />
   );

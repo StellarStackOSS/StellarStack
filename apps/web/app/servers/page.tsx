@@ -2,7 +2,6 @@
 
 import { useState, useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
@@ -27,15 +26,9 @@ type ServerStatus =
 
 const ServersPage = (): JSX.Element | null => {
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useNextTheme();
   const { signOut, isAdmin } = useAuth();
-  const [mounted, setMounted] = useState(false);
   const [servers, setServers] = useState<Server[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const fetchServers = async () => {
@@ -52,8 +45,6 @@ const ServersPage = (): JSX.Element | null => {
     fetchServers();
   }, []);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   const handleServerSelect = (serverId: string) => {
     router.push(`/servers/${serverId}/overview`);
   };
@@ -62,8 +53,6 @@ const ServersPage = (): JSX.Element | null => {
     await signOut();
     router.push("/");
   };
-
-  if (!mounted) return null;
 
   const getStatusColor = (status: ServerStatus) => {
     switch (status) {
@@ -102,27 +91,20 @@ const ServersPage = (): JSX.Element | null => {
 
   return (
     <div
-      className={cn(
-        "relative min-h-svh transition-colors",
-        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
-      )}
+      className="relative min-h-svh transition-colors bg-[#0b0b0a]"
     >
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
+      {/* Header */}
       <div className="relative p-8">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1
-                className={cn(
-                  "text-xl font-light tracking-wider",
-                  isDark ? "text-zinc-100" : "text-zinc-800"
-                )}
-              >
+              <h1 className="text-xl font-light tracking-wider text-zinc-100">
                 YOUR SERVERS
               </h1>
-              <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+              <p className="mt-1 text-xs text-zinc-500">
                 Select a server to manage
               </p>
             </div>
@@ -141,12 +123,7 @@ const ServersPage = (): JSX.Element | null => {
           {/* Server List */}
           <div className="space-y-4">
             {isLoading ? (
-              <div
-                className={cn(
-                  "py-12 text-center text-sm",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
-                )}
-              >
+              <div className="py-12 text-center text-sm text-zinc-500">
                 Loading servers...
               </div>
             ) : servers.length === 0 ? (
@@ -156,33 +133,16 @@ const ServersPage = (): JSX.Element | null => {
                 <button
                   key={server.id}
                   onClick={() => handleServerSelect(server.id)}
-                  className={cn(
-                    "group relative w-full cursor-pointer border p-6 text-left transition-all hover:scale-[1.01]",
-                    isDark
-                      ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20 hover:border-zinc-700"
-                      : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20 hover:border-zinc-400"
-                  )}
+                  className="group relative w-full cursor-pointer border p-6 text-left transition-all hover:scale-[1.01] border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20 hover:border-zinc-700"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div
-                        className={cn(
-                          "border p-3",
-                          isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
-                        )}
-                      >
-                        <BsServer
-                          className={cn("h-6 w-6", isDark ? "text-zinc-400" : "text-zinc-600")}
-                        />
+                      <div className="border p-3 border-zinc-700 bg-zinc-800/50">
+                        <BsServer className="h-6 w-6 text-zinc-400" />
                       </div>
                       <div>
                         <div className="flex items-center gap-3">
-                          <h2
-                            className={cn(
-                              "text-sm font-medium tracking-wider uppercase",
-                              isDark ? "text-zinc-100" : "text-zinc-800"
-                            )}
-                          >
+                          <h2 className="text-sm font-medium tracking-wider uppercase text-zinc-100">
                             {server.name}
                           </h2>
                           <span
@@ -194,12 +154,7 @@ const ServersPage = (): JSX.Element | null => {
                             {server.status}
                           </span>
                         </div>
-                        <div
-                          className={cn(
-                            "mt-1 flex items-center gap-4 text-xs",
-                            isDark ? "text-zinc-500" : "text-zinc-500"
-                          )}
-                        >
+                        <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
                           <span>{getGameType(server)}</span>
                           <span>-</span>
                           <span>{server.memory}MB RAM</span>
@@ -207,25 +162,13 @@ const ServersPage = (): JSX.Element | null => {
                           <span>{getLocationString(server)}</span>
                         </div>
                         {server.description && (
-                          <div
-                            className={cn(
-                              "mt-2 text-xs",
-                              isDark ? "text-zinc-600" : "text-zinc-400"
-                            )}
-                          >
+                          <div className="mt-2 text-xs text-zinc-600">
                             {server.description}
                           </div>
                         )}
                       </div>
                     </div>
-                    <BsChevronRight
-                      className={cn(
-                        "h-5 w-5 transition-transform group-hover:translate-x-1",
-                        isDark
-                          ? "text-zinc-600 group-hover:text-zinc-400"
-                          : "text-zinc-400 group-hover:text-zinc-600"
-                      )}
-                    />
+                    <BsChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 text-zinc-600 group-hover:text-zinc-400" />
                   </div>
                 </button>
               ))

@@ -1,46 +1,39 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { servers } from "@/lib/api";
-import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
-import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
-import { Console } from "@workspace/ui/components/console";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsExclamationTriangle } from "react-icons/bs";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@workspace/ui/components/sheet";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { CpuCard } from "@workspace/ui/components/cpu-card";
-import { UsageMetricCard } from "@workspace/ui/components/usage-metric-card";
-import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
-import { SystemInformationCard } from "@workspace/ui/components/system-information-card";
-import { NetworkInfoCard } from "@workspace/ui/components/network-info-card";
-import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
-import { ContainerUptimeCard } from "@workspace/ui/components/container-uptime-card";
-import { PlayersOnlineCard } from "@workspace/ui/components/players-online-card";
-import { RecentLogsCard } from "@workspace/ui/components/recent-logs-card";
-import { CardPreview } from "@workspace/ui/components/card-preview";
-import type { ContainerStatus } from "@workspace/ui/components/dashboard-cards-types";
-import { ThemeContext } from "@/contexts";
-import { useLabels } from "@/hooks";
-import { defaultGridItems, defaultHiddenCards } from "@/constants";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
-import { EulaExtension } from "../extensions/eula";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {servers} from "@/lib/api";
+import {DragDropGrid, GridItem} from "@workspace/ui/components/drag-drop-grid";
+import {useGridStorage} from "@workspace/ui/hooks/useGridStorage";
+import {Console} from "@workspace/ui/components/console";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsExclamationTriangle} from "react-icons/bs";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,} from "@workspace/ui/components/sheet";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {CpuCard} from "@workspace/ui/components/cpu-card";
+import {UsageMetricCard} from "@workspace/ui/components/usage-metric-card";
+import {NetworkUsageCard} from "@workspace/ui/components/network-usage-card";
+import {SystemInformationCard} from "@workspace/ui/components/system-information-card";
+import {NetworkInfoCard} from "@workspace/ui/components/network-info-card";
+import {InstanceNameCard} from "@workspace/ui/components/instance-name-card";
+import {ContainerUptimeCard} from "@workspace/ui/components/container-uptime-card";
+import {PlayersOnlineCard} from "@workspace/ui/components/players-online-card";
+import {RecentLogsCard} from "@workspace/ui/components/recent-logs-card";
+import {CardPreview} from "@workspace/ui/components/card-preview";
+import type {ContainerStatus} from "@workspace/ui/components/dashboard-cards-types";
+import {ThemeContext} from "@/contexts";
+import {useLabels} from "@/hooks";
+import {defaultGridItems, defaultHiddenCards} from "@/constants";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {type StatsWithHistory, useServerWebSocket} from "@/hooks/useServerWebSocket";
+import {EulaExtension} from "../extensions/eula";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {ServerMaintenancePlaceholder} from "components/ServerStatusPages/server-maintenance-placeholder";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {LightBoard} from "@workspace/ui/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 // import {LightBoard} from "@workspace/ui/components/Lightboard/Lightboard"
 
@@ -155,8 +148,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isCardSheetOpen, setIsCardSheetOpen] = useState(false);
-  const { resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
   const [showConnectionBanner, setShowConnectionBanner] = useState(false);
   const [hasAttemptedConnection, setHasAttemptedConnection] = useState(false);
   const labels = useLabels();
@@ -212,10 +203,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
     message: line.text,
   }));
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  // Delay showing connection banner to prevent flash on page load
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
@@ -289,36 +277,31 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (isInstalling) {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
 
   if (server?.status === "SUSPENDED") {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
 
   if (server?.status === "MAINTENANCE") {
     return (
-      <div className={cn("min-h-svh", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <ServerMaintenancePlaceholder isDark={isDark} serverName={server?.name} />
+      <div className="min-h-svh bg-[#0b0b0a]">
+        <ServerMaintenancePlaceholder serverName={server?.name} />
       </div>
     );
   }
 
   if (isLoading && !wsConnected) {
     return (
-      <div
-        className={cn(
-          "flex min-h-svh items-center justify-center",
-          isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
-        )}
-      >
+      <div className="flex min-h-svh items-center justify-center bg-[#0b0b0a]">
         <div className="flex items-center gap-3">
           <Spinner className="h-5 w-5" />
         </div>
@@ -327,7 +310,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
   }
 
   return (
-    <ThemeContext.Provider value={{ isDark }}>
+    <ThemeContext.Provider>
       <div className="relative w-full transition-colors">
         <FadeIn direction={"down"} delay={500} duration={400}>
           <LightBoard
@@ -338,14 +321,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
           />
         </FadeIn>
         {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
-          <div
-            className={cn(
-              "relative z-10 flex items-center justify-center gap-2 px-4 py-3 text-sm",
-              isDark
-                ? "border-b border-amber-500/20 bg-amber-500/10 text-amber-400"
-                : "border-b border-amber-200 bg-amber-50 text-amber-700"
-            )}
-          >
+          <div className="relative z-10 flex items-center justify-center gap-2 px-4 py-3 text-sm border-b border-amber-500/20 bg-amber-500/10 text-amber-400">
             <BsExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             <span>
               Unable to connect to daemon. Server controls may not work until connection is
@@ -360,11 +336,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
               <div className="flex items-center gap-4">
                 <SidebarTrigger
                   className={cn(
-                    "transition-all hover:scale-110 active:scale-95",
-                    isDark
-                      ? "text-zinc-400 hover:text-zinc-100"
-                      : "text-zinc-600 hover:text-zinc-900"
-                  )}
+                    "transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100")}
                 />
               </div>
               <div className="flex w-2/3 flex-row justify-end gap-2">
@@ -402,16 +374,13 @@ const ServerOverviewPage = (): JSX.Element | null => {
           <Sheet open={isCardSheetOpen} onOpenChange={setIsCardSheetOpen}>
             <SheetContent
               side="right"
-              className={cn(
-                "w-[400px] overflow-y-auto sm:max-w-[450px]",
-                isDark ? "border-zinc-800 bg-[#0f0f0f]" : "border-zinc-200 bg-white"
-              )}
+              className="w-[400px] overflow-y-auto sm:max-w-[450px] border-zinc-800 bg-[#0f0f0f]"
             >
               <SheetHeader>
-                <SheetTitle className={isDark ? "text-zinc-100" : "text-zinc-900"}>
+                <SheetTitle className="text-zinc-100">
                   {labels.dashboard.availableCards}
                 </SheetTitle>
-                <SheetDescription className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                <SheetDescription className="text-zinc-400">
                   {labels.dashboard.availableCardsDescription}
                 </SheetDescription>
               </SheetHeader>
@@ -422,23 +391,15 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     <div
                       key={cardId}
                       onClick={() => showCard(cardId)}
-                      className={cn(
-                        "cursor-pointer overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg",
-                        isDark ? "hover:shadow-black/50" : "hover:shadow-zinc-300/50"
-                      )}
+                      className="cursor-pointer overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-black/50"
                     >
                       <div className="pointer-events-none h-[120px]">
-                        <CardPreview cardId={cardId} isDark={isDark} server={displayData} />
+                        <CardPreview cardId={cardId} server={displayData} />
                       </div>
                     </div>
                   ))}
                 {hiddenCards.filter((id) => id !== "console").length === 0 && (
-                  <div
-                    className={cn(
-                      "py-8 text-center text-sm",
-                      isDark ? "text-zinc-500" : "text-zinc-400"
-                    )}
-                  >
+                  <div className="py-8 text-center text-sm text-zinc-500">
                     {labels.dashboard.allCardsOnDashboard}
                     <br />
                     {labels.dashboard.removeCardsHint}
@@ -459,7 +420,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
             rowHeight={50}
             gap={16}
             isEditing={isEditing}
-            isDark={isDark}
             isDroppable={true}
             removeConfirmLabels={labels.removeCard}
           >
@@ -468,8 +428,17 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="instance-name">
                   <InstanceNameCard
                     itemId="instance-name"
-                    isDark={isDark}
                     instanceName={displayData.name}
+                  />
+                </GridItem>
+              </div>
+            )}
+
+            {!hiddenCards.includes("container-controls") && (
+              <div key="container-controls" className="h-full">
+                <GridItem itemId="container-controls">
+                  <ContainerControlsCard
+                    itemId="container-controls"
                     isOffline={isOffline}
                     status={containerControls.status}
                     onStart={containerControls.handleStart}
@@ -488,7 +457,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="system-info">
                   <SystemInformationCard
                     itemId="system-info"
-                    isDark={isDark}
                     nodeData={displayData.node}
                     labels={labels.systemInfo}
                   />
@@ -501,7 +469,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="network-info">
                   <NetworkInfoCard
                     itemId="network-info"
-                    isDark={isDark}
                     networkInfo={{
                       publicIp: displayData.networkConfig.publicIp || "",
                       openPorts: displayData.networkConfig.openPorts,
@@ -521,7 +488,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     primaryValue={displayData.cpu.displayValue}
                     history={displayData.cpu.usage.history}
                     coreUsage={displayData.cpu.coreUsage}
-                    isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.cpu}
                   />
@@ -536,8 +502,11 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="ram"
                     percentage={displayData.memory.usage.percentage}
                     primaryValue={displayData.memory.displayValue}
+                    details={[
+                      `${displayData.memory.usage.percentage.toFixed(1)}% used`,
+                      displayData.memory.type || "",
+                    ]}
                     history={displayData.memory.usage.history}
-                    isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.ram}
                   />
@@ -553,7 +522,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     percentage={displayData.disk.usage.percentage}
                     primaryValue={`${displayData.disk.used.toFixed(2)} / ${displayData.disk.total.toFixed(0)} GiB`}
                     history={displayData.disk.usage.history}
-                    isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.disk}
                   />
@@ -570,7 +538,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     upload={displayData.network.upload}
                     downloadHistory={displayData.network.downloadHistory}
                     uploadHistory={displayData.network.uploadHistory}
-                    isDark={isDark}
                     isOffline={isOffline}
                     labels={labels.network}
                   />
@@ -584,7 +551,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                   <Console
                     lines={consoleLines}
                     onCommand={handleCommand}
-                    isDark={isDark}
                     isOffline={isOffline}
                     showSendButton={true}
                   />
@@ -597,7 +563,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="players-online">
                   <PlayersOnlineCard
                     itemId="players-online"
-                    isDark={isDark}
                     isOffline={isOffline}
                     players={displayData.gameServer?.players || []}
                     maxPlayers={displayData.gameServer?.maxPlayers || 20}
@@ -613,7 +578,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="container-uptime">
                   <ContainerUptimeCard
                     itemId="container-uptime"
-                    isDark={isDark}
                     isOffline={isOffline}
                     containerUptime={displayData.containerUptime || 0}
                     containerStatus={displayData.status}
@@ -628,7 +592,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                 <GridItem itemId="recent-logs">
                   <RecentLogsCard
                     itemId="recent-logs"
-                    isDark={isDark}
                     isOffline={isOffline}
                     logs={displayData.recentLogs || []}
                     labels={labels.recentLogs}
@@ -643,7 +606,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
         <EulaExtension serverId={serverId} lines={rawConsoleLines} onRestart={restart} />
       </div>
     </ThemeContext.Provider>
-  );
-};
+    );
+}
 
 export default ServerOverviewPage;

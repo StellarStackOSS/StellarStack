@@ -17,7 +17,9 @@ import type {CreateLocationData, Location} from "@/lib/api";
 import {toast} from "sonner";
 
 export default function LocationsPage() {
-  const { mounted, isDark, inputClasses, labelClasses } = useAdminTheme();
+  const router = useRouter();
+  // TODO: REMOVE THIS
+  const { mounted, inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: locationsList = [], isLoading } = useLocations();
@@ -100,9 +102,9 @@ export default function LocationsPage() {
   if (!mounted) return null;
 
   return (
-    <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -152,8 +154,7 @@ export default function LocationsPage() {
                           size="sm"
                           onClick={() => handleEdit(location)}
                           className={cn(
-                            "text-xs p-1.5",
-                            isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                           )}
                         >
                           <EditIcon className="w-3 h-3" />
@@ -163,8 +164,7 @@ export default function LocationsPage() {
                           size="sm"
                           onClick={() => setDeleteConfirmLocation(location)}
                           className={cn(
-                            "text-xs p-1.5",
-                            isDark ? "border-red-900/50 text-red-400 hover:bg-red-900/20" : "border-red-200 text-red-600 hover:bg-red-50"
+                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
                           )}
                         >
                           <TrashIcon className="w-3 h-3" />

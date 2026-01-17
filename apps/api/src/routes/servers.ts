@@ -245,7 +245,7 @@ servers.get("/", requireAuth, async (c) => {
         },
       },
       blueprint: {
-        select: { id: true, name: true, imageName: true },
+        select: { id: true, name: true },
       },
       owner: {
         select: { id: true, name: true, email: true },
@@ -457,7 +457,9 @@ servers.post("/", requireAdmin, async (c) => {
   }
 
   // Determine which docker image to use
-  const dockerImage = parsed.data.dockerImage || `${blueprint.imageName}:${blueprint.imageTag}`;
+  const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+  const dockerImageOptions = Object.values(dockerImages);
+  const dockerImage = parsed.data.dockerImage || dockerImageOptions[0] || "alpine:latest";
 
   // Build startup command with variable substitution
   let invocation = blueprint.startup || "";
@@ -470,38 +472,30 @@ servers.post("/", requireAdmin, async (c) => {
   // Get primary allocation
   const primaryAllocation = allocations[0];
 
-  // Extract startup detection patterns - following Pterodactyl's format
-  // Blueprints store startupDetection as an array of pattern strings: ["pattern1", "pattern2", ...]
+  // Extract startup detection patterns from config.startup JSON
+  // Pterodactyl format: { "done": ["pattern1", "pattern2"], "user_interaction": [...] }
   const startupDonePatterns: string[] = [];
 
-  if (Array.isArray(blueprint.startupDetection)) {
-    // Direct array format: ["pattern1", "pattern2"]
-    for (const pattern of blueprint.startupDetection) {
-      if (typeof pattern === "string" && pattern.trim()) {
-        startupDonePatterns.push(pattern.trim());
-      }
-    }
-    console.log(
-      `[Server Create] Found ${startupDonePatterns.length} startup patterns for ${blueprint.name}:`,
-      startupDonePatterns
-    );
-  } else if (blueprint.startupDetection) {
-    // Fallback for old format: { "done": "pattern" or ["pattern"] }
-    const detection = blueprint.startupDetection as any;
-    if (Array.isArray(detection.done)) {
-      for (const pattern of detection.done) {
-        if (typeof pattern === "string" && pattern.trim()) {
-          startupDonePatterns.push(pattern.trim());
+  const startupConfig = blueprint.config as any;
+  if (startupConfig?.startup) {
+    try {
+      const parsed_startup = typeof startupConfig.startup === "string"
+        ? JSON.parse(startupConfig.startup)
+        : startupConfig.startup;
+
+      if (parsed_startup.done) {
+        if (Array.isArray(parsed_startup.done)) {
+          for (const pattern of parsed_startup.done) {
+            if (typeof pattern === "string" && pattern.trim()) {
+              startupDonePatterns.push(pattern.trim());
+            }
+          }
+        } else if (typeof parsed_startup.done === "string" && parsed_startup.done.trim()) {
+          startupDonePatterns.push(parsed_startup.done.trim());
         }
       }
-    } else if (typeof detection.done === "string" && detection.done.trim()) {
-      startupDonePatterns.push(detection.done.trim());
-    }
-    if (startupDonePatterns.length > 0) {
-      console.log(
-        `[Server Create] Converted old format startupDetection for ${blueprint.name}:`,
-        startupDonePatterns
-      );
+    } catch (e) {
+      console.error(`[Server Create] Failed to parse startup config for ${blueprint.name}:`, e);
     }
   }
 
@@ -519,13 +513,22 @@ servers.post("/", requireAdmin, async (c) => {
     startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
   );
 
+  // Extract install script from native format
+  const scriptData = (blueprint.scripts as any) || {};
+  const installationScript = scriptData.installation?.script;
+  const hasInstallScript = installationScript && installationScript.trim().length > 0;
+
+  // Extract stop command from config
+  const configData = (blueprint.config as any) || {};
+  const stopCommand = configData.stop || "SIGTERM";
+
   // Build daemon request in the format the Rust daemon expects
   const daemonRequest_body = {
     uuid: server.id,
     name: server.name,
     suspended: false,
     invocation: invocation,
-    skip_egg_scripts: !blueprint.installScript,
+    skip_egg_scripts: !hasInstallScript,
     build: {
       memory_limit: parsed.data.memory * 1024 * 1024, // MiB to bytes
       swap: parsed.data.swap === -1 ? -1 : parsed.data.swap * 1024 * 1024, // MiB to bytes
@@ -554,7 +557,7 @@ servers.post("/", requireAdmin, async (c) => {
     },
     egg: {
       id: blueprint.id,
-      file_denylist: [],
+      file_denylist: blueprint.fileDenylist || [],
     },
     mounts: [],
     // Process configuration for startup detection and stop handling
@@ -564,9 +567,9 @@ servers.post("/", requireAdmin, async (c) => {
         user_interaction: [],
         strip_ansi: false,
       },
-      stop: blueprint.stopCommand
-        ? { type: "command", value: blueprint.stopCommand }
-        : { type: "signal", value: "SIGTERM" },
+      stop: stopCommand.toUpperCase().startsWith("SIG")
+        ? { type: "signal", value: stopCommand }
+        : { type: "command", value: stopCommand },
       configs: [],
     },
   };
@@ -576,7 +579,6 @@ servers.post("/", requireAdmin, async (c) => {
     const result = await daemonRequest(node, "POST", `/api/servers`, daemonRequest_body);
 
     // Update server status based on whether installation is needed
-    const hasInstallScript = blueprint.installScript && blueprint.installScript.trim().length > 0;
     const newStatus = hasInstallScript ? "INSTALLING" : "STOPPED";
 
     await db.server.update({
@@ -1382,8 +1384,9 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
   if (!selectedDockerImage && dockerImageOptions.length > 0) {
     selectedDockerImage = dockerImageOptions[0].image;
   } else if (!selectedDockerImage) {
-    // Fall back to blueprint's primary image
-    selectedDockerImage = blueprint.imageName + ":" + blueprint.imageTag;
+    // Fall back to first available docker image from blueprint
+    const images = Object.values(dockerImages);
+    selectedDockerImage = images.length > 0 ? images[0] : "alpine:latest";
   }
 
   // Build startup command with variable substitution
@@ -1395,6 +1398,10 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
   // Replace SERVER_MEMORY placeholder with memory limit
   startupCommand = startupCommand.replace(/\{\{SERVER_MEMORY\}\}/g, String(fullServer.memory));
 
+  // Extract stop command from config
+  const configData = (blueprint.config as any) || {};
+  const stopCommand = configData.stop || "stop";
+
   return c.json({
     variables: variables.filter((v) => v.userViewable),
     dockerImages: dockerImageOptions,
@@ -1402,7 +1409,7 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
     startupCommand,
     customStartupCommands: fullServer.customStartupCommands || "",
     features: (blueprint.features as string[]) || [],
-    stopCommand: blueprint.stopCommand || "stop",
+    stopCommand,
   });
 });
 
@@ -1447,10 +1454,6 @@ servers.patch("/:serverId/startup", requireServerAccess, async (c) => {
   if (parsed.data.dockerImage) {
     const dockerImages = (fullServer.blueprint.dockerImages as Record<string, string>) || {};
     const validImages = Object.values(dockerImages);
-
-    // Also allow the primary blueprint image
-    const primaryImage = fullServer.blueprint.imageName + ":" + fullServer.blueprint.imageTag;
-    validImages.push(primaryImage);
 
     if (validImages.includes(parsed.data.dockerImage)) {
       updateData.dockerImage = parsed.data.dockerImage;
@@ -2917,38 +2920,30 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
       invocation = invocation.replace(/\{\{SERVER_IP\}\}/g, allocation.ip);
       invocation = invocation.replace(/\{\{SERVER_MEMORY\}\}/g, String(Number(childMemory)));
 
-      // Extract startup detection patterns - following Pterodactyl's format
-      // Blueprints store startupDetection as an array of pattern strings: ["pattern1", "pattern2", ...]
+      // Extract startup detection patterns from config.startup JSON
+      // Pterodactyl format: { "done": ["pattern1", "pattern2"], "user_interaction": [...] }
       const startupDonePatterns: string[] = [];
 
-      if (Array.isArray(blueprint?.startupDetection)) {
-        // Direct array format: ["pattern1", "pattern2"]
-        for (const pattern of blueprint.startupDetection) {
-          if (typeof pattern === "string" && pattern.trim()) {
-            startupDonePatterns.push(pattern.trim());
-          }
-        }
-        console.log(
-          `[Child Server Create] Found ${startupDonePatterns.length} startup patterns for ${childServer.name}:`,
-          startupDonePatterns
-        );
-      } else if (blueprint?.startupDetection) {
-        // Fallback for old format: { "done": "pattern" or ["pattern"] }
-        const detection = blueprint.startupDetection as any;
-        if (Array.isArray(detection.done)) {
-          for (const pattern of detection.done) {
-            if (typeof pattern === "string" && pattern.trim()) {
-              startupDonePatterns.push(pattern.trim());
+      const startupConfig = blueprint?.config as any;
+      if (startupConfig?.startup) {
+        try {
+          const parsed_startup = typeof startupConfig.startup === "string"
+            ? JSON.parse(startupConfig.startup)
+            : startupConfig.startup;
+
+          if (parsed_startup.done) {
+            if (Array.isArray(parsed_startup.done)) {
+              for (const pattern of parsed_startup.done) {
+                if (typeof pattern === "string" && pattern.trim()) {
+                  startupDonePatterns.push(pattern.trim());
+                }
+              }
+            } else if (typeof parsed_startup.done === "string" && parsed_startup.done.trim()) {
+              startupDonePatterns.push(parsed_startup.done.trim());
             }
           }
-        } else if (typeof detection.done === "string" && detection.done.trim()) {
-          startupDonePatterns.push(detection.done.trim());
-        }
-        if (startupDonePatterns.length > 0) {
-          console.log(
-            `[Child Server Create] Converted old format startupDetection for ${childServer.name}:`,
-            startupDonePatterns
-          );
+        } catch (e) {
+          console.error(`[Child Server Create] Failed to parse startup config for ${childServer.name}:`, e);
         }
       }
 
@@ -2962,13 +2957,21 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
         startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
       );
 
+      // Extract install script and stop command from native format
+      const scriptData = blueprint?.scripts as any;
+      const installationScript = scriptData?.installation?.script;
+      const hasInstallScript = installationScript && installationScript.trim().length > 0;
+
+      const configData = blueprint?.config as any;
+      const stopCommand = configData?.stop || "SIGTERM";
+
       // Build the daemon request in the format the Rust daemon expects
       const daemonRequest_body = {
         uuid: childServer.id,
         name: childServer.name,
         suspended: false,
         invocation: invocation,
-        skip_egg_scripts: !blueprint?.installScript,
+        skip_egg_scripts: !hasInstallScript,
         build: {
           memory_limit: Number(childMemory) * 1024 * 1024, // MiB to bytes
           swap: 0,
@@ -2992,7 +2995,7 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
         },
         egg: {
           id: blueprint?.id || parentServer.blueprintId,
-          file_denylist: [],
+          file_denylist: blueprint?.fileDenylist || [],
         },
         mounts: [],
         process_configuration: {
@@ -3001,18 +3004,14 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
             user_interaction: [],
             strip_ansi: false,
           },
-          stop: blueprint?.stopCommand
-            ? { type: "command", value: blueprint.stopCommand }
-            : { type: "signal", value: "SIGTERM" },
+          stop: stopCommand.toUpperCase().startsWith("SIG")
+            ? { type: "signal", value: stopCommand }
+            : { type: "command", value: stopCommand },
           configs: [],
         },
       };
 
       await daemonRequest(parentServer.node, "POST", "/api/servers", daemonRequest_body);
-
-      // Trigger installation if there's an install script
-      const hasInstallScript =
-        blueprint?.installScript && blueprint.installScript.trim().length > 0;
       if (hasInstallScript) {
         try {
           await daemonRequest(parentServer.node, "POST", `/api/servers/${childServer.id}/install`);

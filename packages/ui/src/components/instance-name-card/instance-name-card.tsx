@@ -10,7 +10,6 @@ import type {
 } from "../dashboard-cards-types";
 
 interface InstanceNameCardProps extends CardProps {
-  isDark: boolean;
   instanceName: string;
   isOffline: boolean;
   status: ContainerStatus;
@@ -28,7 +27,6 @@ interface InstanceNameCardProps extends CardProps {
 }
 
 export const InstanceNameCard = ({
-  isDark,
   instanceName,
   isOffline,
   status,
@@ -58,12 +56,11 @@ export const InstanceNameCard = ({
     isTransitioning ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-50"
   );
 
-  console.log("container status:", status);
 
   return (
     <UsageCard isDark={isDark} className="flex h-full flex-row items-center justify-between">
       <div
-        className={cn("font-mono text-2xl uppercase", isDark ? "text-zinc-400" : "text-zinc-600")}
+        className={cn("font-mono text-2xl uppercase text-zinc-400")}
       >
         {instanceName}
       </div>

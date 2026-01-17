@@ -8,11 +8,11 @@ import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
-const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
+const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
     </>
   );
 });
@@ -22,18 +22,9 @@ export default function AccountLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   return (
     <>
-      <PersistentBackground isDark={isDark} />
+      <PersistentBackground />
       <SidebarProvider>
         <UnifiedSidebar />
         <SidebarInset>{children}</SidebarInset>

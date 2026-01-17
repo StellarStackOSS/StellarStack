@@ -11,18 +11,17 @@ import { cn } from "@workspace/ui/lib/utils";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
-const PersistentBackground = memo(function PersistentBackground({ isDark }: { isDark: boolean }) {
+const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
     </>
   );
 });
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { resolvedTheme } = useNextTheme();
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
   const [mounted, setMounted] = useState(false);
 
@@ -40,22 +39,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isAdmin, isLoading, isAuthenticated, router]);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   // Show loading while checking auth
   if (isLoading || !mounted) {
     return (
       <div
         className={cn(
-          "flex min-h-svh items-center justify-center",
-          isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+          "flex min-h-svh items-center justify-center bg-[#0b0b0a]",
         )}
       >
-        <PersistentBackground isDark={isDark} />
+        <PersistentBackground />
         <div
           className={cn(
-            "relative z-10 text-sm tracking-wider uppercase",
-            isDark ? "text-zinc-500" : "text-zinc-400"
+            "relative z-10 text-sm tracking-wider uppercase text-zinc-500",
           )}
         >
           Loading...
@@ -71,11 +66,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <>
-      <PersistentBackground isDark={isDark} />
+      <PersistentBackground />
       <SidebarProvider>
-        <UnifiedSidebar isDark={isDark} />
+        <UnifiedSidebar />
         <SidebarInset
-          className={cn("transition-colors", isDark ? "bg-transparent" : "bg-transparent")}
+          className={cn("transition-colors bg-transparent")}
         >
           {children}
         </SidebarInset>

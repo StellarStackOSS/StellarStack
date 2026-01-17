@@ -60,8 +60,6 @@ const DatabasesPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
   const [databases, setDatabases] = useState<Database[]>(mockDatabases);
   const [visiblePasswords, setVisiblePasswords] = useState<string[]>([]);
 
@@ -73,19 +71,11 @@ const DatabasesPage = (): JSX.Element | null => {
   // Form states
   const [formName, setFormName] = useState("");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
-  if (!mounted) return null;
-
   if (isInstalling) {
     return (
       <div className="min-h-svh">
         {/* Background is now rendered in the layout for persistence */}
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -93,7 +83,7 @@ const DatabasesPage = (): JSX.Element | null => {
   if (server?.status === "SUSPENDED") {
     return (
       <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -156,19 +146,19 @@ const DatabasesPage = (): JSX.Element | null => {
               <SidebarTrigger
                 className={cn(
                   "transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                  "text-zinc-400 hover:text-zinc-100"
                 )}
               />
               <div>
                 <h1
                   className={cn(
                     "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-zinc-100"
                   )}
                 >
                   DATABASES
                 </h1>
-                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
                   Server {serverId} • {databases.length} databases
                 </p>
               </div>
@@ -180,26 +170,11 @@ const DatabasesPage = (): JSX.Element | null => {
                 onClick={openCreateModal}
                 className={cn(
                   "gap-2 transition-all",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
                 )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Database</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
-                )}
-              >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -208,15 +183,13 @@ const DatabasesPage = (): JSX.Element | null => {
           <div
             className={cn(
               "mb-6 flex items-center gap-3 border p-4",
-              isDark
-                ? "border-amber-700/30 bg-amber-950/20 text-amber-200/80"
-                : "border-amber-200 bg-amber-50 text-amber-800"
+              "border-amber-700/30 bg-amber-950/20 text-amber-200/80"
             )}
           >
             <BsExclamationTriangle className="h-5 w-5 shrink-0" />
             <div>
               <p className="text-sm font-medium">Under Development</p>
-              <p className={cn("mt-0.5 text-xs", isDark ? "text-amber-200/60" : "text-amber-600")}>
+              <p className={cn("mt-0.5 text-xs", "text-amber-200/60")}>
                 Database management is not yet connected to the API. The data shown below is for
                 demonstration purposes only.
               </p>
@@ -230,34 +203,32 @@ const DatabasesPage = (): JSX.Element | null => {
                 key={db.id}
                 className={cn(
                   "relative border p-6 transition-all",
-                  isDark
-                    ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                    : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+                  "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                 )}
               >
                 {/* Corner decorations */}
                 <div
                   className={cn(
                     "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                    isDark ? "border-zinc-500" : "border-zinc-400"
+                    "border-zinc-500"
                   )}
                 />
                 <div
                   className={cn(
                     "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                    isDark ? "border-zinc-500" : "border-zinc-400"
+                    "border-zinc-500"
                   )}
                 />
                 <div
                   className={cn(
                     "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                    isDark ? "border-zinc-500" : "border-zinc-400"
+                    "border-zinc-500"
                   )}
                 />
                 <div
                   className={cn(
                     "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                    isDark ? "border-zinc-500" : "border-zinc-400"
+                    "border-zinc-500"
                   )}
                 />
 
@@ -267,7 +238,7 @@ const DatabasesPage = (): JSX.Element | null => {
                       <h3
                         className={cn(
                           "text-sm font-medium tracking-wider uppercase",
-                          isDark ? "text-zinc-100" : "text-zinc-800"
+                          "text-zinc-100"
                         )}
                       >
                         {db.name}
@@ -275,9 +246,7 @@ const DatabasesPage = (): JSX.Element | null => {
                       <span
                         className={cn(
                           "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                          isDark
-                            ? "border-green-500/50 text-green-400"
-                            : "border-green-400 text-green-600"
+                          "border-green-500/50 text-green-400"
                         )}
                       >
                         {db.connections}/{db.maxConnections} connections
@@ -289,7 +258,7 @@ const DatabasesPage = (): JSX.Element | null => {
                         <label
                           className={cn(
                             "text-[10px] font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
+                            "text-zinc-500"
                           )}
                         >
                           Host
@@ -297,7 +266,7 @@ const DatabasesPage = (): JSX.Element | null => {
                         <div
                           className={cn(
                             "mt-1 font-mono text-sm",
-                            isDark ? "text-zinc-300" : "text-zinc-700"
+                            "text-zinc-300"
                           )}
                         >
                           {db.host}:{db.port}
@@ -307,13 +276,13 @@ const DatabasesPage = (): JSX.Element | null => {
                         <label
                           className={cn(
                             "text-[10px] font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
+                            "text-zinc-500"
                           )}
                         >
                           Size
                         </label>
                         <div
-                          className={cn("mt-1 text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}
+                          className={cn("mt-1 text-sm", "text-zinc-300")}
                         >
                           {db.size}
                         </div>
@@ -322,7 +291,7 @@ const DatabasesPage = (): JSX.Element | null => {
                         <label
                           className={cn(
                             "text-[10px] font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
+                            "text-zinc-500"
                           )}
                         >
                           Username
@@ -331,7 +300,7 @@ const DatabasesPage = (): JSX.Element | null => {
                           <span
                             className={cn(
                               "font-mono text-sm",
-                              isDark ? "text-zinc-300" : "text-zinc-700"
+                              "text-zinc-300"
                             )}
                           >
                             {db.username}
@@ -340,9 +309,7 @@ const DatabasesPage = (): JSX.Element | null => {
                             onClick={() => copyToClipboard(db.username)}
                             className={cn(
                               "p-1 transition-colors",
-                              isDark
-                                ? "text-zinc-500 hover:text-zinc-300"
-                                : "text-zinc-400 hover:text-zinc-600"
+                              "text-zinc-500 hover:text-zinc-300"
                             )}
                           >
                             <BsClipboard className="h-3 w-3" />
@@ -353,7 +320,7 @@ const DatabasesPage = (): JSX.Element | null => {
                         <label
                           className={cn(
                             "text-[10px] font-medium tracking-wider uppercase",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
+                            "text-zinc-500"
                           )}
                         >
                           Password
@@ -362,7 +329,7 @@ const DatabasesPage = (): JSX.Element | null => {
                           <span
                             className={cn(
                               "font-mono text-sm",
-                              isDark ? "text-zinc-300" : "text-zinc-700"
+                              "text-zinc-300"
                             )}
                           >
                             {visiblePasswords.includes(db.id) ? db.password : "••••••••"}
@@ -371,9 +338,7 @@ const DatabasesPage = (): JSX.Element | null => {
                             onClick={() => togglePassword(db.id)}
                             className={cn(
                               "p-1 transition-colors",
-                              isDark
-                                ? "text-zinc-500 hover:text-zinc-300"
-                                : "text-zinc-400 hover:text-zinc-600"
+                              "text-zinc-500 hover:text-zinc-300"
                             )}
                           >
                             {visiblePasswords.includes(db.id) ? (
@@ -386,9 +351,7 @@ const DatabasesPage = (): JSX.Element | null => {
                             onClick={() => copyToClipboard(db.password)}
                             className={cn(
                               "p-1 transition-colors",
-                              isDark
-                                ? "text-zinc-500 hover:text-zinc-300"
-                                : "text-zinc-400 hover:text-zinc-600"
+                              "text-zinc-500 hover:text-zinc-300"
                             )}
                           >
                             <BsClipboard className="h-3 w-3" />
@@ -403,9 +366,7 @@ const DatabasesPage = (): JSX.Element | null => {
                     onClick={() => openDeleteModal(db)}
                     className={cn(
                       "p-2 transition-all",
-                      isDark
-                        ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700"
+                      "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
                     )}
                   >
                     <BsTrash className="h-4 w-4" />
@@ -432,7 +393,7 @@ const DatabasesPage = (): JSX.Element | null => {
             <label
               className={cn(
                 "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Database Name
@@ -443,12 +404,10 @@ const DatabasesPage = (): JSX.Element | null => {
               placeholder="e.g., player_data"
               className={cn(
                 "transition-all",
-                isDark
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+                "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
               )}
             />
-            <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+            <p className={cn("mt-1 text-xs", "text-zinc-500")}>
               Minimum 3 characters. Username and password will be auto-generated.
             </p>
           </div>

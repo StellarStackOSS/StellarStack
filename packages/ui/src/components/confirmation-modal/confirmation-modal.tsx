@@ -53,7 +53,9 @@ export const ConfirmationModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          {description && (
+            <DialogDescription>{description}</DialogDescription>
+          )}
         </DialogHeader>
         {children}
         <DialogFooter>
