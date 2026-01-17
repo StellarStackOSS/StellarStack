@@ -1,0 +1,255 @@
+name: Installer Release Coordinator
+
+on:
+  push:
+    tags:
+      - 'installer-v*'
+  workflow_dispatch:
+
+env:
+  BINARY_NAME: stellarstack-installer
+  GO_VERSION: '1.25.6'
+
+jobs:
+  # This job waits for all platform-specific builds to complete
+  # Individual builds happen in:
+  # - installer-build-linux.yml (runs on tags and pushes to Installer/)
+  # - installer-build-macos.yml (runs on tags and pushes to Installer/)
+  # - installer-build-windows.yml (runs on tags and pushes to Installer/)
+
+  wait-for-builds:
+    name: Wait for Platform Builds
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/installer-v')
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wait for workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Waiting for platform-specific builds to complete..."
+
+          # Get the commit SHA
+          COMMIT_SHA=${{ github.sha }}
+
+          # Wait for Linux build
+          echo "Checking Linux build..."
+          gh run list --workflow installer-build-linux.yml --status completed --limit 1 --json conclusion
+
+          # Wait for macOS build
+          echo "Checking macOS build..."
+          gh run list --workflow installer-build-macos.yml --status completed --limit 1 --json conclusion
+
+          # Wait for Windows build
+          echo "Checking Windows build..."
+          gh run list --workflow installer-build-windows.yml --status completed --limit 1 --json conclusion
+
+          echo "All platform builds completed!"
+
+  unified-release:
+    name: Create Unified Release
+    needs: wait-for-builds
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Linux artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: installer-build-linux.yml
+          name: ''
+          path: release-files
+          skip_unpack: true
+        continue-on-error: true
+
+      - name: Download macOS artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: installer-build-macos.yml
+          name: ''
+          path: release-files
+          skip_unpack: true
+        continue-on-error: true
+
+      - name: Download Windows artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: installer-build-windows.yml
+          name: ''
+          path: release-files
+          skip_unpack: true
+        continue-on-error: true
+
+      - name: Extract and organize binaries
+        run: |
+          mkdir -p release
+
+          # Find and move all binaries
+          find release-files -type f \( -name "stellarstack-installer-*" -o -name "*-checksums.txt" \) -exec sh -c '
+            file_path="$1"
+            file_name=$(basename "$file_path")
+            cp "$file_path" "release/$file_name"
+            echo "Added: $file_name"
+          ' _ {} \;
+
+          # Create combined checksums
+          cd release
+          if [ -f linux-checksums.txt ] || [ -f macos-checksums.txt ] || [ -f windows-checksums.txt ]; then
+            cat *-checksums.txt > checksums.txt 2>/dev/null || true
+            echo "" >> checksums.txt
+            echo "# Combined checksums for all platforms" >> checksums.txt
+          else
+            echo "Warning: No individual checksums found, generating combined checksums..."
+            sha256sum * > checksums.txt 2>/dev/null || true
+          fi
+
+          echo ""
+          echo "Release files prepared:"
+          ls -lh
+          cd ..
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/installer-v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=installer-v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: StellarStack Installer v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            release/*
+          body: |
+            ## StellarStack Installer v${{ steps.version.outputs.version }}
+
+            Cross-platform installer for Linux, macOS, and Windows.
+
+            ### Downloads
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Linux | x86_64 | [stellarstack-installer-linux-x86_64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-linux-x86_64) |
+            | Linux | ARM64 | [stellarstack-installer-linux-arm64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-linux-arm64) |
+            | macOS | Intel (x86_64) | [stellarstack-installer-macos-x86_64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-macos-x86_64) |
+            | macOS | Apple Silicon (ARM64) | [stellarstack-installer-macos-arm64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-macos-arm64) |
+            | Windows | x86_64 | [stellarstack-installer-windows-x86_64.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-windows-x86_64.exe) |
+
+            ### Quick Start
+
+            **Linux/macOS:**
+            ```bash
+            curl -fsSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-linux-x86_64 -o installer
+            chmod +x installer
+            sudo ./installer
+            ```
+
+            **macOS (Apple Silicon):**
+            ```bash
+            curl -fsSL https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-macos-arm64 -o installer
+            chmod +x installer
+            sudo ./installer
+            ```
+
+            **Windows:**
+            Download and run [stellarstack-installer-windows-x86_64.exe](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/stellarstack-installer-windows-x86_64.exe)
+
+            ### Verify Integrity
+
+            Download `checksums.txt` and verify:
+
+            **Linux/macOS:**
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+
+            **Windows (PowerShell):**
+            ```powershell
+            $(certUtil -hashfile stellarstack-installer-windows-x86_64.exe SHA256)[1] -join ''
+            ```
+
+            ### What's New
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes.
+
+            ### Requirements
+
+            - **Linux:** Ubuntu 20.04+, Debian 11+, RHEL 8+, or CentOS 8+
+            - **macOS:** macOS 11+ (Big Sur or later)
+            - **Windows:** Windows 10/11 Pro, Enterprise, or Server 2019+
+            - **All platforms:** Docker Engine/Desktop, 2GB+ RAM (4GB+ recommended)
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-latest:
+    name: Update Latest Release
+    needs: unified-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all release artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: installer-build-linux.yml
+          path: artifacts
+        continue-on-error: true
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "stellarstack-installer-*" \) -exec sh -c '
+            cp "$1" "release/$(basename "$1")"
+          ' _ {} \;
+          cd release && ls -lh
+
+      - name: Update 'latest' release tag
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: installer-latest
+          name: Installer (Latest)
+          draft: false
+          prerelease: false
+          files: |
+            release/*
+          body: |
+            ## Latest StellarStack Installer
+
+            This release is automatically updated with each new installer version.
+
+            **Latest Release:** [View all releases](https://github.com/${{ github.repository }}/releases?q=installer)
+
+            ### Quick Install
+
+            **Linux/macOS:**
+            ```bash
+            curl -fsSL https://github.com/${{ github.repository }}/releases/download/installer-latest/stellarstack-installer-linux-x86_64 -o installer
+            chmod +x installer
+            sudo ./installer
+            ```
+
+            **macOS (Apple Silicon):**
+            ```bash
+            curl -fsSL https://github.com/${{ github.repository }}/releases/download/installer-latest/stellarstack-installer-macos-arm64 -o installer
+            chmod +x installer
+            sudo ./installer
+            ```
+
+            **Windows:**
+            Download [stellarstack-installer-windows-x86_64.exe](https://github.com/${{ github.repository }}/releases/download/installer-latest/stellarstack-installer-windows-x86_64.exe)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

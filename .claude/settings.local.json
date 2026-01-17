@@ -87,7 +87,19 @@
       "Bash(npx prisma migrate:*)",
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yep\" npx prisma migrate reset:*)",
       "Bash(while read file)",
-      "Bash(do echo \"$file\")"
+      "Bash(do echo \"$file\")",
+      "Bash(go mod init:*)",
+      "Bash(go get:*)",
+      "Bash(go build:*)",
+      "Bash(go version:*)",
+      "Bash(msiexec /i \"C:\\\\Temp\\\\go1.23.5.windows-amd64.msi\" /quiet /qn REBOOT=ReallySuppress)",
+      "Bash(go mod tidy:*)",
+      "Bash(./installer.exe --version)",
+      "Bash(./installer.exe --help)",
+      "Bash(go env:*)",
+      "Bash(echo:*)",
+      "Bash(dist/installer-windows-x86_64.exe --version)",
+      "Bash(file:*)"
     ],
     "deny": [],
     "ask": []
