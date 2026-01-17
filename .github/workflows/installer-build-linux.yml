@@ -1,0 +1,119 @@
+name: Build Installer - Linux
+
+on:
+  push:
+    tags:
+      - 'installer-v*'
+    paths:
+      - 'Installer/**'
+      - '.github/workflows/installer-build-linux.yml'
+  pull_request:
+    paths:
+      - 'Installer/**'
+  workflow_dispatch:
+
+env:
+  BINARY_NAME: stellarstack-installer
+  GO_VERSION: '1.25.6'
+
+jobs:
+  build-linux:
+    name: Build Linux ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            goarch: amd64
+            artifact: stellarstack-installer-linux-x86_64
+
+          - arch: ARM64
+            goarch: arm64
+            artifact: stellarstack-installer-linux-arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build binary
+        working-directory: Installer
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go build -o ${{ matrix.artifact }} -ldflags="-s -w" main.go
+          file ${{ matrix.artifact }}
+          ls -lh ${{ matrix.artifact }}
+
+      - name: Strip binary
+        working-directory: Installer
+        run: |
+          strip ${{ matrix.artifact }} || true
+          chmod +x ${{ matrix.artifact }}
+
+      - name: Verify binary
+        working-directory: Installer
+        run: |
+          ./${{ matrix.artifact }} --version
+          ./${{ matrix.artifact }} --help | head -20
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: Installer/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  test:
+    name: Test Linux Build
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+
+      - name: List artifacts
+        run: |
+          find binaries -type f -executable
+          for binary in binaries/*/; do
+            name=$(basename "$binary")
+            echo "Testing $name..."
+            "./$binary/$name" --version
+          done
+
+  checksums:
+    name: Generate Linux Checksums
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate checksums
+        run: |
+          mkdir -p release
+          for dir in artifacts/*/; do
+            name=$(basename "$dir")
+            cp "$dir$name" "release/$name"
+            chmod +x "release/$name"
+          done
+          cd release
+          sha256sum * > linux-checksums.txt
+          cat linux-checksums.txt
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-checksums.txt
+          path: release/linux-checksums.txt
+          if-no-files-found: ignore

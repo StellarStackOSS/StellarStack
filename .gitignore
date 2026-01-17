@@ -41,3 +41,15 @@ target/
 # Daemon local data
 .stellar/
 apps/daemon/config.yml
+
+# Go/Installer Build Artifacts
+Installer/installer*
+Installer/*.exe
+Installer/dist/
+Installer/.backup/
+Installer/.env
+
+# Go mod/sum can be tracked, but go binaries should not be
+# Comment out if you want to track go.mod/go.sum for reproducibility
+# Installer/go.mod
+# Installer/go.sum

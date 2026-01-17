@@ -124,6 +124,7 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
                   type="submit"
                   variant="primary"
                   disabled={isSubmitting || isLoading}
+                  className="relative h-[46px] w-full overflow-hidden p-0 transition-transform duration-200 hover:scale-[1.01]"
                 >
                   <div className="pointer-events-none absolute inset-0">
                     <LiquidMetal
