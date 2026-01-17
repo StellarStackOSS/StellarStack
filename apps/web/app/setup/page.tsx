@@ -3,7 +3,7 @@
 import { useState, useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { BsCheck2, BsArrowRight } from "react-icons/bs";
@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 const SetupPage = (): JSX.Element | null => {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -23,10 +22,6 @@ const SetupPage = (): JSX.Element | null => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isComplete, setIsComplete] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Check if system is already initialized
   useEffect(() => {
@@ -114,7 +109,7 @@ const SetupPage = (): JSX.Element | null => {
     }
   };
 
-  if (!mounted || checkingStatus) {
+  if (checkingStatus) {
     return (
       <div
         className={cn(
@@ -385,7 +380,7 @@ const SetupPage = (): JSX.Element | null => {
 
               <div className="flex gap-3">
                 {step > 1 && (
-                  <Button
+                  <TextureButton
                     type="button"
                     onClick={() => setStep(step - 1)}
                     variant="outline"
@@ -395,9 +390,9 @@ const SetupPage = (): JSX.Element | null => {
                     )}
                   >
                     Back
-                  </Button>
+                  </TextureButton>
                 )}
-                <Button
+                <TextureButton
                   type="submit"
                   disabled={isLoading}
                   className={cn(
@@ -415,7 +410,7 @@ const SetupPage = (): JSX.Element | null => {
                   ) : (
                     "Create Account"
                   )}
-                </Button>
+                </TextureButton>
               </div>
             </form>
           </>

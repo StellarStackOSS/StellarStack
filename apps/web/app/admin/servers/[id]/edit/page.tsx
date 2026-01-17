@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -29,7 +29,7 @@ export default function EditServerPage() {
   const router = useRouter();
   const params = useParams();
   const serverId = params.id as string;
-  const { mounted, inputClasses, labelClasses } = useAdminTheme();
+  const { inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: server, isLoading, refetch } = useServer(serverId);
@@ -313,8 +313,6 @@ export default function EditServerPage() {
     }
   };
 
-  if (!mounted) return null;
-
   if (isLoading) {
     return (
       <div
@@ -342,16 +340,13 @@ export default function EditServerPage() {
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">
-              <Button
+              <TextureButton
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                )}
               >
                 <ArrowLeftIcon className="h-4 w-4" />
-              </Button>
+              </TextureButton>
               <div>
                 <h1
                   className={cn(
@@ -570,17 +565,14 @@ export default function EditServerPage() {
                         </p>
                       </div>
                       <div className="pt-6">
-                        <Button
+                        <TextureButton
                           type="button"
                           variant="outline"
                           onClick={() => setReinstallModalOpen(true)}
-                          className={cn(
-                            "flex w-full items-center justify-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 border-amber-700/50 text-amber-400 hover:border-amber-500 hover:text-amber-300",
-                          )}
                         >
                           <RefreshCwIcon className="h-4 w-4" />
                           Reinstall Server
-                        </Button>
+                        </TextureButton>
                         <p
                           className={cn(
                             "mt-1 text-center text-xs text-zinc-600",
@@ -613,17 +605,14 @@ export default function EditServerPage() {
                           {server?.blueprint?.name || "No blueprint selected"}
                         </p>
                       </div>
-                      <Button
+                      <TextureButton
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setShowBlueprintModal(true)}
-                        className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                        )}
                       >
                         Change Blueprint
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
 
@@ -641,7 +630,7 @@ export default function EditServerPage() {
                       >
                         Allocations
                       </h3>
-                      <Button
+                      <TextureButton
                         type="button"
                         variant="outline"
                         size="sm"
@@ -649,13 +638,10 @@ export default function EditServerPage() {
                           setShowAddAllocation(true);
                           loadAvailableAllocations();
                         }}
-                        className={cn(
-                          "flex items-center gap-1 text-xs border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                        )}
                       >
                         <PlusIcon className="h-3 w-3" />
                         Add
-                      </Button>
+                      </TextureButton>
                     </div>
 
                     {/* Current allocations list */}
@@ -712,18 +698,12 @@ export default function EditServerPage() {
                                 </span>
                               )}
                             </div>
-                            <Button
+                            <TextureButton
                               type="button"
                               variant="ghost"
                               size="sm"
                               disabled={index === 0 || removingAllocationId === allocation.id}
                               onClick={() => handleRemoveAllocation(allocation.id)}
-                              className={cn(
-                                "h-auto p-1",
-                                index === 0
-                                  ? "cursor-not-allowed opacity-30"
-                                  : "text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
-                              )}
                               title={
                                 index === 0
                                   ? "Cannot remove primary allocation"
@@ -735,7 +715,7 @@ export default function EditServerPage() {
                               ) : (
                                 <TrashIcon className="h-4 w-4" />
                               )}
-                            </Button>
+                            </TextureButton>
                           </div>
                         ))
                       )}
@@ -776,7 +756,7 @@ export default function EditServerPage() {
                           </p>
                         )}
                         <div className="mt-3 flex items-center gap-2">
-                          <Button
+                          <TextureButton
                             type="button"
                             variant="outline"
                             size="sm"
@@ -784,20 +764,14 @@ export default function EditServerPage() {
                               setShowAddAllocation(false);
                               setSelectedAllocationId("");
                             }}
-                            className={cn(
-                              "text-xs border-zinc-700 text-zinc-400",
-                            )}
                           >
                             Cancel
-                          </Button>
-                          <Button
+                          </TextureButton>
+                          <TextureButton
                             type="button"
                             size="sm"
                             disabled={!selectedAllocationId || isAddingAllocation}
                             onClick={handleAddAllocation}
-                            className={cn(
-                              "text-xs bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                            )}
                           >
                             {isAddingAllocation ? (
                               <>
@@ -807,7 +781,7 @@ export default function EditServerPage() {
                             ) : (
                               "Add Allocation"
                             )}
-                          </Button>
+                          </TextureButton>
                         </div>
                       </div>
                     )}
@@ -836,19 +810,16 @@ export default function EditServerPage() {
                             : "Split resources to create child servers"}
                         </p>
                       </div>
-                      <Button
+                      <TextureButton
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(`/servers/${serverId}/split`)}
-                        className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                        )}
                       >
                         <SplitIcon className="h-4 w-4" />
                         Manage
                         <ExternalLinkIcon className="h-3 w-3" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
 
@@ -873,17 +844,14 @@ export default function EditServerPage() {
                           Transfer server to another node
                         </p>
                       </div>
-                      <Button
+                      <TextureButton
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setShowTransferHistory(!showTransferHistory)}
-                        className={cn(
-                          "flex items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                        )}
                       >
                         {showTransferHistory ? "Hide History" : "Show History"}
-                      </Button>
+                      </TextureButton>
                     </div>
 
                     {/* Transfer History */}
@@ -955,17 +923,14 @@ export default function EditServerPage() {
                         {transferStatus.status !== "COMPLETED" &&
                           transferStatus.status !== "FAILED" && (
                             <div className="flex gap-2 pt-2">
-                              <Button
+                              <TextureButton
                                 type="button"
                                 variant="outline"
                                 size="sm"
                                 onClick={handleCancelTransfer}
-                                className={cn(
-                                  "text-xs tracking-wider uppercase border-red-700/50 text-red-400 hover:border-red-600 hover:text-red-300",
-                                )}
                               >
                                 Cancel Transfer
-                              </Button>
+                              </TextureButton>
                             </div>
                           )}
                       </div>
@@ -973,7 +938,7 @@ export default function EditServerPage() {
 
                     {!showTransferHistory && (
                       <div className="mt-4">
-                        <Button
+                        <TextureButton
                           type="button"
                           variant="outline"
                           size="sm"
@@ -983,12 +948,9 @@ export default function EditServerPage() {
                             transferStatus.status !== "COMPLETED" &&
                             transferStatus.status !== "FAILED"
                           }
-                          className={cn(
-                            "flex w-full items-center gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40",
-                          )}
                         >
                           Start Transfer
-                        </Button>
+                        </TextureButton>
                       </div>
                     )}
                   </div>
@@ -997,22 +959,16 @@ export default function EditServerPage() {
 
               {/* Submit Button */}
               <div className="mt-6 flex justify-end gap-3">
-                <Button
+                <TextureButton
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/admin/servers")}
-                  className={cn(
-                    "text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400",
-                  )}
                 >
                   Cancel
-                </Button>
-                <Button
+                </TextureButton>
+                <TextureButton
                   type="submit"
                   disabled={update.isPending}
-                  className={cn(
-                    "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                  )}
                 >
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
@@ -1020,7 +976,7 @@ export default function EditServerPage() {
                     <SaveIcon className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+                </TextureButton>
               </div>
             </form>
           </FadeIn>
@@ -1102,7 +1058,7 @@ export default function EditServerPage() {
             )}
 
             <div className="mt-6 flex justify-end gap-3">
-              <Button
+              <TextureButton
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -1111,22 +1067,16 @@ export default function EditServerPage() {
                   setReinstallOnBlueprintChange(false);
                 }}
                 disabled={isChangingBlueprint}
-                className={cn(
-                  "text-xs tracking-wider uppercase border-zinc-700 text-zinc-400",
-                )}
               >
                 Cancel
-              </Button>
-              <Button
+              </TextureButton>
+              <TextureButton
                 type="button"
                 disabled={!selectedBlueprintId || isChangingBlueprint}
                 onClick={handleChangeBlueprint}
-                className={cn(
-                  "text-xs tracking-wider uppercase bg-blue-600 text-white hover:bg-blue-700",
-                )}
               >
                 {isChangingBlueprint ? "Changing..." : "Change Blueprint"}
-              </Button>
+              </TextureButton>
             </div>
           </div>
         </div>
@@ -1180,7 +1130,7 @@ export default function EditServerPage() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
-                  <Button
+                  <TextureButton
                     type="button"
                     variant="outline"
                     onClick={() => {
@@ -1188,22 +1138,16 @@ export default function EditServerPage() {
                       setSelectedTargetNodeId("");
                     }}
                     disabled={isTransferring}
-                    className={cn(
-                      "text-xs tracking-wider uppercase border-zinc-700 text-zinc-400",
-                    )}
                   >
                     Cancel
-                  </Button>
-                  <Button
+                  </TextureButton>
+                  <TextureButton
                     type="button"
                     disabled={!selectedTargetNodeId || isTransferring}
                     onClick={handleStartTransfer}
-                    className={cn(
-                      "text-xs tracking-wider uppercase bg-blue-600 text-white hover:bg-blue-700",
-                    )}
                   >
                     {isTransferring ? "Transferring..." : "Start Transfer"}
-                  </Button>
+                  </TextureButton>
                 </div>
               </>
             )}

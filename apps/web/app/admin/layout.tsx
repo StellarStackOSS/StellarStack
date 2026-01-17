@@ -23,11 +23,6 @@ const PersistentBackground = memo(function PersistentBackground() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Redirect non-admins
   useEffect(() => {
@@ -40,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [isAdmin, isLoading, isAuthenticated, router]);
 
   // Show loading while checking auth
-  if (isLoading || !mounted) {
+  if (isLoading) {
     return (
       <div
         className={cn(

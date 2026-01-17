@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 interface UseServerPageSetupResult {
-  isDark: boolean;
   mounted: boolean;
   theme: string | undefined;
   setTheme: (theme: string) => void;
@@ -20,10 +19,7 @@ export const useServerPageSetup = (): UseServerPageSetupResult => {
     setMounted(true);
   }, []);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   return {
-    isDark,
     mounted,
     theme: resolvedTheme,
     setTheme,

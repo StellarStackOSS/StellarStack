@@ -1,31 +1,21 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Input } from "@workspace/ui/components/input";
-import {
-  BsCheckCircle,
-  BsDiscord,
-  BsGithub,
-  BsGoogle,
-  BsKey,
-  BsPlus,
-  BsShieldCheck,
-  BsTrash,
-} from "react-icons/bs";
-import { authClient, useSession } from "@/lib/auth-client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import {type JSX, useEffect, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Input} from "@workspace/ui/components/input";
+import {BsCheckCircle, BsDiscord, BsGithub, BsGoogle, BsKey, BsPlus, BsShieldCheck, BsTrash,} from "react-icons/bs";
+import {authClient, useSession} from "@/lib/auth-client";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {toast} from "sonner";
 import QRCode from "qrcode";
-import { useAccountTheme } from "@/hooks/useAccountTheme";
-import { AccountSectionCard, SectionTitle } from "@/components/AccountPageComponents";
-import { ThemeToggleButton } from "@/components/ServerPageComponents";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {Card} from "@workspace/ui/components";
+import {SectionTitle} from "@/components/AccountPageComponents/SectionTitle";
 
 interface Passkey {
   id: string;
@@ -35,7 +25,6 @@ interface Passkey {
 }
 
 const AccountPage = (): JSX.Element | null => {
-  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
   const { data: session, isPending: sessionLoading } = useSession();
 
@@ -89,7 +78,7 @@ const AccountPage = (): JSX.Element | null => {
     }
   }, [passkeyData]);
 
-  if (!mounted || sessionLoading) return null;
+  if (sessionLoading) return null;
 
   const hasProfileChanges = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
@@ -217,7 +206,7 @@ const AccountPage = (): JSX.Element | null => {
   };
 
   return (
-    <div
+    <Card
       className={cn(
         "relative min-h-svh transition-colors bg-[#0b0b0a]",
       )}
@@ -225,8 +214,8 @@ const AccountPage = (): JSX.Element | null => {
       <AnimatedBackground />
       <FloatingDots count={15} />
 
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+      <Card className="relative p-8">
+        <Card className="mx-auto max-w-6xl">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -251,7 +240,7 @@ const AccountPage = (): JSX.Element | null => {
           </div>
 
           {/* Profile Section */}
-          <AccountSectionCard>
+          <Card>
             <SectionTitle>Profile</SectionTitle>
 
             <div className="space-y-4">
@@ -294,17 +283,10 @@ const AccountPage = (): JSX.Element | null => {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
+            <TextureButton
+              variant="minimal"
               onClick={handleSaveProfile}
               disabled={!hasProfileChanges}
-              className={cn(
-                "mt-6 gap-2 transition-all",
-                saved
-                  ? "border-green-500/50 text-green-400"
-                  : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-              )}
             >
               {saved ? (
                 <>
@@ -314,11 +296,11 @@ const AccountPage = (): JSX.Element | null => {
               ) : (
                 <span className="text-xs tracking-wider uppercase">Update Profile</span>
               )}
-            </Button>
-          </div>
+            </TextureButton>
+          </Card>
 
           {/* Connected Accounts Section */}
-          <AccountSectionCard>
+          <Card>
             <SectionTitle>Connected Accounts</SectionTitle>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
@@ -326,60 +308,44 @@ const AccountPage = (): JSX.Element | null => {
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => handleSocialSignIn("google")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
               >
                 <BsGoogle className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Google</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </TextureButton>
+              <TextureButton
+                variant="minimal"
                 onClick={() => handleSocialSignIn("github")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
               >
                 <BsGithub className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">GitHub</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </TextureButton>
+              <TextureButton
+                variant="minimal"
                 onClick={() => handleSocialSignIn("discord")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
               >
                 <BsDiscord className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Discord</span>
-              </Button>
+              </TextureButton>
             </div>
-          </div>
+          </Card>
 
           {/* Passkeys Section */}
-          <AccountSectionCard >
+          <Card >
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BsKey className={cn("h-4 w-4 text-zinc-400")} />
                 <SectionTitle className="mb-0">Passkeys</SectionTitle>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => setAddPasskeyModalOpen(true)}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Passkey</span>
-              </Button>
+              </TextureButton>
             </div>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
@@ -413,24 +379,20 @@ const AccountPage = (): JSX.Element | null => {
                         Added {new Date(passkey.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="destructive"
                       onClick={() => openDeletePasskeyModal(passkey)}
-                      className={cn(
-                        "p-2 transition-all border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300",
-                      )}
                     >
                       <BsTrash className="h-4 w-4" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 ))
               )}
             </div>
-          </AccountSectionCard>
+          </Card>
 
           {/* Two-Factor Authentication Section */}
-          <AccountSectionCard>
+          <Card>
             <div className="mb-6 flex items-center gap-2">
               <BsShieldCheck
                 className={cn("h-4 w-4 text-zinc-400")}
@@ -464,16 +426,12 @@ const AccountPage = (): JSX.Element | null => {
                   </div>
                 </div>
                 {twoFactorEnabled ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <TextureButton
+                    variant="destructive"
                     onClick={() => setDisableTwoFactorModalOpen(true)}
-                    className={cn(
-                      "transition-all border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Disable</span>
-                  </Button>
+                  </TextureButton>
                 ) : (
                   <div className="flex items-center gap-2">
                     <Input
@@ -485,17 +443,13 @@ const AccountPage = (): JSX.Element | null => {
                         "h-8 w-40 text-sm border-zinc-700 bg-zinc-900 text-zinc-100",
                       )}
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={handleEnableTwoFactor}
                       disabled={!passwordForAction}
-                      className={cn(
-                        "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                      )}
                     >
                       <span className="text-xs tracking-wider uppercase">Enable</span>
-                    </Button>
+                    </TextureButton>
                   </div>
                 )}
               </div>
@@ -536,20 +490,15 @@ const AccountPage = (): JSX.Element | null => {
                       "h-8 w-40 text-sm border-zinc-700 bg-zinc-900 text-zinc-100",
                     )}
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <TextureButton
+                    variant="minimal"
                     onClick={handleVerifyTotp}
                     disabled={verifyCode.length !== 6}
-                    className={cn(
-                      "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Verify</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  </TextureButton>
+                  <TextureButton
+                    variant="minimal"
                     onClick={() => {
                       setShowTotpSetup(false);
                       setTotpUri(null);
@@ -557,18 +506,15 @@ const AccountPage = (): JSX.Element | null => {
                       setVerifyCode("");
                       setPasswordForAction("");
                     }}
-                    className={cn(
-                      "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Cancel</span>
-                  </Button>
+                  </TextureButton>
                 </div>
               </div>
             )}
-          </AccountSectionCard>
-        </div>
-      </div>
+          </Card>
+        </Card>
+      </Card>
 
       {/* Backup Codes Modal */}
       <FormModal
@@ -673,7 +619,7 @@ const AccountPage = (): JSX.Element | null => {
           </div>
         </div>
       </FormModal>
-    </div>
+    </Card>
   );
 };
 

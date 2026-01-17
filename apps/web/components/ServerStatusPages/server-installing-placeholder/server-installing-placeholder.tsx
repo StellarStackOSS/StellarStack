@@ -3,10 +3,9 @@
 import { ServerStatusPlaceholder } from "../server-status-placeholder";
 
 interface ServerInstallingPlaceholderProps {
-  isDark?: boolean;
   serverName?: string;
 }
 
-export const ServerInstallingPlaceholder = ({ isDark = true, serverName }: ServerInstallingPlaceholderProps) => (
-  <ServerStatusPlaceholder isDark={isDark} serverName={serverName} status="installing" />
+export const ServerInstallingPlaceholder = ({ serverName }: ServerInstallingPlaceholderProps) => (
+  <ServerStatusPlaceholder serverName={serverName} status="installing" />
 );

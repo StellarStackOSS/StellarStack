@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 interface UseAccountThemeResult {
-  isDark: boolean;
   mounted: boolean;
   theme: string | undefined;
   setTheme: (theme: string) => void;
@@ -20,10 +19,7 @@ export const useAccountTheme = (): UseAccountThemeResult => {
     setMounted(true);
   }, []);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   return {
-    isDark,
     mounted,
     theme: resolvedTheme,
     setTheme,

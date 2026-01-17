@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import {
   ArrowLeftIcon,
   CpuIcon,
@@ -23,7 +23,6 @@ import { toast } from "sonner";
 export default function NodeDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [node, setNode] = useState<Node | null>(null);
   const [stats, setStats] = useState<NodeStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,10 +33,6 @@ export default function NodeDetailPage() {
     endPort: 25565,
     isRange: false,
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const fetchNode = useCallback(async () => {
     try {
@@ -160,14 +155,12 @@ export default function NodeDetailPage() {
     <div className={cn("min-h-svh p-6 bg-[#0b0b0a]")}>
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="outline"
-          size="sm"
+        <TextureButton
+          variant="minimal"
           onClick={() => router.push("/admin/nodes")}
-          className={cn("border-zinc-700")}
         >
           <ArrowLeftIcon className="w-4 h-4" />
-        </Button>
+        </TextureButton>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
@@ -270,16 +263,12 @@ export default function NodeDetailPage() {
           <h2 className={cn("text-lg font-light tracking-wider text-zinc-100")}>
             Allocations
           </h2>
-          <Button
-            size="sm"
+          <TextureButton
             onClick={() => setIsAddingAllocation(true)}
-            className={cn(
-              "text-xs uppercase tracking-wider bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-            )}
           >
             <PlusIcon className="w-3 h-3 mr-1" />
             Add
-          </Button>
+          </TextureButton>
         </div>
 
         {isAddingAllocation && (
@@ -334,22 +323,17 @@ export default function NodeDetailPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => setIsAddingAllocation(false)}
-                className={cn("border-zinc-700")}
               >
                 Cancel
-              </Button>
-              <Button
+              </TextureButton>
+              <TextureButton variant="minimal"
                 type="submit"
-                size="sm"
-                className={cn("bg-zinc-100 text-zinc-900 hover:bg-zinc-200")}
               >
                 Add
-              </Button>
+              </TextureButton>
             </div>
           </form>
         )}
@@ -406,20 +390,13 @@ export default function NodeDetailPage() {
                       {allocation.serverId || "-"}
                     </td>
                     <td className="p-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="destructive"
                         onClick={() => handleDeleteAllocation(allocation)}
                         disabled={allocation.assigned}
-                        className={cn(
-                          "text-xs p-1.5",
-                          allocation.assigned
-                            ? "opacity-50 cursor-not-allowed"
-                            : "border-red-900/50 text-red-400 hover:bg-red-900/20"
-                        )}
                       >
                         <TrashIcon className="w-3 h-3" />
-                      </Button>
+                      </TextureButton>
                     </td>
                   </tr>
                 ))

@@ -16,14 +16,9 @@ import LoginForm from "@/components/LoginForm/LoginForm";
 const LoginPage = (): JSX.Element | null => {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [mounted, setMounted] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Check if system needs setup
   useEffect(() => {
@@ -78,7 +73,7 @@ const LoginPage = (): JSX.Element | null => {
     }
   };
 
-  if (!mounted || checkingSetup) {
+  if (checkingSetup) {
     return (
       <div
         className={cn(
@@ -104,8 +99,8 @@ const LoginPage = (): JSX.Element | null => {
         "relative flex min-h-svh items-center justify-center transition-colors bg-[#0b0b0a]",
       )}
     >
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <LoginForm handleLogin={handleLogin} isLoading={isLoading} error={error} />
     </div>

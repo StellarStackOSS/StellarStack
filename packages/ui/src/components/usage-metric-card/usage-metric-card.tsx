@@ -1,14 +1,14 @@
 "use client";
 
-import type { JSX } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { UsageCard, UsageCardContent, UsageCardTitle } from "../usage-card";
-import { InfoTooltip } from "../info-tooltip";
-import { Sparkline } from "../sparkline";
-import { AnimatedNumber } from "../animated-number";
-import { useDragDropGrid } from "../drag-drop-grid";
-import { getUsageColor } from "../dashboard-cards-utils";
-import type { UsageMetricCardProps, UsageMetricCardLabels } from "../dashboard-cards-types";
+import type {JSX} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {UsageCard, UsageCardContent, UsageCardTitle} from "../usage-card";
+import {InfoTooltip} from "../info-tooltip";
+import {Sparkline} from "../sparkline";
+import {AnimatedNumber} from "../animated-number";
+import {useDragDropGrid} from "../drag-drop-grid";
+import {getUsageColor} from "../dashboard-cards-utils";
+import type {UsageMetricCardLabels, UsageMetricCardProps} from "../dashboard-cards-types";
 
 interface UsageMetricCardComponentProps extends UsageMetricCardProps {
   isOffline: boolean;
@@ -84,7 +84,7 @@ export const UsageMetricCard = ({
           className={cn(
             isOffline
               ? "text-zinc-500"
-              : "text-zinc-100"
+              : "text-zinc-100",
             primaryValue
               ? isXs
                 ? "text-lg"

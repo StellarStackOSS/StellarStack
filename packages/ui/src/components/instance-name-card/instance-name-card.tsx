@@ -58,7 +58,7 @@ export const InstanceNameCard = ({
 
 
   return (
-    <UsageCard isDark={isDark} className="flex h-full flex-row items-center justify-between">
+    <UsageCard className="flex h-full flex-row items-center justify-between">
       <div
         className={cn("font-mono text-2xl uppercase text-zinc-400")}
       >

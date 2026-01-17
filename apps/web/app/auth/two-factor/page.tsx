@@ -3,7 +3,7 @@
 import { useState, useEffect, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import { Input } from "@workspace/ui/components/input";
 import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FloatingDots } from "@workspace/ui/components/floating-particles";
@@ -13,16 +13,9 @@ import { toast } from "sonner";
 
 const TwoFactorPage = (): JSX.Element | null => {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useBackupCode, setUseBackupCode] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
 
   const handleVerify = async () => {
     if (code.length < 6) {
@@ -118,40 +111,31 @@ const TwoFactorPage = (): JSX.Element | null => {
               />
             </div>
 
-            <Button
+            <TextureButton
               onClick={handleVerify}
               disabled={code.length < 6 || isSubmitting}
-              className={cn(
-                "w-full transition-all bg-zinc-100 text-zinc-900 hover:bg-zinc-200 disabled:opacity-50",
-              )}
             >
               <span className="text-xs uppercase tracking-wider">
                 {isSubmitting ? "Verifying..." : "Verify"}
               </span>
-            </Button>
+            </TextureButton>
 
             <div className="flex flex-col items-center gap-4">
-              <button
+              <TextureButton variant="minimal"
                 onClick={() => {
                   setUseBackupCode(!useBackupCode);
                   setCode("");
                 }}
-                className={cn(
-                  "text-xs uppercase tracking-wider transition-colors text-zinc-500 hover:text-zinc-300",
-                )}
               >
                 {useBackupCode ? "Use authenticator code instead" : "Use a backup code instead"}
-              </button>
+              </TextureButton>
 
-              <button
+              <TextureButton variant="minimal"
                 onClick={() => router.back()}
-                className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-colors text-zinc-500 hover:text-zinc-300",
-                )}
               >
                 <BsArrowLeft className="w-3 h-3" />
                 Back to login
-              </button>
+              </TextureButton>
             </div>
           </div>
         </div>

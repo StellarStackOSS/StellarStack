@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -18,7 +18,7 @@ export default function EditNodePage() {
   const router = useRouter();
   const params = useParams();
   const nodeId = params.id as string;
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: node, isLoading, refetch } = useNode(nodeId);
@@ -151,8 +151,6 @@ export default function EditNodePage() {
     return gb >= 1 ? `${gb.toFixed(0)} GB` : `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
   };
 
-  if (!mounted) return null;
-
   if (isLoading) {
     return (
       <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
@@ -181,16 +179,12 @@ export default function EditNodePage() {
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => router.push("/admin/nodes")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                )}
               >
                 <ArrowLeftIcon className="h-4 w-4" />
-              </Button>
+              </TextureButton>
               <div>
                 <h1 className={cn(
                   "text-2xl font-light tracking-wider text-zinc-100",
@@ -366,18 +360,13 @@ export default function EditNodePage() {
                       <h3 className={cn("text-sm font-medium uppercase tracking-wider text-zinc-300")}>
                         Daemon Token
                       </h3>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => setShowRegenerateConfirm(true)}
-                        className={cn(
-                          "flex items-center gap-1 text-xs border-amber-700/50 text-amber-400 hover:border-amber-500",
-                        )}
                       >
                         <KeyIcon className="h-3 w-3" />
                         Regenerate
-                      </Button>
+                      </TextureButton>
                     </div>
                     {newToken && (
                       <div
@@ -402,30 +391,20 @@ export default function EditNodePage() {
                         Allocations ({node.allocations?.length || 0})
                       </h3>
                       <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
+                        <TextureButton
+                          variant="minimal"
                           onClick={() => setShowAddAllocation(true)}
-                          className={cn(
-                            "flex items-center gap-1 text-xs border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                          )}
                         >
                           <PlusIcon className="h-3 w-3" />
                           Add
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
+                        </TextureButton>
+                        <TextureButton
+                          variant="minimal"
                           onClick={() => setShowAddRange(true)}
-                          className={cn(
-                            "flex items-center gap-1 text-xs border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200",
-                          )}
                         >
                           <PlusIcon className="h-3 w-3" />
                           Add Range
-                        </Button>
+                        </TextureButton>
                       </div>
                     </div>
 
@@ -461,20 +440,12 @@ export default function EditNodePage() {
                                 </span>
                               )}
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
+                            <TextureButton
+                              variant="minimal"
                               disabled={
                                 allocation.assigned || deletingAllocationId === allocation.id
                               }
                               onClick={() => handleDeleteAllocation(allocation.id)}
-                              className={cn(
-                                "h-auto p-1",
-                                allocation.assigned
-                                  ? "opacity-30 cursor-not-allowed"
-                                  : "text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                              )}
                               title={
                                 allocation.assigned
                                   ? "Cannot delete assigned allocation"
@@ -486,7 +457,7 @@ export default function EditNodePage() {
                               ) : (
                                 <TrashIcon className="h-4 w-4" />
                               )}
-                            </Button>
+                            </TextureButton>
                           </div>
                         ))
                       )}
@@ -545,29 +516,21 @@ export default function EditNodePage() {
                           </div>
                         </div>
                         <div className="mt-3 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
+                          <TextureButton
+                            variant="minimal"
                             onClick={() => {
                               setShowAddAllocation(false);
                               setAllocationForm({ ip: "", port: 25565, alias: "" });
                             }}
-                            className={cn("text-xs border-zinc-700 text-zinc-400")}
                           >
                             Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
+                          </TextureButton>
+                          <TextureButton
                             disabled={!allocationForm.ip || addAllocation.isPending}
                             onClick={handleAddAllocation}
-                            className={cn(
-                              "text-xs bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                            )}
                           >
                             {addAllocation.isPending ? <Spinner className="h-3 w-3" /> : "Add"}
-                          </Button>
+                          </TextureButton>
                         </div>
                       </div>
                     )}
@@ -631,33 +594,25 @@ export default function EditNodePage() {
                           This will create {Math.max(0, rangeForm.endPort - rangeForm.startPort + 1)} allocations
                         </p>
                         <div className="mt-3 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
+                          <TextureButton
+                            variant="minimal"
                             onClick={() => {
                               setShowAddRange(false);
                               setRangeForm({ ip: "", startPort: 25565, endPort: 25575 });
                             }}
-                            className={cn("text-xs border-zinc-700 text-zinc-400")}
                           >
                             Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
+                          </TextureButton>
+                          <TextureButton
                             disabled={!rangeForm.ip || addAllocationRange.isPending}
                             onClick={handleAddRange}
-                            className={cn(
-                              "text-xs bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                            )}
                           >
                             {addAllocationRange.isPending ? (
                               <Spinner className="h-3 w-3" />
                             ) : (
                               "Add Range"
                             )}
-                          </Button>
+                          </TextureButton>
                         </div>
                       </div>
                     )}
@@ -667,22 +622,15 @@ export default function EditNodePage() {
 
               {/* Submit Button */}
               <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
+                <TextureButton
+                  variant="minimal"
                   onClick={() => router.push("/admin/nodes")}
-                  className={cn(
-                    "text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400",
-                  )}
                 >
                   Cancel
-                </Button>
-                <Button
+                </TextureButton>
+                <TextureButton variant="minimal"
                   type="submit"
                   disabled={update.isPending}
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                  )}
                 >
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
@@ -690,7 +638,7 @@ export default function EditNodePage() {
                     <SaveIcon className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+                </TextureButton>
               </div>
             </form>
           </FadeIn>

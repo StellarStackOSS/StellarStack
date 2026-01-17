@@ -4,7 +4,7 @@ import {type JSX, useEffect, useState} from "react";
 import {useParams} from "next/navigation";
 import {useTheme as useNextTheme} from "next-themes";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Input} from "@workspace/ui/components/input";
 import {SidebarTrigger} from "@workspace/ui/components/sidebar";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
@@ -164,18 +164,14 @@ const DatabasesPage = (): JSX.Element | null => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
                 onClick={openCreateModal}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Database</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
 
@@ -305,15 +301,11 @@ const DatabasesPage = (): JSX.Element | null => {
                           >
                             {db.username}
                           </span>
-                          <button
+                          <TextureButton variant="minimal"
                             onClick={() => copyToClipboard(db.username)}
-                            className={cn(
-                              "p-1 transition-colors",
-                              "text-zinc-500 hover:text-zinc-300"
-                            )}
                           >
                             <BsClipboard className="h-3 w-3" />
-                          </button>
+                          </TextureButton>
                         </div>
                       </div>
                       <div>
@@ -334,43 +326,31 @@ const DatabasesPage = (): JSX.Element | null => {
                           >
                             {visiblePasswords.includes(db.id) ? db.password : "••••••••"}
                           </span>
-                          <button
+                          <TextureButton variant="minimal"
                             onClick={() => togglePassword(db.id)}
-                            className={cn(
-                              "p-1 transition-colors",
-                              "text-zinc-500 hover:text-zinc-300"
-                            )}
                           >
                             {visiblePasswords.includes(db.id) ? (
                               <BsEyeSlash className="h-3 w-3" />
                             ) : (
                               <BsEye className="h-3 w-3" />
                             )}
-                          </button>
-                          <button
+                          </TextureButton>
+                          <TextureButton variant="minimal"
                             onClick={() => copyToClipboard(db.password)}
-                            className={cn(
-                              "p-1 transition-colors",
-                              "text-zinc-500 hover:text-zinc-300"
-                            )}
                           >
                             <BsClipboard className="h-3 w-3" />
-                          </button>
+                          </TextureButton>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <Button
+                  <TextureButton
                     variant="outline"
                     size="sm"
                     onClick={() => openDeleteModal(db)}
-                    className={cn(
-                      "p-2 transition-all",
-                      "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                    )}
                   >
                     <BsTrash className="h-4 w-4" />
-                  </Button>
+                  </TextureButton>
                 </div>
               </div>
             ))}

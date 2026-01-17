@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -24,11 +24,10 @@ import {useLocations, useNodeMutations, useNodes} from "@/hooks/queries";
 import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import type {CreateNodeData, Node} from "@/lib/api";
 import {toast} from "sonner";
-import {TextureButton} from "@workspace/ui/components/texture-button";
 
 export default function NodesPage() {
   const router = useRouter();
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: nodesList = [], isLoading } = useNodes();
@@ -130,8 +129,6 @@ export default function NodesPage() {
   }, [nodesList, searchQuery]);
 
   const isFormValid = formData.displayName.length > 0 && formData.host.length > 0;
-
-  if (!mounted) return null;
 
   return (
     <div
@@ -242,36 +239,24 @@ export default function NodesPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              <TextureButton
+                                variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}`)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <SettingsIcon className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              </TextureButton>
+                              <TextureButton
+                                variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <EditIcon className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              </TextureButton>
+                              <TextureButton
+                                variant="destructive"
                                 onClick={() => setDeleteConfirmNode(node)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                                )}
                               >
                                 <TrashIcon className="h-3.5 w-3.5" />
-                              </Button>
+                              </TextureButton>
                             </div>
                           </div>
                         </div>
@@ -510,10 +495,8 @@ export default function NodesPage() {
               >
                 <span className="flex-1">{showToken?.token_id}</span>
                 <TextureButton
-                  variant="outline"
-                  size="sm"
+                  variant="minimal"
                   onClick={copyTokenId}
-                  className={cn("shrink-0 w-fit border-zinc-700")}
                 >
                   {copiedTokenId ? (
                     <CheckIcon
@@ -540,10 +523,8 @@ export default function NodesPage() {
               >
                 <span className="flex-1">{showToken?.token}</span>
                 <TextureButton
-                  variant="outline"
-                  size="sm"
+                  variant="minimal"
                   onClick={copyToken}
-                  className={cn("shrink-0 w-fit border-zinc-700")}
                 >
                   {copiedToken ? (
                     <CheckIcon
@@ -558,8 +539,8 @@ export default function NodesPage() {
           </div>
           <div className="mt-4 flex justify-end">
             <TextureButton
-              onClick={() => setShowToken(null)}
               variant="minimal"
+              onClick={() => setShowToken(null)}
             >
               Close
             </TextureButton>

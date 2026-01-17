@@ -197,27 +197,21 @@ const SettingsSection = ({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button
+        <TextureButton variant="minimal"
           onClick={onSave}
           disabled={isSaving}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 bg-zinc-800 border border-zinc-600 text-zinc-100 hover:bg-zinc-700",
-          )}
         >
           {isSaving ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <SaveIcon className="w-4 h-4" />}
           Save
-        </button>
+        </TextureButton>
         {onTest && (
-          <button
+          <TextureButton variant="minimal"
             onClick={onTest}
             disabled={isTesting}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider transition-colors disabled:opacity-50 bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-800",
-            )}
           >
             {isTesting ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <TestTube2Icon className="w-4 h-4" />}
             Test Connection
-          </button>
+          </TextureButton>
         )}
       </div>
     </div>
@@ -225,7 +219,6 @@ const SettingsSection = ({
 };
 
 export default function AdminSettingsPage() {
-  const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Cloudflare state
@@ -281,10 +274,6 @@ export default function AdminSettingsPage() {
     customCss: "",
   });
   const [savingBranding, setSavingBranding] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     async function fetchSettings() {
