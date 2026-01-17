@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.2.0...v1.2.1) (2026-01-17)
+
+
+### Bug Fixes
+
+* STE-19 NGINX Upload Limit Configuration ([#23](https://github.com/StellarStackOSS/StellarStack/issues/23)) ([f5e7d44](https://github.com/StellarStackOSS/StellarStack/commit/f5e7d4495d0758317cf41754bb3a4f56d12948f6))
+
 ## [1.2.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.2...v1.2.0) (2026-01-14)
 
 
