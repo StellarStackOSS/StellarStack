@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 export default function AdminServersPage() {
   const router = useRouter();
-  const { mounted, isDark } = useAdminTheme();
+  const { mounted } = useAdminTheme();
 
   // React Query hooks
   const { data: serversList = [], isLoading } = useServers();
@@ -76,20 +76,19 @@ export default function AdminServersPage() {
     );
   }, [serversList, searchQuery]);
 
-  const getStatusStyle = (status: Server["status"], isDark: boolean) => {
+  const getStatusStyle = (status: Server["status"]) => {
     // Use neutral zinc colors for all statuses
-    return isDark ? "text-zinc-300 border-zinc-600" : "text-zinc-600 border-zinc-400";
+    return "text-zinc-300 border-zinc-600";
   };
 
   if (!mounted) return null;
 
   return (
     <div className={cn(
-      "min-h-svh transition-colors relative",
-      isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+      "min-h-svh transition-colors relative bg-[#0b0b0a]",
     )}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground  />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -102,22 +101,19 @@ export default function AdminServersPage() {
                   size="sm"
                   onClick={() => router.push("/admin")}
                   className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
                   )}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                 </Button>
                 <div>
                   <h1 className={cn(
-                    "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-2xl font-light tracking-wider text-zinc-100",
                   )}>
                     SERVERS
                   </h1>
                   <p className={cn(
-                    "text-sm mt-1",
-                    isDark ? "text-zinc-500" : "text-zinc-500"
+                    "text-sm mt-1 text-zinc-500",
                   )}>
                     Manage all game servers
                   </p>
@@ -126,10 +122,7 @@ export default function AdminServersPage() {
               <Button
                 onClick={() => router.push("/admin/servers/new")}
                 className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                  isDark
-                    ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                    : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                 )}
               >
                 <PlusIcon className="w-4 h-4" />
@@ -140,8 +133,7 @@ export default function AdminServersPage() {
             {/* Search Bar */}
             <div className="relative mb-6">
               <SearchIcon className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                isDark ? "text-zinc-500" : "text-zinc-400"
+                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500",
               )} />
               <input
                 type="text"
@@ -149,10 +141,7 @@ export default function AdminServersPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cn(
-                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none",
-                  isDark
-                    ? "bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
-                    : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
+                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
                 )}
               />
             </div>
@@ -167,8 +156,7 @@ export default function AdminServersPage() {
                 </div>
               ) : filteredServers.length === 0 ? (
                 <div className={cn(
-                  "text-center py-12 border",
-                  isDark ? "border-zinc-800 text-zinc-500" : "border-zinc-200 text-zinc-400"
+                  "text-center py-12 border border-zinc-800 text-zinc-500",
                 )}>
                   {searchQuery ? "No servers match your search." : "No servers found. Create your first server."}
                 </div>
@@ -179,55 +167,48 @@ export default function AdminServersPage() {
                       <ContextMenuTrigger asChild>
                         <div
                           className={cn(
-                            "relative p-5 border transition-all hover:scale-[1.005] group cursor-context-menu",
-                            isDark
-                              ? "bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 shadow-lg shadow-black/20 hover:border-zinc-700"
-                              : "bg-gradient-to-b from-white via-zinc-50 to-zinc-100 border-zinc-300 shadow-lg shadow-zinc-400/20 hover:border-zinc-400"
+                            "relative p-5 border transition-all hover:scale-[1.005] group cursor-context-menu bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 shadow-lg shadow-black/20 hover:border-zinc-700",
                           )}
                         >
-                          <CornerAccents isDark={isDark} size="sm" />
+                          <CornerAccents size="sm" />
 
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className={cn(
-                                "p-2.5 border",
-                                isDark ? "border-zinc-700 bg-zinc-800/50" : "border-zinc-300 bg-zinc-100"
+                                "p-2.5 border border-zinc-700 bg-zinc-800/50",
                               )}>
-                                <ServerIcon className={cn("w-5 h-5", isDark ? "text-zinc-400" : "text-zinc-600")} />
+                                <ServerIcon className={cn("w-5 h-5 text-zinc-400")} />
                               </div>
                               <div>
                                 <div className="flex items-center gap-3">
                                   <h2 className={cn(
-                                    "text-sm font-medium uppercase tracking-wider",
-                                    isDark ? "text-zinc-100" : "text-zinc-800"
+                                    "text-sm font-medium uppercase tracking-wider text-zinc-100",
                                   )}>
                                     {server.name}
                                   </h2>
                                   <span className={cn(
                                     "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                                    getStatusStyle(server.status, isDark)
+                                    getStatusStyle(server.status)
                                   )}>
                                     {server.status}
                                   </span>
                                   {server.shortId && (
                                     <span className={cn(
-                                      "text-[10px] font-mono px-1.5 py-0.5 border",
-                                      isDark ? "text-zinc-500 border-zinc-700" : "text-zinc-500 border-zinc-300"
+                                      "text-[10px] font-mono px-1.5 py-0.5 border text-zinc-500 border-zinc-700",
                                     )}>
                                       {server.shortId}
                                     </span>
                                   )}
                                 </div>
                                 <div className={cn(
-                                  "flex items-center gap-3 mt-1 text-xs",
-                                  isDark ? "text-zinc-500" : "text-zinc-500"
+                                  "flex items-center gap-3 mt-1 text-xs text-zinc-500",
                                 )}>
                                   <span>{server.blueprint?.name || "Unknown"}</span>
-                                  <span className={cn(isDark ? "text-zinc-700" : "text-zinc-300")}>•</span>
+                                  <span className={cn("text-zinc-700")}>•</span>
                                   <span>{server.node?.displayName || "Unknown"}</span>
-                                  <span className={cn(isDark ? "text-zinc-700" : "text-zinc-300")}>•</span>
+                                  <span className={cn("text-zinc-700")}>•</span>
                                   <span className="font-mono">{server.memory}MB / {server.cpu}%</span>
-                                  <span className={cn(isDark ? "text-zinc-700" : "text-zinc-300")}>•</span>
+                                  <span className={cn("text-zinc-700")}>•</span>
                                   <span>{server.owner?.name || "Unknown"}</span>
                                 </div>
                               </div>
@@ -239,8 +220,7 @@ export default function AdminServersPage() {
                                 size="sm"
                                 onClick={() => router.push(`/servers/${server.id}`)}
                                 className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                  isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                                 )}
                               >
                                 <ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -252,8 +232,7 @@ export default function AdminServersPage() {
                                   onClick={() => handleAction(server, "start")}
                                   disabled={start.isPending}
                                   className={cn(
-                                    "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                    isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                    "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                                   )}
                                 >
                                   <PlayIcon className="w-3.5 h-3.5" />
@@ -267,8 +246,7 @@ export default function AdminServersPage() {
                                     onClick={() => handleAction(server, "stop")}
                                     disabled={stop.isPending}
                                     className={cn(
-                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                      isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                                     )}
                                   >
                                     <SquareIcon className="w-3.5 h-3.5" />
@@ -279,8 +257,7 @@ export default function AdminServersPage() {
                                     onClick={() => handleAction(server, "restart")}
                                     disabled={restart.isPending}
                                     className={cn(
-                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                      isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                                     )}
                                   >
                                     <RefreshCwIcon className="w-3.5 h-3.5" />
@@ -292,8 +269,7 @@ export default function AdminServersPage() {
                                 size="sm"
                                 onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
                                 className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                  isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-100" : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
                                 )}
                               >
                                 <EditIcon className="w-3.5 h-3.5" />
@@ -303,8 +279,7 @@ export default function AdminServersPage() {
                                 size="sm"
                                 onClick={() => setDeleteConfirmServer(server)}
                                 className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95",
-                                  isDark ? "border-red-900/50 text-red-400 hover:bg-red-900/20" : "border-red-200 text-red-600 hover:bg-red-50"
+                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-red-900/50 text-red-400 hover:bg-red-900/20",
                                 )}
                               >
                                 <TrashIcon className="w-3.5 h-3.5" />
@@ -314,8 +289,7 @@ export default function AdminServersPage() {
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent className={cn(
-                        "min-w-[180px]",
-                        isDark ? "bg-zinc-900 border-zinc-700" : "bg-white border-zinc-200"
+                        "min-w-[180px] bg-zinc-900 border-zinc-700",
                       )}>
                         <ContextMenuItem
                           onClick={() => router.push(`/servers/${server.id}`)}
@@ -331,7 +305,7 @@ export default function AdminServersPage() {
                           <EditIcon className="w-4 h-4" />
                           Edit Server
                         </ContextMenuItem>
-                        <ContextMenuSeparator className={isDark ? "bg-zinc-700" : "bg-zinc-200"} />
+                        <ContextMenuSeparator className={"bg-zinc-700"} />
                         {server.status === "STOPPED" && (
                           <ContextMenuItem
                             onClick={() => handleAction(server, "start")}
@@ -359,7 +333,7 @@ export default function AdminServersPage() {
                             </ContextMenuItem>
                           </>
                         )}
-                        <ContextMenuSeparator className={isDark ? "bg-zinc-700" : "bg-zinc-200"} />
+                        <ContextMenuSeparator className={"bg-zinc-700"} />
                         <ContextMenuItem
                           onClick={() => setDeleteConfirmServer(server)}
                           className="gap-2 cursor-pointer"
@@ -386,7 +360,6 @@ export default function AdminServersPage() {
         description={`Are you sure you want to delete "${deleteConfirmServer?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        isDark={isDark}
         variant="danger"
         isLoading={remove.isPending}
       />
