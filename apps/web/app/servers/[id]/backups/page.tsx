@@ -206,11 +206,6 @@ const BackupsPage = (): JSX.Element | null => {
                         ? "Backup limit reached"
                         : "Create a new backup"
                   }
-                  className={cn(
-                    "gap-2 transition-all",
-                    !canCreateBackup && "cursor-not-allowed opacity-50",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Create Backup</span>
@@ -360,7 +355,7 @@ const BackupsPage = (): JSX.Element | null => {
               <p
                 className={cn(
                   "pt-2 text-center text-xs uppercase opacity-75",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
+                  "text-zinc-500"
                 )}
               >
                 {completedBackups} / {backupLimit} backup

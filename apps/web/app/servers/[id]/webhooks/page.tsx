@@ -2,10 +2,8 @@
 
 import {type JSX, useEffect, useState} from "react";
 import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
-import {Input} from "@workspace/ui/components/input";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {FormModal} from "@workspace/ui/components/form-modal";
 import {BsGlobe, BsPencil, BsPlus, BsTrash,} from "react-icons/bs";
@@ -13,11 +11,13 @@ import {TbWand} from "react-icons/tb";
 import {useServer} from "components/ServerStatusPages/server-provider";
 import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
 import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {PageHeader, EmptyState, CardWithCorners, StatusBadge, FormFieldLabel} from "components/ServerPageComponents";
+import {EmptyState, PageHeader, StatusBadge} from "components/ServerPageComponents";
 import {WebhookEventSelector} from "./WebhookEventSelector";
 import {WebhookUrlField} from "./WebhookUrlField";
 import {type Webhook, type WebhookEvent, webhooks} from "@/lib/api";
 import {toast} from "sonner";
+import {Label} from "@workspace/ui/components/label";
+import {Card} from "@workspace/ui/components";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -197,18 +197,13 @@ const WebhooksPage = (): JSX.Element | null => {
             title="WEBHOOKS"
             subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
             actions={
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={openAddModal}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Webhook</span>
-              </Button>
+              </TextureButton>
             }
           />
 
@@ -223,13 +218,12 @@ const WebhooksPage = (): JSX.Element | null => {
               title="No Webhooks"
               description="Add a webhook to receive notifications about server events."
               action={{ label: "Add Webhook", onClick: openAddModal }}
-              isDark={isDark}
             />
           ) : (
             /* Webhooks List */
             <div className="space-y-4">
               {webhookList.map((webhook) => (
-                <CardWithCorners key={webhook.id} isDark={isDark}>
+                <Card key={webhook.id}>
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex items-center gap-3">
@@ -255,7 +249,6 @@ const WebhooksPage = (): JSX.Element | null => {
                           <StatusBadge
                             label={webhook.enabled ? "Active" : "Disabled"}
                             color={webhook.enabled ? "green" : "zinc"}
-                            isDark={isDark}
                           />
                         </div>
                       </div>
@@ -264,49 +257,33 @@ const WebhooksPage = (): JSX.Element | null => {
                           <StatusBadge
                             key={event}
                             label={event.replace(/_/g, " ")}
-                            isDark={isDark}
                           />
                         ))}
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => openEditModal(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        )}
                       >
                         <BsPencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => handleTestWebhook(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-blue-900/60 text-blue-400/80 hover:border-blue-700 hover:text-blue-300"
-                        )}
                         title="Send test message to webhook"
                       >
                         <TbWand className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="destructive"
                         onClick={() => openDeleteModal(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        )}
                       >
                         <BsTrash className="h-4 w-4" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
-                </CardWithCorners>
+                </Card>
               ))}
             </div>
           )}
@@ -324,14 +301,13 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
-          <WebhookUrlField value={formUrl} onChange={setFormUrl} isDark={isDark} />
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} />
           <div>
-            <FormFieldLabel label="Events" isDark={isDark} />
+            <Label>Events</Label>
             <WebhookEventSelector
               events={webhookEvents}
               selectedEvents={formEvents}
               onToggle={toggleEvent}
-              isDark={isDark}
             />
           </div>
         </div>
@@ -348,18 +324,11 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
-          <WebhookUrlField value={formUrl} onChange={setFormUrl} isDark={isDark} />
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} />
           <div>
-            <FormFieldLabel label="Status" isDark={isDark} />
-            <button
-              type="button"
+            <Label>Status</Label>
+            <TextureButton
               onClick={() => setFormEnabled(!formEnabled)}
-              className={cn(
-                "flex w-full items-center gap-3 border p-3 transition-all",
-                formEnabled
-                  ? "border-green-700/50 bg-green-900/20"
-                  : "border-zinc-700"
-              )}
             >
               <div
                 className={cn(
@@ -379,15 +348,14 @@ const WebhooksPage = (): JSX.Element | null => {
               <span className={cn("text-sm", "text-zinc-300")}>
                 {formEnabled ? "Enabled" : "Disabled"}
               </span>
-            </button>
+            </TextureButton>
           </div>
           <div>
-            <FormFieldLabel label="Events" isDark={isDark} />
+            <Label>Events</Label>
             <WebhookEventSelector
               events={webhookEvents}
               selectedEvents={formEvents}
               onToggle={toggleEvent}
-              isDark={isDark}
             />
           </div>
         </div>

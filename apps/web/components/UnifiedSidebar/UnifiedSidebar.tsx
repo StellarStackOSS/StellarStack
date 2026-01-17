@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import {useState} from "react";
+import {useParams, usePathname} from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -19,11 +19,9 @@ import {
   BellIcon,
   ChevronUpIcon,
   CpuIcon,
-  HardDriveIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   MapPinIcon,
-  MemoryStickIcon,
   PackageIcon,
   ServerIcon,
   SettingsIcon,
@@ -31,14 +29,14 @@ import {
   UserIcon,
   UsersIcon,
 } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
-import { useAuth } from "hooks/auth-provider";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { BsArrowLeft } from "react-icons/bs";
-import { motion } from "framer-motion";
-import { WaveText } from "@/components/wave-text";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useServerWebSocket } from "@/hooks/useServerWebSocket";
+import {cn} from "@workspace/ui/lib/utils";
+import {useAuth} from "hooks/auth-provider";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {BsArrowLeft} from "react-icons/bs";
+import {motion} from "framer-motion";
+import {WaveText} from "@/components/wave-text";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useServerWebSocket} from "@/hooks/useServerWebSocket";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -72,12 +70,9 @@ const appNavItems = [
   { title: "Settings", icon: <img alt="icon" src="/icons/24-gear.svg" />, href: "/settings" },
 ];
 
-interface UnifiedSidebarProps {
-  isDark?: boolean;
-}
 
-const ServerStatsContent = ({ isDark }: { isDark: boolean }) => {
-  const { server, consoleInfo } = useServer();
+const ServerStatsContent = () => {
+  const { consoleInfo } = useServer();
   const { stats: statsData } = useServerWebSocket({
     consoleInfo,
     enabled: !!consoleInfo,
@@ -93,17 +88,16 @@ const ServerStatsContent = ({ isDark }: { isDark: boolean }) => {
       {statsData.current && (
         <div
           className={cn(
-            "space-y-2 border-t px-3 py-2",
-            isDark ? "border-zinc-800" : "border-zinc-200"
+            "space-y-2 border-t px-3 py-2 border-zinc-800",
           )}
         >
           <div className="flex items-center justify-between text-xs">
-            <span className={isDark ? "text-zinc-500" : "text-zinc-400"}>CPU</span>
-            <span className={isDark ? "text-zinc-300" : "text-zinc-600"}>{cpuPercent.toFixed(1)}%</span>
+            <span className={"text-zinc-500"}>CPU</span>
+            <span className={"text-zinc-300"}>{cpuPercent.toFixed(1)}%</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className={isDark ? "text-zinc-500" : "text-zinc-400"}>RAM</span>
-            <span className={isDark ? "text-zinc-300" : "text-zinc-600"}>{memPercent.toFixed(1)}%</span>
+            <span className={"text-zinc-500"}>RAM</span>
+            <span className={"text-zinc-300"}>{memPercent.toFixed(1)}%</span>
           </div>
         </div>
       )}
@@ -111,11 +105,10 @@ const ServerStatsContent = ({ isDark }: { isDark: boolean }) => {
   );
 };
 
-export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
+export const UnifiedSidebar = () => {
   const pathname = usePathname();
   const params = useParams();
   const serverId = (params.id as string) || "";
-  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user: authUser, signOut, isAdmin } = useAuth();
 
@@ -147,40 +140,12 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
         <Link
           href="/servers"
           className={cn(
-            "group relative flex w-full items-center gap-2 border px-3 py-2 text-left transition-colors",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
-          )}
+            "group relative flex w-full items-center gap-2 border px-3 py-2 text-left transition-colors border-zinc-700/50 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200")}
         >
           <ServerIcon
-            className={cn("h-4 w-4 shrink-0", isDark ? "text-zinc-500" : "text-zinc-400")}
+            className={cn("h-4 w-4 shrink-0 text-zinc-500")}
           />
           <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-              isDark ? "border-zinc-600" : "border-zinc-300"
-            )}
-          />
         </Link>
       );
     }
@@ -196,12 +161,10 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
           </TextureButton>
           <div
             className={cn(
-              "mt-3 flex items-center gap-2 px-3 py-2",
-              isDark ? "text-zinc-300" : "text-zinc-700"
-            )}
+              "mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}
           >
             <ShieldIcon
-              className={cn("h-4 w-4 shrink-0", isDark ? "text-amber-500" : "text-amber-600")}
+              className={cn("h-4 w-4 shrink-0 text-amber-500")}
             />
             <span className="text-xs font-medium tracking-wider uppercase">Admin Panel</span>
           </div>
@@ -219,12 +182,10 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
         </TextureButton>
         <div
           className={cn(
-            "mt-3 flex items-center gap-2 px-3 py-2",
-            isDark ? "text-zinc-300" : "text-zinc-700"
-          )}
+            "mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}
         >
           <ServerIcon
-            className={cn("h-4 w-4 shrink-0", isDark ? "text-zinc-500" : "text-zinc-400")}
+            className={cn("h-4 w-4 shrink-0 text-zinc-500")}
           />
           <span className="truncate text-xs font-medium tracking-wider uppercase">
             Server {serverId}
@@ -258,8 +219,7 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
       <SidebarGroup>
         <SidebarGroupLabel
           className={cn(
-            "px-2 text-[10px] font-medium tracking-wider uppercase",
-            isDark ? "text-zinc-600" : "text-zinc-400"
+            "px-2 text-[10px] font-medium tracking-wider uppercase text-zinc-600"
           )}
         >
           {groupLabel}
@@ -293,12 +253,10 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
                     asChild
                     isActive={isActive}
                     className={cn(
-                      "rounded-none text-xs transition-colors",
+                      "text-xs transition-colors",
                       variant === "app"
                         ? "relative z-10 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:text-zinc-100"
-                        : isDark
-                          ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
-                          : "text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-900 data-[active=true]:bg-zinc-200/80 data-[active=true]:text-zinc-900"
+                        : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
                     )}
                   >
                     <Link href={fullHref}>
@@ -360,8 +318,8 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
       return (
         <WaveText
           text={version}
-          baseClassName={isDark ? "text-zinc-600" : "text-zinc-400"}
-          highlightClassName={isDark ? "text-zinc-100" : "text-zinc-800"}
+          baseClassName={"text-zinc-600"}
+          highlightClassName={"text-zinc-100"}
         />
       );
     }
@@ -375,14 +333,11 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
   return (
     <Sidebar
       className={cn(
-        "border-r shadow-lg",
-        isDark
-          ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-black/20"
-          : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-zinc-400/20"
+        "border-r shadow-lg border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-black/20"
       )}
     >
       <SidebarHeader
-        className={cn("border-b p-4", isDark ? "border-zinc-200/10" : "border-zinc-300")}
+        className={cn("border-b p-4 border-zinc-200/10")}
       >
         {renderHeader()}
       </SidebarHeader>
@@ -390,30 +345,20 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
       <SidebarContent className="px-2">{renderNavItems()}</SidebarContent>
 
       <SidebarFooter
-        className={cn("border-t p-4", isDark ? "border-zinc-200/10" : "border-zinc-300")}
+        className={cn("border-t p-4 border-zinc-200/10")}
       >
-        {variant === "app" && <ServerStatsContent isDark={isDark} />}
+        {variant === "app" && <ServerStatsContent/>}
 
         <div className="relative">
-          <button
+          <TextureButton variant="minimal"
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className={cn(
-              "group relative flex w-full items-center gap-3 border px-3 py-2 text-left transition-colors",
-              isDark
-                ? "border-zinc-700/50 bg-zinc-900/50 hover:border-zinc-500"
-                : "border-zinc-200 bg-white hover:border-zinc-400"
-            )}
           >
             <div
               className={cn(
                 "flex h-8 w-8 items-center justify-center text-xs font-medium uppercase",
                 isAdminVariant
-                  ? isDark
-                    ? "border border-amber-700/50 bg-amber-900/50 text-amber-400"
-                    : "border border-amber-300 bg-amber-100 text-amber-700"
-                  : isDark
-                    ? "border border-zinc-700 bg-zinc-800 text-zinc-300"
-                    : "border border-zinc-300 bg-zinc-200 text-zinc-700"
+                  ? "border border-amber-700/50 bg-amber-900/50 text-amber-400"
+                  : "border border-zinc-700 bg-zinc-800 text-zinc-300"
               )}
             >
               {user.initials}
@@ -421,16 +366,14 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
             <div className="min-w-0 flex-1">
               <div
                 className={cn(
-                  isAdminVariant ? "flex items-center gap-1.5 truncate text-xs font-medium" : "truncate text-xs font-medium",
-                  isDark ? "text-zinc-200" : "text-zinc-800"
+                  isAdminVariant ? "flex items-center gap-1.5 truncate text-xs font-medium" : "truncate text-xs font-medium text-zinc-200",
                 )}
               >
                 {user.name}
                 {isAdminVariant && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.5 text-[9px] tracking-wider uppercase",
-                      isDark ? "bg-amber-900/50 text-amber-400" : "bg-amber-100 text-amber-700"
+                      "px-1.5 py-0.5 text-[9px] tracking-wider uppercase bg-amber-900/50 text-amber-400",
                     )}
                   >
                     Admin
@@ -438,90 +381,35 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
                 )}
               </div>
               <div
-                className={cn("truncate text-[10px]", isDark ? "text-zinc-500" : "text-zinc-500")}
+                className={cn("truncate text-[10px] text-zinc-500")}
               >
                 {user.email}
               </div>
             </div>
             <ChevronUpIcon
               className={cn(
-                "h-4 w-4 shrink-0 transition-transform",
-                isDark ? "text-zinc-500" : "text-zinc-400",
+                "h-4 w-4 shrink-0 transition-transform text-zinc-500",
                 isUserMenuOpen && "rotate-180"
               )}
             />
-            <div
-              className={cn(
-                "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-            <div
-              className={cn(
-                "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-                isDark ? "border-zinc-600" : "border-zinc-300"
-              )}
-            />
-          </button>
+          </TextureButton>
 
           {isUserMenuOpen && (
             <div
               className={cn(
-                "absolute right-0 bottom-full left-0 z-50 mb-1 border shadow-lg",
-                isDark
-                  ? "border-zinc-700/50 bg-[#0f0f0f] shadow-black/40"
-                  : "border-zinc-200 bg-white shadow-zinc-200/40"
-              )}
+                "absolute right-0 bottom-full left-0 z-50 mb-1 border shadow-lg border-zinc-700/50 bg-[#0f0f0f] shadow-black/40")}
             >
-              <div
-                className={cn(
-                  "pointer-events-none absolute top-0 left-0 h-1.5 w-1.5 border-t border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute top-0 right-0 h-1.5 w-1.5 border-t border-r",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute bottom-0 left-0 h-1.5 w-1.5 border-b border-l",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-              <div
-                className={cn(
-                  "pointer-events-none absolute right-0 bottom-0 h-1.5 w-1.5 border-r border-b",
-                  isDark ? "border-zinc-500" : "border-zinc-400"
-                )}
-              />
-
               {userMenuItems.map((item) => (
                 <Link
                   key={item.title}
                   href={item.href}
                   onClick={() => setIsUserMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                    isDark ? "text-zinc-300 hover:bg-zinc-800" : "text-zinc-700 hover:bg-zinc-100"
+                    "flex items-center gap-2 px-3 py-2 text-xs transition-colors text-zinc-300 hover:bg-zinc-800",
                   )}
                 >
                   <item.icon
-                    className={cn("h-4 w-4", isDark ? "text-zinc-500" : "text-zinc-400")}
+                    className={cn("h-4 w-4 text-zinc-500")}
                   />
                   <span className="tracking-wider uppercase">{item.title}</span>
                 </Link>
@@ -529,31 +417,26 @@ export const UnifiedSidebar = ({ isDark = true }: UnifiedSidebarProps) => {
 
               {userMenuItems.length > 0 && (
                 <div
-                  className={cn("my-1 border-t", isDark ? "border-zinc-700/50" : "border-zinc-200")}
+                  className={cn("my-1 border-t border-zinc-700/50")}
                 />
               )}
 
-              <button
+              <TextureButton variant="minimal"
                 onClick={() => {
                   setIsUserMenuOpen(false);
                   handleSignOut();
                 }}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors",
-                  isDark ? "text-red-400/80 hover:bg-zinc-800" : "text-red-600 hover:bg-zinc-100"
-                )}
               >
                 <LogOutIcon className="h-4 w-4" />
                 <span className="tracking-wider uppercase">Sign Out</span>
-              </button>
+              </TextureButton>
             </div>
           )}
         </div>
 
         <div
           className={cn(
-            "mt-3 text-center text-[10px] tracking-wider uppercase",
-            isDark ? "text-zinc-600" : "text-zinc-400"
+            "mt-3 text-center text-[10px] tracking-wider uppercase text-zinc-600",
           )}
         >
           {renderVersion()}

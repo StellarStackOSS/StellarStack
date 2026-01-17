@@ -85,7 +85,9 @@
       "Bash(cmd /c \"dir C:\\\\Users\\\\marqu\\\\StellarStack-REPO\\\\apps\\\\web\\\\lib\")",
       "Bash(bash:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yep\" npx prisma migrate reset:*)"
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yep\" npx prisma migrate reset:*)",
+      "Bash(while read file)",
+      "Bash(do echo \"$file\")"
     ],
     "deny": [],
     "ask": []

@@ -23,7 +23,6 @@ import {PlayersOnlineCard} from "@workspace/ui/components/players-online-card";
 import {RecentLogsCard} from "@workspace/ui/components/recent-logs-card";
 import {CardPreview} from "@workspace/ui/components/card-preview";
 import type {ContainerStatus} from "@workspace/ui/components/dashboard-cards-types";
-import {ThemeContext} from "@/contexts";
 import {useLabels} from "@/hooks";
 import {defaultGridItems, defaultHiddenCards} from "@/constants";
 import {useServer} from "components/ServerStatusPages/server-provider";
@@ -35,7 +34,6 @@ import {ServerMaintenancePlaceholder} from "components/ServerStatusPages/server-
 import {TextureButton} from "@workspace/ui/components/texture-button";
 import {LightBoard} from "@workspace/ui/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
-// import {LightBoard} from "@workspace/ui/components/Lightboard/Lightboard"
 
 const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
   const stats = statsData.current;
@@ -226,14 +224,11 @@ const ServerOverviewPage = (): JSX.Element | null => {
     };
   }, [wsEnabled, wsConnected, wsConnecting, hasAttemptedConnection]);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
   const {
     items,
     visibleItems,
     layouts,
     hiddenCards,
-    isLoaded,
     saveLayout,
     resetLayout,
     showCard,
@@ -271,10 +266,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     },
   };
 
-  if (!mounted || !isLoaded) {
-    return null;
-  }
-
   if (isInstalling) {
     return (
       <div className="min-h-svh bg-[#0b0b0a]">
@@ -310,7 +301,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
   }
 
   return (
-    <ThemeContext.Provider>
       <div className="relative w-full transition-colors">
         <FadeIn direction={"down"} delay={500} duration={400}>
           <LightBoard
@@ -429,16 +419,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                   <InstanceNameCard
                     itemId="instance-name"
                     instanceName={displayData.name}
-                  />
-                </GridItem>
-              </div>
-            )}
-
-            {!hiddenCards.includes("container-controls") && (
-              <div key="container-controls" className="h-full">
-                <GridItem itemId="container-controls">
-                  <ContainerControlsCard
-                    itemId="container-controls"
                     isOffline={isOffline}
                     status={containerControls.status}
                     onStart={containerControls.handleStart}
@@ -502,10 +482,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
                     itemId="ram"
                     percentage={displayData.memory.usage.percentage}
                     primaryValue={displayData.memory.displayValue}
-                    details={[
-                      `${displayData.memory.usage.percentage.toFixed(1)}% used`,
-                      displayData.memory.type || "",
-                    ]}
                     history={displayData.memory.usage.history}
                     isOffline={isOffline}
                     labels={labels.ram}
@@ -605,7 +581,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
         {/* Extensions */}
         <EulaExtension serverId={serverId} lines={rawConsoleLines} onRestart={restart} />
       </div>
-    </ThemeContext.Provider>
     );
 }
 

@@ -5,7 +5,7 @@ import {useParams} from "next/navigation";
 import {useTheme as useNextTheme} from "next-themes";
 import {motion} from "framer-motion";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {SidebarTrigger} from "@workspace/ui/components/sidebar";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
@@ -307,7 +307,6 @@ const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const [mounted, setMounted] = useState(false);
   const [settings, setSettings] = useState<ServerSettings>(defaultSettings);
   const [originalSettings, setOriginalSettings] = useState<ServerSettings>(defaultSettings);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -332,10 +331,6 @@ const SettingsPage = (): JSX.Element | null => {
     memory: 50,
     disk: 50,
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Simulate pinging locations one by one when modal opens
   const startPinging = useCallback(() => {
@@ -451,8 +446,6 @@ const SettingsPage = (): JSX.Element | null => {
     return acc;
   }, {});
 
-  if (!mounted) return null;
-
   if (isInstalling) {
     return (
       <div className="min-h-svh">
@@ -541,7 +534,7 @@ const SettingsPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {hasChanges && (
-                <Button
+                <TextureButton
                   variant="outline"
                   size="sm"
                   onClick={handleReset}
@@ -551,9 +544,9 @@ const SettingsPage = (): JSX.Element | null => {
                   )}
                 >
                   <span className="text-xs tracking-wider uppercase">Reset</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
                 onClick={() => setSaveModalOpen(true)}
@@ -573,7 +566,7 @@ const SettingsPage = (): JSX.Element | null => {
                 ) : (
                   <span className="text-xs tracking-wider uppercase">Save Changes</span>
                 )}
-              </Button>
+              </TextureButton>
 
             </div>
           </div>
@@ -760,7 +753,7 @@ const SettingsPage = (): JSX.Element | null => {
                   This will reinstall the server with its current configuration
                 </p>
               </div>
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
                 onClick={() => setReinstallModalOpen(true)}
@@ -770,7 +763,7 @@ const SettingsPage = (): JSX.Element | null => {
                 )}
               >
                 <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
         </div>
@@ -997,7 +990,7 @@ const SettingsPage = (): JSX.Element | null => {
                   "border-zinc-800"
                 )}
               >
-                <Button
+                <TextureButton
                   variant="outline"
                   size="sm"
                   onClick={startPinging}
@@ -1014,9 +1007,9 @@ const SettingsPage = (): JSX.Element | null => {
                         ? `Wait ${pingCooldown}s`
                         : "Refresh Ping"}
                   </span>
-                </Button>
+                </TextureButton>
                 <div className="flex gap-2">
-                  <Button
+                  <TextureButton
                     variant="outline"
                     size="sm"
                     onClick={() => setTransferModalOpen(false)}
@@ -1025,8 +1018,8 @@ const SettingsPage = (): JSX.Element | null => {
                     )}
                   >
                     <span className="text-xs tracking-wider uppercase">Cancel</span>
-                  </Button>
-                  <Button
+                  </TextureButton>
+                  <TextureButton
                     variant="outline"
                     size="sm"
                     onClick={handleTransfer}
@@ -1038,7 +1031,7 @@ const SettingsPage = (): JSX.Element | null => {
                   >
                     <BsGlobe className="h-3 w-3" />
                     <span className="text-xs tracking-wider uppercase">Transfer</span>
-                  </Button>
+                  </TextureButton>
                 </div>
               </div>
             </>
@@ -1205,7 +1198,7 @@ const SettingsPage = (): JSX.Element | null => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
+            <TextureButton
               variant="outline"
               size="sm"
               onClick={() => setSplitModalOpen(false)}
@@ -1214,8 +1207,8 @@ const SettingsPage = (): JSX.Element | null => {
               )}
             >
               <span className="text-xs tracking-wider uppercase">Cancel</span>
-            </Button>
-            <Button
+            </TextureButton>
+            <TextureButton
               variant="outline"
               size="sm"
               onClick={handleSplitServer}
@@ -1226,7 +1219,7 @@ const SettingsPage = (): JSX.Element | null => {
             >
               <BsLayers className="h-3 w-3" />
               <span className="text-xs tracking-wider uppercase">Split Server</span>
-            </Button>
+            </TextureButton>
           </div>
         </DialogContent>
       </Dialog>

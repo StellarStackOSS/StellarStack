@@ -1,9 +1,9 @@
-import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import {Geist_Mono, Space_Grotesk} from "next/font/google";
 
 import "@workspace/ui/globals.css";
-import { Providers } from "@/components/providers";
-import { Toaster } from "@workspace/ui/components/sonner";
-import { PublicEnv } from "@/lib/public-env";
+import {Providers} from "@/components/providers";
+import {Toaster} from "@workspace/ui/components/sonner";
+import {PublicEnv} from "@/lib/public-env";
 
 const fontSans = Space_Grotesk({
   subsets: ["latin"],
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}>
+      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased dark`}>
         <PublicEnv />
         <Providers>
           {children}

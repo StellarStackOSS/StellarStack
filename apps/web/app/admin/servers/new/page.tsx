@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { Switch } from "@workspace/ui/components/switch";
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export default function NewServerPage() {
   const router = useRouter();
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: nodesList = [], isLoading: isLoadingNodes } = useNodes();
@@ -140,8 +140,6 @@ export default function NewServerPage() {
 
   const isLoading = isLoadingNodes || isLoadingBlueprints || isLoadingUsers;
 
-  if (!mounted) return null;
-
   if (isLoading) {
     return (
       <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
@@ -161,16 +159,13 @@ export default function NewServerPage() {
           <FadeIn delay={0}>
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
-              <Button
+              <TextureButton
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                )}
               >
                 <ArrowLeftIcon className="w-4 h-4" />
-              </Button>
+              </TextureButton>
               <div>
                 <h1 className={cn(
                   "text-2xl font-light tracking-wider text-zinc-100",
@@ -569,19 +564,13 @@ export default function NewServerPage() {
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(selectedBlueprint.dockerImages).map(([label, image]) => (
-                          <button
+                          <TextureButton variant="minimal"
                             key={label}
                             type="button"
                             onClick={() => setSelectedDockerImage(image)}
-                            className={cn(
-                              "px-3 py-2 text-xs font-medium uppercase tracking-wider border transition-all",
-                              selectedDockerImage === image
-                                ? "border-zinc-400 bg-zinc-700/50 text-zinc-200"
-                                : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                            )}
                           >
                             {label}
-                          </button>
+                          </TextureButton>
                         ))}
                       </div>
                       <p className={cn("text-[10px] mt-2 font-mono text-zinc-600")}>
@@ -655,22 +644,16 @@ export default function NewServerPage() {
               <div className={cn(
                 "flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-700/50",
               )}>
-                <Button
+                <TextureButton
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/admin/servers")}
-                  className={cn(
-                    "text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400",
-                  )}
                 >
                   Cancel
-                </Button>
-                <Button
+                </TextureButton>
+                <TextureButton
                   type="submit"
                   disabled={create.isPending}
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                  )}
                 >
                   {create.isPending ? (
                     <Spinner className="w-4 h-4" />
@@ -678,7 +661,7 @@ export default function NewServerPage() {
                     <ServerIcon className="w-4 h-4" />
                   )}
                   {create.isPending ? "Creating..." : "Create Server"}
-                </Button>
+                </TextureButton>
               </div>
             </form>
           </FadeIn>

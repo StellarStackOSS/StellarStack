@@ -10,12 +10,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { cn } from "@workspace/ui/lib/utils";
 import { toast } from "sonner";
 import { servers } from "@/lib/api";
 import type { ConsoleLine } from "@/hooks/useServerWebSocket";
-import { TextureButton } from "@workspace/ui/components/texture-button";
 
 // Patterns that indicate EULA acceptance is required
 const EULA_PATTERNS = [
@@ -37,8 +36,6 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
   const [showDialog, setShowDialog] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
 
   // Check console lines for EULA-related messages
   const checkForEulaRequired = useCallback(() => {
@@ -126,10 +123,10 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
         <div
           className={cn(
             "space-y-3 rounded-lg p-4 text-sm",
-            isDark ? "border border-zinc-800 bg-white/5" : "border border-zinc-200 bg-zinc-100"
+            "border border-zinc-800 bg-white/5"
           )}
         >
-          <p className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+          <p className="text-zinc-300">
             By clicking &quot;Accept&quot;, you agree to the{" "}
             <a
               href="https://aka.ms/MinecraftEULA"
@@ -137,14 +134,14 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
               rel="noopener noreferrer"
               className={cn(
                 "underline hover:no-underline",
-                isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"
+                "text-blue-400 hover:text-blue-300"
               )}
             >
               Minecraft EULA
             </a>
             .
           </p>
-          <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+          <p className={cn("text-xs", "text-zinc-500")}>
             This will update the eula.txt file and restart your server.
           </p>
         </div>

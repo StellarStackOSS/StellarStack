@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import { Input } from "@workspace/ui/components/input";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
@@ -229,16 +229,12 @@ const UsersPage = (): JSX.Element | null => {
         >
           {selectedPermissions.length} of {allPermissions.length} selected
         </span>
-        <button
+        <TextureButton variant="minimal"
           type="button"
           onClick={toggleAllPermissions}
-          className={cn(
-            "text-xs tracking-wider uppercase transition-colors",
-            "text-zinc-400 hover:text-zinc-100"
-          )}
         >
           {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
-        </button>
+        </TextureButton>
       </div>
 
       {/* Scrollable categories */}
@@ -253,10 +249,9 @@ const UsersPage = (): JSX.Element | null => {
           >
             {/* Category header with select all */}
             <div className="mb-3 flex items-center justify-between">
-              <button
+              <TextureButton variant="minimal"
                 type="button"
                 onClick={() => toggleCategory(category)}
-                className="flex items-center gap-2"
               >
                 <div
                   className={cn(
@@ -283,7 +278,7 @@ const UsersPage = (): JSX.Element | null => {
                 >
                   {category.name}
                 </span>
-              </button>
+              </TextureButton>
               <span
                 className={cn(
                   "text-[10px] tracking-wider",
@@ -298,16 +293,10 @@ const UsersPage = (): JSX.Element | null => {
             {/* Category permissions - 2 column grid */}
             <div className="grid grid-cols-2 gap-2">
               {category.permissions.map((perm) => (
-                <button
+                <TextureButton variant="minimal"
                   key={perm.key}
                   type="button"
                   onClick={() => togglePermission(perm.key)}
-                  className={cn(
-                    "flex items-center gap-2 border p-2 text-left transition-all",
-                    selectedPermissions.includes(perm.key)
-                      ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                  )}
                 >
                   <div
                     className={cn(
@@ -324,7 +313,7 @@ const UsersPage = (): JSX.Element | null => {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-xs font-medium">{perm.name}</div>
                   </div>
-                </button>
+                </TextureButton>
               ))}
             </div>
           </div>
@@ -364,28 +353,20 @@ const UsersPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {isOwner && (
-                <Button
+                <TextureButton
                   variant="outline"
                   size="sm"
                   onClick={openInviteModal}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Invite User</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  "hidden"
-                )}
               >
-              </Button>
+              </TextureButton>
             </div>
           </div>
 
@@ -454,17 +435,13 @@ const UsersPage = (): JSX.Element | null => {
                           </div>
                         </div>
                         {isOwner && (
-                          <Button
+                          <TextureButton
                             variant="outline"
                             size="sm"
                             onClick={() => openCancelInviteModal(invitation)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-amber-700/50 text-amber-400/80 hover:border-amber-600 hover:text-amber-300"
-                            )}
                           >
                             <BsTrash className="h-4 w-4" />
-                          </Button>
+                          </TextureButton>
                         )}
                       </div>
                     ))}
@@ -653,28 +630,20 @@ const UsersPage = (): JSX.Element | null => {
                       </div>
                       {isOwner && (
                         <div className="flex items-center gap-2">
-                          <Button
+                          <TextureButton
                             variant="outline"
                             size="sm"
                             onClick={() => openEditModal(member)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                            )}
                           >
                             <BsPencil className="h-4 w-4" />
-                          </Button>
-                          <Button
+                          </TextureButton>
+                          <TextureButton
                             variant="outline"
                             size="sm"
                             onClick={() => openDeleteModal(member)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                            )}
                           >
                             <BsTrash className="h-4 w-4" />
-                          </Button>
+                          </TextureButton>
                         </div>
                       )}
                     </div>

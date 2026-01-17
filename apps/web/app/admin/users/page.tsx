@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -19,7 +19,7 @@ import {toast} from "sonner";
 
 export default function UsersPage() {
   const router = useRouter();
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
   const { user: currentUser } = useAuth();
 
   // React Query hooks
@@ -147,8 +147,6 @@ export default function UsersPage() {
     );
   }, [usersList, searchQuery]);
 
-  if (!mounted) return null;
-
   return (
     <div
       className={cn(
@@ -164,16 +162,13 @@ export default function UsersPage() {
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
+                <TextureButton
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                  )}
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
-                </Button>
+                </TextureButton>
                 <div>
                   <h1
                     className={cn(
@@ -187,17 +182,14 @@ export default function UsersPage() {
                   </p>
                 </div>
               </div>
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
                 onClick={handleCreate}
-                className={cn(
-                  "gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
               >
                 <PlusIcon className="h-4 w-4" />
                 Create User
-              </Button>
+              </TextureButton>
             </div>
 
             {/* Search Bar */}
@@ -308,13 +300,9 @@ export default function UsersPage() {
                           )}
                         </td>
                         <td className="p-3">
-                          <button
+                          <TextureButton variant="minimal"
                             onClick={() => toggleRole(user)}
                             disabled={user.id === currentUser?.id || update.isPending}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 border px-2 py-1 text-xs font-medium tracking-wider uppercase transition-colors border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700",
-                              user.id === currentUser?.id && "cursor-not-allowed opacity-50"
-                            )}
                           >
                             {user.role === "admin" ? (
                               <ShieldIcon className="h-3 w-3" />
@@ -322,7 +310,7 @@ export default function UsersPage() {
                               <UserIcon className="h-3 w-3" />
                             )}
                             {user.role}
-                          </button>
+                          </TextureButton>
                         </td>
                         <td
                           className={cn("p-3 text-sm text-zinc-500")}
@@ -331,17 +319,14 @@ export default function UsersPage() {
                         </td>
                         <td className="p-3">
                           <div className="flex items-center justify-end gap-1">
-                            <Button
+                            <TextureButton
                               variant="outline"
                               size="sm"
                               onClick={() => handleEdit(user)}
-                              className={cn(
-                                "p-1.5 text-xs border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                              )}
                             >
                               <EditIcon className="h-3 w-3" />
-                            </Button>
-                            <Button
+                            </TextureButton>
+                            <TextureButton
                               variant="outline"
                               size="sm"
                               onClick={() => {
@@ -352,13 +337,9 @@ export default function UsersPage() {
                                 setDeleteConfirmUser(user);
                               }}
                               disabled={user.id === currentUser?.id}
-                              className={cn(
-                                "p-1.5 text-xs cursor-not-allowed opacity-50 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                                user.id === currentUser?.id
-                              )}
                             >
                               <TrashIcon className="h-3 w-3" />
-                            </Button>
+                            </TextureButton>
                           </div>
                         </td>
                       </tr>

@@ -26,7 +26,6 @@ import {
 } from "react-icons/bs";
 import { Footer } from "@/components/Footer";
 import { Navigation } from "@/components/Navigation";
-import { useIsMounted } from "@/hooks/useIsMounted";
 
 const features = [
   {

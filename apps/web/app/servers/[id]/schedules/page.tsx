@@ -1,15 +1,15 @@
 "use client";
 
-import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Switch } from "@workspace/ui/components/switch";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
+import {type JSX, useCallback, useEffect, useMemo, useState} from "react";
+import {useParams} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {Switch} from "@workspace/ui/components/switch";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
 import {
   BsArrowRepeat,
   BsClock,
@@ -22,14 +22,12 @@ import {
   BsTrash,
   BsX,
 } from "react-icons/bs";
-import type { CreateScheduleData, Schedule } from "@/lib/api";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
-import { useServerPageSetup } from "@/hooks/useServerPageSetup";
-import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
+import type {CreateScheduleData, Schedule} from "@/lib/api";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
 
@@ -258,17 +256,13 @@ const SchedulesPage = (): JSX.Element | null => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
+                  <TextureButton
+                    variant="minimal"
                     onClick={() => removeTask(task.id)}
                     disabled={isSaving}
-                    className={cn(
-                      "shrink-0 p-1.5 transition-colors disabled:opacity-50",
-                      "text-zinc-500 hover:text-red-400"
-                    )}
                   >
                     <BsX className="h-4 w-4" />
-                  </button>
+                  </TextureButton>
                 </div>
               ))}
             </div>
@@ -277,19 +271,15 @@ const SchedulesPage = (): JSX.Element | null => {
           {/* Add task buttons */}
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {actionOptions.map((opt) => (
-              <button
+              <TextureButton
                 key={opt.value}
-                type="button"
+                variant="minimal"
                 onClick={() => addTask(opt.value)}
                 disabled={formTasks.length >= MAX_TASKS || isSaving}
-                className={cn(
-                  "flex items-center gap-2 border p-2 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-40",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                )}
               >
                 {opt.icon}
                 <span className="truncate">{opt.label}</span>
-              </button>
+              </TextureButton>
             ))}
           </div>
         </div>
@@ -354,7 +344,7 @@ const SchedulesPage = (): JSX.Element | null => {
     return (
       <div className="min-h-svh">
         {/* Background is now rendered in the layout for persistence */}
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -362,7 +352,7 @@ const SchedulesPage = (): JSX.Element | null => {
   if (server?.status === "SUSPENDED") {
     return (
       <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -531,18 +521,13 @@ const SchedulesPage = (): JSX.Element | null => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={openCreateModal}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Schedule</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
 
@@ -652,28 +637,18 @@ const SchedulesPage = (): JSX.Element | null => {
                         checked={schedule.isActive}
                         onCheckedChange={() => toggleSchedule(schedule)}
                       />
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => openEditModal(schedule)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        )}
                       >
                         <BsPencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="destructive"
                         onClick={() => openDeleteModal(schedule)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        )}
                       >
                         <BsTrash className="h-4 w-4" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
                 </div>

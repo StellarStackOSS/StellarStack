@@ -1,14 +1,13 @@
 "use client";
 
-import { ReactNode } from "react";
-import { ServerIcon, BanIcon, RotateCcwIcon, WrenchIcon, DownloadIcon, Loader2Icon } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
-import { motion } from "framer-motion";
+import {ReactNode} from "react";
+import {BanIcon, DownloadIcon, Loader2Icon, RotateCcwIcon, ServerIcon, WrenchIcon} from "lucide-react";
+import {cn} from "@workspace/ui/lib/utils";
+import {motion} from "framer-motion";
 
 type StatusType = "suspended" | "restoring" | "maintenance" | "installing";
 
 interface ServerStatusPlaceholderProps {
-  isDark?: boolean;
   serverName?: string;
   status: StatusType;
 }
@@ -79,47 +78,47 @@ const STATUS_CONFIG: Record<StatusType, {
   },
 };
 
-const getPulseColor = (color: string, isDark: boolean) => {
+const getPulseColor = (color: string) => {
   const colors = {
-    red: isDark ? "bg-red-500" : "bg-red-400",
-    blue: isDark ? "bg-blue-500" : "bg-blue-400",
-    amber: isDark ? "bg-amber-500" : "bg-amber-400",
-    zinc: isDark ? "bg-zinc-500" : "bg-zinc-400",
+    red: "bg-red-500",
+    blue: "bg-blue-500",
+    amber: "bg-amber-500",
+    zinc: "bg-zinc-500",
   };
   return colors[color as keyof typeof colors] || colors.zinc;
 };
 
-const getBadgeColors = (color: string, isDark: boolean) => {
+const getBadgeColors = (color: string) => {
   const colors = {
     red: {
-      border: isDark ? "border-red-700" : "border-red-300",
-      bg: isDark ? "bg-red-900/50" : "bg-red-100",
-      text: isDark ? "text-red-400" : "text-red-600",
+      border: "border-red-700",
+      bg: "bg-red-900/50",
+      text: "text-red-400",
     },
     blue: {
-      border: isDark ? "border-blue-700" : "border-blue-300",
-      bg: isDark ? "bg-blue-900/50" : "bg-blue-100",
-      text: isDark ? "text-blue-400" : "text-blue-600",
+      border: "border-blue-700",
+      bg: "bg-blue-900/50",
+      text: "text-blue-400",
     },
     amber: {
-      border: isDark ? "border-amber-700" : "border-amber-300",
-      bg: isDark ? "bg-amber-900/50" : "bg-amber-100",
-      text: isDark ? "text-amber-400" : "text-amber-600",
+      border: "border-amber-700",
+      bg: "bg-amber-900/50",
+      text: "text-amber-400",
     },
     zinc: {
-      border: isDark ? "border-zinc-600" : "border-zinc-300",
-      bg: isDark ? "bg-zinc-800" : "bg-zinc-100",
-      text: isDark ? "text-blue-400" : "text-blue-600",
+      border: "border-zinc-600",
+      bg: "bg-zinc-800",
+      text: "text-blue-400",
     },
   };
   return colors[color as keyof typeof colors] || colors.zinc;
 };
 
-const renderLoadingElement = (type: string | null, isDark: boolean, color: string) => {
+const renderLoadingElement = (type: string | null, color: string) => {
   if (!type) return null;
 
   if (type === "dots") {
-    const pulseColor = getPulseColor(color, isDark);
+    const pulseColor = getPulseColor(color);
     return (
       <div className="flex items-center gap-2">
         {[0, 300, 600].map((delay) => (
@@ -136,8 +135,8 @@ const renderLoadingElement = (type: string | null, isDark: boolean, color: strin
   if (type === "spinner") {
     return (
       <div className="flex items-center gap-2">
-        <Loader2Icon className={cn("h-4 w-4 animate-spin", isDark ? "text-zinc-500" : "text-zinc-400")} />
-        <span className={cn("text-xs tracking-wider uppercase", isDark ? "text-zinc-500" : "text-zinc-500")}>
+        <Loader2Icon className="h-4 w-4 animate-spin text-zinc-500" />
+        <span className="text-xs tracking-wider uppercase text-zinc-500">
           Please wait while your server is being set up...
         </span>
       </div>
@@ -147,17 +146,12 @@ const renderLoadingElement = (type: string | null, isDark: boolean, color: strin
   return null;
 };
 
-export const ServerStatusPlaceholder = ({ isDark = true, serverName, status }: ServerStatusPlaceholderProps) => {
+export const ServerStatusPlaceholder = ({ serverName, status }: ServerStatusPlaceholderProps) => {
   const config = STATUS_CONFIG[status];
-  const badgeColors = getBadgeColors(config.badgeColor, isDark);
+  const badgeColors = getBadgeColors(config.badgeColor);
 
   return (
-    <div
-      className={cn(
-        "flex min-h-[60vh] flex-col items-center justify-center p-8",
-        isDark ? "text-zinc-300" : "text-zinc-700"
-      )}
-    >
+    <div className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-zinc-300">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -171,17 +165,12 @@ export const ServerStatusPlaceholder = ({ isDark = true, serverName, status }: S
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className={cn("absolute inset-0 rounded-full border-2 border-dashed", isDark ? "border-zinc-700" : "border-zinc-300")}
+              className="absolute inset-0 rounded-full border-2 border-dashed border-zinc-700"
               style={{ width: 80, height: 80, margin: -8 }}
             />
           )}
-          <div
-            className={cn(
-              "relative flex h-16 w-16 items-center justify-center border",
-              isDark ? "border-zinc-700 bg-zinc-900" : "border-zinc-300 bg-white"
-            )}
-          >
-            <ServerIcon className={cn("h-8 w-8", isDark ? "text-zinc-600" : "text-zinc-400")} />
+          <div className="relative flex h-16 w-16 items-center justify-center border border-zinc-700 bg-zinc-900">
+            <ServerIcon className="h-8 w-8 text-zinc-600" />
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -194,20 +183,15 @@ export const ServerStatusPlaceholder = ({ isDark = true, serverName, status }: S
         </div>
 
         <div className="space-y-2 text-center">
-          <h2 className={cn("text-lg font-medium tracking-wider uppercase", isDark ? "text-zinc-200" : "text-zinc-800")}>
+          <h2 className="text-lg font-medium tracking-wider uppercase text-zinc-200">
             {config.title}
           </h2>
-          {serverName && <p className={cn("font-mono text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>{serverName}</p>}
+          {serverName && <p className="font-mono text-sm text-zinc-500">{serverName}</p>}
         </div>
 
-        {renderLoadingElement(config.loadingElement as string | null, isDark, config.badgeColor)}
+        {renderLoadingElement(config.loadingElement as string | null, config.badgeColor)}
 
-        <div
-          className={cn(
-            "mt-4 space-y-1 border p-4 text-center text-xs",
-            isDark ? "border-zinc-800 bg-zinc-900/50 text-zinc-500" : "border-zinc-200 bg-zinc-50 text-zinc-500"
-          )}
-        >
+        <div className="mt-4 space-y-1 border border-zinc-800 bg-zinc-900/50 p-4 text-center text-xs text-zinc-500">
           {config.message.map((msg, i) => (
             <p key={i}>{msg}</p>
           ))}

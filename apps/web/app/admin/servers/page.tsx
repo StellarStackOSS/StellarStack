@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -34,7 +34,6 @@ import {toast} from "sonner";
 
 export default function AdminServersPage() {
   const router = useRouter();
-  const { mounted } = useAdminTheme();
 
   // React Query hooks
   const { data: serversList = [], isLoading } = useServers();
@@ -90,8 +89,6 @@ export default function AdminServersPage() {
     // Use neutral zinc colors for all statuses
     return "text-zinc-300 border-zinc-600";
   };
-
-  if (!mounted) return null;
 
   return (
     <div className={cn(
@@ -186,75 +183,57 @@ export default function AdminServersPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Button
+                              <TextureButton
                                 variant="outline"
                                 size="sm"
                                 onClick={() => router.push(`/servers/${server.id}`)}
-                                className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <ExternalLinkIcon className="w-3.5 h-3.5" />
-                              </Button>
+                              </TextureButton>
                               {server.status === "STOPPED" && (
-                                <Button
+                                <TextureButton
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleAction(server, "start")}
                                   disabled={start.isPending}
-                                  className={cn(
-                                    "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                  )}
                                 >
                                   <PlayIcon className="w-3.5 h-3.5" />
-                                </Button>
+                                </TextureButton>
                               )}
                               {server.status === "RUNNING" && (
                                 <>
-                                  <Button
+                                  <TextureButton
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleAction(server, "stop")}
                                     disabled={stop.isPending}
-                                    className={cn(
-                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                    )}
                                   >
                                     <SquareIcon className="w-3.5 h-3.5" />
-                                  </Button>
-                                  <Button
+                                  </TextureButton>
+                                  <TextureButton
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleAction(server, "restart")}
                                     disabled={restart.isPending}
-                                    className={cn(
-                                      "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                    )}
                                   >
                                     <RefreshCwIcon className="w-3.5 h-3.5" />
-                                  </Button>
+                                  </TextureButton>
                                 </>
                               )}
-                              <Button
+                              <TextureButton
                                 variant="outline"
                                 size="sm"
                                 onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
-                                className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <EditIcon className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
+                              </TextureButton>
+                              <TextureButton
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setDeleteConfirmServer(server)}
-                                className={cn(
-                                  "text-xs p-2 transition-all hover:scale-110 active:scale-95 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                                )}
                               >
                                 <TrashIcon className="w-3.5 h-3.5" />
-                              </Button>
+                              </TextureButton>
                             </div>
                           </div>
                         </div>

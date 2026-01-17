@@ -1,21 +1,19 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
-import type { DockerImageOption, StartupVariable } from "@/lib/api";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
-import { useServerPageSetup } from "@/hooks/useServerPageSetup";
-import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {BsArrowRepeat, BsCheckCircle, BsInfoCircle} from "react-icons/bs";
+import type {DockerImageOption, StartupVariable} from "@/lib/api";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
   const params = useParams();
@@ -206,29 +204,17 @@ const StartupPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {hasChanges && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={handleReset}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                 >
                   <span className="text-xs tracking-wider uppercase">Reset</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => setSaveModalOpen(true)}
                 disabled={!hasChanges}
-                className={cn(
-                  "gap-2 transition-all",
-                  saved
-                    ? "border-green-500/50 text-green-400"
-                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-                )}
               >
                 {saved ? (
                   <>
@@ -238,16 +224,11 @@ const StartupPage = (): JSX.Element | null => {
                 ) : (
                   <span className="text-xs tracking-wider uppercase">Save Changes</span>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </TextureButton>
+              <TextureButton
+                variant="minimal"
                 onClick={() => setReinstallModalOpen(true)}
                 disabled={hasChanges}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-                )}
                 title={
                   hasChanges
                     ? "Save changes first before reinstalling"
@@ -256,7 +237,7 @@ const StartupPage = (): JSX.Element | null => {
               >
                 <BsArrowRepeat className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
 
@@ -278,18 +259,13 @@ const StartupPage = (): JSX.Element | null => {
               </label>
               <div className="mt-3 flex flex-wrap gap-2">
                 {dockerImages.map((img) => (
-                  <button
+                  <TextureButton
                     key={img.image}
+                    variant="minimal"
                     onClick={() => handleDockerImageChange(img.image)}
-                    className={cn(
-                      "border px-3 py-2 text-xs font-medium tracking-wider uppercase transition-all",
-                      selectedDockerImage === img.image
-                        ? "border-purple-500 bg-purple-500/20 text-purple-300"
-                        : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                    )}
                   >
                     {img.label}
-                  </button>
+                  </TextureButton>
                 ))}
               </div>
               <p

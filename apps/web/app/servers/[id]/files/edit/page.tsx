@@ -18,7 +18,6 @@ export default function FileEditPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   const serverId = params.id as string;
   const filePath = searchParams.get("path") || "";
@@ -33,10 +32,6 @@ export default function FileEditPage() {
   // Local state for editing
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Set initial content when loaded
   useEffect(() => {
@@ -106,10 +101,6 @@ export default function FileEditPage() {
   );
   const isMedia = isImage || isVideo || isAudio;
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <div className={cn("relative min-h-screen", "bg-black")}>
       {/* Background is now rendered in the layout for persistence */}
@@ -124,15 +115,11 @@ export default function FileEditPage() {
             )}
           >
             <div className="flex items-center gap-4">
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "p-2 transition-colors",
-                  "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                )}
               >
                 <ArrowLeft className="h-5 w-5" />
-              </button>
+              </TextureButton>
 
               <div className="flex items-center gap-3">
                 <div
@@ -199,15 +186,11 @@ export default function FileEditPage() {
               <p className={cn("text-lg", "text-red-400")}>
                 Failed to load file
               </p>
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "px-4 py-2 text-sm",
-                  "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                )}
               >
                 Go Back
-              </button>
+              </TextureButton>
             </div>
           ) : isMedia ? (
             <div className="flex h-full items-center justify-center p-8">

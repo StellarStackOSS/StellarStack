@@ -62,7 +62,6 @@ const StatCard = ({ title, value, icon: Icon, href, color = "zinc" }: StatCardPr
 };
 
 export default function AdminOverviewPage() {
-  const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState({
     nodes: 0,
     nodesOnline: 0,
@@ -73,10 +72,6 @@ export default function AdminOverviewPage() {
     users: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     async function fetchStats() {

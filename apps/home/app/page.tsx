@@ -333,7 +333,6 @@ const AnimatedSection = ({
 
 const LandingPage = (): JSX.Element | null => {
   const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
   const [isEnterpriseArch, setIsEnterpriseArch] = useState(false);
   const [serverData, setServerData] = useState(initialServerData);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
@@ -365,25 +364,17 @@ const LandingPage = (): JSX.Element | null => {
   const lineIdRef = useRef(5);
   const [currentScreenshot, setCurrentScreenshot] = useState(1);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Toggle between screenshots
   useEffect(() => {
-    if (!mounted) return;
-
     const interval = setInterval(() => {
       setCurrentScreenshot((prev) => (prev === 1 ? 2 : 1));
     }, 5000); // Change every 5 seconds
 
     return () => clearInterval(interval);
-  }, [mounted]);
+  }, []);
 
   // Randomly update server data and add console lines
   useEffect(() => {
-    if (!mounted) return;
-
     const interval = setInterval(() => {
       setServerData((prev) => {
         const newCpu = Math.max(
@@ -456,11 +447,7 @@ const LandingPage = (): JSX.Element | null => {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [mounted]);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-
-  if (!mounted) return null;
+  }, []);
 
   const homeNavLinks = [
     { href: "#features", label: "Features", isAnchor: true },
@@ -472,7 +459,7 @@ const LandingPage = (): JSX.Element | null => {
     <div
       className={cn(
         "relative min-h-svh scroll-smooth transition-colors",
-        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+        "bg-[#0b0b0a]"
       )}
     >
       <AnimatedBackground />
@@ -492,9 +479,7 @@ const LandingPage = (): JSX.Element | null => {
                 <span
                   className="bg-clip-text text-transparent"
                   style={{
-                    backgroundImage: isDark
-                      ? "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)"
-                      : "linear-gradient(135deg, #18181b 0%, #3f3f46 50%, #52525b 100%)",
+                    backgroundImage: "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)"
                   }}
                 >
                   The infrastructure behind your game servers, simplified.
@@ -506,7 +491,7 @@ const LandingPage = (): JSX.Element | null => {
                 transition={{ duration: 0.6, delay: 0.3 }}
                 className={cn(
                   "mx-auto mb-10 max-w-2xl text-center text-lg leading-relaxed md:text-lg",
-                  isDark ? "text-zinc-400" : "text-zinc-600"
+                  "text-zinc-400"
                 )}
               >
                 A modern, open-source game server management panel designed for self-hosting on your
@@ -533,7 +518,7 @@ const LandingPage = (): JSX.Element | null => {
             <div
               className={cn(
                 "relative overflow-hidden rounded-lg border-4",
-                isDark ? "border-zinc-800" : "border-zinc-200"
+                "border-zinc-800"
               )}
             >
               <AnimatePresence mode="wait">
@@ -551,7 +536,7 @@ const LandingPage = (): JSX.Element | null => {
           </div>
         </div>
       </section>
-      <Footer isDark={isDark} />
+      <Footer />
     </div>
   );
 };

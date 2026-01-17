@@ -2,7 +2,7 @@
 
 import {useMemo, useState} from "react";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -17,9 +17,7 @@ import type {CreateLocationData, Location} from "@/lib/api";
 import {toast} from "sonner";
 
 export default function LocationsPage() {
-  const router = useRouter();
-  // TODO: REMOVE THIS
-  const { mounted, inputClasses, labelClasses } = useAdminTheme();
+  const { inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: locationsList = [], isLoading } = useLocations();
@@ -99,8 +97,6 @@ export default function LocationsPage() {
     );
   }, [locationsList, searchQuery]);
 
-  if (!mounted) return null;
-
   return (
     <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
       <AnimatedBackground />
@@ -112,7 +108,6 @@ export default function LocationsPage() {
             <AdminPageHeader
               title="LOCATIONS"
               description="Manage geographic locations for nodes"
-              isDark={isDark}
               action={{
                 label: "Add Location",
                 icon: <PlusIcon className="w-4 h-4" />,
@@ -124,7 +119,6 @@ export default function LocationsPage() {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search locations..."
-              isDark={isDark}
             />
           </FadeIn>
 
@@ -138,52 +132,44 @@ export default function LocationsPage() {
               ) : filteredLocations.length === 0 ? (
                 <AdminEmptyState
                   message={searchQuery ? "No locations match your search." : "No locations configured. Add your first location."}
-                  isDark={isDark}
                 />
               ) : (
                 filteredLocations.map((location) => (
                   <AdminCard
                     key={location.id}
-                    icon={<MapPinIcon className={cn("w-6 h-6", isDark ? "text-zinc-400" : "text-zinc-600")} />}
+                    icon={<MapPinIcon className={cn("w-6 h-6", "text-zinc-400")} />}
                     title={location.name}
-                    isDark={isDark}
                     actions={
                       <div className="flex items-center gap-1">
-                        <Button
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(location)}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
                         >
                           <EditIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
+                        </TextureButton>
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => setDeleteConfirmLocation(location)}
-                          className={cn(
-                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                          )}
                         >
                           <TrashIcon className="w-3 h-3" />
-                        </Button>
+                        </TextureButton>
                       </div>
                     }
                   >
                     {(location.city || location.country) && (
-                      <div className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                      <div className={cn("text-xs mt-1", "text-zinc-500")}>
                         {[location.city, location.country].filter(Boolean).join(", ")}
                       </div>
                     )}
                     {location.description && (
-                      <div className={cn("text-xs mt-2", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                      <div className={cn("text-xs mt-2", "text-zinc-600")}>
                         {location.description}
                       </div>
                     )}
                     {location.nodes && location.nodes.length > 0 && (
-                      <div className={cn("text-xs mt-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                      <div className={cn("text-xs mt-2", "text-zinc-500")}>
                         {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
                       </div>
                     )}

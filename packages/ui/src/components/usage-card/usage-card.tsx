@@ -1,14 +1,13 @@
-import { ComponentPropsWithoutRef } from "react";
-import { cn } from "@workspace/ui/lib/utils";
+import {ComponentPropsWithoutRef} from "react";
+import {cn} from "@workspace/ui/lib/utils";
 
 type CardProps = ComponentPropsWithoutRef<"div">;
 
-const UsageCardTitle = ({ className, children, isDark = true, ...props }: CardProps) => {
+const UsageCardTitle = ({ className, children, ...props }: CardProps) => {
   return (
     <div
       className={cn(
-        "mb-6 text-2xl font-light",
-        isDark ? "text-zinc-100" : "text-zinc-800",
+        "mb-6 text-2xl font-light text-zinc-100",
         className
       )}
       {...props}

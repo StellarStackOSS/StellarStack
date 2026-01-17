@@ -1,22 +1,13 @@
 "use client";
 
-import { useRef, type JSX } from "react";
-import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import {
-  BsGithub,
-  BsArrowRight,
-  BsHeart,
-  BsGlobe,
-  BsLaptop,
-} from "react-icons/bs";
-import { Footer } from "@/components/Footer";
-import { Navigation } from "@/components/Navigation";
-import { useIsMounted } from "@/hooks/useIsMounted";
+import {type JSX, useRef} from "react";
+import {motion, useInView} from "framer-motion";
+import {Button} from "@workspace/ui/components/button";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {BsArrowRight, BsGithub, BsGlobe, BsHeart, BsLaptop,} from "react-icons/bs";
+import {Footer} from "@/components/Footer";
+import {Navigation} from "@/components/Navigation";
 
 const perks = [
   {

@@ -1,30 +1,19 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsArrowRight,
-  BsCpu,
-  BsExclamationTriangle,
-  BsHdd,
-  BsMemory,
-  BsPlus,
-  BsServer,
-  BsTrash,
-} from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { type ChildServer, servers } from "@/lib/api";
-import { toast } from "sonner";
-import { useServerPageSetup } from "@/hooks/useServerPageSetup";
-import { ThemeToggleButton, CornerDecorations } from "@/components/ServerPageComponents";
+import {type JSX, useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsArrowRight, BsCpu, BsExclamationTriangle, BsHdd, BsMemory, BsPlus, BsServer, BsTrash,} from "react-icons/bs";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {type ChildServer, servers} from "@/lib/api";
+import {toast} from "sonner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -205,18 +194,13 @@ const SplitPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {!isChildServer && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={openSplitModal}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Split Server</span>
-                </Button>
+                </TextureButton>
               )}
 
             </div>
@@ -387,18 +371,13 @@ const SplitPage = (): JSX.Element | null => {
                   : "Split this server to create child servers with dedicated resources."}
               </p>
               {!isChildServer && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={openSplitModal}
-                  className={cn(
-                    "gap-2",
-                    "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                  )}
                 >
                   <BsPlus className="h-4 w-4" />
                   Split Server
-                </Button>
+                </TextureButton>
               )}
             </div>
           ) : (
@@ -471,29 +450,19 @@ const SplitPage = (): JSX.Element | null => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => router.push(`/servers/${child.id}/overview`)}
-                        className={cn(
-                          "gap-2 transition-all",
-                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        )}
                       >
                         <span className="text-xs tracking-wider uppercase">Manage</span>
                         <BsArrowRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="destructive"
                         onClick={() => openDeleteModal(child)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        )}
                       >
                         <BsTrash className="h-4 w-4" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
                 </div>

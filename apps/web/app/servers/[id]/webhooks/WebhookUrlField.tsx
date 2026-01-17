@@ -1,18 +1,17 @@
 "use client";
 
-import { cn } from "@workspace/ui/lib/utils";
-import { Input } from "@workspace/ui/components/input";
-import { FormFieldLabel } from "components/ServerPageComponents";
+import {cn} from "@workspace/ui/lib/utils";
+import {Input} from "@workspace/ui/components/input";
+import {Label} from "@workspace/ui/components/label";
 
 interface WebhookUrlFieldProps {
   value: string;
   onChange: (value: string) => void;
-  isDark?: boolean;
 }
 
-export const WebhookUrlField = ({ value, onChange, isDark = true }: WebhookUrlFieldProps) => (
+export const WebhookUrlField = ({ value, onChange }: WebhookUrlFieldProps) => (
   <div>
-    <FormFieldLabel label="Discord Webhook URL" isDark={isDark} />
+    <Label>Discord Webhook URL</Label>
     <Input
       type="url"
       value={value}
@@ -20,12 +19,10 @@ export const WebhookUrlField = ({ value, onChange, isDark = true }: WebhookUrlFi
       placeholder="https://discordapp.com/api/webhooks/..."
       className={cn(
         "font-mono text-sm transition-all",
-        isDark
-          ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-          : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+        "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
       )}
     />
-    <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+    <p className={cn("mt-1 text-xs", "text-zinc-500")}>
       Get this from your Discord server's webhook settings
     </p>
   </div>

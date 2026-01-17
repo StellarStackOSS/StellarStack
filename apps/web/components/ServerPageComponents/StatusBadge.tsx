@@ -7,7 +7,6 @@ type BadgeColor = "green" | "red" | "blue" | "amber" | "zinc";
 interface StatusBadgeProps {
   label: string;
   color?: BadgeColor;
-  isDark?: boolean;
 }
 
 const colorConfig: Record<
@@ -39,14 +38,14 @@ const colorConfig: Record<
   },
 };
 
-export const StatusBadge = ({ label, color = "zinc", isDark = true }: StatusBadgeProps) => {
+export const StatusBadge = ({ label, color = "zinc" }: StatusBadgeProps) => {
   const colors = colorConfig[color];
 
   return (
     <span
       className={cn(
         "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-        isDark ? colors.dark : colors.light
+        colors.dark
       )}
     >
       {label}

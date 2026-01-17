@@ -4,7 +4,7 @@ import {type JSX, useEffect, useState} from "react";
 import {useParams} from "next/navigation";
 import {useTheme as useNextTheme} from "next-themes";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Input} from "@workspace/ui/components/input";
 import {SidebarTrigger} from "@workspace/ui/components/sidebar";
 import {Switch} from "@workspace/ui/components/switch";
@@ -247,15 +247,11 @@ const NetworkPage = (): JSX.Element | null => {
                 </p>
               </div>
             </div>
-            <Button
+            <TextureButton
               variant="outline"
               size="sm"
-              className={cn(
-                "p-2 transition-all hover:scale-110 active:scale-95",
-                "hidden"
-              )}
             >
-            </Button>
+            </TextureButton>
           </div>
 
           {/* Port Allocations Section */}
@@ -279,21 +275,16 @@ const NetworkPage = (): JSX.Element | null => {
                   {allocations.length} / {allocationLimit} used
                 </span>
               </div>
-              <Button
+              <TextureButton
                 variant="outline"
                 size="sm"
                 onClick={openAddAllocationModal}
                 disabled={!canAddAllocation}
                 title={canAddAllocation ? "Add a new allocation" : "Allocation limit reached"}
-                className={cn(
-                  "gap-2 transition-all",
-                  !canAddAllocation && "cursor-not-allowed opacity-50",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Allocation</span>
-              </Button>
+              </TextureButton>
             </div>
 
             {loading ? (
@@ -384,15 +375,11 @@ const NetworkPage = (): JSX.Element | null => {
                       </div>
                       <div className="flex items-center gap-2">
                         {!isPrimary(allocation) && (
-                          <Button
+                          <TextureButton
                             variant="outline"
                             size="sm"
                             disabled={settingPrimary === allocation.id}
                             onClick={() => handleSetPrimary(allocation)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-zinc-700 text-zinc-400 hover:border-yellow-700 hover:text-yellow-400"
-                            )}
                             title="Set as primary"
                           >
                             {settingPrimary === allocation.id ? (
@@ -400,7 +387,7 @@ const NetworkPage = (): JSX.Element | null => {
                             ) : (
                               <BsStar className="h-4 w-4" />
                             )}
-                          </Button>
+                          </TextureButton>
                         )}
                         {isPrimary(allocation) && (
                           <div
@@ -409,18 +396,14 @@ const NetworkPage = (): JSX.Element | null => {
                             <BsStarFill className="h-4 w-4" />
                           </div>
                         )}
-                        <Button
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           disabled={isPrimary(allocation) || allocations.length <= 1}
                           onClick={() => openDeletePortModal(allocation)}
-                          className={cn(
-                            "p-2 transition-all",
-                            "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300 disabled:opacity-30"
-                          )}
                         >
                           <BsTrash className="h-4 w-4" />
-                        </Button>
+                        </TextureButton>
                       </div>
                     </div>
                   </div>
@@ -444,18 +427,14 @@ const NetworkPage = (): JSX.Element | null => {
                     Subdomains
                   </h2>
                 </div>
-                <Button
+                <TextureButton
                   variant="outline"
                   size="sm"
                   onClick={openAddSubdomainModal}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Add Subdomain</span>
-                </Button>
+                </TextureButton>
               </div>
 
               {subdomains.length === 0 ? (
@@ -532,17 +511,13 @@ const NetworkPage = (): JSX.Element | null => {
                             → Port {sub.targetPort}
                           </span>
                         </div>
-                        <Button
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => openDeleteSubdomainModal(sub)}
-                          className={cn(
-                            "p-2 transition-all",
-                            "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                          )}
                         >
                           <BsTrash className="h-4 w-4" />
-                        </Button>
+                        </TextureButton>
                       </div>
                     </div>
                   ))}
@@ -659,7 +634,7 @@ const NetworkPage = (): JSX.Element | null => {
               </div>
 
               <div className="mt-6 flex gap-3">
-                <Button
+                <TextureButton
                   variant="outline"
                   onClick={() => {
                     if (!server || !session?.user) return;
@@ -670,16 +645,12 @@ const NetworkPage = (): JSX.Element | null => {
                     window.open(`sftp://${username}@${host}:${port}`, "_blank");
                   }}
                   disabled={!server || !session?.user}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-purple-900/50 text-purple-400 hover:border-purple-700 hover:bg-purple-900/20 hover:text-purple-300 disabled:opacity-30"
-                  )}
                 >
                   <BsKey className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Connect via SFTP</span>
-                </Button>
+                </TextureButton>
 
-                <Button
+                <TextureButton
                   variant="outline"
                   onClick={() => {
                     if (!server || !session?.user) return;
@@ -689,13 +660,9 @@ const NetworkPage = (): JSX.Element | null => {
                     navigator.clipboard.writeText(`sftp://${username}@${host}:${port}`);
                   }}
                   disabled={!server || !session?.user}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-30"
-                  )}
                 >
                   <span className="text-xs tracking-wider uppercase">Copy Connection URL</span>
-                </Button>
+                </TextureButton>
               </div>
 
               <p className={cn("mt-4 text-xs", "text-zinc-600")}>
@@ -764,17 +731,10 @@ const NetworkPage = (): JSX.Element | null => {
             {allocations.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {allocations.map((allocation) => (
-                  <button
+                  <TextureButton variant="minimal"
                     key={allocation.id}
                     type="button"
                     onClick={() => setSubdomainTargetPort(allocation.port.toString())}
-                    className={cn(
-                      "border p-3 text-left transition-all",
-                      subdomainTargetPort === allocation.port.toString() ||
-                        (!subdomainTargetPort && isPrimary(allocation))
-                        ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                    )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -798,7 +758,7 @@ const NetworkPage = (): JSX.Element | null => {
                         </span>
                       )}
                     </div>
-                  </button>
+                  </TextureButton>
                 ))}
               </div>
             ) : (
@@ -863,16 +823,10 @@ const NetworkPage = (): JSX.Element | null => {
             {availableAllocations.length > 0 ? (
               <div className="max-h-64 space-y-2 overflow-y-auto">
                 {availableAllocations.map((allocation) => (
-                  <button
+                  <TextureButton variant="minimal"
                     key={allocation.id}
                     type="button"
                     onClick={() => setSelectedNewAllocation(allocation.id)}
-                    className={cn(
-                      "w-full border p-3 text-left transition-all",
-                      selectedNewAllocation === allocation.id
-                        ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                    )}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-sm">
@@ -884,7 +838,7 @@ const NetworkPage = (): JSX.Element | null => {
                         </span>
                       )}
                     </div>
-                  </button>
+                  </TextureButton>
                 ))}
               </div>
             ) : (

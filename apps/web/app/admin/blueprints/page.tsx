@@ -1,9 +1,8 @@
 "use client";
 
 import {useCallback, useMemo, useState} from "react";
-import {useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
@@ -24,14 +23,13 @@ import {
   UserIcon,
   VariableIcon
 } from "lucide-react";
-import {AdminPageHeader, AdminSearchBar, AdminCard, AdminEmptyState} from "components/AdminPageComponents";
+import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
 import {useBlueprintMutations, useBlueprints} from "@/hooks/queries";
 import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import type {Blueprint, CreateBlueprintData, PterodactylEgg} from "@/lib/api";
 import {toast} from "sonner";
 
 export default function BlueprintsPage() {
-  //TODO: REMOVE THIS
   const { inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
@@ -204,8 +202,6 @@ export default function BlueprintsPage() {
     });
   }, [blueprintsList, searchQuery]);
 
-  if (!mounted) return null;
-
   return (
     <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
       <AnimatedBackground />
@@ -225,15 +221,13 @@ export default function BlueprintsPage() {
             />
 
             <div className="flex gap-2 mb-6">
-              <Button
+              <TextureButton
                 onClick={() => setIsImportModalOpen(true)}
                 variant="outline"
-                className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100")}
               >
                 <UploadIcon className="w-4 h-4" />
                 Import Egg
-              </Button>
+              </TextureButton>
             </div>
 
             <AdminSearchBar
@@ -322,38 +316,29 @@ export default function BlueprintsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => handleExportEgg(blueprint)}
                           disabled={exportEgg.isPending}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
                           title="Export as Pterodactyl Egg"
                         >
                           <DownloadIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
+                        </TextureButton>
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(blueprint)}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
                         >
                           <EditIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
+                        </TextureButton>
+                        <TextureButton
                           variant="outline"
                           size="sm"
                           onClick={() => setDeleteConfirmBlueprint(blueprint)}
-                          className={cn(
-                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                          )}
                         >
                           <TrashIcon className="w-3 h-3" />
-                        </Button>
+                        </TextureButton>
                       </div>
                     </div>
                   </div>
@@ -468,13 +453,12 @@ export default function BlueprintsPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className={labelClasses}>Docker Config (JSON)</label>
-              <button
+              <TextureButton variant="minimal"
                 type="button"
                 onClick={() => setShowJsonEditor(!showJsonEditor)}
-                className={cn("text-xs text-zinc-500 hover:text-zinc-300")}
               >
                 {showJsonEditor ? "Hide" : "Show"} Editor
-              </button>
+              </TextureButton>
             </div>
             {showJsonEditor && (
               <textarea

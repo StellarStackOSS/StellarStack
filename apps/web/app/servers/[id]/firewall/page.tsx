@@ -8,7 +8,7 @@ import {Plus, Shield, ShieldX, Trash2, Unlock} from "lucide-react";
 import {cn} from "@workspace/ui/lib/utils";
 import {FadeIn} from "@workspace/ui/components/fade-in";
 import {Spinner} from "@workspace/ui/components/spinner";
-import {Button} from "@workspace/ui/components/button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {Switch} from "@workspace/ui/components/switch";
 import {servers} from "@/lib/api";
@@ -137,7 +137,7 @@ export default function FirewallPage() {
                     {server?.name || `Server ${serverId}`}
                   </p>
                 </div>
-                <Button
+                <TextureButton
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCreateModal(true)}
@@ -148,7 +148,7 @@ export default function FirewallPage() {
                 >
                   <Plus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Add Rule</span>
-                </Button>
+                </TextureButton>
               </div>
 
               {isLoading ? (
@@ -223,7 +223,7 @@ export default function FirewallPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
+                          <TextureButton
                             variant="ghost"
                             size="sm"
                             onClick={() => handleUpdate(rule.id, !rule.isActive)}
@@ -238,8 +238,8 @@ export default function FirewallPage() {
                             ) : (
                               <Unlock className="h-4 w-4" />
                             )}
-                          </Button>
-                          <Button
+                          </TextureButton>
+                          <TextureButton
                             variant="ghost"
                             size="sm"
                             onClick={() => openDeleteModal(rule)}
@@ -250,7 +250,7 @@ export default function FirewallPage() {
                             title="Delete rule"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </TextureButton>
                         </div>
                       </div>
 
@@ -567,7 +567,7 @@ export default function FirewallPage() {
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <Button
+                <TextureButton
                   variant="outline"
                   onClick={() => {
                     setShowCreateModal(false);
@@ -580,8 +580,8 @@ export default function FirewallPage() {
                   )}
                 >
                   Cancel
-                </Button>
-                <Button
+                </TextureButton>
+                <TextureButton
                   disabled={!newRule.name.trim() || isCreating}
                   onClick={handleCreate}
                   className={cn(
@@ -590,7 +590,7 @@ export default function FirewallPage() {
                   )}
                 >
                   {isCreating ? "Creating..." : "Create Rule"}
-                </Button>
+                </TextureButton>
               </div>
             </div>
           </div>

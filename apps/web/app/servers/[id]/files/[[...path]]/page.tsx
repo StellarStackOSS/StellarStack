@@ -1,9 +1,9 @@
 "use client";
 
-import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import {AnimatePresence, motion} from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -15,17 +15,10 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Checkbox } from "@workspace/ui/components/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Checkbox} from "@workspace/ui/components/checkbox";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@workspace/ui/components/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,17 +33,11 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/ui/components/dialog";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
 import {
   BsArrowLeft,
   BsChevronDown,
@@ -74,17 +61,16 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import type { FileInfo } from "@/lib/api";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useAuth } from "hooks/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { useSoundEffects } from "@/hooks/useSoundEffects";
-import { toast } from "sonner";
-import { useUploads } from "@/components/upload-provider";
-import { Input } from "@workspace/ui/components";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import type {FileInfo} from "@/lib/api";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useAuth} from "hooks/auth-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {useSoundEffects} from "@/hooks/useSoundEffects";
+import {toast} from "sonner";
+import {useUploads} from "@/components/upload-provider";
+import {Input} from "@workspace/ui/components";
 
 interface FileItem {
   id: string;
@@ -146,6 +132,127 @@ const parseDaemonError = (error: unknown): string => {
   }
   return "An unknown error occurred";
 };
+
+interface FileTableRowProps {
+  row: any;
+  file: FileItem;
+  onRename: (file: FileItem) => void;
+  onEditPermissions: (file: FileItem) => void;
+  onEdit: (file: FileItem) => void;
+  onDelete: (file: FileItem) => void;
+  serverId: string;
+  isEditable: (fileName: string) => boolean;
+}
+
+const FileTableRow = React.memo(({
+  row,
+  file,
+  onRename,
+  onEditPermissions,
+  onEdit,
+  onDelete,
+  serverId,
+  isEditable,
+}: FileTableRowProps) => {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <motion.tr
+          layout
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          data-state={row.getIsSelected() && "selected"}
+          className={cn(
+            "cursor-pointer border-b transition-colors border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50")}
+        >
+          {row.getVisibleCells().map((cell: any) => (
+            <TableCell key={cell.id} className="px-4 py-3">
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </motion.tr>
+      </ContextMenuTrigger>
+      <ContextMenuContent
+        className={cn(
+          "min-w-[160px] border-zinc-700 bg-zinc-900")}
+      >
+        <ContextMenuItem
+          onClick={() => onRename(file)}
+          className={cn(
+            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
+        >
+          <BsPencil className="h-3 w-3" />
+          Rename
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => onEditPermissions(file)}
+          className={cn(
+            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
+        >
+          <BsTerminal className="h-3 w-3" />
+          Permissions
+        </ContextMenuItem>
+        {file.type === "file" && isEditable(file.name) && (
+          <ContextMenuItem
+            onClick={() => onEdit(file)}
+            className={cn(
+              "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
+          >
+            <BsFileText className="h-3 w-3" />
+            Edit
+          </ContextMenuItem>
+        )}
+        {file.type === "file" && (
+          <ContextMenuItem
+            onClick={async () => {
+              try {
+                const { downloadUrl } = await servers.files.getDownloadToken(
+                  serverId,
+                  file.path
+                );
+                window.open(
+                  `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
+                  "_blank"
+                );
+              } catch (error) {
+                toast.error("Failed to generate download link");
+              }
+            }}
+            className={cn(
+              "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
+          >
+            <BsDownload className="h-3 w-3" />
+            Download
+          </ContextMenuItem>
+        )}
+        <ContextMenuSeparator
+          className={"bg-zinc-700"}
+        />
+        <ContextMenuItem
+          onClick={() => onDelete(file)}
+          className={cn(
+            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-red-400 focus:bg-red-950/50 focus:text-red-300")}
+        >
+          <BsTrash className="h-3 w-3" />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison to avoid re-renders when row data hasn't changed
+  return (
+    prevProps.file.id === nextProps.file.id &&
+    prevProps.file.name === nextProps.file.name &&
+    prevProps.file.size === nextProps.file.size &&
+    prevProps.file.modified === nextProps.file.modified &&
+    prevProps.row.getIsSelected() === nextProps.row.getIsSelected()
+  );
+});
+
+FileTableRow.displayName = "FileTableRow";
 
 const FilesPage = (): JSX.Element | null => {
   const params = useParams();
@@ -760,11 +867,7 @@ const FilesPage = (): JSX.Element | null => {
         accessorKey: "name",
         header: ({ column }) => {
           return (
-            <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+            <TextureButton variant="minimal"
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Name
@@ -775,7 +878,7 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </button>
+            </TextureButton>
           );
         },
         cell: ({ row }) => {
@@ -812,11 +915,7 @@ const FilesPage = (): JSX.Element | null => {
         accessorKey: "size",
         header: ({ column }) => {
           return (
-            <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+            <TextureButton variant="minimal"
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Size
@@ -827,7 +926,7 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </button>
+            </TextureButton>
           );
         },
         cell: ({ row }) => (
@@ -840,11 +939,7 @@ const FilesPage = (): JSX.Element | null => {
         accessorKey: "modified",
         header: ({ column }) => {
           return (
-            <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+            <TextureButton variant="minimal"
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Modified
@@ -855,7 +950,7 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </button>
+            </TextureButton>
           );
         },
         cell: ({ row }) => (
@@ -872,14 +967,9 @@ const FilesPage = (): JSX.Element | null => {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "p-1 transition-colors",
-                    "text-zinc-500 hover:text-zinc-200"
-                  )}
-                >
+                <TextureButton variant="minimal">
                   <BsThreeDotsVertical className="h-4 w-4" />
-                </button>
+                </TextureButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
@@ -1138,18 +1228,17 @@ const FilesPage = (): JSX.Element | null => {
                   variant="minimal"
                   disabled={currentPath === "/"}
                   onClick={navigateUp}
-                  className="w-fit"
                 >
                   <BsArrowLeft className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
                 </TextureButton>
-                <TextureButton variant="minimal" onClick={handleNewFile} className="w-fit">
+                <TextureButton variant="minimal" onClick={handleNewFile}>
                   <BsPlus className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New Folder
                   </span>
                 </TextureButton>
-                <TextureButton variant="minimal" onClick={handleNewFile} className="w-fit">
+                <TextureButton variant="minimal" onClick={handleNewFile}>
                   <BsFileText className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New File
@@ -1182,20 +1271,17 @@ const FilesPage = (): JSX.Element | null => {
                     )}
                   />
                   {searchQuery && (
-                    <Button
-                      size="icon"
-                      className="absolute right-0"
-                      variant="ghost"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => setSearchQuery("")}
                     >
                       <BsX className="h-4 w-4" />
-                    </Button>
+                    </TextureButton>
                   )}
                 </div>
                 <TextureButton
                   variant="minimal"
                   onClick={() => setSftpModalOpen(true)}
-                  className="w-fit"
                   title="SFTP Connection"
                 >
                   <BsTerminal className="h-4 w-4" />
@@ -1204,7 +1290,6 @@ const FilesPage = (): JSX.Element | null => {
                 <TextureButton
                   variant="minimal"
                   onClick={handleUploadClick}
-                  className="w-fit"
                   title="Upload Files"
                 >
                   <BsUpload className="h-4 w-4" />
@@ -1214,7 +1299,6 @@ const FilesPage = (): JSX.Element | null => {
                   variant="minimal"
                   onClick={handleToggleHiddenFiles}
                   title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
-                  className="w-fit"
                 >
                   <div>
                     {showHiddenFiles ? (
@@ -1231,7 +1315,6 @@ const FilesPage = (): JSX.Element | null => {
                   variant="destructive"
                   disabled={selectedCount === 0}
                   onClick={handleBulkDelete}
-                  className="w-fit"
                 >
                   <BsTrash className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Delete</span>
@@ -1254,9 +1337,7 @@ const FilesPage = (): JSX.Element | null => {
                       <TableHead
                         key={header.id}
                         className={cn(
-                          "px-4 text-[10px] font-medium tracking-wider uppercase",
-                          isDark ? "text-zinc-500" : "text-zinc-400"
-                        )}
+                          "px-4 text-[10px] font-medium tracking-wider uppercase text-zinc-500")}
                       >
                         {header.isPlaceholder
                           ? null
@@ -1272,8 +1353,7 @@ const FilesPage = (): JSX.Element | null => {
                     <TableCell
                       colSpan={columns.length}
                       className={cn(
-                        "h-24 text-center text-sm",
-                        isDark ? "text-zinc-500" : "text-zinc-400"
+                        "h-24 text-center text-sm text-zinc-500",
                       )}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -1284,130 +1364,25 @@ const FilesPage = (): JSX.Element | null => {
                 ) : (
                   <AnimatePresence mode="popLayout">
                     {table.getRowModel().rows?.length ? (
-                      table.getRowModel().rows.map((row) => {
-                        const file = row.original;
-                        return (
-                          <ContextMenu key={row.original.id}>
-                            <ContextMenuTrigger asChild>
-                              <motion.tr
-                                layout
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                data-state={row.getIsSelected() && "selected"}
-                                className={cn(
-                                  "cursor-pointer border-b transition-colors",
-                                  isDark
-                                    ? "border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50"
-                                    : "border-zinc-100 hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-200/50"
-                                )}
-                              >
-                                {row.getVisibleCells().map((cell) => (
-                                  <TableCell key={cell.id} className="px-4 py-3">
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                  </TableCell>
-                                ))}
-                              </motion.tr>
-                            </ContextMenuTrigger>
-                            <ContextMenuContent
-                              className={cn(
-                                "min-w-[160px]",
-                                isDark ? "border-zinc-700 bg-zinc-900" : "border-zinc-200 bg-white"
-                              )}
-                            >
-                              <ContextMenuItem
-                                onClick={() => handleRename(file)}
-                                className={cn(
-                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                  isDark
-                                    ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                    : "text-zinc-700 focus:bg-zinc-100"
-                                )}
-                              >
-                                <BsPencil className="h-3 w-3" />
-                                Rename
-                              </ContextMenuItem>
-                              <ContextMenuItem
-                                onClick={() => handleEditPermissions(file)}
-                                className={cn(
-                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                  isDark
-                                    ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                    : "text-zinc-700 focus:bg-zinc-100"
-                                )}
-                              >
-                                <BsTerminal className="h-3 w-3" />
-                                Permissions
-                              </ContextMenuItem>
-                              {file.type === "file" && isEditable(file.name) && (
-                                <ContextMenuItem
-                                  onClick={() => handleEdit(file)}
-                                  className={cn(
-                                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                    isDark
-                                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                      : "text-zinc-700 focus:bg-zinc-100"
-                                  )}
-                                >
-                                  <BsFileText className="h-3 w-3" />
-                                  Edit
-                                </ContextMenuItem>
-                              )}
-                              {file.type === "file" && (
-                                <ContextMenuItem
-                                  onClick={async () => {
-                                    try {
-                                      const { downloadUrl } = await servers.files.getDownloadToken(
-                                        serverId,
-                                        file.path
-                                      );
-                                      window.open(
-                                        `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
-                                        "_blank"
-                                      );
-                                    } catch (error) {
-                                      toast.error("Failed to generate download link");
-                                    }
-                                  }}
-                                  className={cn(
-                                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                    isDark
-                                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                      : "text-zinc-700 focus:bg-zinc-100"
-                                  )}
-                                >
-                                  <BsDownload className="h-3 w-3" />
-                                  Download
-                                </ContextMenuItem>
-                              )}
-                              <ContextMenuSeparator
-                                className={isDark ? "bg-zinc-700" : "bg-zinc-200"}
-                              />
-                              <ContextMenuItem
-                                onClick={() => handleDelete(file)}
-                                className={cn(
-                                  "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                  isDark
-                                    ? "text-red-400 focus:bg-red-950/50 focus:text-red-300"
-                                    : "text-red-600 focus:bg-red-50"
-                                )}
-                              >
-                                <BsTrash className="h-3 w-3" />
-                                Delete
-                              </ContextMenuItem>
-                            </ContextMenuContent>
-                          </ContextMenu>
-                        );
-                      })
+                      table.getRowModel().rows.map((row) => (
+                        <FileTableRow
+                          key={row.original.id}
+                          row={row}
+                          file={row.original}
+                          onRename={handleRename}
+                          onEditPermissions={handleEditPermissions}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          serverId={serverId}
+                          isEditable={isEditable}
+                        />
+                      ))
                     ) : (
                       <TableRow>
                         <TableCell
                           colSpan={columns.length}
                           className={cn(
-                            "h-24 text-center text-sm",
-                            isDark ? "text-zinc-500" : "text-zinc-400"
-                          )}
+                            "h-24 text-center text-sm text-zinc-500")}
                         >
                           {searchQuery
                             ? `No files matching "${searchQuery}" found.`
@@ -1602,17 +1577,15 @@ const FilesPage = (): JSX.Element | null => {
                     >
                       {server.node.host}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(server.node!.host);
                         toast.success("Host copied to clipboard");
                       }}
-                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
@@ -1633,17 +1606,15 @@ const FilesPage = (): JSX.Element | null => {
                     >
                       {server.node.sftpPort}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(server.node!.sftpPort.toString());
                         toast.success("Port copied to clipboard");
                       }}
-                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
@@ -1664,17 +1635,15 @@ const FilesPage = (): JSX.Element | null => {
                     >
                       {server.id}.{user.email}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(`${server.id}.${user.email}`);
                         toast.success("Username copied to clipboard");
                       }}
-                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
@@ -1715,9 +1684,8 @@ const FilesPage = (): JSX.Element | null => {
                     >
                       sftp://{server.id}.{user.email}@{server.node.host}:{server.node.sftpPort}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         if (server.node) {
                           navigator.clipboard.writeText(
@@ -1726,10 +1694,9 @@ const FilesPage = (): JSX.Element | null => {
                           toast.success("Connection string copied to clipboard");
                         }
                       }}
-                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
               </div>
@@ -1995,23 +1962,17 @@ const FilesPage = (): JSX.Element | null => {
 
               {/* Actions */}
               <div className="mt-6 flex justify-end gap-2">
-                <Button
-                  variant="outline"
+                <TextureButton
+                  variant="minimal"
                   onClick={() => setPermissionsModalOpen(false)}
-                  className={cn(
-                    "border-zinc-700 hover:bg-zinc-800"
-                  )}
                 >
                   Cancel
-                </Button>
-                <Button
+                </TextureButton>
+                <TextureButton
                   onClick={confirmPermissions}
-                  className={cn(
-                    "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                  )}
                 >
                   Apply
-                </Button>
+                </TextureButton>
               </div>
             </div>
           )}
@@ -2108,14 +2069,12 @@ const FilesPage = (): JSX.Element | null => {
                         {formatFileSize(file.size)}
                       </span>
                     </div>
-                    <button
-                      type="button"
+                    <TextureButton variant="minimal"
                       onClick={() => removeUploadFile(index)}
                       disabled={isUploading}
-                      className={cn(
-                        "p-1 transition-colors text-zinc-500 hover:text-zinc-300 disabled:opacity-30")}>
+                    >
                       <BsX className="h-4 w-4" />
-                    </button>
+                    </TextureButton>
                   </div>
                 ))}
               </div>

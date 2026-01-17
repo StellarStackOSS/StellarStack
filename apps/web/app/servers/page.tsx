@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsServer, BsChevronRight, BsBoxArrowRight } from "react-icons/bs";
-import { servers as serversApi } from "@/lib/api";
-import type { Server } from "@/lib/api";
-import { useAuth } from "hooks/auth-provider";
-import { toast } from "sonner";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import {type JSX, useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FloatingDots} from "@workspace/ui/components/floating-particles";
+import {BsChevronRight, BsServer} from "react-icons/bs";
+import type {Server} from "@/lib/api";
+import {servers as serversApi} from "@/lib/api";
+import {useAuth} from "hooks/auth-provider";
+import {toast} from "sonner";
 
 type ServerStatus =
   | "INSTALLING"
@@ -130,10 +129,9 @@ const ServersPage = (): JSX.Element | null => {
               <div className={"text-primary py-12 text-center text-xs"}>No servers found.</div>
             ) : (
               servers.map((server) => (
-                <button
+                <TextureButton variant="minimal"
                   key={server.id}
                   onClick={() => handleServerSelect(server.id)}
-                  className="group relative w-full cursor-pointer border p-6 text-left transition-all hover:scale-[1.01] border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20 hover:border-zinc-700"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -170,7 +168,7 @@ const ServersPage = (): JSX.Element | null => {
                     </div>
                     <BsChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 text-zinc-600 group-hover:text-zinc-400" />
                   </div>
-                </button>
+                </TextureButton>
               ))
             )}
           </div>
