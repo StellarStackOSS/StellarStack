@@ -19,7 +19,7 @@ import {toast} from "sonner";
 
 export default function UsersPage() {
   const router = useRouter();
-  const { mounted, isDark, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
   const { user: currentUser } = useAuth();
 
   // React Query hooks
@@ -152,12 +152,11 @@ export default function UsersPage() {
   return (
     <div
       className={cn(
-        "relative min-h-svh transition-colors",
-        isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]"
+        "relative min-h-svh transition-colors bg-[#0b0b0a]",
       )}
     >
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="mx-auto max-w-6xl">
@@ -170,10 +169,7 @@ export default function UsersPage() {
                   size="sm"
                   onClick={() => router.push("/admin")}
                   className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95",
-                    isDark
-                      ? "text-zinc-400 hover:text-zinc-100"
-                      : "text-zinc-600 hover:text-zinc-900"
+                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
                   )}
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
@@ -181,13 +177,12 @@ export default function UsersPage() {
                 <div>
                   <h1
                     className={cn(
-                      "text-2xl font-light tracking-wider",
-                      isDark ? "text-zinc-100" : "text-zinc-800"
+                      "text-2xl font-light tracking-wider text-zinc-100",
                     )}
                   >
                     USERS
                   </h1>
-                  <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                  <p className={cn("mt-1 text-sm text-zinc-500")}>
                     Manage user accounts and permissions
                   </p>
                 </div>
@@ -197,10 +192,7 @@ export default function UsersPage() {
                 size="sm"
                 onClick={handleCreate}
                 className={cn(
-                  "gap-2 text-xs tracking-wider uppercase",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  "gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
                 )}
               >
                 <PlusIcon className="h-4 w-4" />
@@ -212,8 +204,7 @@ export default function UsersPage() {
             <div className="relative mb-6">
               <SearchIcon
                 className={cn(
-                  "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2",
-                  isDark ? "text-zinc-500" : "text-zinc-400"
+                  "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500",
                 )}
               />
               <input
@@ -222,10 +213,7 @@ export default function UsersPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cn(
-                  "w-full border py-2.5 pr-4 pl-10 text-sm transition-colors focus:outline-none",
-                  isDark
-                    ? "border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500"
-                    : "border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
+                  "w-full border py-2.5 pr-4 pl-10 text-sm transition-colors focus:outline-none border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
                 )}
               />
             </div>
@@ -235,16 +223,14 @@ export default function UsersPage() {
           <FadeIn delay={0.1}>
             <div
               className={cn(
-                "overflow-hidden border",
-                isDark ? "border-zinc-700/50" : "border-zinc-200"
+                "overflow-hidden border border-zinc-700/50",
               )}
             >
               <table className="w-full">
                 <thead>
                   <tr
                     className={cn(
-                      "text-xs tracking-wider uppercase",
-                      isDark ? "bg-zinc-900/50 text-zinc-400" : "bg-zinc-50 text-zinc-600"
+                      "text-xs tracking-wider uppercase bg-zinc-900/50 text-zinc-400",
                     )}
                   >
                     <th className="p-3 text-left">User</th>
@@ -266,8 +252,7 @@ export default function UsersPage() {
                       <td
                         colSpan={5}
                         className={cn(
-                          "py-12 text-center text-sm",
-                          isDark ? "text-zinc-500" : "text-zinc-400"
+                          "py-12 text-center text-sm text-zinc-500",
                         )}
                       >
                         {searchQuery ? "No users match your search." : "No users found."}
@@ -278,20 +263,14 @@ export default function UsersPage() {
                       <tr
                         key={user.id}
                         className={cn(
-                          "border-t transition-colors",
-                          isDark
-                            ? "border-zinc-700/50 hover:bg-zinc-900/30"
-                            : "border-zinc-200 hover:bg-zinc-50"
+                          "border-t transition-colors border-zinc-700/50 hover:bg-zinc-900/30",
                         )}
                       >
-                        <td className={cn("p-3", isDark ? "text-zinc-100" : "text-zinc-800")}>
+                        <td className={cn("p-3 text-zinc-100")}>
                           <div className="flex items-center gap-3">
                             <div
                               className={cn(
-                                "flex h-8 w-8 items-center justify-center border",
-                                isDark
-                                  ? "border-zinc-700 bg-zinc-800 text-zinc-400"
-                                  : "border-zinc-300 bg-zinc-100 text-zinc-600"
+                                "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-zinc-400",
                               )}
                             >
                               {user.role === "admin" ? (
@@ -305,8 +284,7 @@ export default function UsersPage() {
                               {user.id === currentUser?.id && (
                                 <div
                                   className={cn(
-                                    "text-xs",
-                                    isDark ? "text-zinc-500" : "text-zinc-400"
+                                    "text-xs text-zinc-500",
                                   )}
                                 >
                                   (You)
@@ -316,16 +294,13 @@ export default function UsersPage() {
                           </div>
                         </td>
                         <td
-                          className={cn("p-3 text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
+                          className={cn("p-3 text-sm text-zinc-400")}
                         >
                           {user.email}
                           {user.emailVerified && (
                             <span
                               className={cn(
-                                "ml-2 border px-1 py-0.5 text-xs",
-                                isDark
-                                  ? "border-zinc-600 text-zinc-400"
-                                  : "border-zinc-400 text-zinc-500"
+                                "ml-2 border px-1 py-0.5 text-xs border-zinc-600 text-zinc-400",
                               )}
                             >
                               Verified
@@ -337,10 +312,7 @@ export default function UsersPage() {
                             onClick={() => toggleRole(user)}
                             disabled={user.id === currentUser?.id || update.isPending}
                             className={cn(
-                              "inline-flex items-center gap-1.5 border px-2 py-1 text-xs font-medium tracking-wider uppercase transition-colors",
-                              isDark
-                                ? "border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700"
-                                : "border-zinc-300 bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
+                              "inline-flex items-center gap-1.5 border px-2 py-1 text-xs font-medium tracking-wider uppercase transition-colors border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700",
                               user.id === currentUser?.id && "cursor-not-allowed opacity-50"
                             )}
                           >
@@ -353,7 +325,7 @@ export default function UsersPage() {
                           </button>
                         </td>
                         <td
-                          className={cn("p-3 text-sm", isDark ? "text-zinc-500" : "text-zinc-400")}
+                          className={cn("p-3 text-sm text-zinc-500")}
                         >
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
@@ -364,10 +336,7 @@ export default function UsersPage() {
                               size="sm"
                               onClick={() => handleEdit(user)}
                               className={cn(
-                                "p-1.5 text-xs",
-                                isDark
-                                  ? "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                                  : "border-zinc-300 text-zinc-600 hover:text-zinc-900"
+                                "p-1.5 text-xs border-zinc-700 text-zinc-400 hover:text-zinc-100",
                               )}
                             >
                               <EditIcon className="h-3 w-3" />
@@ -384,12 +353,8 @@ export default function UsersPage() {
                               }}
                               disabled={user.id === currentUser?.id}
                               className={cn(
-                                "p-1.5 text-xs",
+                                "p-1.5 text-xs cursor-not-allowed opacity-50 border-red-900/50 text-red-400 hover:bg-red-900/20",
                                 user.id === currentUser?.id
-                                  ? "cursor-not-allowed opacity-50"
-                                  : isDark
-                                    ? "border-red-900/50 text-red-400 hover:bg-red-900/20"
-                                    : "border-red-200 text-red-600 hover:bg-red-50"
                               )}
                             >
                               <TrashIcon className="h-3 w-3" />
@@ -448,7 +413,7 @@ export default function UsersPage() {
               required
             />
             {!isCreateMode && (
-              <p className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+              <p className={cn("mt-1 text-xs text-zinc-600")}>
                 Email cannot be changed
               </p>
             )}
@@ -467,7 +432,7 @@ export default function UsersPage() {
                 minLength={8}
               />
               {formData.password.length > 0 && formData.password.length < 8 && (
-                <p className={cn("mt-1 text-xs", isDark ? "text-amber-500" : "text-amber-600")}>
+                <p className={cn("mt-1 text-xs text-amber-500")}>
                   Password must be at least 8 characters
                 </p>
               )}
@@ -488,7 +453,7 @@ export default function UsersPage() {
               <option value="admin">Admin</option>
             </select>
             {!isCreateMode && editingUser?.id === currentUser?.id && (
-              <p className={cn("mt-1 text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+              <p className={cn("mt-1 text-xs text-zinc-500")}>
                 You cannot change your own role
               </p>
             )}

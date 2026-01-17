@@ -42,11 +42,7 @@ const formatRelativeTime = (timestamp: number): string => {
   return "just now";
 };
 
-export const TimestampColumnTooltip = ({
-  timestamp,
-  position,
-  isDark = true,
-}: TimestampColumnTooltipProps) => {
+export const TimestampColumnTooltip = ({ timestamp, position }: TimestampColumnTooltipProps) => {
   const formats = useMemo(() => {
     const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return {
@@ -60,14 +56,12 @@ export const TimestampColumnTooltip = ({
 
   if (typeof window === "undefined") return null;
 
-  const valueColor = isDark ? "text-zinc-200" : "text-zinc-800";
+  const valueColor = "text-zinc-200";
 
   return createPortal(
     <div
       className={cn(
-        "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100",
-        isDark ? "border-zinc-200/10 bg-[#0f0f0f]/80" : "border-zinc-300 bg-white/80"
-      )}
+        "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100 border-zinc-200/10 bg-[#0f0f0f]/80")}
       style={{
         top: position.top,
         left: position.left,

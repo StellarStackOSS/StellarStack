@@ -48,7 +48,6 @@ export interface DragDropGridProps extends Omit<ComponentPropsWithoutRef<"div">,
   gap?: number;
   isEditing?: boolean;
   savedLayouts?: Layouts;
-  isDark?: boolean;
   isDroppable?: boolean;
   allItems?: GridItemConfig[];
   removeConfirmLabels?: RemoveConfirmLabels;

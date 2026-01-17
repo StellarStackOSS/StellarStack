@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export default function NewServerPage() {
   const router = useRouter();
-  const { mounted, isDark, inputClasses, labelClasses, selectClasses } = useAdminTheme();
+  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: nodesList = [], isLoading: isLoadingNodes } = useNodes();
@@ -74,7 +74,8 @@ export default function NewServerPage() {
         const firstImage = Object.values(selectedBlueprint.dockerImages)[0] ?? "";
         setSelectedDockerImage(firstImage);
       } else {
-        setSelectedDockerImage(`${selectedBlueprint.imageName}:${selectedBlueprint.imageTag || 'latest'}`);
+        // Fallback to default image if none available
+        setSelectedDockerImage("alpine:latest");
       }
     } else {
       setVariableValues({});
@@ -134,8 +135,7 @@ export default function NewServerPage() {
   };
 
   const cardClasses = cn(
-    "relative border p-4",
-    isDark ? "border-zinc-700/50 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+    "relative border p-4 border-zinc-700/50 bg-zinc-900/30",
   );
 
   const isLoading = isLoadingNodes || isLoadingBlueprints || isLoadingUsers;
@@ -144,17 +144,17 @@ export default function NewServerPage() {
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-        <AnimatedBackground isDark={isDark} />
+      <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
+        <AnimatedBackground />
         <Spinner className="w-6 h-6" />
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative", isDark ? "bg-[#0b0b0a]" : "bg-[#f5f5f4]")}>
-      <AnimatedBackground isDark={isDark} />
-      <FloatingDots isDark={isDark} count={15} />
+    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+      <AnimatedBackground />
+      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-4xl mx-auto">
@@ -166,22 +166,19 @@ export default function NewServerPage() {
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
                 className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                  "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
                 )}
               >
                 <ArrowLeftIcon className="w-4 h-4" />
               </Button>
               <div>
                 <h1 className={cn(
-                  "text-2xl font-light tracking-wider",
-                  isDark ? "text-zinc-100" : "text-zinc-800"
+                  "text-2xl font-light tracking-wider text-zinc-100",
                 )}>
                   CREATE SERVER
                 </h1>
                 <p className={cn(
-                  "text-sm mt-1",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
+                  "text-sm mt-1 text-zinc-500",
                 )}>
                   Configure a new game server instance
                 </p>
@@ -193,16 +190,12 @@ export default function NewServerPage() {
             <form onSubmit={handleSubmit}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className={cn(
-                  "w-full justify-start gap-0 h-auto p-0 bg-transparent border-b rounded-none",
-                  isDark ? "border-zinc-700/50" : "border-zinc-200"
+                  "w-full justify-start gap-0 h-auto p-0 bg-transparent border-b rounded-none border-zinc-700/50",
                 )}>
                   <TabsTrigger
                     value="basic"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none",
-                      isDark
-                        ? "text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300"
-                        : "text-zinc-500 data-[state=active]:text-zinc-900 data-[state=active]:border-zinc-900 border-transparent hover:text-zinc-700"
+                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
                     )}
                   >
                     <InfoIcon className="w-3.5 h-3.5" />
@@ -211,10 +204,7 @@ export default function NewServerPage() {
                   <TabsTrigger
                     value="resources"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none",
-                      isDark
-                        ? "text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300"
-                        : "text-zinc-500 data-[state=active]:text-zinc-900 data-[state=active]:border-zinc-900 border-transparent hover:text-zinc-700"
+                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
                     )}
                   >
                     <CpuIcon className="w-3.5 h-3.5" />
@@ -223,18 +213,14 @@ export default function NewServerPage() {
                   <TabsTrigger
                     value="allocations"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none",
-                      isDark
-                        ? "text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300"
-                        : "text-zinc-500 data-[state=active]:text-zinc-900 data-[state=active]:border-zinc-900 border-transparent hover:text-zinc-700"
+                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
                     )}
                   >
                     <NetworkIcon className="w-3.5 h-3.5" />
                     Allocations
                     {formData.allocationIds.length > 0 && (
                       <span className={cn(
-                        "ml-1 px-1.5 py-0.5 text-[10px] rounded",
-                        isDark ? "bg-green-900/50 text-green-400" : "bg-green-100 text-green-700"
+                        "ml-1 px-1.5 py-0.5 text-[10px] rounded bg-green-900/50 text-green-400",
                       )}>
                         {formData.allocationIds.length}
                       </span>
@@ -243,10 +229,7 @@ export default function NewServerPage() {
                   <TabsTrigger
                     value="blueprint"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none",
-                      isDark
-                        ? "text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300"
-                        : "text-zinc-500 data-[state=active]:text-zinc-900 data-[state=active]:border-zinc-900 border-transparent hover:text-zinc-700"
+                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
                     )}
                   >
                     <BoxIcon className="w-3.5 h-3.5" />
@@ -257,8 +240,8 @@ export default function NewServerPage() {
                 {/* Basic Info Tab */}
                 <TabsContent value="basic" className="mt-6 space-y-4">
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Server Details
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -303,8 +286,8 @@ export default function NewServerPage() {
                   </div>
 
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Backup Settings
                     </h3>
                     <div className="w-48">
@@ -317,7 +300,7 @@ export default function NewServerPage() {
                         max={100}
                         className={inputClasses}
                       />
-                      <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                      <p className={cn("text-xs mt-1 text-zinc-600")}>
                         Maximum number of backups to keep
                       </p>
                     </div>
@@ -327,8 +310,8 @@ export default function NewServerPage() {
                 {/* Resources Tab */}
                 <TabsContent value="resources" className="mt-6 space-y-4">
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Resource Limits
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
@@ -342,7 +325,7 @@ export default function NewServerPage() {
                           className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p className={cn("text-xs mt-1 text-zinc-600")}>
                           {(formData.memory / 1024).toFixed(2)} GiB
                         </p>
                       </div>
@@ -356,7 +339,7 @@ export default function NewServerPage() {
                           className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p className={cn("text-xs mt-1 text-zinc-600")}>
                           {(formData.disk / 1024).toFixed(2)} GiB
                         </p>
                       </div>
@@ -371,7 +354,7 @@ export default function NewServerPage() {
                           className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p className={cn("text-xs mt-1 text-zinc-600")}>
                           {formData.cpu}% = {(formData.cpu / 100).toFixed(2)} thread(s)
                         </p>
                       </div>
@@ -379,8 +362,8 @@ export default function NewServerPage() {
                   </div>
 
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       CPU Pinning
                     </h3>
                     <div>
@@ -392,15 +375,15 @@ export default function NewServerPage() {
                         placeholder="e.g., 0,1,2,3 or 0-4"
                         className={inputClasses}
                       />
-                      <p className={cn("text-xs mt-1", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                      <p className={cn("text-xs mt-1 text-zinc-600")}>
                         Leave empty to use any available CPU. Use comma-separated list (0,1,2) or range (0-4).
                       </p>
                     </div>
                   </div>
 
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Memory Settings
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -437,12 +420,12 @@ export default function NewServerPage() {
                     <div className="mt-4 flex items-center justify-between">
                       <div>
                         <label className={labelClasses}>OOM Killer</label>
-                        <p className={cn("text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <p className={cn("text-xs text-zinc-600")}>
                           When disabled, container won't be killed when out of memory
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                        <span className={cn("text-xs text-zinc-500")}>
                           {formData.oomKillDisable ? "Disabled" : "Enabled"}
                         </span>
                         <Switch
@@ -457,8 +440,8 @@ export default function NewServerPage() {
                 {/* Allocations Tab */}
                 <TabsContent value="allocations" className="mt-6 space-y-4">
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Select Node
                     </h3>
                     <select
@@ -481,12 +464,12 @@ export default function NewServerPage() {
 
                   {selectedNode && (
                     <div className={cardClasses}>
-                      <CornerAccents isDark={isDark} size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                      <CornerAccents size="sm" />
+                      <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                         Available Allocations
                       </h3>
                       {!selectedNode.allocations || selectedNode.allocations.length === 0 ? (
-                        <div className={cn("text-sm py-8 text-center", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                        <div className={cn("text-sm py-8 text-center text-zinc-500")}>
                           No allocations available on this node. Add allocations in the Nodes section.
                         </div>
                       ) : (
@@ -499,12 +482,8 @@ export default function NewServerPage() {
                                 className={cn(
                                   "flex items-center gap-2 p-3 border cursor-pointer transition-colors",
                                   formData.allocationIds.includes(allocation.id)
-                                    ? isDark
-                                      ? "border-zinc-400 bg-zinc-800/50"
-                                      : "border-zinc-500 bg-zinc-100"
-                                    : isDark
-                                      ? "border-zinc-700 hover:border-zinc-600"
-                                      : "border-zinc-200 hover:border-zinc-300"
+                                    ? "border-zinc-400 bg-zinc-800/50"
+                                    : "border-zinc-700 hover:border-zinc-600"
                                 )}
                               >
                                 <input
@@ -514,11 +493,11 @@ export default function NewServerPage() {
                                   className="w-4 h-4"
                                 />
                                 <div>
-                                  <span className={cn("text-sm font-mono", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                                  <span className={cn("text-sm font-mono text-zinc-300")}>
                                     {allocation.ip}:{allocation.port}
                                   </span>
                                   {allocation.alias && (
-                                    <span className={cn("block text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                                    <span className={cn("block text-xs text-zinc-500")}>
                                       {allocation.alias}
                                     </span>
                                   )}
@@ -534,8 +513,8 @@ export default function NewServerPage() {
                 {/* Blueprint Tab */}
                 <TabsContent value="blueprint" className="mt-6 space-y-4">
                   <div className={cardClasses}>
-                    <CornerAccents isDark={isDark} size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                    <CornerAccents size="sm" />
+                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
                       Select Blueprint
                     </h3>
                     <select
@@ -545,30 +524,33 @@ export default function NewServerPage() {
                       required
                     >
                       <option value="">Select a blueprint...</option>
-                      {blueprintsList.map((blueprint) => (
-                        <option key={blueprint.id} value={blueprint.id}>
-                          {blueprint.name} - {blueprint.imageName}:{blueprint.imageTag}
-                        </option>
-                      ))}
+                      {blueprintsList.map((blueprint) => {
+                        const dockerImage = Object.values(blueprint.dockerImages || {})[0] || "No image";
+                        return (
+                          <option key={blueprint.id} value={blueprint.id}>
+                            {blueprint.name} - {dockerImage}
+                          </option>
+                        );
+                      })}
                     </select>
                     {selectedBlueprint && (
-                      <div className={cn("mt-3 p-3 border text-xs", isDark ? "border-zinc-700 bg-zinc-900/50" : "border-zinc-200 bg-zinc-50")}>
+                      <div className={cn("mt-3 p-3 border text-xs border-zinc-700 bg-zinc-900/50")}>
                         {selectedBlueprint.description && (
-                          <p className={isDark ? "text-zinc-400" : "text-zinc-600"}>{selectedBlueprint.description}</p>
+                          <p className={"text-zinc-400"}>{selectedBlueprint.description}</p>
                         )}
                         <div className="flex flex-wrap gap-2 mt-2">
                           {selectedBlueprint.dockerImages && Object.keys(selectedBlueprint.dockerImages).length > 0 && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border", isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500")}>
+                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
                               {Object.keys(selectedBlueprint.dockerImages).length} docker images
                             </span>
                           )}
                           {selectedBlueprint.variables && selectedBlueprint.variables.length > 0 && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border", isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500")}>
+                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
                               {selectedBlueprint.variables.length} variables
                             </span>
                           )}
                           {selectedBlueprint.startup && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border", isDark ? "border-zinc-700 text-zinc-500" : "border-zinc-300 text-zinc-500")}>
+                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
                               startup command
                             </span>
                           )}
@@ -580,8 +562,8 @@ export default function NewServerPage() {
                   {/* Docker Image Selection */}
                   {selectedBlueprint?.dockerImages && Object.keys(selectedBlueprint.dockerImages).length > 0 && (
                     <div className={cardClasses}>
-                      <CornerAccents isDark={isDark} size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                      <CornerAccents size="sm" />
+                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2 text-zinc-200")}>
                         <ImageIcon className="w-4 h-4" />
                         Docker Image
                       </h3>
@@ -594,19 +576,15 @@ export default function NewServerPage() {
                             className={cn(
                               "px-3 py-2 text-xs font-medium uppercase tracking-wider border transition-all",
                               selectedDockerImage === image
-                                ? isDark
-                                  ? "border-zinc-400 bg-zinc-700/50 text-zinc-200"
-                                  : "border-zinc-500 bg-zinc-100 text-zinc-800"
-                                : isDark
-                                  ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                                  : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
+                                ? "border-zinc-400 bg-zinc-700/50 text-zinc-200"
+                                : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
                             )}
                           >
                             {label}
                           </button>
                         ))}
                       </div>
-                      <p className={cn("text-[10px] mt-2 font-mono", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                      <p className={cn("text-[10px] mt-2 font-mono text-zinc-600")}>
                         {selectedDockerImage}
                       </p>
                     </div>
@@ -615,8 +593,8 @@ export default function NewServerPage() {
                   {/* Startup Variables */}
                   {selectedBlueprint?.variables && selectedBlueprint.variables.length > 0 && (
                     <div className={cardClasses}>
-                      <CornerAccents isDark={isDark} size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2", isDark ? "text-zinc-200" : "text-zinc-700")}>
+                      <CornerAccents size="sm" />
+                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2 text-zinc-200")}>
                         <VariableIcon className="w-4 h-4" />
                         Startup Variables
                       </h3>
@@ -627,17 +605,17 @@ export default function NewServerPage() {
                             <div key={variable.env_variable}>
                               <div className="flex items-center gap-2 mb-1">
                                 <label className={labelClasses}>{variable.name}</label>
-                                <span className={cn("text-[10px] font-mono px-1.5 py-0.5 border rounded", isDark ? "border-zinc-700 text-zinc-600" : "border-zinc-300 text-zinc-400")}>
+                                <span className={cn("text-[10px] font-mono px-1.5 py-0.5 border rounded border-zinc-700 text-zinc-600")}>
                                   {variable.env_variable}
                                 </span>
                                 {variable.user_editable === false && (
-                                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded", isDark ? "bg-zinc-800 text-zinc-500" : "bg-zinc-200 text-zinc-500")}>
+                                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500")}>
                                     read only
                                   </span>
                                 )}
                               </div>
                               {variable.description && (
-                                <p className={cn("text-[11px] mb-2", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                                <p className={cn("text-[11px] mb-2 text-zinc-500")}>
                                   {variable.description}
                                 </p>
                               )}
@@ -656,7 +634,7 @@ export default function NewServerPage() {
                                   variable.user_editable === false && "opacity-60 cursor-not-allowed"
                                 )}
                               />
-                              <div className={cn("flex items-center gap-2 mt-1 text-[10px]", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                              <div className={cn("flex items-center gap-2 mt-1 text-[10px] text-zinc-600")}>
                                 <span>Default: {variable.default_value || "(empty)"}</span>
                                 {variable.rules && (
                                   <>
@@ -675,16 +653,14 @@ export default function NewServerPage() {
 
               {/* Submit Button */}
               <div className={cn(
-                "flex justify-end gap-3 mt-6 pt-6 border-t",
-                isDark ? "border-zinc-700/50" : "border-zinc-200"
+                "flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-700/50",
               )}>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/admin/servers")}
                   className={cn(
-                    "text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                    isDark ? "border-zinc-700 text-zinc-400" : "border-zinc-300 text-zinc-600"
+                    "text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400",
                   )}
                 >
                   Cancel
@@ -693,10 +669,7 @@ export default function NewServerPage() {
                   type="submit"
                   disabled={create.isPending}
                   className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95",
-                    isDark
-                      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                      : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
                   )}
                 >
                   {create.isPending ? (

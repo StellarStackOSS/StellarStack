@@ -5,9 +5,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
 import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
 
-interface FooterProps {
-  isDark: boolean;
-}
+interface FooterProps {}
 
 const footerLinks = {
   product: [
@@ -28,12 +26,12 @@ const footerLinks = {
   ],
 };
 
-export const Footer = ({ isDark }: FooterProps) => {
+export const Footer = ({}: FooterProps) => {
   return (
     <footer
       className={cn(
         "relative overflow-hidden border-t",
-        isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-200 bg-white"
+        "border-zinc-800 bg-zinc-900/50"
       )}
     >
       <LightBoard gap={2} text="STELLARSTACK" font="default" updateInterval={25} />
@@ -46,13 +44,13 @@ export const Footer = ({ isDark }: FooterProps) => {
               href="/"
               className={cn(
                 "mb-4 block flex flex-row items-center gap-2 text-lg font-light tracking-[0.2em]",
-                isDark ? "text-zinc-100" : "text-zinc-800"
+                "text-zinc-100"
               )}
             >
               <img src="/logo.png" className="-ml-2 w-10 p-0" />
               STELLARSTACK
             </Link>
-            <p className={cn("mb-6 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+            <p className={cn("mb-6 text-sm", "text-zinc-500")}>
               Open-source game server management for the modern era.
             </p>
             <div className="flex items-center gap-4">
@@ -62,7 +60,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                 rel="noopener noreferrer"
                 className={cn(
                   "transition-colors",
-                  isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                  "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 <BsGithub className="h-5 w-5" />
@@ -73,7 +71,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                 rel="noopener noreferrer"
                 className={cn(
                   "transition-colors",
-                  isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                  "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 <BsDiscord className="h-5 w-5" />
@@ -84,7 +82,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                 rel="noopener noreferrer"
                 className={cn(
                   "transition-colors",
-                  isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                  "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 <BsTwitterX className="h-5 w-5" />
@@ -97,7 +95,7 @@ export const Footer = ({ isDark }: FooterProps) => {
             <h4
               className={cn(
                 "mb-4 text-xs font-medium tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Product
@@ -109,9 +107,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                     href={item.href}
                     className={cn(
                       "text-sm transition-colors",
-                      isDark
-                        ? "text-zinc-500 hover:text-zinc-300"
-                        : "text-zinc-500 hover:text-zinc-700"
+                      "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     {item.name}
@@ -126,7 +122,7 @@ export const Footer = ({ isDark }: FooterProps) => {
             <h4
               className={cn(
                 "mb-4 text-xs font-medium tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Resources
@@ -138,9 +134,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                     href={item.href}
                     className={cn(
                       "text-sm transition-colors",
-                      isDark
-                        ? "text-zinc-500 hover:text-zinc-300"
-                        : "text-zinc-500 hover:text-zinc-700"
+                      "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     {item.name}
@@ -155,7 +149,7 @@ export const Footer = ({ isDark }: FooterProps) => {
             <h4
               className={cn(
                 "mb-4 text-xs font-medium tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Company
@@ -167,9 +161,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                     href={item.href}
                     className={cn(
                       "text-sm transition-colors",
-                      isDark
-                        ? "text-zinc-500 hover:text-zinc-300"
-                        : "text-zinc-500 hover:text-zinc-700"
+                      "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     {item.name}
@@ -184,10 +176,10 @@ export const Footer = ({ isDark }: FooterProps) => {
         <div
           className={cn(
             "mt-16 flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row",
-            isDark ? "border-zinc-800" : "border-zinc-200"
+            "border-zinc-800"
           )}
         >
-          <p className={cn("text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+          <p className={cn("text-xs", "text-zinc-600")}>
             &copy; {new Date().getFullYear()} StellarStack. Open source under MIT License.
           </p>
           <div className="flex items-center gap-6">
@@ -197,7 +189,7 @@ export const Footer = ({ isDark }: FooterProps) => {
                 href="#"
                 className={cn(
                   "text-xs transition-colors",
-                  isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600"
+                  "text-zinc-600 hover:text-zinc-400"
                 )}
               >
                 {item}
@@ -213,7 +205,7 @@ export const Footer = ({ isDark }: FooterProps) => {
           <div
             className={cn(
               "pointer-events-none absolute right-6 bottom-10 left-6 translate-y-[50%] text-center text-7xl font-bold whitespace-nowrap select-none lg:text-[7.25rem]",
-              isDark ? "text-zinc-800/50" : "text-zinc-200"
+              "text-zinc-800/50"
             )}
             style={{
               letterSpacing: "0.2em",

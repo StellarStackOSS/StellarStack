@@ -17,14 +17,14 @@ const formatTimestamp = (timestamp: number): string => {
   return `${hours}:${minutes}:${seconds}.${ms}`;
 };
 
-const getLogLevelStyles = (level: ConsoleLine["level"], isDark: boolean): string => {
+const getLogLevelStyles = (level: ConsoleLine["level"]): string => {
   switch (level) {
     case "info":
       return "text-blue-400";
     case "error":
       return "text-red-400";
     default:
-      return isDark ? "text-zinc-300" : "text-zinc-700";
+      return "text-zinc-300";
   }
 };
 
@@ -33,7 +33,6 @@ export const Console = ({
   onCommand,
   maxLines = 100,
   className,
-  isDark = true,
   isOffline = false,
   showSendButton = false,
 }: ConsoleProps) => {
@@ -174,10 +173,8 @@ export const Console = ({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col rounded-lg border transition-colors",
-        isDark
-          ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
-          : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100 shadow-lg shadow-zinc-400/20",
+        "relative flex h-full rounded-lg flex-col border transition-colors",
+        "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
         isOffline && "opacity-60",
         className
       )}
@@ -187,7 +184,7 @@ export const Console = ({
       <div
         className={cn(
           "flex items-center justify-between border-b px-4 py-2",
-          isDark ? "border-zinc-200/10" : "border-zinc-300"
+          "border-zinc-200/10"
         )}
       >
         <div className="flex flex-row gap-2">
@@ -209,13 +206,13 @@ export const Console = ({
               }}
               className={cn(
                 "text-xs transition-colors",
-                isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-700"
+                "text-zinc-500 hover:text-zinc-300"
               )}
             >
               Scroll to bottom
             </button>
           )}
-          <span className={cn("text-xs", isDark ? "text-zinc-600" : "text-zinc-500")}>
+          <span className={cn("text-xs", "text-zinc-600")}>
             {displayLines.length} lines
           </span>
         </div>
@@ -231,7 +228,7 @@ export const Console = ({
                 <span
                   className={cn(
                     "text-xs tracking-wider uppercase",
-                    isDark ? "text-zinc-500" : "text-zinc-400"
+                    "text-zinc-500"
                   )}
                 >
                   Server is offline
@@ -243,9 +240,7 @@ export const Console = ({
           <div
             className={cn(
               "pointer-events-none absolute top-0 right-0 left-0 z-10 h-8 transition-opacity duration-300",
-              isDark
-                ? "bg-gradient-to-b from-[#0f0f0f] to-transparent"
-                : "bg-gradient-to-b from-white to-transparent",
+              "bg-gradient-to-b from-[#0f0f0f] to-transparent",
               autoScroll && canScrollUp ? "opacity-100" : "opacity-0"
             )}
           />
@@ -255,7 +250,7 @@ export const Console = ({
             onMouseLeave={handleTimestampColumnLeave}
             className={cn(
               "scrollbar-thin scrollbar-track-transparent h-full overflow-x-hidden overflow-y-auto p-2 font-mono text-xs",
-              isDark ? "scrollbar-thumb-zinc-700" : "scrollbar-thumb-zinc-400"
+              "scrollbar-thumb-zinc-700"
             )}
           >
             <table className="w-full border-collapse">
@@ -263,14 +258,12 @@ export const Console = ({
                 {displayLines.map((line) => (
                   <tr
                     key={line.id}
-                    className={cn("group", isDark ? "hover:bg-zinc-900/50" : "hover:bg-zinc-100")}
+                    className={cn("group", "hover:bg-zinc-900/50")}
                   >
                     <td
                       className={cn(
                         "w-[110px] cursor-default py-0.5 pr-4 align-top whitespace-nowrap transition-colors",
-                        isDark
-                          ? "text-zinc-600 hover:text-zinc-400"
-                          : "text-zinc-500 hover:text-zinc-700"
+                        "text-zinc-600 hover:text-zinc-400"
                       )}
                       onMouseEnter={(e) => handleTimestampHover(line.timestamp, e)}
                       onMouseMove={(e) => handleTimestampHover(line.timestamp, e)}
@@ -281,7 +274,7 @@ export const Console = ({
                     <td
                       className={cn(
                         "py-0.5 break-words select-text",
-                        getLogLevelStyles(line.level, isDark)
+                        getLogLevelStyles(line.level)
                       )}
                     >
                       {parseLinks(line.message)}
@@ -296,7 +289,6 @@ export const Console = ({
               <TimestampColumnTooltip
                 timestamp={hoveredTimestamp}
                 position={tooltipPosition}
-                isDark={isDark}
               />
             )}
           </div>
@@ -306,10 +298,10 @@ export const Console = ({
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className={cn("border-t", isDark ? "border-zinc-200/10" : "border-zinc-300")}
+        className={cn("border-t", "border-zinc-200/10")}
       >
         <div className="flex items-center gap-3 px-4 py-3">
-          <span className={cn("font-mono text-sm", isDark ? "text-zinc-600" : "text-zinc-500")}>
+          <span className={cn("font-mono text-sm", "text-zinc-600")}>
             $
           </span>
           <input
@@ -322,9 +314,7 @@ export const Console = ({
             disabled={isOffline}
             className={cn(
               "flex-1 border-none bg-transparent font-mono text-sm outline-none",
-              isDark
-                ? "text-zinc-200 placeholder:text-zinc-700"
-                : "text-zinc-800 placeholder:text-zinc-400",
+              "text-zinc-200 placeholder:text-zinc-700",
               isOffline && "cursor-not-allowed"
             )}
           />
@@ -334,9 +324,7 @@ export const Console = ({
               disabled={isOffline || !inputValue.trim()}
               className={cn(
                 "flex items-center justify-center rounded p-2 transition-all",
-                isDark
-                  ? "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                  : "text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800",
+                "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200",
                 (isOffline || !inputValue.trim()) && "cursor-not-allowed opacity-40"
               )}
               aria-label="Send command"

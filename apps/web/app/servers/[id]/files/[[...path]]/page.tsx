@@ -3,7 +3,6 @@
 import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTheme as useNextTheme } from "next-themes";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ColumnDef,
@@ -161,7 +160,6 @@ const FilesPage = (): JSX.Element | null => {
   // Derive current path from URL params
   const currentPath = pathSegments && pathSegments.length > 0 ? "/" + pathSegments.join("/") : "/";
 
-  const { setTheme, resolvedTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -391,8 +389,6 @@ const FilesPage = (): JSX.Element | null => {
       setIsUploading(false);
     }
   };
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
 
   // Navigation helpers
   const navigateToFolder = (folderName: string) => {
@@ -742,7 +738,7 @@ const FilesPage = (): JSX.Element | null => {
             aria-label="Select all"
             className={cn(
               "border-zinc-600",
-              isDark ? "data-[state=checked]:bg-zinc-600" : "data-[state=checked]:bg-zinc-400"
+              "data-[state=checked]:bg-zinc-600"
             )}
           />
         ),
@@ -753,7 +749,7 @@ const FilesPage = (): JSX.Element | null => {
             aria-label="Select row"
             className={cn(
               "border-zinc-600",
-              isDark ? "data-[state=checked]:bg-zinc-600" : "data-[state=checked]:bg-zinc-400"
+              "data-[state=checked]:bg-zinc-600"
             )}
           />
         ),
@@ -767,7 +763,7 @@ const FilesPage = (): JSX.Element | null => {
             <button
               className={cn(
                 "flex items-center gap-2 transition-colors",
-                isDark ? "hover:text-zinc-100" : "hover:text-zinc-900"
+                "hover:text-zinc-100"
               )}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
@@ -787,16 +783,16 @@ const FilesPage = (): JSX.Element | null => {
           return (
             <div className="flex items-center gap-3">
               {file.type === "folder" ? (
-                <BsFolder className={cn("h-4 w-4", isDark ? "text-amber-400" : "text-amber-600")} />
+                <BsFolder className={cn("h-4 w-4", "text-amber-400")} />
               ) : (
                 <BsFileEarmark
-                  className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-500")}
+                  className={cn("h-4 w-4", "text-zinc-400")}
                 />
               )}
               <span
                 className={cn(
                   "cursor-pointer hover:underline",
-                  isDark ? "text-zinc-200" : "text-zinc-700"
+                  "text-zinc-200"
                 )}
                 onClick={() => {
                   if (file.type === "folder") {
@@ -819,7 +815,7 @@ const FilesPage = (): JSX.Element | null => {
             <button
               className={cn(
                 "flex items-center gap-2 transition-colors",
-                isDark ? "hover:text-zinc-100" : "hover:text-zinc-900"
+                "hover:text-zinc-100"
               )}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
@@ -835,7 +831,7 @@ const FilesPage = (): JSX.Element | null => {
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+          <span className={cn("text-xs", "text-zinc-500")}>
             {row.getValue("size")}
           </span>
         ),
@@ -847,7 +843,7 @@ const FilesPage = (): JSX.Element | null => {
             <button
               className={cn(
                 "flex items-center gap-2 transition-colors",
-                isDark ? "hover:text-zinc-100" : "hover:text-zinc-900"
+                "hover:text-zinc-100"
               )}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
@@ -863,7 +859,7 @@ const FilesPage = (): JSX.Element | null => {
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+          <span className={cn("text-xs", "text-zinc-500")}>
             {row.getValue("modified")}
           </span>
         ),
@@ -879,9 +875,7 @@ const FilesPage = (): JSX.Element | null => {
                 <button
                   className={cn(
                     "p-1 transition-colors",
-                    isDark
-                      ? "text-zinc-500 hover:text-zinc-200"
-                      : "text-zinc-400 hover:text-zinc-700"
+                    "text-zinc-500 hover:text-zinc-200"
                   )}
                 >
                   <BsThreeDotsVertical className="h-4 w-4" />
@@ -891,16 +885,14 @@ const FilesPage = (): JSX.Element | null => {
                 align="end"
                 className={cn(
                   "min-w-[160px]",
-                  isDark ? "border-zinc-700 bg-zinc-900" : "border-zinc-200 bg-white"
+                  "border-zinc-700 bg-zinc-900"
                 )}
               >
                 <DropdownMenuItem
                   onClick={() => handleRename(file)}
                   className={cn(
                     "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                    isDark
-                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                      : "text-zinc-700 focus:bg-zinc-100"
+                    "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
                   )}
                 >
                   <BsPencil className="h-3 w-3" />
@@ -910,9 +902,7 @@ const FilesPage = (): JSX.Element | null => {
                   onClick={() => handleEditPermissions(file)}
                   className={cn(
                     "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                    isDark
-                      ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                      : "text-zinc-700 focus:bg-zinc-100"
+                    "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
                   )}
                 >
                   <BsTerminal className="h-3 w-3" />
@@ -923,9 +913,7 @@ const FilesPage = (): JSX.Element | null => {
                     onClick={() => handleEdit(file)}
                     className={cn(
                       "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                      isDark
-                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                        : "text-zinc-700 focus:bg-zinc-100"
+                      "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
                     )}
                   >
                     <BsFileText className="h-3 w-3" />
@@ -950,23 +938,19 @@ const FilesPage = (): JSX.Element | null => {
                     }}
                     className={cn(
                       "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                      isDark
-                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                        : "text-zinc-700 focus:bg-zinc-100"
+                      "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
                     )}
                   >
                     <BsDownload className="h-3 w-3" />
                     Download
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator className={isDark ? "bg-zinc-700" : "bg-zinc-200"} />
+                <DropdownMenuSeparator className="bg-zinc-700" />
                 <DropdownMenuItem
                   onClick={() => handleDelete(file)}
                   className={cn(
                     "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                    isDark
-                      ? "text-red-400 focus:bg-red-950/50 focus:text-red-300"
-                      : "text-red-600 focus:bg-red-50"
+                    "text-red-400 focus:bg-red-950/50 focus:text-red-300"
                   )}
                 >
                   <BsTrash className="h-3 w-3" />
@@ -978,7 +962,7 @@ const FilesPage = (): JSX.Element | null => {
         },
       },
     ],
-    [isDark, currentPath, serverId]
+    [currentPath, serverId]
   );
 
   // Toggle hidden files visibility
@@ -1033,7 +1017,7 @@ const FilesPage = (): JSX.Element | null => {
     return (
       <div className="min-h-svh">
         {/* Background is now rendered in the layout for persistence */}
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -1041,7 +1025,7 @@ const FilesPage = (): JSX.Element | null => {
   if (server?.status === "SUSPENDED") {
     return (
       <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -1058,7 +1042,7 @@ const FilesPage = (): JSX.Element | null => {
               <SidebarTrigger
                 className={cn(
                   "transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                  "text-zinc-400 hover:text-zinc-100"
                 )}
               />
               <div>
@@ -1067,13 +1051,7 @@ const FilesPage = (): JSX.Element | null => {
                     href={getBasePath()}
                     className={cn(
                       "text-sm transition-colors hover:underline",
-                      currentPath === "/"
-                        ? isDark
-                          ? "text-zinc-300"
-                          : "text-zinc-700"
-                        : isDark
-                          ? "text-zinc-500 hover:text-zinc-300"
-                          : "text-zinc-500 hover:text-zinc-700"
+                      "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     / home
@@ -1083,12 +1061,12 @@ const FilesPage = (): JSX.Element | null => {
                     const isLast = index === breadcrumbSegments.length - 1;
                     return (
                       <span key={pathUpToHere} className="flex items-center gap-1">
-                        <span className={cn("text-sm", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                        <span className={cn("text-sm", "text-zinc-600")}>
                           /
                         </span>
                         {isLast ? (
                           <span
-                            className={cn("text-sm", isDark ? "text-zinc-300" : "text-zinc-700")}
+                            className={cn("text-sm", "text-zinc-300")}
                           >
                             {segment}
                           </span>
@@ -1097,9 +1075,7 @@ const FilesPage = (): JSX.Element | null => {
                             href={`${getBasePath()}${pathUpToHere}`}
                             className={cn(
                               "text-sm transition-colors hover:underline",
-                              isDark
-                                ? "text-zinc-500 hover:text-zinc-300"
-                                : "text-zinc-500 hover:text-zinc-700"
+                              "text-zinc-500 hover:text-zinc-300"
                             )}
                           >
                             {segment}
@@ -1118,22 +1094,22 @@ const FilesPage = (): JSX.Element | null => {
             )}
           >
             <div className="flex items-center gap-4">
-              <BsHddFill className={cn("h-5 w-5", isDark ? "text-zinc-400" : "text-zinc-500")} />
+              <BsHddFill className={cn("h-5 w-5", "text-zinc-400")} />
               <div className="flex-1">
                 <div className="mb-2 flex items-center justify-between">
                   <span
                     className={cn(
                       "text-xs tracking-wider uppercase",
-                      isDark ? "text-zinc-400" : "text-zinc-500"
+                      "text-zinc-400"
                     )}
                   >
                     Storage
                   </span>
-                  <span className={cn("text-xs", isDark ? "text-zinc-400" : "text-zinc-500")}>
+                  <span className={cn("text-xs", "text-zinc-400")}>
                     {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
                   </span>
                 </div>
-                <div className={cn("h-2 w-full", isDark ? "bg-zinc-800" : "bg-zinc-200")}>
+                <div className={cn("h-2 w-full", "bg-zinc-800")}>
                   <div
                     className={cn(
                       "h-full transition-all",
@@ -1180,7 +1156,7 @@ const FilesPage = (): JSX.Element | null => {
                   </span>
                 </TextureButton>
                 {selectedCount > 0 && (
-                  <span className={cn("ml-2 text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                  <span className={cn("ml-2 text-xs", "text-zinc-500")}>
                     {selectedCount} selected
                   </span>
                 )}
@@ -1190,7 +1166,7 @@ const FilesPage = (): JSX.Element | null => {
                   <BsSearch
                     className={cn(
                       "absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 transition-colors",
-                      isDark ? "text-zinc-500" : "text-zinc-400"
+                      "text-zinc-500"
                     )}
                   />
                   <Input
@@ -1200,7 +1176,7 @@ const FilesPage = (): JSX.Element | null => {
                     placeholder="Search..."
                     className={cn(
                       "h-9 w-32 border pr-8 pl-9 text-xs transition-colors outline-none sm:w-48",
-                      isDark
+                      true
                         ? "border-zinc-700 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
                         : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
                     )}
@@ -1446,7 +1422,7 @@ const FilesPage = (): JSX.Element | null => {
           </div>
 
           {/* Footer */}
-          <div className={cn("mt-4 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+          <div className={cn("mt-4 text-xs", "text-zinc-600")}>
             {table.getFilteredRowModel().rows.length} file(s) - {selectedCount} selected
           </div>
         </div>
@@ -1462,7 +1438,7 @@ const FilesPage = (): JSX.Element | null => {
             className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
           >
             {/* Backdrop */}
-            <div className={cn("absolute inset-0", isDark ? "bg-black/80" : "bg-white/80")} />
+            <div className={cn("absolute inset-0", "bg-black/80")} />
 
             {/* Drop zone indicator */}
             <motion.div
@@ -1472,7 +1448,7 @@ const FilesPage = (): JSX.Element | null => {
               transition={{ duration: 0.2 }}
               className={cn(
                 "relative border-4 border-dashed p-16 text-center",
-                isDark ? "border-zinc-500 bg-zinc-900/90" : "border-zinc-400 bg-white/90"
+                "border-zinc-500 bg-zinc-900/90"
               )}
             >
               <motion.div
@@ -1482,19 +1458,19 @@ const FilesPage = (): JSX.Element | null => {
                 <BsCloudUpload
                   className={cn(
                     "mx-auto mb-4 h-16 w-16",
-                    isDark ? "text-zinc-400" : "text-zinc-500"
+                    "text-zinc-400"
                   )}
                 />
               </motion.div>
               <p
                 className={cn(
                   "text-xl font-light tracking-wider",
-                  isDark ? "text-zinc-200" : "text-zinc-700"
+                  "text-zinc-200"
                 )}
               >
                 DROP FILES TO UPLOAD
               </p>
-              <p className={cn("mt-2 text-sm", isDark ? "text-zinc-500" : "text-zinc-400")}>
+              <p className={cn("mt-2 text-sm", "text-zinc-500")}>
                 Files will be uploaded to: {currentPath}
               </p>
             </motion.div>
@@ -1539,10 +1515,7 @@ const FilesPage = (): JSX.Element | null => {
           onChange={(e) => setNewFileName(e.target.value)}
           placeholder="Enter new name"
           className={cn(
-            "w-full border px-3 py-2 text-sm transition-colors outline-none",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-              : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+            "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
           )}
         />
       </FormModal>
@@ -1563,10 +1536,7 @@ const FilesPage = (): JSX.Element | null => {
           onChange={(e) => setNewFolderName(e.target.value)}
           placeholder="Folder name"
           className={cn(
-            "w-full border px-3 py-2 text-sm transition-colors outline-none",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-              : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+            "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
           )}
         />
       </FormModal>
@@ -1587,11 +1557,7 @@ const FilesPage = (): JSX.Element | null => {
           onChange={(e) => setNewFileNameInput(e.target.value)}
           placeholder="File name (e.g., config.yml)"
           className={cn(
-            "w-full border px-3 py-2 text-sm transition-colors outline-none",
-            isDark
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-              : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
-          )}
+            "w-full border px-3 py-2 text-sm transition-colors outline-none border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500",)}
         />
       </FormModal>
 
@@ -1600,17 +1566,17 @@ const FilesPage = (): JSX.Element | null => {
         <DialogContent
           className={cn(
             "max-w-2xl",
-            isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+            "border-zinc-800 bg-zinc-900"
           )}
         >
           <DialogHeader>
             <DialogTitle
-              className={cn("text-lg font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")}
+              className={cn("text-lg font-semibold", "text-zinc-100")}
             >
               SFTP Connection Details
             </DialogTitle>
             <DialogDescription
-              className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
+              className={cn("text-sm", "text-zinc-400")}
             >
               Use these credentials to connect to your server via SFTP
             </DialogDescription>
@@ -1624,7 +1590,7 @@ const FilesPage = (): JSX.Element | null => {
                   <label
                     className={cn(
                       "text-xs font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-500" : "text-zinc-600"
+                      "text-zinc-500"
                     )}
                   >
                     Host
@@ -1632,11 +1598,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        isDark
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
-                      )}
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
                     >
                       {server.node.host}
                     </code>
@@ -1647,11 +1609,7 @@ const FilesPage = (): JSX.Element | null => {
                         navigator.clipboard.writeText(server.node!.host);
                         toast.success("Host copied to clipboard");
                       }}
-                      className={cn(
-                        isDark
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
+                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
                     </Button>
@@ -1663,7 +1621,7 @@ const FilesPage = (): JSX.Element | null => {
                   <label
                     className={cn(
                       "text-xs font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-500" : "text-zinc-600"
+                      "text-zinc-500"
                     )}
                   >
                     Port
@@ -1671,11 +1629,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        isDark
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
-                      )}
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
                     >
                       {server.node.sftpPort}
                     </code>
@@ -1686,11 +1640,7 @@ const FilesPage = (): JSX.Element | null => {
                         navigator.clipboard.writeText(server.node!.sftpPort.toString());
                         toast.success("Port copied to clipboard");
                       }}
-                      className={cn(
-                        isDark
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
+                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
                     </Button>
@@ -1702,7 +1652,7 @@ const FilesPage = (): JSX.Element | null => {
                   <label
                     className={cn(
                       "text-xs font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-500" : "text-zinc-600"
+                      "text-zinc-500"
                     )}
                   >
                     Username
@@ -1710,11 +1660,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        isDark
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
-                      )}
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
                     >
                       {server.id}.{user.email}
                     </code>
@@ -1725,11 +1671,7 @@ const FilesPage = (): JSX.Element | null => {
                         navigator.clipboard.writeText(`${server.id}.${user.email}`);
                         toast.success("Username copied to clipboard");
                       }}
-                      className={cn(
-                        isDark
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
+                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
                     </Button>
@@ -1741,7 +1683,7 @@ const FilesPage = (): JSX.Element | null => {
                   <label
                     className={cn(
                       "text-xs font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-500" : "text-zinc-600"
+                      "text-zinc-500"
                     )}
                   >
                     Password
@@ -1749,11 +1691,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1">
                     <div
                       className={cn(
-                        "rounded border px-3 py-2 text-sm",
-                        isDark
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-400"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-600"
-                      )}
+                        "rounded border px-3 py-2 text-sm border-zinc-800 bg-zinc-950 text-zinc-400")}
                     >
                       Your account password
                     </div>
@@ -1765,7 +1703,7 @@ const FilesPage = (): JSX.Element | null => {
                   <label
                     className={cn(
                       "text-xs font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-500" : "text-zinc-600"
+                      "text-zinc-500"
                     )}
                   >
                     Connection String
@@ -1773,11 +1711,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm break-all whitespace-normal",
-                        isDark
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
-                      )}
+                        "flex-1 rounded border px-3 py-2 font-mono text-sm break-all whitespace-normal border-zinc-800 bg-zinc-950 text-zinc-200")}
                     >
                       sftp://{server.id}.{user.email}@{server.node.host}:{server.node.sftpPort}
                     </code>
@@ -1792,11 +1726,7 @@ const FilesPage = (): JSX.Element | null => {
                           toast.success("Connection string copied to clipboard");
                         }
                       }}
-                      className={cn(
-                        isDark
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
+                      className={cn("border-zinc-700 hover:bg-zinc-800")}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
                     </Button>
@@ -1808,13 +1738,13 @@ const FilesPage = (): JSX.Element | null => {
               <div
                 className={cn(
                   "mt-6 rounded border p-4",
-                  isDark ? "border-zinc-800 bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
+                  "border-zinc-800 bg-zinc-950/50"
                 )}
               >
                 <h4
                   className={cn(
                     "mb-2 text-sm font-semibold",
-                    isDark ? "text-zinc-300" : "text-zinc-700"
+                    "text-zinc-300"
                   )}
                 >
                   Popular SFTP Clients:
@@ -1822,7 +1752,7 @@ const FilesPage = (): JSX.Element | null => {
                 <ul
                   className={cn(
                     "list-inside list-disc space-y-1 text-sm",
-                    isDark ? "text-zinc-400" : "text-zinc-600"
+                    "text-zinc-400"
                   )}
                 >
                   <li>FileZilla (Windows, macOS, Linux)</li>
@@ -1841,17 +1771,17 @@ const FilesPage = (): JSX.Element | null => {
         <DialogContent
           className={cn(
             "max-w-md",
-            isDark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
+            "border-zinc-800 bg-zinc-900"
           )}
         >
           <DialogHeader>
             <DialogTitle
-              className={cn("text-lg font-semibold", isDark ? "text-zinc-100" : "text-zinc-900")}
+              className={cn("text-lg font-semibold", "text-zinc-100")}
             >
               Edit Permissions
             </DialogTitle>
             <DialogDescription
-              className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}
+              className={cn("text-sm", "text-zinc-400")}
             >
               {fileToEditPermissions
                 ? `Change permissions for "${fileToEditPermissions.name}"`
@@ -1864,17 +1794,13 @@ const FilesPage = (): JSX.Element | null => {
               <div
                 className={cn(
                   "overflow-hidden rounded border",
-                  isDark ? "border-zinc-800" : "border-zinc-200"
+                  "border-zinc-800"
                 )}
               >
                 {/* Header Row */}
                 <div
                   className={cn(
-                    "grid grid-cols-4 border-b text-xs font-semibold tracking-wider uppercase",
-                    isDark
-                      ? "border-zinc-800 bg-zinc-950 text-zinc-400"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-600"
-                  )}
+                    "grid grid-cols-4 border-b text-xs font-semibold tracking-wider uppercase border-zinc-800 bg-zinc-950 text-zinc-400")}
                 >
                   <div className="p-3"></div>
                   <div className="p-3 text-center">Read</div>
@@ -1886,13 +1812,13 @@ const FilesPage = (): JSX.Element | null => {
                 <div
                   className={cn(
                     "grid grid-cols-4 border-b",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
+                    "border-zinc-800"
                   )}
                 >
                   <div
                     className={cn(
                       "p-3 text-sm font-medium",
-                      isDark ? "text-zinc-300" : "text-zinc-700"
+                      "text-zinc-300"
                     )}
                   >
                     Owner
@@ -1906,7 +1832,7 @@ const FilesPage = (): JSX.Element | null => {
                           owner: { ...p.owner, read: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -1918,7 +1844,7 @@ const FilesPage = (): JSX.Element | null => {
                           owner: { ...p.owner, write: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -1930,7 +1856,7 @@ const FilesPage = (): JSX.Element | null => {
                           owner: { ...p.owner, execute: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                 </div>
@@ -1939,13 +1865,13 @@ const FilesPage = (): JSX.Element | null => {
                 <div
                   className={cn(
                     "grid grid-cols-4 border-b",
-                    isDark ? "border-zinc-800" : "border-zinc-200"
+                    "border-zinc-800"
                   )}
                 >
                   <div
                     className={cn(
                       "p-3 text-sm font-medium",
-                      isDark ? "text-zinc-300" : "text-zinc-700"
+                      "text-zinc-300"
                     )}
                   >
                     Group
@@ -1959,7 +1885,7 @@ const FilesPage = (): JSX.Element | null => {
                           group: { ...p.group, read: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -1971,7 +1897,7 @@ const FilesPage = (): JSX.Element | null => {
                           group: { ...p.group, write: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -1983,7 +1909,7 @@ const FilesPage = (): JSX.Element | null => {
                           group: { ...p.group, execute: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                 </div>
@@ -1993,7 +1919,7 @@ const FilesPage = (): JSX.Element | null => {
                   <div
                     className={cn(
                       "p-3 text-sm font-medium",
-                      isDark ? "text-zinc-300" : "text-zinc-700"
+                      "text-zinc-300"
                     )}
                   >
                     Others
@@ -2007,7 +1933,7 @@ const FilesPage = (): JSX.Element | null => {
                           others: { ...p.others, read: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -2019,7 +1945,7 @@ const FilesPage = (): JSX.Element | null => {
                           others: { ...p.others, write: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                   <div className="flex justify-center p-3">
@@ -2031,7 +1957,7 @@ const FilesPage = (): JSX.Element | null => {
                           others: { ...p.others, execute: checked as boolean },
                         }))
                       }
-                      className={cn(isDark ? "border-zinc-700" : "border-zinc-300")}
+                      className={cn("border-zinc-700")}
                     />
                   </div>
                 </div>
@@ -2041,19 +1967,19 @@ const FilesPage = (): JSX.Element | null => {
               <div
                 className={cn(
                   "rounded border p-4",
-                  isDark ? "border-zinc-800 bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
+                  "border-zinc-800 bg-zinc-950/50"
                 )}
               >
                 <div
                   className={cn(
                     "mb-2 text-xs font-medium tracking-wider uppercase",
-                    isDark ? "text-zinc-500" : "text-zinc-600"
+                    "text-zinc-500"
                   )}
                 >
                   Octal Representation
                 </div>
                 <code
-                  className={cn("font-mono text-lg", isDark ? "text-zinc-200" : "text-zinc-800")}
+                  className={cn("font-mono text-lg", "text-zinc-200")}
                 >
                   {(permissions.owner.read ? 4 : 0) +
                     (permissions.owner.write ? 2 : 0) +
@@ -2073,9 +1999,7 @@ const FilesPage = (): JSX.Element | null => {
                   variant="outline"
                   onClick={() => setPermissionsModalOpen(false)}
                   className={cn(
-                    isDark
-                      ? "border-zinc-700 hover:bg-zinc-800"
-                      : "border-zinc-300 hover:bg-zinc-100"
+                    "border-zinc-700 hover:bg-zinc-800"
                   )}
                 >
                   Cancel
@@ -2083,9 +2007,7 @@ const FilesPage = (): JSX.Element | null => {
                 <Button
                   onClick={confirmPermissions}
                   className={cn(
-                    isDark
-                      ? "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                    "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
                   )}
                 >
                   Apply
@@ -2126,12 +2048,12 @@ const FilesPage = (): JSX.Element | null => {
               className="absolute inset-0 h-full w-full cursor-pointer rounded-lg opacity-0"
             />
             <BsCloudUpload
-              className={cn("mx-auto mb-3 h-10 w-10", isDark ? "text-zinc-600" : "text-zinc-400")}
+              className={cn("mx-auto mb-3 h-10 w-10", "text-zinc-600")}
             />
-            <p className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
+            <p className={cn("text-sm", "text-zinc-400")}>
               Drag and drop files here, or click to browse
             </p>
-            <p className={cn("mt-1 text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+            <p className={cn("mt-1 text-xs", "text-zinc-600")}>
               Text files only (binary uploads coming soon)
             </p>
           </div>
@@ -2142,7 +2064,7 @@ const FilesPage = (): JSX.Element | null => {
               <p
                 className={cn(
                   "text-xs tracking-wider uppercase",
-                  isDark ? "text-zinc-500" : "text-zinc-500"
+                  "text-zinc-500"
                 )}
               >
                 {uploadFiles.length} file(s) selected
@@ -2150,7 +2072,7 @@ const FilesPage = (): JSX.Element | null => {
               <div
                 className={cn(
                   "max-h-40 overflow-y-auto border",
-                  isDark ? "border-zinc-800" : "border-zinc-200"
+                  "border-zinc-800"
                 )}
               >
                 {uploadFiles.map((file, index) => (
@@ -2159,20 +2081,20 @@ const FilesPage = (): JSX.Element | null => {
                     className={cn(
                       "flex items-center justify-between px-3 py-2",
                       index !== uploadFiles.length - 1 &&
-                        (isDark ? "border-b border-zinc-800" : "border-b border-zinc-200")
+                        ("border-b border-zinc-800")
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <BsFileEarmark
                         className={cn(
                           "h-4 w-4 shrink-0",
-                          isDark ? "text-zinc-500" : "text-zinc-400"
+                          "text-zinc-500"
                         )}
                       />
                       <span
                         className={cn(
                           "truncate text-sm",
-                          isDark ? "text-zinc-300" : "text-zinc-700"
+                          "text-zinc-300"
                         )}
                       >
                         {file.name}
@@ -2180,7 +2102,7 @@ const FilesPage = (): JSX.Element | null => {
                       <span
                         className={cn(
                           "shrink-0 text-xs",
-                          isDark ? "text-zinc-600" : "text-zinc-400"
+                          "text-zinc-600"
                         )}
                       >
                         {formatFileSize(file.size)}
@@ -2191,12 +2113,7 @@ const FilesPage = (): JSX.Element | null => {
                       onClick={() => removeUploadFile(index)}
                       disabled={isUploading}
                       className={cn(
-                        "p-1 transition-colors",
-                        isDark
-                          ? "text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
-                          : "text-zinc-400 hover:text-zinc-600 disabled:opacity-30"
-                      )}
-                    >
+                        "p-1 transition-colors text-zinc-500 hover:text-zinc-300 disabled:opacity-30")}>
                       <BsX className="h-4 w-4" />
                     </button>
                   </div>
@@ -2208,8 +2125,8 @@ const FilesPage = (): JSX.Element | null => {
           {/* Upload progress */}
           {isUploading && (
             <div className="flex items-center justify-center gap-3 py-2">
-              <Spinner className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-zinc-600")} />
-              <span className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
+              <Spinner className={cn("h-4 w-4", "text-zinc-400")} />
+              <span className={cn("text-sm", "text-zinc-400")}>
                 Uploading files...
               </span>
             </div>

@@ -1,15 +1,14 @@
 "use client";
 
-import {type JSX, useEffect, useMemo, useRef, useState} from "react";
-import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {Button} from "@workspace/ui/components/button";
-import {Input} from "@workspace/ui/components/input";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
+import { useState, useMemo, useCallback, useEffect, useRef, type JSX } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
 import {
   BsClock,
   BsEnvelope,
@@ -39,8 +38,6 @@ const UsersPage = (): JSX.Element | null => {
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
   const { user: currentUser } = useAuth();
-  const { setTheme, resolvedTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
 
   // Data fetching
   const { data: members = [], isLoading: membersLoading } = useServerMembers(serverId);
@@ -61,15 +58,9 @@ const UsersPage = (): JSX.Element | null => {
   const [formEmail, setFormEmail] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
-  const isLoading = membersLoading || invitationsLoading;
-
-  // Check if current user is server owner
+  // Data fetching
   const isOwner = server?.ownerId === currentUser?.id;
+  const isLoading = membersLoading || invitationsLoading;
 
   // Get all available permissions from definitions - use ref to stabilize after first load
   const permissionDefsRef = useRef(permissionDefs);
@@ -83,12 +74,10 @@ const UsersPage = (): JSX.Element | null => {
     return stablePermissionDefs.categories.flatMap((cat) => cat.permissions);
   }, [stablePermissionDefs]);
 
-  if (!mounted) return null;
-
   if (isInstalling) {
     return (
       <div className="min-h-svh">
-        <ServerInstallingPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -96,7 +85,7 @@ const UsersPage = (): JSX.Element | null => {
   if (server?.status === "SUSPENDED") {
     return (
       <div className="min-h-svh">
-        <ServerSuspendedPlaceholder isDark={isDark} serverName={server?.name} />
+        <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
   }
@@ -235,7 +224,7 @@ const UsersPage = (): JSX.Element | null => {
         <span
           className={cn(
             "text-xs font-medium tracking-wider uppercase",
-            isDark ? "text-zinc-400" : "text-zinc-600"
+            "text-zinc-400"
           )}
         >
           {selectedPermissions.length} of {allPermissions.length} selected
@@ -245,7 +234,7 @@ const UsersPage = (): JSX.Element | null => {
           onClick={toggleAllPermissions}
           className={cn(
             "text-xs tracking-wider uppercase transition-colors",
-            isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+            "text-zinc-400 hover:text-zinc-100"
           )}
         >
           {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
@@ -259,7 +248,7 @@ const UsersPage = (): JSX.Element | null => {
             key={category.id}
             className={cn(
               "border p-3",
-              isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+              "border-zinc-800 bg-zinc-900/30"
             )}
           >
             {/* Category header with select all */}
@@ -273,29 +262,23 @@ const UsersPage = (): JSX.Element | null => {
                   className={cn(
                     "flex h-4 w-4 items-center justify-center border",
                     isCategoryFullySelected(category)
-                      ? isDark
-                        ? "border-zinc-400 bg-zinc-600"
-                        : "border-zinc-500 bg-zinc-400"
+                      ? "border-zinc-400 bg-zinc-600"
                       : isCategoryPartiallySelected(category)
-                        ? isDark
-                          ? "border-zinc-500 bg-zinc-700"
-                          : "border-zinc-400 bg-zinc-300"
-                        : isDark
-                          ? "border-zinc-600"
-                          : "border-zinc-400"
+                        ? "border-zinc-500 bg-zinc-700"
+                        : "border-zinc-600"
                   )}
                 >
                   {isCategoryFullySelected(category) && (
-                    <div className={cn("h-2 w-2", isDark ? "bg-zinc-100" : "bg-zinc-100")} />
+                    <div className={cn("h-2 w-2", "bg-zinc-100")} />
                   )}
                   {isCategoryPartiallySelected(category) && (
-                    <div className={cn("h-0.5 w-2", isDark ? "bg-zinc-400" : "bg-zinc-500")} />
+                    <div className={cn("h-0.5 w-2", "bg-zinc-400")} />
                   )}
                 </div>
                 <span
                   className={cn(
                     "text-xs font-medium tracking-wider uppercase",
-                    isDark ? "text-zinc-300" : "text-zinc-700"
+                    "text-zinc-300"
                   )}
                 >
                   {category.name}
@@ -304,7 +287,7 @@ const UsersPage = (): JSX.Element | null => {
               <span
                 className={cn(
                   "text-[10px] tracking-wider",
-                  isDark ? "text-zinc-600" : "text-zinc-400"
+                  "text-zinc-600"
                 )}
               >
                 {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
@@ -322,28 +305,20 @@ const UsersPage = (): JSX.Element | null => {
                   className={cn(
                     "flex items-center gap-2 border p-2 text-left transition-all",
                     selectedPermissions.includes(perm.key)
-                      ? isDark
-                        ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-400 bg-zinc-100 text-zinc-900"
-                      : isDark
-                        ? "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                        : "border-zinc-300 text-zinc-600 hover:border-zinc-400"
+                      ? "border-zinc-500 bg-zinc-800 text-zinc-100"
+                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
                   )}
                 >
                   <div
                     className={cn(
                       "flex h-3 w-3 shrink-0 items-center justify-center border",
                       selectedPermissions.includes(perm.key)
-                        ? isDark
-                          ? "border-zinc-400 bg-zinc-600"
-                          : "border-zinc-500 bg-zinc-400"
-                        : isDark
-                          ? "border-zinc-600"
-                          : "border-zinc-400"
+                        ? "border-zinc-400 bg-zinc-600"
+                        : "border-zinc-600"
                     )}
                   >
                     {selectedPermissions.includes(perm.key) && (
-                      <div className={cn("h-1.5 w-1.5", isDark ? "bg-zinc-100" : "bg-zinc-100")} />
+                      <div className={cn("h-1.5 w-1.5", "bg-zinc-100")} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -368,19 +343,19 @@ const UsersPage = (): JSX.Element | null => {
               <SidebarTrigger
                 className={cn(
                   "transition-all hover:scale-110 active:scale-95",
-                  isDark ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-600 hover:text-zinc-900"
+                  "text-zinc-400 hover:text-zinc-100"
                 )}
               />
               <div>
                 <h1
                   className={cn(
                     "text-2xl font-light tracking-wider",
-                    isDark ? "text-zinc-100" : "text-zinc-800"
+                    "text-zinc-100"
                   )}
                 >
                   USERS
                 </h1>
-                <p className={cn("mt-1 text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
                   {server?.name || `Server ${serverId}`} • {members.length} member
                   {members.length !== 1 ? "s" : ""}
                   {invitations.length > 0 && ` • ${invitations.length} pending`}
@@ -395,9 +370,7 @@ const UsersPage = (): JSX.Element | null => {
                   onClick={openInviteModal}
                   className={cn(
                     "gap-2 transition-all",
-                    isDark
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
                   )}
                 >
                   <BsPlus className="h-4 w-4" />
@@ -407,15 +380,11 @@ const UsersPage = (): JSX.Element | null => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
                 className={cn(
                   "p-2 transition-all hover:scale-110 active:scale-95",
-                  isDark
-                    ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                    : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  "hidden"
                 )}
               >
-                {isDark ? <BsSun className="h-4 w-4" /> : <BsMoon className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -432,7 +401,7 @@ const UsersPage = (): JSX.Element | null => {
                   <h2
                     className={cn(
                       "mb-4 text-sm font-medium tracking-wider uppercase",
-                      isDark ? "text-zinc-400" : "text-zinc-600"
+                      "text-zinc-400"
                     )}
                   >
                     Pending Invitations
@@ -443,24 +412,20 @@ const UsersPage = (): JSX.Element | null => {
                         key={invitation.id}
                         className={cn(
                           "relative flex items-center justify-between border p-4 transition-all",
-                          isDark
-                            ? "border-amber-700/30 bg-amber-950/10"
-                            : "border-amber-200 bg-amber-50"
+                          "border-amber-700/30 bg-amber-950/10"
                         )}
                       >
                         <div className="flex items-center gap-4">
                           <div
                             className={cn(
                               "flex h-10 w-10 items-center justify-center border",
-                              isDark
-                                ? "border-amber-700/50 bg-amber-900/30"
-                                : "border-amber-300 bg-amber-100"
+                              "border-amber-700/50 bg-amber-900/30"
                             )}
                           >
                             <BsEnvelope
                               className={cn(
                                 "h-5 w-5",
-                                isDark ? "text-amber-400" : "text-amber-600"
+                                "text-amber-400"
                               )}
                             />
                           </div>
@@ -468,7 +433,7 @@ const UsersPage = (): JSX.Element | null => {
                             <div
                               className={cn(
                                 "text-sm font-medium",
-                                isDark ? "text-amber-200" : "text-amber-800"
+                                "text-amber-200"
                               )}
                             >
                               {invitation.email}
@@ -476,7 +441,7 @@ const UsersPage = (): JSX.Element | null => {
                             <div
                               className={cn(
                                 "flex items-center gap-3 text-xs",
-                                isDark ? "text-amber-200/60" : "text-amber-600"
+                                "text-amber-200/60"
                               )}
                             >
                               <span>{getPermissionCount(invitation.permissions)}</span>
@@ -495,9 +460,7 @@ const UsersPage = (): JSX.Element | null => {
                             onClick={() => openCancelInviteModal(invitation)}
                             className={cn(
                               "p-2 transition-all",
-                              isDark
-                                ? "border-amber-700/50 text-amber-400/80 hover:border-amber-600 hover:text-amber-300"
-                                : "border-amber-300 text-amber-600 hover:border-amber-400"
+                              "border-amber-700/50 text-amber-400/80 hover:border-amber-600 hover:text-amber-300"
                             )}
                           >
                             <BsTrash className="h-4 w-4" />
@@ -516,34 +479,32 @@ const UsersPage = (): JSX.Element | null => {
                   <div
                     className={cn(
                       "relative border p-6 transition-all",
-                      isDark
-                        ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                        : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+                      "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                     )}
                   >
                     {/* Corner decorations */}
                     <div
                       className={cn(
                         "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
 
@@ -552,13 +513,11 @@ const UsersPage = (): JSX.Element | null => {
                         <div
                           className={cn(
                             "flex h-10 w-10 items-center justify-center border",
-                            isDark
-                              ? "border-amber-700/50 bg-amber-900/30"
-                              : "border-amber-300 bg-amber-100"
+                            "border-amber-700/50 bg-amber-900/30"
                           )}
                         >
                           <BsShieldFill
-                            className={cn("h-5 w-5", isDark ? "text-amber-400" : "text-amber-600")}
+                            className={cn("h-5 w-5", "text-amber-400")}
                           />
                         </div>
                         <div>
@@ -566,7 +525,7 @@ const UsersPage = (): JSX.Element | null => {
                             <h3
                               className={cn(
                                 "text-sm font-medium tracking-wider uppercase",
-                                isDark ? "text-zinc-100" : "text-zinc-800"
+                                "text-zinc-100"
                               )}
                             >
                               {server.owner.name}
@@ -574,9 +533,7 @@ const UsersPage = (): JSX.Element | null => {
                             <span
                               className={cn(
                                 "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                isDark
-                                  ? "border-amber-500/50 text-amber-400"
-                                  : "border-amber-400 text-amber-600"
+                                "border-amber-500/50 text-amber-400"
                               )}
                             >
                               Owner
@@ -585,7 +542,7 @@ const UsersPage = (): JSX.Element | null => {
                               <span
                                 className={cn(
                                   "text-[10px] tracking-wider",
-                                  isDark ? "text-zinc-500" : "text-zinc-400"
+                                  "text-zinc-500"
                                 )}
                               >
                                 (You)
@@ -595,7 +552,7 @@ const UsersPage = (): JSX.Element | null => {
                           <div
                             className={cn(
                               "mt-1 text-xs",
-                              isDark ? "text-zinc-500" : "text-zinc-500"
+                              "text-zinc-500"
                             )}
                           >
                             {server.owner.email}
@@ -612,34 +569,32 @@ const UsersPage = (): JSX.Element | null => {
                     key={member.id}
                     className={cn(
                       "relative border p-6 transition-all",
-                      isDark
-                        ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                        : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+                      "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                     )}
                   >
                     {/* Corner decorations */}
                     <div
                       className={cn(
                         "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
                     <div
                       className={cn(
                         "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        isDark ? "border-zinc-500" : "border-zinc-400"
+                        "border-zinc-500"
                       )}
                     />
 
@@ -648,13 +603,11 @@ const UsersPage = (): JSX.Element | null => {
                         <div
                           className={cn(
                             "flex h-10 w-10 items-center justify-center border",
-                            isDark
-                              ? "border-zinc-700 bg-zinc-800/50"
-                              : "border-zinc-300 bg-zinc-100"
+                            "border-zinc-700 bg-zinc-800/50"
                           )}
                         >
                           <BsPersonFill
-                            className={cn("h-5 w-5", isDark ? "text-zinc-400" : "text-zinc-500")}
+                            className={cn("h-5 w-5", "text-zinc-400")}
                           />
                         </div>
                         <div>
@@ -662,7 +615,7 @@ const UsersPage = (): JSX.Element | null => {
                             <h3
                               className={cn(
                                 "text-sm font-medium tracking-wider uppercase",
-                                isDark ? "text-zinc-100" : "text-zinc-800"
+                                "text-zinc-100"
                               )}
                             >
                               {member.user.name}
@@ -670,9 +623,7 @@ const UsersPage = (): JSX.Element | null => {
                             <span
                               className={cn(
                                 "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                isDark
-                                  ? "border-zinc-600 text-zinc-400"
-                                  : "border-zinc-400 text-zinc-600"
+                                "border-zinc-600 text-zinc-400"
                               )}
                             >
                               {getPermissionCount(member.permissions)}
@@ -681,7 +632,7 @@ const UsersPage = (): JSX.Element | null => {
                               <span
                                 className={cn(
                                   "text-[10px] tracking-wider",
-                                  isDark ? "text-zinc-500" : "text-zinc-400"
+                                  "text-zinc-500"
                                 )}
                               >
                                 (You)
@@ -691,7 +642,7 @@ const UsersPage = (): JSX.Element | null => {
                           <div
                             className={cn(
                               "mt-1 flex items-center gap-4 text-xs",
-                              isDark ? "text-zinc-500" : "text-zinc-500"
+                              "text-zinc-500"
                             )}
                           >
                             <span>{member.user.email}</span>
@@ -708,9 +659,7 @@ const UsersPage = (): JSX.Element | null => {
                             onClick={() => openEditModal(member)}
                             className={cn(
                               "p-2 transition-all",
-                              isDark
-                                ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                                : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                              "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
                             )}
                           >
                             <BsPencil className="h-4 w-4" />
@@ -721,9 +670,7 @@ const UsersPage = (): JSX.Element | null => {
                             onClick={() => openDeleteModal(member)}
                             className={cn(
                               "p-2 transition-all",
-                              isDark
-                                ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                                : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700"
+                              "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
                             )}
                           >
                             <BsTrash className="h-4 w-4" />
@@ -738,7 +685,7 @@ const UsersPage = (): JSX.Element | null => {
                   <div
                     className={cn(
                       "py-12 text-center text-sm",
-                      isDark ? "text-zinc-500" : "text-zinc-400"
+                      "text-zinc-500"
                     )}
                   >
                     No members yet. Invite users to collaborate on this server.
@@ -767,7 +714,7 @@ const UsersPage = (): JSX.Element | null => {
             <label
               className={cn(
                 "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Email Address
@@ -779,9 +726,7 @@ const UsersPage = (): JSX.Element | null => {
               placeholder="user@example.com"
               className={cn(
                 "transition-all",
-                isDark
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-                  : "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400"
+                "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
               )}
             />
           </div>
@@ -789,7 +734,7 @@ const UsersPage = (): JSX.Element | null => {
             <label
               className={cn(
                 "mb-2 block text-xs tracking-wider uppercase",
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                "text-zinc-400"
               )}
             >
               Permissions

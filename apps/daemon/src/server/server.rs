@@ -485,6 +485,7 @@ impl Server {
         let mut events_rx = self.event_bus.subscribe();
         let environment = self.environment.clone();
         let api_client = self.api_client.clone();
+        let console_sink = self.console_sink.clone();
         let uuid = self.uuid();
 
         tokio::spawn(async move {
@@ -524,11 +525,19 @@ impl Server {
                                     };
 
                                     if matched {
+                                        // First: forward console line to users
+                                        console_sink.push(data.clone());
+
+                                        // Log the detection
                                         info!("✅ STARTUP DETECTION MATCHED!");
                                         info!("  Server: {}", uuid);
                                         info!("  Pattern: {:?}", pattern_str);
                                         info!("  Line {}: {:?}", line_count, line.chars().take(200).collect::<String>());
+
+                                        // Then: update server state
                                         environment.set_state(crate::events::ProcessState::Running);
+
+                                        // Finally: notify API
                                         let _ = api_client.set_server_status(&uuid, "running").await;
                                         return;
                                     }

@@ -119,19 +119,22 @@ console.log("   }");
 console.log("");
 
 // Stage 2: StellarStack Blueprint Storage
-console.log("2️⃣  StellarStack Blueprint Storage Format");
-console.log('   Format: ["pattern1", "pattern2"]');
+console.log("2️⃣  StellarStack Blueprint Storage (Native Pterodactyl Format)");
+console.log('   Format: { "done": ["pattern1", "pattern2"], ... } (stored as JSON string in config.startup)');
 console.log("   Data:");
-console.log("   [");
+console.log("   {");
+console.log('     "done": [');
 if (donePatterns.length > 0) {
   donePatterns.forEach((p, i) => {
     const comma = i < donePatterns.length - 1 ? "," : "";
-    console.log(`     "${p}"${comma}`);
+    console.log(`       "${p}"${comma}`);
   });
 } else {
-  console.log("     (no patterns)");
+  console.log("       (no patterns)");
 }
-console.log("   ]");
+console.log("     ],");
+console.log('     "user_interaction": []');
+console.log("   }");
 console.log("");
 
 // Stage 3: Daemon Request Format
@@ -173,8 +176,8 @@ if (donePatterns.length > 0) {
 }
 
 // Stage 5: Export back to Pterodactyl
-console.log("5️⃣  Export Back to Pterodactyl Format");
-console.log("   When exporting as egg, converted back to:");
+console.log("5️⃣  Export Back to Pterodactyl Format (No Transformation Needed!)");
+console.log("   Since StellarStack stores native Pterodactyl format, export returns it as-is:");
 console.log("   {");
 console.log('     "done": [');
 if (donePatterns.length > 0) {
