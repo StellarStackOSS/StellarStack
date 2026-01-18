@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import {ReactNode} from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 
 export interface ConfirmationModalProps {
   open: boolean;
@@ -21,7 +21,6 @@ export interface ConfirmationModalProps {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel?: () => void;
-  variant?: "default" | "danger";
   isLoading?: boolean;
 }
 
@@ -35,7 +34,6 @@ export const ConfirmationModal = ({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
-  variant = "default",
   isLoading = false,
 }: ConfirmationModalProps) => {
   const handleCancel = () => {
