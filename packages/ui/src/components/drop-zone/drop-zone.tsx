@@ -1,11 +1,11 @@
 "use client";
 
-import { type DragEvent, useCallback, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsCloudUpload } from "react-icons/bs";
-import type { DropZoneProps, UploadButtonProps } from "../animations-types";
-import { Input } from "@workspace/ui/components";
-import { Label } from "@workspace/ui/components/label";
+import {type DragEvent, useCallback, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsCloudUpload} from "react-icons/bs";
+import type {DropZoneProps, UploadButtonProps} from "../animations-types";
+import {Input} from "@workspace/ui/components";
+import {Label} from "@workspace/ui/components/label";
 
 export type { DropZoneProps, UploadButtonProps };
 
@@ -40,7 +40,7 @@ export const DropZone = ({
       e.stopPropagation();
       if (disabled) return;
     },
-    [disabled, onDragLeave]
+    [disabled]
   );
 
   const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {

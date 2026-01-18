@@ -1,8 +1,6 @@
-//@ts-nocheck
-// TODO: TO CLEAN THIS UP.
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 
 export type PatternCell = "0" | "1" | "2" | "3";
 type Pattern = PatternCell[][];
@@ -39,8 +37,7 @@ const defaultColors: LightBoardColors = {
 // This function takes some text and makes sure there's enough space between words
 const normalizeText = (text: string, minSpacing: number = 3): string => {
   const trimmed = text.trim().toUpperCase(); // Remove extra spaces and make all letters big
-  const spacedText = ` ${trimmed} `.replace(/\s+/g, " ".repeat(minSpacing)); // Add spaces between words
-  return spacedText;
+  return ` ${trimmed} `.replace(/\s+/g, " ".repeat(minSpacing));
 };
 
 // This function turns text into a pattern of lights
@@ -51,8 +48,8 @@ const textToPattern = (
   font: { [key: string]: Pattern }
 ): Pattern => {
   // First, we make the letters bigger if we have more rows
-  const letterHeight = font["A"].length;
-  const scale = Math.max(1, Math.floor(rows / letterHeight));
+  const letterHeight = font["A"]?.length;
+  const scale = Math.max(1, Math.floor(rows / (letterHeight ?? 0)));
 
   // We make each letter in the font bigger
   const scaledFont = Object.fromEntries(
@@ -74,12 +71,12 @@ const textToPattern = (
     .map((char) => scaledFont[char] || scaledFont[" "]);
 
   // We combine all the letter patterns into one big pattern
-  let fullPattern: Pattern = Array(scaledFont["A"].length)
+  let fullPattern: Pattern = Array(scaledFont["A"]?.length)
     .fill([])
     .map(() => []);
 
   letterPatterns.forEach((letterPattern) => {
-    fullPattern = fullPattern.map((row, i) => [...row, ...letterPattern[i]]);
+    fullPattern = fullPattern.map((row, i) => [...row, ...letterPattern?.[i]]);
   });
 
   // We add empty space above and below the pattern to center it
@@ -89,23 +86,19 @@ const textToPattern = (
   const bottomPadding = totalRows - patternRows - topPadding;
 
   const paddedPattern = [
-    ...Array(topPadding).fill(Array(fullPattern[0].length).fill("0")),
+    ...Array(topPadding).fill(Array(fullPattern?.[0]?.length).fill("0")),
     ...fullPattern,
-    ...Array(bottomPadding).fill(Array(fullPattern[0].length).fill("0")),
+    ...Array(bottomPadding).fill(Array(fullPattern?.[0]?.length).fill("0")),
   ];
 
-  // We make the pattern wider by repeating it
-  const extendedPattern = paddedPattern.map((row) => {
+  return paddedPattern.map((row) => {
     while (row.length < columns * 2) {
       row = [...row, ...row];
     }
     return row;
   });
-
-  return extendedPattern;
 };
 
-// This function decides what color each light should be
 function getLightColor(state: PatternCell, colors: Partial<LightBoardColors>): string {
   const mergedColors = { ...defaultColors, ...colors };
 
@@ -193,11 +186,11 @@ function LightBoard({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const patternWidth = basePattern[0].length;
+    const patternWidth = basePattern?.[0]?.length;
 
     basePattern.forEach((row, rowIndex) => {
       for (let colIndex = 0; colIndex < columns; colIndex++) {
-        const patternColIndex = (colIndex + offset) % patternWidth;
+        const patternColIndex = (colIndex + offset) % (patternWidth ?? 0);
         const state = row[patternColIndex];
 
         ctx.fillStyle = getLightColor(state as PatternCell, mergedColors);
@@ -221,7 +214,7 @@ function LightBoard({
     const animate = () => {
       if (!isHovered) {
         // If the mouse isn't over the board, we move the text
-        setOffset((prevOffset) => (prevOffset + 1) % basePattern[0].length);
+        setOffset((prevOffset) => (prevOffset + 1) % (basePattern?.[0]?.length ?? 0));
       }
       drawToCanvas();
       animationFrameId = requestAnimationFrame(animate);
@@ -242,7 +235,7 @@ function LightBoard({
   const animate = useCallback(() => {
     const currentTime = Date.now();
     if (currentTime - lastUpdateTime >= updateInterval && !isHovered) {
-      setOffset((prevOffset) => (prevOffset + 1) % basePattern?.[0].length);
+      setOffset((prevOffset) => (prevOffset + 1) % (basePattern?.[0]?.length ?? 0));
       setLastUpdateTime(currentTime);
     }
     drawToCanvas();

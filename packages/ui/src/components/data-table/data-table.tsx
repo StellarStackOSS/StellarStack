@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ColumnDef, flexRender, Table as TanstackTable } from "@tanstack/react-table";
+import {ColumnDef, flexRender, Table as TanstackTable} from "@tanstack/react-table";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "../table";
+
 
 interface DataTableProps<TData> {
   table: TanstackTable<TData>;
