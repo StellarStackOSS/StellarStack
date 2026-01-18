@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
-use crate::server::{PowerAction, Server, self};
+use crate::server::{PowerAction, Server, BackupCompressionLevel, self};
 use crate::events::{Event, ProcessState};
 use super::super::AppState;
 
@@ -136,6 +136,9 @@ pub async fn execute_schedule(
             task_index: Some(index),
         });
 
+        // Update schedule status tracker (for websocket sync)
+        server.schedule_status().set_executing(&schedule.id, index);
+
         // Notify API about schedule execution status
         notify_api_schedule_executing(&state, &server.uuid(), &schedule.id, Some(index)).await;
 
@@ -189,6 +192,9 @@ pub async fn execute_schedule(
         task_index: None,
     });
 
+    // Update schedule status tracker (for websocket sync)
+    server.schedule_status().set_finished(&schedule.id, true);
+
     // Notify API that schedule execution is complete
     notify_api_schedule_executing(&state, &server.uuid(), &schedule.id, None).await;
 
@@ -225,16 +231,22 @@ async fn execute_task(
             let data_dir = server.data_dir();
             let backup_dir = state.config.system.backup_directory.join(&server_uuid);
             let event_bus = server.events();
+            let rate_limit = state.config.system.backup_rate_limit_mibps;
 
-            info!("Creating backup {} for server {} via schedule", backup_uuid, server_uuid);
+            info!(
+                "Creating backup {} for server {} via schedule (rate_limit: {:?} MiB/s)",
+                backup_uuid, server_uuid, rate_limit
+            );
 
-            server::create_backup(
+            server::create_backup_with_config(
                 &server_uuid,
                 &backup_uuid,
                 data_dir,
                 &backup_dir,
                 &[],
                 event_bus,
+                BackupCompressionLevel::default(),
+                rate_limit,
             )
             .await
             .map_err(|e| format!("Backup creation failed: {}", e))?;

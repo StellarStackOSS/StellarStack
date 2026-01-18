@@ -155,6 +155,10 @@ pub struct SystemConfiguration {
     #[serde(default = "default_disk_check_interval")]
     pub disk_check_interval: u64,
 
+    /// Backup write rate limit in MiB/s (None = unlimited)
+    #[serde(default)]
+    pub backup_rate_limit_mibps: Option<u64>,
+
     /// User configuration for rootless mode
     #[serde(default)]
     pub user: UserConfiguration,

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::router::AppState;
-use crate::server::{self, Server};
+use crate::server::{self, Server, BackupCompressionLevel};
 use super::ApiError;
 
 /// Backup list response
@@ -82,17 +82,23 @@ pub async fn create_backup(
     let data_dir = server.data_dir();
     let backup_dir = state.config.system.backup_directory.join(&server_uuid);
     let event_bus = server.events();
+    let rate_limit = state.config.system.backup_rate_limit_mibps;
 
-    info!("Creating backup {} for server {}", backup_uuid, server_uuid);
+    info!(
+        "Creating backup {} for server {} (rate_limit: {:?} MiB/s)",
+        backup_uuid, server_uuid, rate_limit
+    );
 
-    // Run backup creation in background
-    let result = server::create_backup(
+    // Run backup creation with configured compression and rate limiting
+    let result = server::create_backup_with_config(
         &server_uuid,
         &backup_uuid,
         data_dir,
         &backup_dir,
         &request.ignore,
         event_bus,
+        BackupCompressionLevel::default(),
+        rate_limit,
     )
     .await;
 

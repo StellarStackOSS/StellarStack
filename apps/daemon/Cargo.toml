@@ -94,6 +94,7 @@ infer = "0.16"
 # System info
 sysinfo = "0.32"
 num_cpus = "1"
+nix = { version = "0.29", features = ["fs"] }
 
 # Cron scheduling
 tokio-cron-scheduler = "0.13"
@@ -125,6 +126,9 @@ rust-ini = "0.21"
 
 # Java properties parsing
 java-properties = "2"
+
+# Lazy static initialization
+lazy_static = "1.4"
 
 [dev-dependencies]
 tokio-test = "0.4"
