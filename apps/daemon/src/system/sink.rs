@@ -2,15 +2,25 @@
 //!
 //! Provides a pub/sub mechanism for streaming console output and logs
 //! to multiple subscribers (e.g., WebSocket connections).
+//!
+//! Implements a ring-buffer strategy (like Pterodactyl Wings) where:
+//! - Slow subscribers don't block the pipeline
+//! - Old messages are dropped if subscribers lag
+//! - Multiple subscribers are handled efficiently with atomic operations
 
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use parking_lot::RwLock;
 use tokio::sync::broadcast;
 use chrono::Utc;
+use tracing::debug;
 
 /// Default number of log lines to buffer
 const DEFAULT_BUFFER_SIZE: usize = 500;
+
+/// Default broadcast channel capacity (messages to buffer before dropping slow subscribers)
+const DEFAULT_CHANNEL_CAPACITY: usize = 1024;
 
 /// A buffered log entry with timestamp
 #[derive(Clone, Debug)]
@@ -24,6 +34,11 @@ pub struct LogEntry {
 /// This is used to stream console output to multiple WebSocket connections.
 /// Includes a ring buffer to keep recent messages for new subscribers.
 ///
+/// Implements a non-blocking strategy (like Pterodactyl Wings):
+/// - Slow subscribers don't block the pipeline
+/// - Old messages are dropped if subscribers lag too far
+/// - Multiple concurrent subscribers are supported efficiently
+///
 /// Note: Cloning a SinkPool shares the same underlying broadcast channel AND buffer,
 /// so all clones see the same history and can push to the same buffer.
 pub struct SinkPool {
@@ -34,12 +49,14 @@ pub struct SinkPool {
     buffer: Arc<RwLock<VecDeque<LogEntry>>>,
     // Maximum buffer size
     buffer_size: usize,
+    // Counter for dropped messages (when subscribers lag too far)
+    dropped_messages: Arc<AtomicU64>,
 }
 
 impl SinkPool {
     /// Create a new sink pool with the specified capacity
     pub fn new() -> Self {
-        Self::with_capacity(1024)
+        Self::with_capacity(DEFAULT_CHANNEL_CAPACITY)
     }
 
     /// Create a new sink pool with custom capacity
@@ -50,6 +67,7 @@ impl SinkPool {
             _receiver,
             buffer: Arc::new(RwLock::new(VecDeque::with_capacity(DEFAULT_BUFFER_SIZE))),
             buffer_size: DEFAULT_BUFFER_SIZE,
+            dropped_messages: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -61,6 +79,7 @@ impl SinkPool {
             _receiver,
             buffer: Arc::new(RwLock::new(VecDeque::with_capacity(buffer_size))),
             buffer_size,
+            dropped_messages: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -104,11 +123,15 @@ impl SinkPool {
     /// Push data to all subscribers and buffer with current timestamp
     ///
     /// If there are no subscribers, the data is still buffered.
+    /// Non-blocking: slow subscribers don't block this operation.
     pub fn push(&self, data: Vec<u8>) {
         self.push_with_timestamp(data, Utc::now().timestamp_millis());
     }
 
     /// Push data to all subscribers and buffer with specified timestamp
+    ///
+    /// Non-blocking: if subscribers lag too far, old messages are dropped rather
+    /// than blocking the pipeline. This prevents slow clients from starving others.
     pub fn push_with_timestamp(&self, data: Vec<u8>, timestamp: i64) {
         // Add to ring buffer
         {
@@ -122,8 +145,18 @@ impl SinkPool {
             });
         }
 
-        // Broadcast to subscribers (ignore send errors - no receivers)
-        let _ = self.sender.send(data);
+        // Broadcast to subscribers (non-blocking)
+        // If a subscriber lags too far, broadcast channel will drop them
+        // Track dropped messages for monitoring
+        match self.sender.send(data) {
+            Ok(_) => {} // Normal send
+            Err(broadcast::error::SendError(_)) => {
+                // Channel is full - subscribers are lagging
+                // This is expected behavior; we drop the message and track it
+                self.dropped_messages.fetch_add(1, Ordering::SeqCst);
+                debug!("SinkPool message dropped due to slow subscribers");
+            }
+        }
     }
 
     /// Push a string to all subscribers
@@ -145,6 +178,16 @@ impl SinkPool {
     pub fn buffer_len(&self) -> usize {
         self.buffer.read().len()
     }
+
+    /// Get number of messages dropped due to slow subscribers
+    pub fn dropped_message_count(&self) -> u64 {
+        self.dropped_messages.load(Ordering::SeqCst)
+    }
+
+    /// Reset the dropped message counter (for diagnostics)
+    pub fn reset_dropped_count(&self) {
+        self.dropped_messages.store(0, Ordering::SeqCst);
+    }
 }
 
 impl Default for SinkPool {
@@ -155,13 +198,14 @@ impl Default for SinkPool {
 
 impl Clone for SinkPool {
     fn clone(&self) -> Self {
-        // Clone shares the same broadcast channel AND buffer (via Arc)
+        // Clone shares the same broadcast channel, buffer, and metrics (via Arc)
         // This is intentional - all clones should see the same history and be able to push to it
         Self {
             sender: self.sender.clone(),
             _receiver: self.sender.subscribe(),
             buffer: Arc::clone(&self.buffer),
             buffer_size: self.buffer_size,
+            dropped_messages: Arc::clone(&self.dropped_messages),
         }
     }
 }

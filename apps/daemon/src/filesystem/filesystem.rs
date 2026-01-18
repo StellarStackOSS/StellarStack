@@ -8,6 +8,7 @@ use tokio::fs;
 use tracing::{debug, warn};
 
 use super::archive::{compress, decompress};
+use super::cache::DirectoryCache;
 use super::disk::DiskUsage;
 use super::errors::{FilesystemError, FilesystemResult};
 use super::path::SafePath;
@@ -53,6 +54,9 @@ pub struct Filesystem {
 
     /// File denylist patterns
     denylist: Vec<glob::Pattern>,
+
+    /// Directory listing cache
+    cache: DirectoryCache,
 }
 
 impl Filesystem {
@@ -75,6 +79,7 @@ impl Filesystem {
             root,
             disk_usage: DiskUsage::new(disk_limit),
             denylist,
+            cache: DirectoryCache::new(),
         })
     }
 
@@ -86,6 +91,11 @@ impl Filesystem {
     /// Get disk usage tracker
     pub fn disk_usage(&self) -> &DiskUsage {
         &self.disk_usage
+    }
+
+    /// Get directory cache
+    pub fn cache(&self) -> &DirectoryCache {
+        &self.cache
     }
 
     /// Resolve a relative path safely
@@ -122,7 +132,58 @@ impl Filesystem {
             )));
         }
 
+        // Check cache first
+        if let Some(cached) = self.cache.get(safe_path.resolved()) {
+            // Apply denylist filtering to cached entries
+            let filtered: Vec<FileInfo> = cached
+                .into_iter()
+                .filter_map(|cached_info| {
+                    let denied = self.denylist.iter().any(|p| p.matches(&cached_info.name));
+                    if denied {
+                        None
+                    } else {
+                        // Convert CachedFileInfo to FileInfo
+                        let name = cached_info.name.clone();
+                        let mime_type = if cached_info.is_dir {
+                            "inode/directory".to_string()
+                        } else {
+                            mime_guess::from_path(&name)
+                                .first_or_octet_stream()
+                                .to_string()
+                        };
+                        Some(FileInfo {
+                            name,
+                            size: cached_info.size,
+                            is_directory: cached_info.is_dir,
+                            is_file: !cached_info.is_dir,
+                            is_symlink: false,
+                            modified: cached_info.modified as i64,
+                            created: None,
+                            mode: {
+                                #[cfg(unix)]
+                                {
+                                    cached_info.mode
+                                }
+                                #[cfg(not(unix))]
+                                {
+                                    0o644
+                                }
+                            },
+                            mime_type,
+                        })
+                    }
+                })
+                .collect();
+            debug!(
+                "Cache hit for directory {}: {} entries",
+                path,
+                filtered.len()
+            );
+            return Ok(filtered);
+        }
+
         let mut entries = Vec::new();
+        let mut cached_entries = Vec::new();
         let mut dir = fs::read_dir(safe_path.resolved()).await?;
 
         while let Some(entry) = dir.next_entry().await? {
@@ -135,9 +196,28 @@ impl Filesystem {
             }
 
             if let Ok(info) = self.get_file_info_from_entry(&entry).await {
+                // Store for cache
+                let cached_info = super::cache::CachedFileInfo {
+                    name: info.name.clone(),
+                    path: safe_path.resolved().join(&info.name),
+                    size: info.size,
+                    is_dir: info.is_directory,
+                    #[cfg(unix)]
+                    mode: info.mode,
+                    modified: info.modified as u64,
+                };
+                cached_entries.push(cached_info);
                 entries.push(info);
             }
         }
+
+        // Cache the entries
+        self.cache.put(safe_path.resolved().to_path_buf(), cached_entries);
+        debug!(
+            "Cache miss for directory {}: cached {} entries",
+            path,
+            entries.len()
+        );
 
         // Sort: directories first, then alphabetically
         entries.sort_by(|a, b| {
@@ -248,6 +328,9 @@ impl Filesystem {
         // Update disk usage
         self.disk_usage.add_usage(additional);
 
+        // Invalidate directory cache
+        self.cache.invalidate(safe_path.resolved());
+
         debug!("Wrote {} bytes to {:?}", data.len(), safe_path.resolved());
         Ok(())
     }
@@ -261,6 +344,10 @@ impl Filesystem {
         }
 
         fs::create_dir_all(safe_path.resolved()).await?;
+
+        // Invalidate directory cache
+        self.cache.invalidate(safe_path.resolved());
+
         debug!("Created directory: {:?}", safe_path.resolved());
         Ok(())
     }
@@ -290,6 +377,9 @@ impl Filesystem {
         // Update disk usage
         self.disk_usage.sub_usage(size);
 
+        // Invalidate directory cache
+        self.cache.invalidate(safe_path.resolved());
+
         debug!("Deleted: {:?}", safe_path.resolved());
         Ok(())
     }
@@ -313,6 +403,10 @@ impl Filesystem {
         }
 
         fs::rename(from_path.resolved(), to_path.resolved()).await?;
+
+        // Invalidate cache for both source and destination directories
+        self.cache.invalidate(from_path.resolved());
+        self.cache.invalidate(to_path.resolved());
 
         debug!("Renamed {:?} to {:?}", from_path.resolved(), to_path.resolved());
         Ok(())
@@ -366,6 +460,9 @@ impl Filesystem {
 
         // Update disk usage
         self.disk_usage.add_usage(size);
+
+        // Invalidate directory cache
+        self.cache.invalidate(&new_path);
 
         debug!("Copied {:?} to {:?}", source_path.resolved(), new_path);
         Ok(new_name)

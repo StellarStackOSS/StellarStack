@@ -162,6 +162,25 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
         }
     }
 
+    // Send current schedule statuses for this server
+    let schedule_statuses = server.schedule_status().get_all_statuses();
+    if !schedule_statuses.is_empty() {
+        debug!("Sending {} schedule statuses to WebSocket for {}", schedule_statuses.len(), server.uuid());
+        for schedule in schedule_statuses {
+            let msg = WsOutgoing::new("schedule status", json!({
+                "id": schedule.id,
+                "name": schedule.name,
+                "is_executing": schedule.is_executing,
+                "executing_task_index": schedule.executing_task_index,
+                "last_execution_time": schedule.last_execution_time,
+                "next_execution_time": schedule.next_execution_time,
+                "enabled": schedule.enabled,
+                "last_result": schedule.last_result,
+            }));
+            let _ = sender.send(Message::Text(msg.to_json())).await;
+        }
+    }
+
     // Main loop
     loop {
         tokio::select! {
@@ -194,6 +213,13 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
             result = console_rx.recv() => {
                 match result {
                     Ok(data) => {
+                        // Rate limit console output to prevent I/O saturation
+                        // This ensures container operations remain responsive during high output
+                        if !server.console_throttle().allow_line() {
+                            debug!("WebSocket console output rate-limited for {}", server.uuid());
+                            continue;
+                        }
+
                         let line = String::from_utf8_lossy(&data).to_string();
                         let line_preview: String = line.chars().take(80).collect();
                         info!("WebSocket forwarding console line for {}: {} chars - {}", server.uuid(), line.len(), line_preview);

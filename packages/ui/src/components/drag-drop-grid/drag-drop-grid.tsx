@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { Layout, Layouts } from "react-grid-layout";
-import { Responsive, WidthProvider } from "react-grid-layout";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsArrowsFullscreen, BsGripVertical } from "react-icons/bs";
+import {createContext, useCallback, useContext, useEffect, useRef, useState} from "react";
+import type {Layout, Layouts} from "react-grid-layout";
+import {Responsive, WidthProvider} from "react-grid-layout";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsArrowsFullscreen, BsGripVertical} from "react-icons/bs";
 import type {
   DragDropGridContextValue,
   DragDropGridProps,
@@ -17,7 +17,7 @@ import type {
 // Import react-grid-layout styles
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 
 export type {
   GridSize,
@@ -134,13 +134,6 @@ export const DragDropGrid = ({
   const [layouts, setLayouts] = useState<Layouts>(
     () => savedLayouts || generateResponsiveLayouts(externalItems)
   );
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Delay enabling transitions to prevent initial animation
-  useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Use ref to always have latest callback without causing re-renders
   const onLayoutChangeRef = useRef(onLayoutChange);
@@ -280,7 +273,7 @@ export const DragDropGrid = ({
         removeConfirmLabels,
       }}
     >
-      <div className={cn("drag-drop-grid", !isMounted && "no-transition", className)} {...props}>
+      <div className={cn("drag-drop-grid", className)} {...props}>
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}

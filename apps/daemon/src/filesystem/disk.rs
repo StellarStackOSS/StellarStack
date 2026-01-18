@@ -177,6 +177,14 @@ impl DiskUsage {
         let new_value = current.saturating_sub(bytes);
         self.usage.store(new_value, Ordering::SeqCst);
     }
+
+    /// Mark cache as potentially stale (useful after major operations like backups)
+    ///
+    /// This triggers a recalculation on the next check, ensuring accuracy
+    /// after large write operations that might invalidate our incremental tracking.
+    pub fn invalidate_cache(&self) {
+        self.last_check.store(0, Ordering::SeqCst);
+    }
 }
 
 impl Clone for DiskUsage {

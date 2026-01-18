@@ -13,12 +13,13 @@ use crate::api::HttpClient;
 use crate::config::{DockerConfiguration, RedisConfiguration, SystemConfiguration};
 use crate::environment::{DockerEnvironment, EnvironmentConfiguration, ProcessEnvironment};
 use crate::events::{Event, EventBus, ProcessState, RedisPublisher};
-use crate::system::{Locker, SinkPool};
+use crate::system::{Locker, SinkPool, ConsoleThrottle};
 
 use super::configuration::ServerConfig;
 use super::crash::CrashHandler;
 use super::install::{InstallationProcess, InstallError};
 use super::power::{PowerAction, PowerError};
+use super::schedule_status::ScheduleStatusTracker;
 use super::state::ServerState;
 
 /// A managed game server
@@ -44,8 +45,14 @@ pub struct Server {
     /// Console output sink
     console_sink: SinkPool,
 
+    /// Console output rate limiter (prevents I/O saturation)
+    console_throttle: ConsoleThrottle,
+
     /// Installation output sink
     install_sink: SinkPool,
+
+    /// Schedule status tracker (for websocket sync)
+    schedule_status: ScheduleStatusTracker,
 
     /// Cancellation token for server operations
     ctx: CancellationToken,
@@ -113,7 +120,9 @@ impl Server {
             crash_handler: CrashHandler::new(),
             event_bus,
             console_sink: SinkPool::new(),
+            console_throttle: ConsoleThrottle::new(),
             install_sink: SinkPool::new(),
+            schedule_status: ScheduleStatusTracker::new(),
             ctx: CancellationToken::new(),
             watcher_ctx: RwLock::new(CancellationToken::new()),
             data_dir,
@@ -230,9 +239,19 @@ impl Server {
         &self.console_sink
     }
 
+    /// Get console throttle for rate limiting output
+    pub fn console_throttle(&self) -> &ConsoleThrottle {
+        &self.console_throttle
+    }
+
     /// Get install sink for subscribing to install output
     pub fn install_sink(&self) -> &SinkPool {
         &self.install_sink
+    }
+
+    /// Get schedule status tracker
+    pub fn schedule_status(&self) -> &ScheduleStatusTracker {
+        &self.schedule_status
     }
 
     /// Get current process state

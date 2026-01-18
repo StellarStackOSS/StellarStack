@@ -9,16 +9,18 @@ mod crash;
 mod install;
 mod manager;
 mod power;
+mod schedule_status;
 mod server;
 mod state;
 mod transfer;
 
-pub use backup::{create_backup, restore_backup, delete_backup, list_backups, BackupResult, BackupError, BackupInfo};
+pub use backup::{create_backup, create_backup_with_config, restore_backup, delete_backup, list_backups, BackupResult, BackupError, BackupInfo, BackupCompressionLevel};
 pub use configuration::*;
 pub use crash::CrashHandler;
 pub use install::InstallationProcess;
 pub use manager::Manager;
 pub use power::{PowerAction, PowerError};
+pub use schedule_status::{ScheduleStatus, ScheduleStatusTracker};
 pub use server::Server;
 pub use state::ServerState;
 pub use transfer::{
