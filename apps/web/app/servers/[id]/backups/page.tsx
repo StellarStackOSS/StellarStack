@@ -1,8 +1,8 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
+import { type JSX, useState } from "react";
 import { useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
@@ -25,6 +25,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Label } from "@workspace/ui/components/label";
 
 const BackupsPage = (): JSX.Element | null => {
   const params = useParams();
@@ -227,22 +228,12 @@ const BackupsPage = (): JSX.Element | null => {
                 Loading backups...
               </div>
             ) : backupsDisabled ? (
-              <div
-                className={cn(
-                  "border py-12 text-center",
-                  "border-zinc-800 text-zinc-500"
-                )}
-              >
+              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 <p className="mb-2">Backups are not available for this server.</p>
                 <p className="text-xs">Contact an administrator to enable backups.</p>
               </div>
             ) : backups.length === 0 ? (
-              <div
-                className={cn(
-                  "border py-12 text-center",
-                  "border-zinc-800 text-zinc-500"
-                )}
-              >
+              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 No backups found. Create your first backup.
               </div>
             ) : (
@@ -256,7 +247,7 @@ const BackupsPage = (): JSX.Element | null => {
                     exit={{ opacity: 0, x: -100, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className={cn(
-                      "relative border p-6 rounded-lg",
+                      "relative rounded-lg border p-6",
                       "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] hover:border-zinc-700"
                     )}
                   >
@@ -292,8 +283,7 @@ const BackupsPage = (): JSX.Element | null => {
                                     "border-blue-500/50 text-blue-400",
                                   backup.status === "RESTORING" &&
                                     "border-amber-500/50 text-amber-400",
-                                  backup.status === "FAILED" &&
-                                    "border-red-500/50 text-red-400"
+                                  backup.status === "FAILED" && "border-red-500/50 text-red-400"
                                 )}
                               >
                                 {backup.status.replace("_", " ")}
@@ -301,10 +291,7 @@ const BackupsPage = (): JSX.Element | null => {
                             )}
                           </div>
                           <div
-                            className={cn(
-                              "mt-1 flex items-center gap-4 text-xs",
-                              "text-zinc-500"
-                            )}
+                            className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
                           >
                             <span>{formatFileSize(backup.size)}</span>
                             <span>-</span>
@@ -352,12 +339,7 @@ const BackupsPage = (): JSX.Element | null => {
               </AnimatePresence>
             )}
             <div>
-              <p
-                className={cn(
-                  "pt-2 text-center text-xs uppercase opacity-75",
-                  "text-zinc-500"
-                )}
-              >
+              <p className={cn("pt-2 text-center text-xs uppercase opacity-75", "text-zinc-500")}>
                 {completedBackups} / {backupLimit} backup
                 {backupLimit !== 1 ? "s" : ""} used
               </p>
@@ -379,14 +361,7 @@ const BackupsPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Backup Name (Optional)
-            </label>
+            <Label>Backup Name (Optional)</Label>
             <Input
               value={backupName}
               onChange={(e) => setBackupName(e.target.value)}

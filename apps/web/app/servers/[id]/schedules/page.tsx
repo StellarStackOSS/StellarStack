@@ -1,15 +1,15 @@
 "use client";
 
-import {type JSX, useCallback, useEffect, useMemo, useState} from "react";
-import {useParams} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {Switch} from "@workspace/ui/components/switch";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
+import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Switch } from "@workspace/ui/components/switch";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
 import {
   BsArrowRepeat,
   BsClock,
@@ -22,12 +22,13 @@ import {
   BsTrash,
   BsX,
 } from "react-icons/bs";
-import type {CreateScheduleData, Schedule} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
+import type { CreateScheduleData, Schedule } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
 
@@ -157,14 +158,7 @@ const SchedulesPage = (): JSX.Element | null => {
     () => (
       <div className="space-y-4">
         <div>
-          <label
-            className={cn(
-              "mb-2 block text-xs tracking-wider uppercase",
-              "text-zinc-400"
-            )}
-          >
-            Schedule Name
-          </label>
+          <Label>Schedule Name</Label>
           <Input
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
@@ -180,18 +174,11 @@ const SchedulesPage = (): JSX.Element | null => {
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label
-              className={cn(
-                "text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
+            <Label>
               Tasks ({formTasks.length}/{MAX_TASKS})
-            </label>
+            </Label>
             {formTasks.length >= MAX_TASKS && (
-              <span className={cn("text-xs", "text-amber-400")}>
-                Maximum reached
-              </span>
+              <span className={cn("text-xs", "text-amber-400")}>Maximum reached</span>
             )}
           </div>
 
@@ -204,19 +191,8 @@ const SchedulesPage = (): JSX.Element | null => {
               )}
             >
               {formTasks.map((task, index) => (
-                <div
-                  key={task.id}
-                  className={cn(
-                    "flex items-center gap-3 p-3",
-                    "bg-zinc-800/50"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "w-5 shrink-0 font-mono text-xs",
-                      "text-zinc-500"
-                    )}
-                  >
+                <div key={task.id} className={cn("flex items-center gap-3 p-3", "bg-zinc-800/50")}>
+                  <span className={cn("w-5 shrink-0 font-mono text-xs", "text-zinc-500")}>
                     {index + 1}.
                   </span>
                   <div className="shrink-0">{getActionIcon(task.action)}</div>
@@ -237,23 +213,16 @@ const SchedulesPage = (): JSX.Element | null => {
                       />
                     )}
                     <div className="mt-2 flex items-center gap-2">
-                      <BsClock
-                        className={cn("h-3 w-3", "text-zinc-500")}
-                      />
+                      <BsClock className={cn("h-3 w-3", "text-zinc-500")} />
                       <Input
                         type="number"
                         value={task.timeOffset}
                         onChange={(e) => updateTaskOffset(task.id, parseInt(e.target.value) || 0)}
                         min={0}
                         disabled={isSaving}
-                        className={cn(
-                          "w-20 text-sm",
-                          "border-zinc-600 bg-zinc-900 text-zinc-100"
-                        )}
+                        className={cn("w-20 text-sm", "border-zinc-600 bg-zinc-900 text-zinc-100")}
                       />
-                      <span className={cn("text-xs", "text-zinc-500")}>
-                        seconds delay
-                      </span>
+                      <span className={cn("text-xs", "text-zinc-500")}>seconds delay</span>
                     </div>
                   </div>
                   <TextureButton
@@ -285,14 +254,7 @@ const SchedulesPage = (): JSX.Element | null => {
         </div>
 
         <div>
-          <label
-            className={cn(
-              "mb-2 block text-xs tracking-wider uppercase",
-              "text-zinc-400"
-            )}
-          >
-            Cron Expression
-          </label>
+          <Label>Cron Expression</Label>
           <Input
             value={formCron}
             onChange={(e) => setFormCron(e.target.value)}
@@ -309,19 +271,8 @@ const SchedulesPage = (): JSX.Element | null => {
         </div>
 
         <div className="flex items-center justify-between">
-          <label
-            className={cn(
-              "text-xs tracking-wider uppercase",
-              "text-zinc-400"
-            )}
-          >
-            Enabled
-          </label>
-          <Switch
-            checked={formEnabled}
-            onCheckedChange={setFormEnabled}
-            disabled={isSaving}
-          />
+          <Label>Enabled</Label>
+          <Switch checked={formEnabled} onCheckedChange={setFormEnabled} disabled={isSaving} />
         </div>
       </div>
     ),
@@ -506,12 +457,7 @@ const SchedulesPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   SCHEDULES
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -521,10 +467,7 @@ const SchedulesPage = (): JSX.Element | null => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <TextureButton
-                variant="minimal"
-                onClick={openCreateModal}
-              >
+              <TextureButton variant="minimal" onClick={openCreateModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Schedule</span>
               </TextureButton>
@@ -544,12 +487,7 @@ const SchedulesPage = (): JSX.Element | null => {
                 Loading schedules...
               </div>
             ) : schedules.length === 0 ? (
-              <div
-                className={cn(
-                  "border py-12 text-center",
-                  "border-zinc-800 text-zinc-500"
-                )}
-              >
+              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 No schedules found. Create your first schedule.
               </div>
             ) : (
@@ -593,25 +531,13 @@ const SchedulesPage = (): JSX.Element | null => {
                               "border-zinc-700 bg-zinc-800/50"
                             )}
                           >
-                            <span
-                              className={cn(
-                                "text-[10px]",
-                              "text-zinc-500"
-                              )}
-                            >
-                              {index + 1}.
-                            </span>
+                            <span className={cn("text-[10px]", "text-zinc-500")}>{index + 1}.</span>
                             {getActionIcon(task.action)}
                             <span className={cn("text-zinc-300")}>
                               {getActionLabel(task.action)}
                             </span>
                             {task.timeOffset > 0 && (
-                              <span
-                                className={cn(
-                                  "text-[10px]",
-                                  "text-zinc-500"
-                                )}
-                              >
+                              <span className={cn("text-[10px]", "text-zinc-500")}>
                                 +{task.timeOffset}s
                               </span>
                             )}
@@ -619,12 +545,7 @@ const SchedulesPage = (): JSX.Element | null => {
                         ))}
                       </div>
 
-                      <div
-                        className={cn(
-                          "flex items-center gap-4 text-xs",
-                          "text-zinc-500"
-                        )}
-                      >
+                      <div className={cn("flex items-center gap-4 text-xs", "text-zinc-500")}>
                         <span className="font-mono">{schedule.cronExpression}</span>
                         <span>-</span>
                         <span>Next: {formatNextRun(schedule)}</span>
@@ -637,10 +558,7 @@ const SchedulesPage = (): JSX.Element | null => {
                         checked={schedule.isActive}
                         onCheckedChange={() => toggleSchedule(schedule)}
                       />
-                      <TextureButton
-                        variant="minimal"
-                        onClick={() => openEditModal(schedule)}
-                      >
+                      <TextureButton variant="minimal" onClick={() => openEditModal(schedule)}>
                         <BsPencil className="h-4 w-4" />
                       </TextureButton>
                       <TextureButton

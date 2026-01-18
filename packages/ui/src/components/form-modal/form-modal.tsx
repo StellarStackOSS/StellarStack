@@ -69,10 +69,20 @@ export const FormModal = ({
         </DialogHeader>
         <div className="py-2">{children}</div>
         <DialogFooter>
-          <TextureButton variant="secondary" onClick={handleCancel} disabled={isLoading}>
+          <TextureButton
+            className="w-full"
+            variant="secondary"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
             {cancelLabel}
           </TextureButton>
-          <TextureButton variant="success" onClick={handleSubmit} disabled={isLoading || !isValid}>
+          <TextureButton
+            className="w-full"
+            variant="success"
+            onClick={handleSubmit}
+            disabled={isLoading || !isValid}
+          >
             {isLoading ? "Saving..." : submitLabel}
           </TextureButton>
         </DialogFooter>

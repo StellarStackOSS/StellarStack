@@ -1,26 +1,28 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useTheme } from "next-themes";
-import { memo, useEffect, useState } from "react";
-import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
-import { ServerProvider, useServer } from "components/ServerStatusPages/server-provider";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { ServerMaintenancePlaceholder } from "@/components/ServerStatusPages/server-maintenance-placeholder/server-maintenance-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { ServerRestoringPlaceholder } from "@/components/ServerStatusPages/server-restoring-placeholder/server-restoring-placeholder";
-import { cn } from "@workspace/ui/lib/utils";
-import { UploadProvider } from "@/components/upload-provider";
-import { UploadProgressIndicator } from "@/components/upload-progress-indicator";
-import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
+import {useParams} from "next/navigation";
+import {memo} from "react";
+import {SidebarInset, SidebarProvider} from "@workspace/ui/components/sidebar";
+import {ServerProvider, useServer} from "components/ServerStatusPages/server-provider";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {
+  ServerMaintenancePlaceholder
+} from "@/components/ServerStatusPages/server-maintenance-placeholder/server-maintenance-placeholder";
+import {
+  ServerSuspendedPlaceholder
+} from "@/components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import {
+  ServerRestoringPlaceholder
+} from "@/components/ServerStatusPages/server-restoring-placeholder/server-restoring-placeholder";
+import {UploadProvider} from "@/components/upload-provider";
+import {UploadProgressIndicator} from "@/components/upload-progress-indicator";
+import {UnifiedSidebar} from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
       <AnimatedBackground />
-      <FloatingDots count={15} />
     </>
   );
 });

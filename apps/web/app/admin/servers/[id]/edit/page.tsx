@@ -7,7 +7,6 @@ import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {
   ArrowLeftIcon,
   ExternalLinkIcon,
@@ -19,8 +18,11 @@ import {
   TrashIcon,
 } from "lucide-react";
 import {useServer, useServerMutations} from "@/hooks/queries";
-import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Label} from "@workspace/ui/components/label";
+import {Input} from "@workspace/ui/components/input";
+import {Textarea} from "@workspace/ui/components/textarea";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
 import {toast} from "sonner";
 import type {Node} from "@/lib/api";
 import {Allocation, Blueprint, blueprints, nodes, servers} from "@/lib/api";
@@ -29,11 +31,12 @@ export default function EditServerPage() {
   const router = useRouter();
   const params = useParams();
   const serverId = params.id as string;
-  const { inputClasses, labelClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: server, isLoading, refetch } = useServer(serverId);
   const { update, reinstall, setStatus } = useServerMutations();
+
+  //TODO: CLEAN UP THIS USESTATE WALL?? WTF
 
   // Modal state
   const [reinstallModalOpen, setReinstallModalOpen] = useState(false);
@@ -315,11 +318,7 @@ export default function EditServerPage() {
 
   if (isLoading) {
     return (
-      <div
-        className={cn(
-          "relative flex min-h-svh items-center justify-center bg-[#0b0b0a]",
-        )}
-      >
+      <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
         <AnimatedBackground />
         <Spinner className="h-6 w-6" />
       </div>
@@ -327,13 +326,8 @@ export default function EditServerPage() {
   }
 
   return (
-    <div
-      className={cn(
-        "relative min-h-svh transition-colors bg-[#0b0b0a]",
-      )}
-    >
-      <AnimatedBackground  />
-      <FloatingDots count={15} />
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
+      <AnimatedBackground />
 
       <div className="relative p-8">
         <div className="mx-auto max-w-2xl">
@@ -348,11 +342,7 @@ export default function EditServerPage() {
                 <ArrowLeftIcon className="h-4 w-4" />
               </TextureButton>
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider text-zinc-100",
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
                   EDIT SERVER
                 </h1>
                 <p className={cn("mt-1 text-sm text-zinc-500")}>
@@ -366,43 +356,36 @@ export default function EditServerPage() {
             <form onSubmit={handleSubmit}>
               <div
                 className={cn(
-                  "relative border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
+                  "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg shadow-black/20"
                 )}
               >
-                <CornerAccents size="sm" />
-
                 <div className="space-y-4">
                   {/* Basic Info */}
                   <div>
-                    <label className={labelClasses}>Name</label>
-                    <input
+                    <Label>Name</Label>
+                    <Input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={inputClasses}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className={labelClasses}>Description</label>
-                    <textarea
+                    <Label>Description</Label>
+                    <Textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className={cn(inputClasses, "h-20 resize-none")}
                       placeholder="Optional description..."
+                      rows={5}
                     />
                   </div>
 
                   {/* Resources */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
+                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
                       )}
                     >
                       Resources
@@ -410,41 +393,34 @@ export default function EditServerPage() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className={labelClasses}>CPU (%)</label>
-                        <input
+                        <Label>CPU (%)</Label>
+                        <Input
                           type="number"
                           value={formData.cpu}
                           onChange={(e) => setFormData({ ...formData, cpu: e.target.value })}
-                          className={inputClasses}
                           min={1}
                           step={1}
                           required
                         />
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-600")}
-                        >
-                          100 = 1 thread
-                        </p>
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>100 = 1 thread</p>
                       </div>
                       <div>
-                        <label className={labelClasses}>Memory (MiB)</label>
-                        <input
+                        <Label>Memory (MiB)</Label>
+                        <Input
                           type="number"
                           value={formData.memory}
                           onChange={(e) => setFormData({ ...formData, memory: e.target.value })}
-                          className={inputClasses}
                           min={128}
                           step={128}
                           required
                         />
                       </div>
                       <div>
-                        <label className={labelClasses}>Disk (MiB)</label>
-                        <input
+                        <Label>Disk (MiB)</Label>
+                        <Input
                           type="number"
                           value={formData.disk}
                           onChange={(e) => setFormData({ ...formData, disk: e.target.value })}
-                          className={inputClasses}
                           min={1024}
                           step={1024}
                           required
@@ -454,14 +430,10 @@ export default function EditServerPage() {
                   </div>
 
                   {/* Advanced */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
+                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
                       )}
                     >
                       Advanced
@@ -469,26 +441,22 @@ export default function EditServerPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>CPU Pinning</label>
-                        <input
+                        <Label>CPU Pinning</Label>
+                        <Input
                           type="text"
                           value={formData.cpuPinning}
                           onChange={(e) => setFormData({ ...formData, cpuPinning: e.target.value })}
-                          className={inputClasses}
                           placeholder="e.g., 0,1,2,3 or 0-3"
                         />
                       </div>
                       <div>
-                        <label className={labelClasses}>Swap (MiB)</label>
-                        <input
+                        <Label>Swap (MiB)</Label>
+                        <Input
                           type="number"
                           value={formData.swap}
                           onChange={(e) => setFormData({ ...formData, swap: e.target.value })}
-                          className={inputClasses}
                         />
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-600")}
-                        >
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
                           -1 = unlimited, 0 = disabled
                         </p>
                       </div>
@@ -496,19 +464,18 @@ export default function EditServerPage() {
 
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>Backup Limit</label>
-                        <input
+                        <Label>Backup Limit</Label>
+                        <Input
                           type="number"
                           value={formData.backupLimit}
                           onChange={(e) =>
                             setFormData({ ...formData, backupLimit: e.target.value })
                           }
-                          className={inputClasses}
                           min={0}
                         />
                       </div>
                       <div className="flex items-center gap-3 pt-6">
-                        <input
+                        <Input
                           type="checkbox"
                           id="oomKillDisable"
                           checked={formData.oomKillDisable}
@@ -517,25 +484,16 @@ export default function EditServerPage() {
                           }
                           className="h-4 w-4"
                         />
-                        <label
-                          htmlFor="oomKillDisable"
-                          className={cn("text-sm text-zinc-300")}
-                        >
-                          Disable OOM Killer
-                        </label>
+                        <Label htmlFor="oomKillDisable">Disable OOM Killer</Label>
                       </div>
                     </div>
                   </div>
 
                   {/* Server Management */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <h3
                       className={cn(
-                        "mb-4 text-sm font-medium tracking-wider uppercase text-zinc-300",
+                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
                       )}
                     >
                       Server Management
@@ -543,41 +501,39 @@ export default function EditServerPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>Server Status</label>
-                        <select
+                        <Label>Server Status</Label>
+                        <Select
                           value={selectedStatus}
-                          onChange={(e) => handleStatusChange(e.target.value)}
-                          className={inputClasses}
+                          onValueChange={handleStatusChange}
                           disabled={setStatus.isPending}
                         >
-                          <option value="STOPPED">Stopped</option>
-                          <option value="RUNNING">Running</option>
-                          <option value="STARTING">Starting</option>
-                          <option value="STOPPING">Stopping</option>
-                          <option value="INSTALLING">Installing</option>
-                          <option value="SUSPENDED">Suspended</option>
-                          <option value="ERROR">Error</option>
-                        </select>
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-600")}
-                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="STOPPED">Stopped</SelectItem>
+                            <SelectItem value="RUNNING">Running</SelectItem>
+                            <SelectItem value="STARTING">Starting</SelectItem>
+                            <SelectItem value="STOPPING">Stopping</SelectItem>
+                            <SelectItem value="INSTALLING">Installing</SelectItem>
+                            <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                            <SelectItem value="ERROR">Error</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
                           Manually override server status
                         </p>
                       </div>
                       <div className="pt-6">
                         <TextureButton
                           type="button"
-                          variant="outline"
+                          variant="secondary"
                           onClick={() => setReinstallModalOpen(true)}
                         >
                           <RefreshCwIcon className="h-4 w-4" />
                           Reinstall Server
                         </TextureButton>
-                        <p
-                          className={cn(
-                            "mt-1 text-center text-xs text-zinc-600",
-                          )}
-                        >
+                        <p className={cn("mt-1 text-center text-xs text-zinc-600")}>
                           Wipes server and runs install script
                         </p>
                       </div>
@@ -585,29 +541,23 @@ export default function EditServerPage() {
                   </div>
 
                   {/* Blueprint Change */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
+                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
                           )}
                         >
                           Game Type
                         </h3>
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-500")}
-                        >
+                        <p className={cn("mt-1 text-xs text-zinc-500")}>
                           {server?.blueprint?.name || "No blueprint selected"}
                         </p>
                       </div>
                       <TextureButton
                         type="button"
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={() => setShowBlueprintModal(true)}
                       >
@@ -617,22 +567,16 @@ export default function EditServerPage() {
                   </div>
 
                   {/* Allocations */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
                       <h3
-                        className={cn(
-                          "text-sm font-medium tracking-wider uppercase text-zinc-300",
-                        )}
+                        className={cn("text-sm font-medium tracking-wider text-zinc-300 uppercase")}
                       >
                         Allocations
                       </h3>
                       <TextureButton
                         type="button"
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={() => {
                           setShowAddAllocation(true);
@@ -651,11 +595,7 @@ export default function EditServerPage() {
                           <Spinner className="h-4 w-4" />
                         </div>
                       ) : allocations.length === 0 ? (
-                        <p
-                          className={cn(
-                            "py-4 text-center text-sm text-zinc-500"
-                          )}
-                        >
+                        <p className={cn("py-4 text-center text-sm text-zinc-500")}>
                           No allocations assigned
                         </p>
                       ) : (
@@ -663,37 +603,25 @@ export default function EditServerPage() {
                           <div
                             key={allocation.id}
                             className={cn(
-                              "flex items-center justify-between border p-3 border-zinc-800 bg-zinc-900/50",
+                              "flex items-center justify-between border border-zinc-800 bg-zinc-900/50 p-3"
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <NetworkIcon
-                                className={cn(
-                                  "h-4 w-4 text-zinc-500",
-                                )}
-                              />
-                              <span
-                                className={cn(
-                                  "font-mono text-sm text-zinc-200",
-                                )}
-                              >
+                              <NetworkIcon className={cn("h-4 w-4 text-zinc-500")} />
+                              <span className={cn("font-mono text-sm text-zinc-200")}>
                                 {allocation.ip}:{allocation.port}
                               </span>
                               {index === 0 && (
                                 <span
                                   className={cn(
-                                    "px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase border border-emerald-500/30 bg-emerald-500/20 text-emerald-400",
+                                    "border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium tracking-wider text-emerald-400 uppercase"
                                   )}
                                 >
                                   Primary
                                 </span>
                               )}
                               {allocation.alias && (
-                                <span
-                                  className={cn(
-                                    "text-xs text-zinc-500",
-                                  )}
-                                >
+                                <span className={cn("text-xs text-zinc-500")}>
                                   ({allocation.alias})
                                 </span>
                               )}
@@ -723,42 +651,35 @@ export default function EditServerPage() {
 
                     {/* Add allocation dialog */}
                     {showAddAllocation && (
-                      <div
-                        className={cn(
-                          "mt-4 border p-4 border-zinc-700 bg-zinc-900/50",
-                        )}
-                      >
-                        <p
-                          className={cn("mb-3 text-sm text-zinc-300")}
-                        >
+                      <div className={cn("mt-4 border border-zinc-700 bg-zinc-900/50 p-4")}>
+                        <p className={cn("mb-3 text-sm text-zinc-300")}>
                           Select an available allocation to add:
                         </p>
-                        <select
+                        <Select
                           value={selectedAllocationId}
-                          onChange={(e) => setSelectedAllocationId(e.target.value)}
-                          className={inputClasses}
+                          onValueChange={setSelectedAllocationId}
                         >
-                          <option value="">Select allocation...</option>
-                          {availableAllocations.map((alloc) => (
-                            <option key={alloc.id} value={alloc.id}>
-                              {alloc.ip}:{alloc.port}
-                              {alloc.alias ? ` (${alloc.alias})` : ""}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select allocation..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableAllocations.map((alloc) => (
+                              <SelectItem key={alloc.id} value={alloc.id}>
+                                {alloc.ip}:{alloc.port}
+                                {alloc.alias ? ` (${alloc.alias})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {availableAllocations.length === 0 && (
-                          <p
-                            className={cn(
-                              "mt-2 text-xs text-zinc-500",
-                            )}
-                          >
+                          <p className={cn("mt-2 text-xs text-zinc-500")}>
                             No available allocations on this node
                           </p>
                         )}
                         <div className="mt-3 flex items-center gap-2">
                           <TextureButton
                             type="button"
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={() => {
                               setShowAddAllocation(false);
@@ -788,23 +709,17 @@ export default function EditServerPage() {
                   </div>
 
                   {/* Server Splitting */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
+                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
                           )}
                         >
                           Server Splitting
                         </h3>
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-500")}
-                        >
+                        <p className={cn("mt-1 text-xs text-zinc-500")}>
                           {server?.parentServerId
                             ? "This is a child server"
                             : "Split resources to create child servers"}
@@ -812,7 +727,7 @@ export default function EditServerPage() {
                       </div>
                       <TextureButton
                         type="button"
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={() => router.push(`/servers/${serverId}/split`)}
                       >
@@ -824,29 +739,23 @@ export default function EditServerPage() {
                   </div>
 
                   {/* Server Transfer */}
-                  <div
-                    className={cn(
-                      "border-t pt-4 border-zinc-700/50",
-                    )}
-                  >
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <h3
                           className={cn(
-                            "text-sm font-medium tracking-wider uppercase text-zinc-300",
+                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
                           )}
                         >
                           Server Transfer
                         </h3>
-                        <p
-                          className={cn("mt-1 text-xs text-zinc-500")}
-                        >
+                        <p className={cn("mt-1 text-xs text-zinc-500")}>
                           Transfer server to another node
                         </p>
                       </div>
                       <TextureButton
                         type="button"
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={() => setShowTransferHistory(!showTransferHistory)}
                       >
@@ -856,16 +765,8 @@ export default function EditServerPage() {
 
                     {/* Transfer History */}
                     {showTransferHistory && transferStatus && (
-                      <div
-                        className={cn(
-                          "mb-4 border p-4 border-zinc-800 bg-zinc-900/50",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "mb-2 flex items-center justify-between text-zinc-300",
-                          )}
-                        >
+                      <div className={cn("mb-4 border border-zinc-800 bg-zinc-900/50 p-4")}>
+                        <div className={cn("mb-2 flex items-center justify-between text-zinc-300")}>
                           <span className="text-sm">Transfer Status</span>
                           <span
                             className={cn(
@@ -883,11 +784,7 @@ export default function EditServerPage() {
                           </span>
                         </div>
                         {transferStatus.progress > 0 && (
-                          <div
-                            className={cn(
-                              "mb-2 h-2 overflow-hidden rounded-full bg-zinc-800",
-                            )}
-                          >
+                          <div className={cn("mb-2 h-2 overflow-hidden rounded-full bg-zinc-800")}>
                             <div
                               className="h-full rounded-full bg-blue-500 transition-all"
                               style={{ width: `${transferStatus.progress}%` }}
@@ -896,26 +793,20 @@ export default function EditServerPage() {
                         )}
                         <div className="space-y-2 text-xs">
                           <div>
-                            <span className={cn("text-zinc-500")}>
-                              From:
-                            </span>{" "}
+                            <span className={cn("text-zinc-500")}>From:</span>{" "}
                             <span className={cn("text-zinc-300")}>
                               {transferStatus.sourceNode?.displayName || "Unknown"}
                             </span>
                           </div>
                           <div>
-                            <span className={cn("text-zinc-500")}>
-                              To:
-                            </span>{" "}
+                            <span className={cn("text-zinc-500")}>To:</span>{" "}
                             <span className={cn("text-zinc-300")}>
                               {transferStatus.targetNode?.displayName || "Unknown"}
                             </span>
                           </div>
                           {transferStatus.error && (
                             <div>
-                              <span className={cn("text-zinc-500")}>
-                                Error:
-                              </span>{" "}
+                              <span className={cn("text-zinc-500")}>Error:</span>{" "}
                               <span className="text-red-400">{transferStatus.error}</span>
                             </div>
                           )}
@@ -925,7 +816,7 @@ export default function EditServerPage() {
                             <div className="flex gap-2 pt-2">
                               <TextureButton
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 onClick={handleCancelTransfer}
                               >
@@ -940,7 +831,7 @@ export default function EditServerPage() {
                       <div className="mt-4">
                         <TextureButton
                           type="button"
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => setShowTransferModal(true)}
                           disabled={
@@ -961,15 +852,12 @@ export default function EditServerPage() {
               <div className="mt-6 flex justify-end gap-3">
                 <TextureButton
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => router.push("/admin/servers")}
                 >
                   Cancel
                 </TextureButton>
-                <TextureButton
-                  type="submit"
-                  disabled={update.isPending}
-                >
+                <TextureButton type="submit" disabled={update.isPending}>
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
@@ -998,16 +886,8 @@ export default function EditServerPage() {
       {/* Blueprint Change Modal */}
       {showBlueprintModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            className={cn(
-              "w-full max-w-md border p-6 shadow-2xl border-zinc-800 bg-zinc-900",
-            )}
-          >
-            <h2
-              className={cn("mb-4 text-lg font-medium text-zinc-100")}
-            >
-              Change Game Type
-            </h2>
+          <div className={cn("w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}>
+            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Change Game Type</h2>
             <p className={cn("mb-4 text-sm text-zinc-400")}>
               Select a new blueprint for this server. Changing the blueprint will update the
               server's game type and configuration.
@@ -1020,35 +900,32 @@ export default function EditServerPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className={labelClasses}>Blueprint</label>
-                  <select
-                    value={selectedBlueprintId}
-                    onChange={(e) => setSelectedBlueprintId(e.target.value)}
-                    className={inputClasses}
-                  >
-                    <option value="">Select blueprint...</option>
-                    {blueprintList.map((blueprint) => (
-                      <option key={blueprint.id} value={blueprint.id}>
-                        {blueprint.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Label>Blueprint</Label>
+                  <Select value={selectedBlueprintId} onValueChange={setSelectedBlueprintId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select blueprint..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {blueprintList.map((blueprint) => (
+                        <SelectItem key={blueprint.id} value={blueprint.id}>
+                          {blueprint.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
-                  <input
+                  <Input
                     type="checkbox"
                     id="reinstallOnBlueprintChange"
                     checked={reinstallOnBlueprintChange}
                     onChange={(e) => setReinstallOnBlueprintChange(e.target.checked)}
                     className="h-4 w-4"
                   />
-                  <label
-                    htmlFor="reinstallOnBlueprintChange"
-                    className={cn("text-sm text-zinc-300")}
-                  >
+                  <Label htmlFor="reinstallOnBlueprintChange">
                     Reinstall server after changing blueprint
-                  </label>
+                  </Label>
                 </div>
                 <p className={cn("text-xs text-zinc-500")}>
                   Warning: Reinstalling will wipe all server files. Uncheck if you only want to
@@ -1060,7 +937,7 @@ export default function EditServerPage() {
             <div className="mt-6 flex justify-end gap-3">
               <TextureButton
                 type="button"
-                variant="outline"
+                variant="secondary"
                 onClick={() => {
                   setShowBlueprintModal(false);
                   setSelectedBlueprintId(server?.blueprintId || "");
@@ -1085,16 +962,8 @@ export default function EditServerPage() {
       {/* Transfer Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            className={cn(
-              "w-full max-w-md border p-6 shadow-2xl border-zinc-800 bg-zinc-900",
-            )}
-          >
-            <h2
-              className={cn("mb-4 text-lg font-medium text-zinc-100")}
-            >
-              Transfer Server
-            </h2>
+          <div className={cn("w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}>
+            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Transfer Server</h2>
             <p className={cn("mb-6 text-sm text-zinc-400")}>
               Select a target node to transfer this server to. The server will be archived and moved
               to the new node.
@@ -1107,21 +976,21 @@ export default function EditServerPage() {
             ) : (
               <>
                 <div>
-                  <label className={labelClasses}>Target Node</label>
-                  <select
-                    value={selectedTargetNodeId}
-                    onChange={(e) => setSelectedTargetNodeId(e.target.value)}
-                    className={inputClasses}
-                  >
-                    <option value="">Select node...</option>
-                    {nodesList
-                      .filter((node) => node.id !== server?.nodeId)
-                      .map((node) => (
-                        <option key={node.id} value={node.id}>
-                          {node.displayName} ({node.location?.name || "Unknown"})
-                        </option>
-                      ))}
-                  </select>
+                  <Label>Target Node</Label>
+                  <Select value={selectedTargetNodeId} onValueChange={setSelectedTargetNodeId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select node..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nodesList
+                        .filter((node) => node.id !== server?.nodeId)
+                        .map((node) => (
+                          <SelectItem key={node.id} value={node.id}>
+                            {node.displayName} ({node.location?.name || "Unknown"})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   {server?.node && (
                     <p className={cn("mt-2 text-xs text-zinc-500")}>
                       Current node: {server.node.displayName}
@@ -1132,7 +1001,7 @@ export default function EditServerPage() {
                 <div className="mt-4 flex items-center gap-3">
                   <TextureButton
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => {
                       setShowTransferModal(false);
                       setSelectedTargetNodeId("");

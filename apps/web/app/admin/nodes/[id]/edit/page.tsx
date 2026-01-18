@@ -7,18 +7,18 @@ import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {ArrowLeftIcon, KeyIcon, NetworkIcon, PlusIcon, SaveIcon, TrashIcon} from "lucide-react";
 import {useNode, useNodeMutations} from "@/hooks/queries";
-import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import {toast} from "sonner";
+import {Input} from "@workspace/ui/components";
+import {Label} from "@workspace/ui/components/label";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
 
 export default function EditNodePage() {
   const router = useRouter();
   const params = useParams();
   const nodeId = params.id as string;
-  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: node, isLoading, refetch } = useNode(nodeId);
@@ -146,23 +146,22 @@ export default function EditNodePage() {
     }
   };
 
-  const formatBytes = (bytes: number) => {
-    const gb = bytes / (1024 * 1024 * 1024);
-    return gb >= 1 ? `${gb.toFixed(0)} GB` : `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-  };
+  const bytesToMiB = (bytes: number) => bytes / (1024 * 1024);
+  const miBToBytes = (mib: number) => Math.floor(mib * (1024 * 1024));
+  const formatMiB = (mib: number) => `${Math.floor(mib)} MiB`;
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
+      <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
         <AnimatedBackground />
-        <Spinner className="w-6 h-6" />
+        <Spinner className="h-6 w-6" />
       </div>
     );
   }
 
   if (!node) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
+      <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
         <AnimatedBackground />
         <p className={"text-zinc-400"}>Node not found</p>
       </div>
@@ -170,30 +169,22 @@ export default function EditNodePage() {
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="mx-auto max-w-3xl">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">
-              <TextureButton
-                variant="minimal"
-                onClick={() => router.push("/admin/nodes")}
-              >
+              <TextureButton variant="minimal" onClick={() => router.push("/admin/nodes")}>
                 <ArrowLeftIcon className="h-4 w-4" />
               </TextureButton>
               <div>
-                <h1 className={cn(
-                  "text-2xl font-light tracking-wider text-zinc-100",
-                )}>
+                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
                   EDIT NODE
                 </h1>
-                <p className={cn(
-                  "text-sm mt-1 text-zinc-500",
-                )}>
+                <p className={cn("mt-1 text-sm text-zinc-500")}>
                   {node.displayName} - {node.host}:{node.port}
                 </p>
               </div>
@@ -202,45 +193,42 @@ export default function EditNodePage() {
 
           <FadeIn delay={0.1}>
             <form onSubmit={handleSubmit}>
-              <div className={cn(
-                "relative p-6 border bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 shadow-lg shadow-black/20",
-              )}>
-                <CornerAccents size="sm" />
-
+              <div
+                className={cn(
+                  "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg shadow-black/20"
+                )}
+              >
                 <div className="space-y-4">
                   {/* Basic Info */}
                   <div>
-                    <label className={labelClasses}>Display Name</label>
-                    <input
+                    <Label>Display Name</Label>
+                    <Input
                       type="text"
                       value={formData.displayName}
                       onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                      className={inputClasses}
                       required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClasses}>Host</label>
-                      <input
+                      <Label>Host</Label>
+                      <Input
                         type="text"
                         value={formData.host}
                         onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                        className={inputClasses}
                         placeholder="daemon.example.com"
                         required
                       />
                     </div>
                     <div>
-                      <label className={labelClasses}>Port</label>
-                      <input
+                      <Label>Port</Label>
+                      <Input
                         type="number"
                         value={formData.port}
                         onChange={(e) =>
                           setFormData({ ...formData, port: parseInt(e.target.value) || 3001 })
                         }
-                        className={inputClasses}
                         min={1}
                         max={65535}
                         required
@@ -250,28 +238,34 @@ export default function EditNodePage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClasses}>Protocol</label>
-                      <select
+                      <Label>Protocol</Label>
+                      <Select
                         value={formData.protocol}
-                        onChange={(e) =>
-                          setFormData({ ...formData, protocol: e.target.value as any })
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            protocol: value as "HTTP" | "HTTPS" | "HTTPS_PROXY",
+                          })
                         }
-                        className={selectClasses}
                       >
-                        <option value="HTTP">HTTP</option>
-                        <option value="HTTPS">HTTPS</option>
-                        <option value="HTTPS_PROXY">HTTPS (Proxy)</option>
-                      </select>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="HTTP">HTTP</SelectItem>
+                          <SelectItem value="HTTPS">HTTPS</SelectItem>
+                          <SelectItem value="HTTPS_PROXY">HTTPS_PROXY</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <label className={labelClasses}>SFTP Port</label>
-                      <input
+                      <Label>SFTP Port</Label>
+                      <Input
                         type="number"
                         value={formData.sftpPort}
                         onChange={(e) =>
                           setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })
                         }
-                        className={inputClasses}
                         min={1}
                         max={65535}
                         required
@@ -280,87 +274,99 @@ export default function EditNodePage() {
                   </div>
 
                   {/* Resource Limits */}
-                  <div className={cn("pt-4 border-t border-zinc-700/50")}>
-                    <h3 className={cn("text-sm font-medium uppercase tracking-wider mb-4 text-zinc-300")}>
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
+                    <h3
+                      className={cn(
+                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
+                      )}
+                    >
                       Resource Limits
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>Memory Limit (bytes)</label>
-                        <input
+                        <Label>Memory Limit (MiB)</Label>
+                        <Input
                           type="number"
-                          value={formData.memoryLimit}
+                          value={bytesToMiB(formData.memoryLimit)}
                           onChange={(e) =>
-                            setFormData({ ...formData, memoryLimit: parseInt(e.target.value) || 0 })
+                            setFormData({
+                              ...formData,
+                              memoryLimit: miBToBytes(parseFloat(e.target.value) || 0),
+                            })
                           }
-                          className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
-                          {formatBytes(formData.memoryLimit)}
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
+                          {formatMiB(bytesToMiB(formData.memoryLimit))}
                         </p>
                       </div>
                       <div>
-                        <label className={labelClasses}>Disk Limit (bytes)</label>
-                        <input
+                        <Label>Disk Limit (MiB)</Label>
+                        <Input
                           type="number"
-                          value={formData.diskLimit}
+                          value={bytesToMiB(formData.diskLimit)}
                           onChange={(e) =>
-                            setFormData({ ...formData, diskLimit: parseInt(e.target.value) || 0 })
+                            setFormData({
+                              ...formData,
+                              diskLimit: miBToBytes(parseFloat(e.target.value) || 0),
+                            })
                           }
-                          className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
-                          {formatBytes(formData.diskLimit)}
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
+                          {formatMiB(bytesToMiB(formData.diskLimit))}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>CPU Limit (cores)</label>
-                        <input
+                        <Label>CPU Limit (cores)</Label>
+                        <Input
                           type="number"
                           value={formData.cpuLimit}
                           onChange={(e) =>
                             setFormData({ ...formData, cpuLimit: parseFloat(e.target.value) || 1 })
                           }
-                          className={inputClasses}
                           min={0.1}
                           step={0.1}
                           required
                         />
                       </div>
                       <div>
-                        <label className={labelClasses}>Upload Limit (bytes)</label>
-                        <input
+                        <Label>Upload Limit (MiB)</Label>
+                        <Input
                           type="number"
-                          value={formData.uploadLimit}
+                          value={bytesToMiB(formData.uploadLimit)}
                           onChange={(e) =>
-                            setFormData({ ...formData, uploadLimit: parseInt(e.target.value) || 0 })
+                            setFormData({
+                              ...formData,
+                              uploadLimit: miBToBytes(parseFloat(e.target.value) || 0),
+                            })
                           }
-                          className={inputClasses}
                           min={0}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
-                          {formatBytes(formData.uploadLimit)}
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
+                          {formatMiB(bytesToMiB(formData.uploadLimit))}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Token Management */}
-                  <div className={cn("pt-4 border-t border-zinc-700/50")}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={cn("text-sm font-medium uppercase tracking-wider text-zinc-300")}>
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3
+                        className={cn("text-sm font-medium tracking-wider text-zinc-300 uppercase")}
+                      >
                         Daemon Token
                       </h3>
                       <TextureButton
+                        type="button"
                         variant="minimal"
                         onClick={() => setShowRegenerateConfirm(true)}
                       >
@@ -371,7 +377,8 @@ export default function EditNodePage() {
                     {newToken && (
                       <div
                         className={cn(
-                          "flex flex-col justify-between gap-2 border p-3 font-mono text-xs break-all border-zinc-700 bg-zinc-950 text-zinc-300")}
+                          "flex flex-col justify-between gap-2 border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300"
+                        )}
                       >
                         <span className="flex-1">TOKENID: {newToken.token_id}</span>
                         <span>TOKEN: {newToken.token}</span>
@@ -385,13 +392,16 @@ export default function EditNodePage() {
                   </div>
 
                   {/* Allocations */}
-                  <div className={cn("pt-4 border-t border-zinc-700/50")}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={cn("text-sm font-medium uppercase tracking-wider text-zinc-300")}>
+                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3
+                        className={cn("text-sm font-medium tracking-wider text-zinc-300 uppercase")}
+                      >
                         Allocations ({node.allocations?.length || 0})
                       </h3>
                       <div className="flex items-center gap-2">
                         <TextureButton
+                          type="button"
                           variant="minimal"
                           onClick={() => setShowAddAllocation(true)}
                         >
@@ -399,6 +409,7 @@ export default function EditNodePage() {
                           Add
                         </TextureButton>
                         <TextureButton
+                          type="button"
                           variant="minimal"
                           onClick={() => setShowAddRange(true)}
                         >
@@ -411,7 +422,7 @@ export default function EditNodePage() {
                     {/* Allocations list */}
                     <div className="max-h-64 space-y-2 overflow-y-auto">
                       {!node.allocations || node.allocations.length === 0 ? (
-                        <p className={cn("text-sm py-4 text-center text-zinc-500")}>
+                        <p className={cn("py-4 text-center text-sm text-zinc-500")}>
                           No allocations configured
                         </p>
                       ) : (
@@ -419,18 +430,20 @@ export default function EditNodePage() {
                           <div
                             key={allocation.id}
                             className={cn(
-                              "flex items-center justify-between p-3 border bg-zinc-900/50 border-zinc-800",
+                              "flex items-center justify-between border border-zinc-800 bg-zinc-900/50 p-3"
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <NetworkIcon className={cn("w-4 h-4 text-zinc-500")} />
+                              <NetworkIcon className={cn("h-4 w-4 text-zinc-500")} />
                               <span className={cn("font-mono text-sm text-zinc-200")}>
                                 {allocation.ip}:{allocation.port}
                               </span>
                               {allocation.assigned && (
-                                <span className={cn(
-                                  "px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium border border-zinc-600 text-zinc-400",
-                                )}>
+                                <span
+                                  className={cn(
+                                    "border border-zinc-600 px-2 py-0.5 text-[10px] font-medium tracking-wider text-zinc-400 uppercase"
+                                  )}
+                                >
                                   In Use
                                 </span>
                               )}
@@ -441,6 +454,7 @@ export default function EditNodePage() {
                               )}
                             </div>
                             <TextureButton
+                              type="button"
                               variant="minimal"
                               disabled={
                                 allocation.assigned || deletingAllocationId === allocation.id
@@ -465,29 +479,26 @@ export default function EditNodePage() {
 
                     {/* Add single allocation form */}
                     {showAddAllocation && (
-                      <div className={cn(
-                        "mt-4 p-4 border bg-zinc-900/50 border-zinc-700",
-                      )}>
-                        <p className={cn("text-sm mb-3 font-medium text-zinc-300")}>
+                      <div className={cn("mt-4 border border-zinc-700 bg-zinc-900/50 p-4")}>
+                        <p className={cn("mb-3 text-sm font-medium text-zinc-300")}>
                           Add Single Allocation
                         </p>
                         <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className={labelClasses}>IP Address</label>
-                            <input
+                            <Label>IP Address</Label>
+                            <Input
                               type="text"
                               value={allocationForm.ip}
                               onChange={(e) =>
                                 setAllocationForm({ ...allocationForm, ip: e.target.value })
                               }
-                              className={inputClasses}
                               placeholder="0.0.0.0"
                               required
                             />
                           </div>
                           <div>
-                            <label className={labelClasses}>Port</label>
-                            <input
+                            <Label>Port</Label>
+                            <Input
                               type="number"
                               value={allocationForm.port}
                               onChange={(e) =>
@@ -496,27 +507,26 @@ export default function EditNodePage() {
                                   port: parseInt(e.target.value) || 25565,
                                 })
                               }
-                              className={inputClasses}
                               min={1}
                               max={65535}
                               required
                             />
                           </div>
                           <div>
-                            <label className={labelClasses}>Alias (optional)</label>
-                            <input
+                            <Label>Alias (optional)</Label>
+                            <Input
                               type="text"
                               value={allocationForm.alias}
                               onChange={(e) =>
                                 setAllocationForm({ ...allocationForm, alias: e.target.value })
                               }
-                              className={inputClasses}
                               placeholder="game1"
                             />
                           </div>
                         </div>
                         <div className="mt-3 flex items-center gap-2">
                           <TextureButton
+                            type="button"
                             variant="minimal"
                             onClick={() => {
                               setShowAddAllocation(false);
@@ -526,6 +536,7 @@ export default function EditNodePage() {
                             Cancel
                           </TextureButton>
                           <TextureButton
+                            type="button"
                             disabled={!allocationForm.ip || addAllocation.isPending}
                             onClick={handleAddAllocation}
                           >
@@ -537,27 +548,24 @@ export default function EditNodePage() {
 
                     {/* Add range form */}
                     {showAddRange && (
-                      <div className={cn(
-                        "mt-4 p-4 border bg-zinc-900/50 border-zinc-700",
-                      )}>
-                        <p className={cn("text-sm mb-3 font-medium text-zinc-300")}>
+                      <div className={cn("mt-4 border border-zinc-700 bg-zinc-900/50 p-4")}>
+                        <p className={cn("mb-3 text-sm font-medium text-zinc-300")}>
                           Add Allocation Range
                         </p>
                         <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className={labelClasses}>IP Address</label>
-                            <input
+                            <Label>IP Address</Label>
+                            <Input
                               type="text"
                               value={rangeForm.ip}
                               onChange={(e) => setRangeForm({ ...rangeForm, ip: e.target.value })}
-                              className={inputClasses}
                               placeholder="0.0.0.0"
                               required
                             />
                           </div>
                           <div>
-                            <label className={labelClasses}>Start Port</label>
-                            <input
+                            <Label>Start Port</Label>
+                            <Input
                               type="number"
                               value={rangeForm.startPort}
                               onChange={(e) =>
@@ -566,15 +574,14 @@ export default function EditNodePage() {
                                   startPort: parseInt(e.target.value) || 25565,
                                 })
                               }
-                              className={inputClasses}
                               min={1}
                               max={65535}
                               required
                             />
                           </div>
                           <div>
-                            <label className={labelClasses}>End Port</label>
-                            <input
+                            <Label>End Port</Label>
+                            <Input
                               type="number"
                               value={rangeForm.endPort}
                               onChange={(e) =>
@@ -583,18 +590,19 @@ export default function EditNodePage() {
                                   endPort: parseInt(e.target.value) || 25575,
                                 })
                               }
-                              className={inputClasses}
                               min={1}
                               max={65535}
                               required
                             />
                           </div>
                         </div>
-                        <p className={cn("text-xs mt-2 text-zinc-500")}>
-                          This will create {Math.max(0, rangeForm.endPort - rangeForm.startPort + 1)} allocations
+                        <p className={cn("mt-2 text-xs text-zinc-500")}>
+                          This will create{" "}
+                          {Math.max(0, rangeForm.endPort - rangeForm.startPort + 1)} allocations
                         </p>
                         <div className="mt-3 flex items-center gap-2">
                           <TextureButton
+                            type="button"
                             variant="minimal"
                             onClick={() => {
                               setShowAddRange(false);
@@ -604,6 +612,7 @@ export default function EditNodePage() {
                             Cancel
                           </TextureButton>
                           <TextureButton
+                            type="button"
                             disabled={!rangeForm.ip || addAllocationRange.isPending}
                             onClick={handleAddRange}
                           >
@@ -623,15 +632,13 @@ export default function EditNodePage() {
               {/* Submit Button */}
               <div className="mt-6 flex justify-end gap-3">
                 <TextureButton
+                  type="button"
                   variant="minimal"
                   onClick={() => router.push("/admin/nodes")}
                 >
                   Cancel
                 </TextureButton>
-                <TextureButton variant="minimal"
-                  type="submit"
-                  disabled={update.isPending}
-                >
+                <TextureButton variant="minimal" type="submit" disabled={update.isPending}>
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (

@@ -5,7 +5,6 @@ import {useRouter} from "next/navigation";
 import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {BsChevronRight, BsServer} from "react-icons/bs";
 import type {Server} from "@/lib/api";
 import {servers as serversApi} from "@/lib/api";
@@ -93,7 +92,6 @@ const ServersPage = (): JSX.Element | null => {
       className="relative min-h-svh transition-colors bg-[#0b0b0a]"
     >
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       {/* Header */}
       <div className="relative p-8">

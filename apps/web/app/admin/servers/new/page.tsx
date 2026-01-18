@@ -1,24 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
+import {useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { Switch } from "@workspace/ui/components/switch";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { ArrowLeftIcon, ServerIcon, CpuIcon, NetworkIcon, BoxIcon, InfoIcon, VariableIcon, ImageIcon } from "lucide-react";
-import { useNodes, useNode, useBlueprints, useUsers, useServerMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { CreateServerData } from "@/lib/api";
-import { toast } from "sonner";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@workspace/ui/components/tabs";
+import {Switch} from "@workspace/ui/components/switch";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {
+  ArrowLeftIcon,
+  BoxIcon,
+  CpuIcon,
+  ImageIcon,
+  InfoIcon,
+  NetworkIcon,
+  ServerIcon,
+  VariableIcon,
+} from "lucide-react";
+import {useBlueprints, useNode, useNodes, useServerMutations, useUsers} from "@/hooks/queries";
+import type {CreateServerData} from "@/lib/api";
+import {toast} from "sonner";
+import {Label} from "@workspace/ui/components/label";
+import {Input} from "@workspace/ui/components";
+import {Textarea} from "@workspace/ui/components/textarea";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
 
 export default function NewServerPage() {
   const router = useRouter();
-  const { inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: nodesList = [], isLoading: isLoadingNodes } = useNodes();
@@ -34,12 +44,14 @@ export default function NewServerPage() {
   const [activeTab, setActiveTab] = useState("basic");
 
   // Form state
-  const [formData, setFormData] = useState<CreateServerData & {
-    cpuPinning: string;
-    swap: number;
-    oomKillDisable: boolean;
-    backupLimit: number;
-  }>({
+  const [formData, setFormData] = useState<
+    CreateServerData & {
+      cpuPinning: string;
+      swap: number;
+      oomKillDisable: boolean;
+      backupLimit: number;
+    }
+  >({
     name: "",
     description: "",
     nodeId: "",
@@ -56,7 +68,7 @@ export default function NewServerPage() {
   });
 
   // Update selected blueprint and initialize variables when blueprintId changes
-  const selectedBlueprint = blueprintsList.find(b => b.id === formData.blueprintId);
+  const selectedBlueprint = blueprintsList.find((b) => b.id === formData.blueprintId);
 
   useEffect(() => {
     if (selectedBlueprint) {
@@ -70,7 +82,10 @@ export default function NewServerPage() {
       setVariableValues(defaults);
 
       // Set default docker image
-      if (selectedBlueprint.dockerImages && Object.keys(selectedBlueprint.dockerImages).length > 0) {
+      if (
+        selectedBlueprint.dockerImages &&
+        Object.keys(selectedBlueprint.dockerImages).length > 0
+      ) {
         const firstImage = Object.values(selectedBlueprint.dockerImages)[0] ?? "";
         setSelectedDockerImage(firstImage);
       } else {
@@ -126,55 +141,46 @@ export default function NewServerPage() {
   };
 
   const toggleAllocation = (allocationId: string) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const ids = prev.allocationIds.includes(allocationId)
-        ? prev.allocationIds.filter(id => id !== allocationId)
+        ? prev.allocationIds.filter((id) => id !== allocationId)
         : [...prev.allocationIds, allocationId];
       return { ...prev, allocationIds: ids };
     });
   };
 
-  const cardClasses = cn(
-    "relative border p-4 border-zinc-700/50 bg-zinc-900/30",
-  );
-
   const isLoading = isLoadingNodes || isLoadingBlueprints || isLoadingUsers;
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center relative bg-[#0b0b0a]")}>
+      <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
         <AnimatedBackground />
-        <Spinner className="w-6 h-6" />
+        <Spinner className="h-6 w-6" />
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           <FadeIn delay={0}>
             {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="mb-8 flex items-center gap-4">
               <TextureButton
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
               >
-                <ArrowLeftIcon className="w-4 h-4" />
+                <ArrowLeftIcon className="h-4 w-4" />
               </TextureButton>
               <div>
-                <h1 className={cn(
-                  "text-2xl font-light tracking-wider text-zinc-100",
-                )}>
+                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
                   CREATE SERVER
                 </h1>
-                <p className={cn(
-                  "text-sm mt-1 text-zinc-500",
-                )}>
+                <p className={cn("mt-1 text-sm text-zinc-500")}>
                   Configure a new game server instance
                 </p>
               </div>
@@ -184,39 +190,43 @@ export default function NewServerPage() {
           <FadeIn delay={0.1}>
             <form onSubmit={handleSubmit}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className={cn(
-                  "w-full justify-start gap-0 h-auto p-0 bg-transparent border-b rounded-none border-zinc-700/50",
-                )}>
+                <TabsList
+                  className={cn(
+                    "h-auto w-full justify-start gap-0 rounded-none border-b border-zinc-700/50 bg-transparent p-0"
+                  )}
+                >
                   <TabsTrigger
                     value="basic"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
+                      "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <InfoIcon className="w-3.5 h-3.5" />
+                    <InfoIcon className="h-3.5 w-3.5" />
                     Basic Info
                   </TabsTrigger>
                   <TabsTrigger
                     value="resources"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
+                      "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <CpuIcon className="w-3.5 h-3.5" />
+                    <CpuIcon className="h-3.5 w-3.5" />
                     Resources
                   </TabsTrigger>
                   <TabsTrigger
                     value="allocations"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
+                      "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <NetworkIcon className="w-3.5 h-3.5" />
+                    <NetworkIcon className="h-3.5 w-3.5" />
                     Allocations
                     {formData.allocationIds.length > 0 && (
-                      <span className={cn(
-                        "ml-1 px-1.5 py-0.5 text-[10px] rounded bg-green-900/50 text-green-400",
-                      )}>
+                      <span
+                        className={cn(
+                          "ml-1 rounded bg-green-900/50 px-1.5 py-0.5 text-[10px] text-green-400"
+                        )}
+                      >
                         {formData.allocationIds.length}
                       </span>
                     )}
@@ -224,78 +234,76 @@ export default function NewServerPage() {
                   <TabsTrigger
                     value="blueprint"
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider rounded-none border-b-2 -mb-px data-[state=active]:shadow-none text-zinc-500 data-[state=active]:text-zinc-100 data-[state=active]:border-zinc-100 border-transparent hover:text-zinc-300",
+                      "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <BoxIcon className="w-3.5 h-3.5" />
+                    <BoxIcon className="h-3.5 w-3.5" />
                     Blueprint
                   </TabsTrigger>
                 </TabsList>
 
                 {/* Basic Info Tab */}
                 <TabsContent value="basic" className="mt-6 space-y-4">
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
-                      Server Details
-                    </h3>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>Server Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>Name *</label>
-                        <input
+                        <Label>Name *</Label>
+                        <Input
                           type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           placeholder="My Minecraft Server"
-                          className={inputClasses}
                           required
                         />
                       </div>
                       <div>
-                        <label className={labelClasses}>Owner *</label>
-                        <select
+                        <Label>Owner *</Label>
+                        <Select
                           value={formData.ownerId}
-                          onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
-                          className={selectClasses}
-                          required
+                          onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                         >
-                          <option value="">Select owner...</option>
-                          {usersList.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.name} ({user.email})
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select owner..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {usersList.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name} ({user.email})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <label className={labelClasses}>Description</label>
-                      <textarea
+                      <Label>Description</Label>
+                      <Textarea
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         placeholder="Optional description..."
                         rows={3}
-                        className={cn(inputClasses, "resize-none")}
+                        className={cn("resize-none")}
                       />
                     </div>
                   </div>
 
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>
                       Backup Settings
                     </h3>
                     <div className="w-48">
-                      <label className={labelClasses}>Backup Limit</label>
-                      <input
+                      <Label>Backup Limit</Label>
+                      <Input
                         type="number"
                         value={formData.backupLimit}
-                        onChange={(e) => setFormData({ ...formData, backupLimit: parseInt(e.target.value) || 0 })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, backupLimit: parseInt(e.target.value) || 0 })
+                        }
                         min={0}
                         max={100}
-                        className={inputClasses}
                       />
-                      <p className={cn("text-xs mt-1 text-zinc-600")}>
+                      <p className={cn("mt-1 text-xs text-zinc-600")}>
                         Maximum number of backups to keep
                       </p>
                     </div>
@@ -304,117 +312,125 @@ export default function NewServerPage() {
 
                 {/* Resources Tab */}
                 <TabsContent value="resources" className="mt-6 space-y-4">
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>
                       Resource Limits
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className={labelClasses}>Memory (MiB) *</label>
-                        <input
+                        <Label>Memory (MiB) *</Label>
+                        <Input
                           type="number"
                           value={formData.memory}
-                          onChange={(e) => setFormData({ ...formData, memory: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, memory: parseInt(e.target.value) || 0 })
+                          }
                           min={128}
-                          className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
                           {(formData.memory / 1024).toFixed(2)} GiB
                         </p>
                       </div>
                       <div>
-                        <label className={labelClasses}>Disk (MiB) *</label>
-                        <input
+                        <Label>Disk (MiB) *</Label>
+                        <Input
                           type="number"
                           value={formData.disk}
-                          onChange={(e) => setFormData({ ...formData, disk: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, disk: parseInt(e.target.value) || 0 })
+                          }
                           min={1024}
-                          className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
                           {(formData.disk / 1024).toFixed(2)} GiB
                         </p>
                       </div>
                       <div>
-                        <label className={labelClasses}>CPU (%) *</label>
-                        <input
+                        <Label>CPU (%) *</Label>
+                        <Input
                           type="number"
                           value={formData.cpu}
-                          onChange={(e) => setFormData({ ...formData, cpu: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, cpu: parseInt(e.target.value) || 0 })
+                          }
                           min={1}
                           max={10000}
-                          className={inputClasses}
                           required
                         />
-                        <p className={cn("text-xs mt-1 text-zinc-600")}>
+                        <p className={cn("mt-1 text-xs text-zinc-600")}>
                           {formData.cpu}% = {(formData.cpu / 100).toFixed(2)} thread(s)
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
-                      CPU Pinning
-                    </h3>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>CPU Pinning</h3>
                     <div>
-                      <label className={labelClasses}>Pin to CPUs</label>
-                      <input
+                      <Label>Pin to CPUs</Label>
+                      <Input
                         type="text"
                         value={formData.cpuPinning}
                         onChange={(e) => setFormData({ ...formData, cpuPinning: e.target.value })}
                         placeholder="e.g., 0,1,2,3 or 0-4"
-                        className={inputClasses}
                       />
-                      <p className={cn("text-xs mt-1 text-zinc-600")}>
-                        Leave empty to use any available CPU. Use comma-separated list (0,1,2) or range (0-4).
+                      <p className={cn("mt-1 text-xs text-zinc-600")}>
+                        Leave empty to use any available CPU. Use comma-separated list (0,1,2) or
+                        range (0-4).
                       </p>
                     </div>
                   </div>
 
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>
                       Memory Settings
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClasses}>Swap Memory</label>
-                        <select
-                          value={formData.swap === -1 ? "unlimited" : formData.swap === 0 ? "disabled" : "limited"}
-                          onChange={(e) => {
-                            const val = e.target.value;
+                        <Label>Swap Memory</Label>
+                        <Select
+                          value={
+                            formData.swap === -1
+                              ? "unlimited"
+                              : formData.swap === 0
+                                ? "disabled"
+                                : "limited"
+                          }
+                          onValueChange={(val) => {
                             if (val === "unlimited") setFormData({ ...formData, swap: -1 });
                             else if (val === "disabled") setFormData({ ...formData, swap: 0 });
                             else setFormData({ ...formData, swap: formData.memory });
                           }}
-                          className={selectClasses}
                         >
-                          <option value="unlimited">Unlimited</option>
-                          <option value="disabled">Disabled</option>
-                          <option value="limited">Limited</option>
-                        </select>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unlimited">Unlimited</SelectItem>
+                            <SelectItem value="disabled">Disabled</SelectItem>
+                            <SelectItem value="limited">Limited</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       {formData.swap > 0 && (
                         <div>
-                          <label className={labelClasses}>Swap Limit (MiB)</label>
-                          <input
+                          <Label>Swap Limit (MiB)</Label>
+                          <Input
                             type="number"
                             value={formData.swap}
-                            onChange={(e) => setFormData({ ...formData, swap: parseInt(e.target.value) || 0 })}
+                            onChange={(e) =>
+                              setFormData({ ...formData, swap: parseInt(e.target.value) || 0 })
+                            }
                             min={1}
-                            className={inputClasses}
                           />
                         </div>
                       )}
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <div>
-                        <label className={labelClasses}>OOM Killer</label>
+                        <Label>OOM Killer</Label>
                         <p className={cn("text-xs text-zinc-600")}>
                           When disabled, container won't be killed when out of memory
                         </p>
@@ -425,7 +441,9 @@ export default function NewServerPage() {
                         </span>
                         <Switch
                           checked={formData.oomKillDisable}
-                          onCheckedChange={(checked) => setFormData({ ...formData, oomKillDisable: checked })}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, oomKillDisable: checked })
+                          }
                         />
                       </div>
                     </div>
@@ -434,61 +452,61 @@ export default function NewServerPage() {
 
                 {/* Allocations Tab */}
                 <TabsContent value="allocations" className="mt-6 space-y-4">
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
-                      Select Node
-                    </h3>
-                    <select
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>Select Node</h3>
+                    <Select
                       value={formData.nodeId}
-                      onChange={(e) => {
-                        setFormData({ ...formData, nodeId: e.target.value, allocationIds: [] });
-                        setSelectedNodeId(e.target.value);
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, nodeId: value, allocationIds: [] });
+                        setSelectedNodeId(value);
                       }}
-                      className={selectClasses}
-                      required
                     >
-                      <option value="">Select node...</option>
-                      {nodesList.map((node) => (
-                        <option key={node.id} value={node.id}>
-                          {node.displayName} ({node.host}:{node.port}) - {node.location?.name || "Unknown"}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select node..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {nodesList.map((node) => (
+                          <SelectItem key={node.id} value={node.id}>
+                            {node.displayName} ({node.host}:{node.port}) -{" "}
+                            {node.location?.name || "Unknown"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {selectedNode && (
-                    <div className={cardClasses}>
-                      <CornerAccents size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
+                    <div>
+                      <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>
                         Available Allocations
                       </h3>
                       {!selectedNode.allocations || selectedNode.allocations.length === 0 ? (
-                        <div className={cn("text-sm py-8 text-center text-zinc-500")}>
-                          No allocations available on this node. Add allocations in the Nodes section.
+                        <div className={cn("py-8 text-center text-sm text-zinc-500")}>
+                          No allocations available on this node. Add allocations in the Nodes
+                          section.
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
                           {selectedNode.allocations
-                            .filter(a => !a.assigned || formData.allocationIds.includes(a.id))
+                            .filter((a) => !a.assigned || formData.allocationIds.includes(a.id))
                             .map((allocation) => (
-                              <label
+                              <Label
                                 key={allocation.id}
                                 className={cn(
-                                  "flex items-center gap-2 p-3 border cursor-pointer transition-colors",
+                                  "flex cursor-pointer items-center gap-2 border p-3 transition-colors",
                                   formData.allocationIds.includes(allocation.id)
                                     ? "border-zinc-400 bg-zinc-800/50"
                                     : "border-zinc-700 hover:border-zinc-600"
                                 )}
                               >
-                                <input
+                                <Input
                                   type="checkbox"
                                   checked={formData.allocationIds.includes(allocation.id)}
                                   onChange={() => toggleAllocation(allocation.id)}
-                                  className="w-4 h-4"
+                                  className="h-4 w-4"
                                 />
                                 <div>
-                                  <span className={cn("text-sm font-mono text-zinc-300")}>
+                                  <span className={cn("font-mono text-sm text-zinc-300")}>
                                     {allocation.ip}:{allocation.port}
                                   </span>
                                   {allocation.alias && (
@@ -497,7 +515,7 @@ export default function NewServerPage() {
                                     </span>
                                   )}
                                 </div>
-                              </label>
+                              </Label>
                             ))}
                         </div>
                       )}
@@ -507,45 +525,61 @@ export default function NewServerPage() {
 
                 {/* Blueprint Tab */}
                 <TabsContent value="blueprint" className="mt-6 space-y-4">
-                  <div className={cardClasses}>
-                    <CornerAccents size="sm" />
-                    <h3 className={cn("text-sm font-medium mb-4 text-zinc-200")}>
+                  <div>
+                    <h3 className={cn("mb-4 text-sm font-medium text-zinc-200")}>
                       Select Blueprint
                     </h3>
-                    <select
+                    <Select
                       value={formData.blueprintId}
-                      onChange={(e) => setFormData({ ...formData, blueprintId: e.target.value })}
-                      className={selectClasses}
-                      required
+                      onValueChange={(value) => setFormData({ ...formData, blueprintId: value })}
                     >
-                      <option value="">Select a blueprint...</option>
-                      {blueprintsList.map((blueprint) => {
-                        const dockerImage = Object.values(blueprint.dockerImages || {})[0] || "No image";
-                        return (
-                          <option key={blueprint.id} value={blueprint.id}>
-                            {blueprint.name} - {dockerImage}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a blueprint..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {blueprintsList.map((blueprint) => {
+                          const dockerImage =
+                            Object.values(blueprint.dockerImages || {})[0] || "No image";
+                          return (
+                            <SelectItem key={blueprint.id} value={blueprint.id}>
+                              {blueprint.name} - {dockerImage}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
                     {selectedBlueprint && (
-                      <div className={cn("mt-3 p-3 border text-xs border-zinc-700 bg-zinc-900/50")}>
+                      <div className={cn("mt-3 border border-zinc-700 bg-zinc-900/50 p-3 text-xs")}>
                         {selectedBlueprint.description && (
                           <p className={"text-zinc-400"}>{selectedBlueprint.description}</p>
                         )}
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {selectedBlueprint.dockerImages && Object.keys(selectedBlueprint.dockerImages).length > 0 && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
-                              {Object.keys(selectedBlueprint.dockerImages).length} docker images
-                            </span>
-                          )}
-                          {selectedBlueprint.variables && selectedBlueprint.variables.length > 0 && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
-                              {selectedBlueprint.variables.length} variables
-                            </span>
-                          )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedBlueprint.dockerImages &&
+                            Object.keys(selectedBlueprint.dockerImages).length > 0 && (
+                              <span
+                                className={cn(
+                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                )}
+                              >
+                                {Object.keys(selectedBlueprint.dockerImages).length} docker images
+                              </span>
+                            )}
+                          {selectedBlueprint.variables &&
+                            selectedBlueprint.variables.length > 0 && (
+                              <span
+                                className={cn(
+                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                )}
+                              >
+                                {selectedBlueprint.variables.length} variables
+                              </span>
+                            )}
                           {selectedBlueprint.startup && (
-                            <span className={cn("px-1.5 py-0.5 text-[10px] border border-zinc-700 text-zinc-500")}>
+                            <span
+                              className={cn(
+                                "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                              )}
+                            >
                               startup command
                             </span>
                           )}
@@ -555,36 +589,44 @@ export default function NewServerPage() {
                   </div>
 
                   {/* Docker Image Selection */}
-                  {selectedBlueprint?.dockerImages && Object.keys(selectedBlueprint.dockerImages).length > 0 && (
-                    <div className={cardClasses}>
-                      <CornerAccents size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2 text-zinc-200")}>
-                        <ImageIcon className="w-4 h-4" />
-                        Docker Image
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(selectedBlueprint.dockerImages).map(([label, image]) => (
-                          <TextureButton variant="minimal"
-                            key={label}
-                            type="button"
-                            onClick={() => setSelectedDockerImage(image)}
-                          >
-                            {label}
-                          </TextureButton>
-                        ))}
+                  {selectedBlueprint?.dockerImages &&
+                    Object.keys(selectedBlueprint.dockerImages).length > 0 && (
+                      <div>
+                        <h3
+                          className={cn(
+                            "mb-4 flex items-center gap-2 text-sm font-medium text-zinc-200"
+                          )}
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          Docker Image
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(selectedBlueprint.dockerImages).map(([label, image]) => (
+                            <TextureButton
+                              variant="minimal"
+                              key={label}
+                              type="button"
+                              onClick={() => setSelectedDockerImage(image)}
+                            >
+                              {label}
+                            </TextureButton>
+                          ))}
+                        </div>
+                        <p className={cn("mt-2 font-mono text-[10px] text-zinc-600")}>
+                          {selectedDockerImage}
+                        </p>
                       </div>
-                      <p className={cn("text-[10px] mt-2 font-mono text-zinc-600")}>
-                        {selectedDockerImage}
-                      </p>
-                    </div>
-                  )}
+                    )}
 
                   {/* Startup Variables */}
                   {selectedBlueprint?.variables && selectedBlueprint.variables.length > 0 && (
-                    <div className={cardClasses}>
-                      <CornerAccents size="sm" />
-                      <h3 className={cn("text-sm font-medium mb-4 flex items-center gap-2 text-zinc-200")}>
-                        <VariableIcon className="w-4 h-4" />
+                    <div>
+                      <h3
+                        className={cn(
+                          "mb-4 flex items-center gap-2 text-sm font-medium text-zinc-200"
+                        )}
+                      >
+                        <VariableIcon className="h-4 w-4" />
                         Startup Variables
                       </h3>
                       <div className="space-y-4">
@@ -592,38 +634,52 @@ export default function NewServerPage() {
                           .filter((v: any) => v.user_viewable !== false)
                           .map((variable: any) => (
                             <div key={variable.env_variable}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <label className={labelClasses}>{variable.name}</label>
-                                <span className={cn("text-[10px] font-mono px-1.5 py-0.5 border rounded border-zinc-700 text-zinc-600")}>
+                              <div className="mb-1 flex items-center gap-2">
+                                <Label>{variable.name}</Label>
+                                <span
+                                  className={cn(
+                                    "rounded border border-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600"
+                                  )}
+                                >
                                   {variable.env_variable}
                                 </span>
                                 {variable.user_editable === false && (
-                                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500")}>
+                                  <span
+                                    className={cn(
+                                      "rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                    )}
+                                  >
                                     read only
                                   </span>
                                 )}
                               </div>
                               {variable.description && (
-                                <p className={cn("text-[11px] mb-2 text-zinc-500")}>
+                                <p className={cn("mb-2 text-[11px] text-zinc-500")}>
                                   {variable.description}
                                 </p>
                               )}
-                              <input
+                              <Input
                                 type="text"
                                 value={variableValues[variable.env_variable] || ""}
-                                onChange={(e) => setVariableValues(prev => ({
-                                  ...prev,
-                                  [variable.env_variable]: e.target.value
-                                }))}
+                                onChange={(e) =>
+                                  setVariableValues((prev) => ({
+                                    ...prev,
+                                    [variable.env_variable]: e.target.value,
+                                  }))
+                                }
                                 disabled={variable.user_editable === false}
                                 placeholder={variable.default_value || ""}
                                 className={cn(
-                                  inputClasses,
                                   "font-mono text-sm",
-                                  variable.user_editable === false && "opacity-60 cursor-not-allowed"
+                                  variable.user_editable === false &&
+                                    "cursor-not-allowed opacity-60"
                                 )}
                               />
-                              <div className={cn("flex items-center gap-2 mt-1 text-[10px] text-zinc-600")}>
+                              <div
+                                className={cn(
+                                  "mt-1 flex items-center gap-2 text-[10px] text-zinc-600"
+                                )}
+                              >
                                 <span>Default: {variable.default_value || "(empty)"}</span>
                                 {variable.rules && (
                                   <>
@@ -641,24 +697,19 @@ export default function NewServerPage() {
               </Tabs>
 
               {/* Submit Button */}
-              <div className={cn(
-                "flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-700/50",
-              )}>
+              <div className={cn("mt-6 flex justify-end gap-3 border-t border-zinc-700/50 pt-6")}>
                 <TextureButton
                   type="button"
-                  variant="outline"
+                  variant="destructive"
                   onClick={() => router.push("/admin/servers")}
                 >
                   Cancel
                 </TextureButton>
-                <TextureButton
-                  type="submit"
-                  disabled={create.isPending}
-                >
+                <TextureButton type="submit" disabled={create.isPending}>
                   {create.isPending ? (
-                    <Spinner className="w-4 h-4" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
-                    <ServerIcon className="w-4 h-4" />
+                    <ServerIcon className="h-4 w-4" />
                   )}
                   {create.isPending ? "Creating..." : "Create Server"}
                 </TextureButton>
