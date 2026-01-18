@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
+import {type JSX, useState} from "react";
+import {useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsShieldCheck, BsArrowLeft } from "react-icons/bs";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
+import {Input} from "@workspace/ui/components/input";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {BsArrowLeft, BsShieldCheck} from "react-icons/bs";
+import {authClient} from "@/lib/auth-client";
+import {toast} from "sonner";
+import {Label} from "@workspace/ui/components/label";
 
 const TwoFactorPage = (): JSX.Element | null => {
   const router = useRouter();
@@ -55,35 +55,40 @@ const TwoFactorPage = (): JSX.Element | null => {
   };
 
   return (
-    <div className={cn(
-      "min-h-svh flex items-center justify-center transition-colors relative bg-[#0b0b0a]",
-    )}>
+    <div
+      className={cn(
+        "relative flex min-h-svh items-center justify-center bg-[#0b0b0a] transition-colors"
+      )}
+    >
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative w-full max-w-md p-8">
-        <div className={cn(
-          "relative p-8 border bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10",
-        )}>
-          <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-500")} />
-          <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-500")} />
-          <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-500")} />
-          <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-500")} />
+        <div
+          className={cn(
+            "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8"
+          )}
+        >
+          <div className={cn("absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-500")} />
+          <div className={cn("absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-500")} />
+          <div
+            className={cn("absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-500")}
+          />
+          <div
+            className={cn("absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-500")}
+          />
 
-          <div className="flex flex-col items-center text-center mb-8">
-            <div className={cn(
-              "w-16 h-16 flex items-center justify-center mb-4 border bg-zinc-900 border-zinc-700",
-            )}>
-              <BsShieldCheck className={cn("w-8 h-8 text-zinc-400")} />
+          <div className="mb-8 flex flex-col items-center text-center">
+            <div
+              className={cn(
+                "mb-4 flex h-16 w-16 items-center justify-center border border-zinc-700 bg-zinc-900"
+              )}
+            >
+              <BsShieldCheck className={cn("h-8 w-8 text-zinc-400")} />
             </div>
-            <h1 className={cn(
-              "text-xl font-light tracking-wider text-zinc-100",
-            )}>
+            <h1 className={cn("text-xl font-light tracking-wider text-zinc-100")}>
               TWO-FACTOR AUTHENTICATION
             </h1>
-            <p className={cn(
-              "text-sm mt-2 text-zinc-500",
-            )}>
+            <p className={cn("mt-2 text-sm text-zinc-500")}>
               {useBackupCode
                 ? "Enter one of your backup codes to continue"
                 : "Enter the 6-digit code from your authenticator app"}
@@ -92,11 +97,7 @@ const TwoFactorPage = (): JSX.Element | null => {
 
           <div className="space-y-6">
             <div>
-              <label className={cn(
-                "text-[10px] font-medium uppercase tracking-wider text-zinc-500",
-              )}>
-                {useBackupCode ? "Backup Code" : "Verification Code"}
-              </label>
+              <Label>{useBackupCode ? "Backup Code" : "Verification Code"}</Label>
               <Input
                 type="text"
                 value={code}
@@ -106,22 +107,20 @@ const TwoFactorPage = (): JSX.Element | null => {
                 maxLength={useBackupCode ? 20 : 6}
                 autoFocus
                 className={cn(
-                  "mt-2 text-center text-2xl tracking-[0.5em] font-mono bg-zinc-900/50 border-zinc-700/50 text-zinc-200 focus:border-zinc-500",
+                  "mt-2 border-zinc-700/50 bg-zinc-900/50 text-center font-mono text-2xl tracking-[0.5em] text-zinc-200 focus:border-zinc-500"
                 )}
               />
             </div>
 
-            <TextureButton
-              onClick={handleVerify}
-              disabled={code.length < 6 || isSubmitting}
-            >
-              <span className="text-xs uppercase tracking-wider">
+            <TextureButton onClick={handleVerify} disabled={code.length < 6 || isSubmitting}>
+              <span className="text-xs tracking-wider uppercase">
                 {isSubmitting ? "Verifying..." : "Verify"}
               </span>
             </TextureButton>
 
             <div className="flex flex-col items-center gap-4">
-              <TextureButton variant="minimal"
+              <TextureButton
+                variant="minimal"
                 onClick={() => {
                   setUseBackupCode(!useBackupCode);
                   setCode("");
@@ -130,10 +129,8 @@ const TwoFactorPage = (): JSX.Element | null => {
                 {useBackupCode ? "Use authenticator code instead" : "Use a backup code instead"}
               </TextureButton>
 
-              <TextureButton variant="minimal"
-                onClick={() => router.back()}
-              >
-                <BsArrowLeft className="w-3 h-3" />
+              <TextureButton variant="minimal" onClick={() => router.back()}>
+                <BsArrowLeft className="h-3 w-3" />
                 Back to login
               </TextureButton>
             </div>

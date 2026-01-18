@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import {Slot} from "@radix-ui/react-slot";
-import {cva} from "class-variance-authority";
-import {cn} from "@workspace/ui/lib/utils";
+import { Slot } from "@radix-ui/react-slot";
+import { cva } from "class-variance-authority";
+import { cn } from "@workspace/ui/lib/utils";
 
 const buttonVariantsOuter = cva("", {
   variants: {
@@ -71,7 +71,7 @@ const innerDivVariants = cva("w-full h-full flex items-center justify-center", {
       icon: "transition-all duration-300 bg-gradient-to-b from-white to-neutral-50/50 dark:from-neutral-800 dark:to-neutral-700/50 rounded-full group-active:bg-neutral-200 dark:group-active:bg-neutral-800",
 
       ghost:
-        "transition-all duration-300 bg-transparent text-sm text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100",
+        "transition-all gap-2 duration-300 bg-transparent text-sm text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100",
 
       success:
         "transition-all duration-300 gap-2 bg-gradient-to-b from-emerald-400 to-emerald-600 text-sm text-white/95 hover:from-emerald-400/80 hover:to-emerald-600/80 active:from-emerald-500 active:to-emerald-700",

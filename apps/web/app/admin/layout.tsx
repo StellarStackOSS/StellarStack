@@ -1,21 +1,18 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useTheme as useNextTheme } from "next-themes";
-import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
-import { useAuth } from "hooks/auth-provider";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { cn } from "@workspace/ui/lib/utils";
-import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
+import {memo, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {SidebarInset, SidebarProvider} from "@workspace/ui/components/sidebar";
+import {useAuth} from "hooks/auth-provider";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {cn} from "@workspace/ui/lib/utils";
+import {UnifiedSidebar} from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
       <AnimatedBackground />
-      <FloatingDots count={15} />
     </>
   );
 });

@@ -4,7 +4,6 @@ import {type JSX, useState} from "react";
 import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {SidebarTrigger} from "@workspace/ui/components/sidebar";
 import {
   BsBell,
@@ -125,7 +124,6 @@ const NotificationsPage = (): JSX.Element | null => {
       "min-h-svh transition-colors relative bg-[#0b0b0a]",
     )}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">

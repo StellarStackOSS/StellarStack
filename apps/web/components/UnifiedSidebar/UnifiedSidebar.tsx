@@ -1,7 +1,7 @@
 "use client";
 
-import {useState} from "react";
-import {useParams, usePathname} from "next/navigation";
+import { useState } from "react";
+import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -29,14 +29,14 @@ import {
   UserIcon,
   UsersIcon,
 } from "lucide-react";
-import {cn} from "@workspace/ui/lib/utils";
-import {useAuth} from "hooks/auth-provider";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {BsArrowLeft} from "react-icons/bs";
-import {motion} from "framer-motion";
-import {WaveText} from "@/components/wave-text";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {useServerWebSocket} from "@/hooks/useServerWebSocket";
+import { cn } from "@workspace/ui/lib/utils";
+import { useAuth } from "hooks/auth-provider";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsArrowLeft } from "react-icons/bs";
+import { motion } from "framer-motion";
+import { WaveText } from "@/components/wave-text";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServerWebSocket } from "@/hooks/useServerWebSocket";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -65,11 +65,18 @@ const appNavItems = [
   { title: "Network", icon: <img alt="icon" src="/icons/24-connect.svg" />, href: "/network" },
   { title: "Webhooks", icon: <img alt="icon" src="/icons/24-bell.svg" />, href: "/webhooks" },
   { title: "Split", icon: <img alt="icon" src="/icons/24-move-down-right.svg" />, href: "/split" },
-  { title: "Activity", icon: <img alt="icon" src="/icons/24-bullet-list.svg" />, href: "/activity" },
-  { title: "Startup", icon: <img alt="icon" src="/icons/24-circle-power-off.svg" />, href: "/startup" },
+  {
+    title: "Activity",
+    icon: <img alt="icon" src="/icons/24-bullet-list.svg" />,
+    href: "/activity",
+  },
+  {
+    title: "Startup",
+    icon: <img alt="icon" src="/icons/24-circle-power-off.svg" />,
+    href: "/startup",
+  },
   { title: "Settings", icon: <img alt="icon" src="/icons/24-gear.svg" />, href: "/settings" },
 ];
-
 
 const ServerStatsContent = () => {
   const { consoleInfo } = useServer();
@@ -79,18 +86,12 @@ const ServerStatsContent = () => {
   });
 
   const cpuPercent = statsData.current ? (statsData.current.cpu_absolute / 100) * 100 : 0;
-  const memPercent = statsData.current
-    ? (statsData.current.memory_bytes / 34359738368) * 100
-    : 0;
+  const memPercent = statsData.current ? (statsData.current.memory_bytes / 34359738368) * 100 : 0;
 
   return (
     <>
       {statsData.current && (
-        <div
-          className={cn(
-            "space-y-2 border-t px-3 py-2 border-zinc-800",
-          )}
-        >
+        <div className={cn("space-y-2 border-t border-zinc-800 px-3 py-2")}>
           <div className="flex items-center justify-between text-xs">
             <span className={"text-zinc-500"}>CPU</span>
             <span className={"text-zinc-300"}>{cpuPercent.toFixed(1)}%</span>
@@ -140,11 +141,10 @@ export const UnifiedSidebar = () => {
         <Link
           href="/servers"
           className={cn(
-            "group relative flex w-full items-center gap-2 border px-3 py-2 text-left transition-colors border-zinc-700/50 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200")}
+            "group relative flex w-full items-center gap-2 border border-zinc-700/50 bg-zinc-900/50 px-3 py-2 text-left text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
+          )}
         >
-          <ServerIcon
-            className={cn("h-4 w-4 shrink-0 text-zinc-500")}
-          />
+          <ServerIcon className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
           <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
         </Link>
       );
@@ -159,13 +159,8 @@ export const UnifiedSidebar = () => {
               <span className="text-xs font-medium tracking-wider uppercase">Back to Panel</span>
             </Link>
           </TextureButton>
-          <div
-            className={cn(
-              "mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}
-          >
-            <ShieldIcon
-              className={cn("h-4 w-4 shrink-0 text-amber-500")}
-            />
+          <div className={cn("mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}>
+            <ShieldIcon className={cn("h-4 w-4 shrink-0 text-amber-500")} />
             <span className="text-xs font-medium tracking-wider uppercase">Admin Panel</span>
           </div>
         </>
@@ -174,19 +169,14 @@ export const UnifiedSidebar = () => {
 
     return (
       <>
-        <TextureButton variant="minimal">
+        <TextureButton variant="minimal" className="w-full">
           <Link href="/servers" className="flex flex-row gap-2">
             <BsArrowLeft className="h-4 w-4" />
             <span className="text-xs font-medium tracking-wider uppercase">All Servers</span>
           </Link>
         </TextureButton>
-        <div
-          className={cn(
-            "mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}
-        >
-          <ServerIcon
-            className={cn("h-4 w-4 shrink-0 text-zinc-500")}
-          />
+        <div className={cn("mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}>
+          <ServerIcon className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
           <span className="truncate text-xs font-medium tracking-wider uppercase">
             Server {serverId}
           </span>
@@ -218,9 +208,7 @@ export const UnifiedSidebar = () => {
     return (
       <SidebarGroup>
         <SidebarGroupLabel
-          className={cn(
-            "px-2 text-[10px] font-medium tracking-wider uppercase text-zinc-600"
-          )}
+          className={cn("px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase")}
         >
           {groupLabel}
         </SidebarGroupLabel>
@@ -230,14 +218,12 @@ export const UnifiedSidebar = () => {
               const fullHref = getFullHref(item.href);
               const isActive =
                 variant === "admin"
-                  ? pathname === fullHref || (fullHref !== "/admin" && pathname.startsWith(fullHref))
+                  ? pathname === fullHref ||
+                    (fullHref !== "/admin" && pathname.startsWith(fullHref))
                   : pathname === fullHref || pathname.startsWith(fullHref + "/");
 
               return (
-                <SidebarMenuItem
-                  key={item.title}
-                  className={variant === "app" ? "relative" : ""}
-                >
+                <SidebarMenuItem key={item.title} className={variant === "app" ? "relative" : ""}>
                   {variant === "app" && isActive && (
                     <motion.div
                       layoutId="sidebar-active-item"
@@ -262,12 +248,12 @@ export const UnifiedSidebar = () => {
                     <Link href={fullHref}>
                       {variant === "app" ? (
                         <span className="w-5">{item.icon as any}</span>
-                      ) :
+                      ) : (
                         (() => {
                           const Icon = item.icon as React.ComponentType<{ className: string }>;
                           return <Icon className="h-4 w-4" />;
                         })()
-                      }
+                      )}
                       <span
                         className={cn(
                           variant === "app" ? "ml-2 tracking-wider uppercase" : "uppercase",
@@ -333,26 +319,20 @@ export const UnifiedSidebar = () => {
   return (
     <Sidebar
       className={cn(
-        "border-r shadow-lg border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-black/20"
+        "border-r border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
       )}
     >
-      <SidebarHeader
-        className={cn("border-b p-4 border-zinc-200/10")}
-      >
+      <SidebarHeader className={cn("border-b border-zinc-200/10 p-4")}>
         {renderHeader()}
       </SidebarHeader>
 
       <SidebarContent className="px-2">{renderNavItems()}</SidebarContent>
 
-      <SidebarFooter
-        className={cn("border-t p-4 border-zinc-200/10")}
-      >
-        {variant === "app" && <ServerStatsContent/>}
+      <SidebarFooter className={cn("border-t border-zinc-200/10 p-4")}>
+        {variant === "app" && <ServerStatsContent />}
 
         <div className="relative">
-          <TextureButton variant="minimal"
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-          >
+          <TextureButton variant="minimal" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
             <div
               className={cn(
                 "flex h-8 w-8 items-center justify-center text-xs font-medium uppercase",
@@ -366,29 +346,27 @@ export const UnifiedSidebar = () => {
             <div className="min-w-0 flex-1">
               <div
                 className={cn(
-                  isAdminVariant ? "flex items-center gap-1.5 truncate text-xs font-medium" : "truncate text-xs font-medium text-zinc-200",
+                  isAdminVariant
+                    ? "flex items-center gap-1.5 truncate text-xs font-medium"
+                    : "truncate text-xs font-medium text-zinc-200"
                 )}
               >
                 {user.name}
                 {isAdminVariant && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.5 text-[9px] tracking-wider uppercase bg-amber-900/50 text-amber-400",
+                      "bg-amber-900/50 px-1.5 py-0.5 text-[9px] tracking-wider text-amber-400 uppercase"
                     )}
                   >
                     Admin
                   </span>
                 )}
               </div>
-              <div
-                className={cn("truncate text-[10px] text-zinc-500")}
-              >
-                {user.email}
-              </div>
+              <div className={cn("truncate text-[10px] text-zinc-500")}>{user.email}</div>
             </div>
             <ChevronUpIcon
               className={cn(
-                "h-4 w-4 shrink-0 transition-transform text-zinc-500",
+                "h-4 w-4 shrink-0 text-zinc-500 transition-transform",
                 isUserMenuOpen && "rotate-180"
               )}
             />
@@ -397,7 +375,8 @@ export const UnifiedSidebar = () => {
           {isUserMenuOpen && (
             <div
               className={cn(
-                "absolute right-0 bottom-full left-0 z-50 mb-1 border shadow-lg border-zinc-700/50 bg-[#0f0f0f] shadow-black/40")}
+                "absolute right-0 bottom-full left-0 z-50 mb-1 border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
+              )}
             >
               {userMenuItems.map((item) => (
                 <Link
@@ -405,23 +384,20 @@ export const UnifiedSidebar = () => {
                   href={item.href}
                   onClick={() => setIsUserMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-xs transition-colors text-zinc-300 hover:bg-zinc-800",
+                    "flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
                   )}
                 >
-                  <item.icon
-                    className={cn("h-4 w-4 text-zinc-500")}
-                  />
+                  <item.icon className={cn("h-4 w-4 text-zinc-500")} />
                   <span className="tracking-wider uppercase">{item.title}</span>
                 </Link>
               ))}
 
               {userMenuItems.length > 0 && (
-                <div
-                  className={cn("my-1 border-t border-zinc-700/50")}
-                />
+                <div className={cn("my-1 border-t border-zinc-700/50")} />
               )}
 
-              <TextureButton variant="minimal"
+              <TextureButton
+                variant="minimal"
                 onClick={() => {
                   setIsUserMenuOpen(false);
                   handleSignOut();
@@ -434,11 +410,7 @@ export const UnifiedSidebar = () => {
           )}
         </div>
 
-        <div
-          className={cn(
-            "mt-3 text-center text-[10px] tracking-wider uppercase text-zinc-600",
-          )}
-        >
+        <div className={cn("mt-3 text-center text-[10px] tracking-wider text-zinc-600 uppercase")}>
           {renderVersion()}
         </div>
       </SidebarFooter>

@@ -1,16 +1,31 @@
 "use client";
 
-import {type JSX, useCallback, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {motion} from "framer-motion";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Slider} from "@workspace/ui/components/slider";
+import { type JSX, useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { Slider } from "@workspace/ui/components/slider";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import {
   BsCheck,
   BsCheckCircle,
@@ -18,14 +33,12 @@ import {
   BsGeoAlt,
   BsGlobe,
   BsLayers,
-  BsMoon,
-  BsSun,
 } from "react-icons/bs";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
 
 interface ServerSettings {
   name: string;
@@ -519,12 +532,7 @@ const SettingsPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   SERVER SETTINGS
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -535,7 +543,7 @@ const SettingsPage = (): JSX.Element | null => {
             <div className="flex items-center gap-2">
               {hasChanges && (
                 <TextureButton
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={handleReset}
                   className={cn(
@@ -547,7 +555,7 @@ const SettingsPage = (): JSX.Element | null => {
                 </TextureButton>
               )}
               <TextureButton
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setSaveModalOpen(true)}
                 disabled={!hasChanges}
@@ -567,7 +575,6 @@ const SettingsPage = (): JSX.Element | null => {
                   <span className="text-xs tracking-wider uppercase">Save Changes</span>
                 )}
               </TextureButton>
-
             </div>
           </div>
 
@@ -578,116 +585,53 @@ const SettingsPage = (): JSX.Element | null => {
               "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
             <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase",
-                "text-zinc-300"
-              )}
+              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
             >
               General
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Server Name
-                </label>
-                <input
+                <Label>Server Name</Label>
+                <Input
                   type="text"
                   value={settings.name}
                   onChange={(e) => handleSettingChange("name", e.target.value)}
-                  className={cn(
-                    "mt-2 w-full border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
                 />
               </div>
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Description
-                </label>
-                <textarea
+                <Label>Description</Label>
+                <Textarea
                   value={settings.description}
                   onChange={(e) => handleSettingChange("description", e.target.value)}
                   rows={3}
-                  className={cn(
-                    "mt-2 w-full resize-none border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
                 />
               </div>
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Server Type
-                </label>
-                <select
+                <Label>Server Type</Label>
+                <Select
                   value={settings.serverType}
-                  onChange={(e) => handleSettingChange("serverType", e.target.value)}
-                  className={cn(
-                    "mt-2 w-full cursor-pointer border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
+                  onValueChange={(value) => handleSettingChange("serverType", value)}
                 >
-                  {Object.entries(serverTypesByCategory).map(([category, types]) => (
-                    <optgroup
-                      key={category}
-                      label={category}
-                      className={"bg-zinc-900 text-zinc-400"}
-                    >
-                      {types.map((type) => (
-                        <option
-                          key={type.id}
-                          value={type.id}
-                          className={
-                            "bg-zinc-900 text-zinc-200"
-                          }
-                        >
-                          {type.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(serverTypesByCategory).map(([category, types]) => (
+                      <div key={category}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-zinc-500">
+                          {category}
+                        </div>
+                        {types.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -703,58 +647,22 @@ const SettingsPage = (): JSX.Element | null => {
               "border-red-900/30 bg-gradient-to-b from-red-950/20 via-[#0f0f0f] to-[#0a0a0a]"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-red-800"
-              )}
-            />
-
             <div className="mb-6 flex items-center gap-2">
-              <BsExclamationTriangle
-                className={cn("h-4 w-4", "text-red-400")}
-              />
-              <h2
-                className={cn(
-                  "text-sm font-medium tracking-wider uppercase",
-                  "text-red-400"
-                )}
-              >
+              <BsExclamationTriangle className={cn("h-4 w-4", "text-red-400")} />
+              <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-red-400")}>
                 Danger Zone
               </h2>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <h3
-                  className={cn("text-sm font-medium", "text-zinc-200")}
-                >
-                  Reinstall Server
-                </h3>
+                <h3 className={cn("text-sm font-medium", "text-zinc-200")}>Reinstall Server</h3>
                 <p className={cn("mt-1 text-xs", "text-zinc-500")}>
                   This will reinstall the server with its current configuration
                 </p>
               </div>
               <TextureButton
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setReinstallModalOpen(true)}
                 className={cn(
@@ -812,9 +720,7 @@ const SettingsPage = (): JSX.Element | null => {
               <BsGlobe className="h-5 w-5" />
               TRANSFER SERVER
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-500")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-500")}>
               Select a new location for your server. Latency is measured from your current position.
             </DialogDescription>
           </DialogHeader>
@@ -832,29 +738,14 @@ const SettingsPage = (): JSX.Element | null => {
           ) : (
             <>
               {/* Current Location */}
-              <div
-                className={cn(
-                  "mb-4 border px-4 py-3",
-                  "border-zinc-800 bg-zinc-900/50"
-                )}
-              >
+              <div className={cn("mb-4 border px-4 py-3", "border-zinc-800 bg-zinc-900/50")}>
                 <div className="flex items-center gap-3">
                   <BsGeoAlt className={cn("h-4 w-4", "text-zinc-400")} />
                   <div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-wider uppercase",
-                        "text-zinc-500"
-                      )}
-                    >
+                    <span className={cn("text-[10px] tracking-wider uppercase", "text-zinc-500")}>
                       Current Location
                     </span>
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        "text-zinc-200"
-                      )}
-                    >
+                    <p className={cn("text-sm font-medium", "text-zinc-200")}>
                       {locations.find((l) => l.id === currentLocation)?.flag}{" "}
                       {locations.find((l) => l.id === currentLocation)?.city},{" "}
                       {locations.find((l) => l.id === currentLocation)?.country}
@@ -902,42 +793,20 @@ const SettingsPage = (): JSX.Element | null => {
                             <div className="flex items-center gap-2.5">
                               <span className="text-base">{location.flag}</span>
                               <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-medium",
-                                    "text-zinc-200"
-                                  )}
-                                >
+                                <p className={cn("text-sm font-medium", "text-zinc-200")}>
                                   {location.city}
                                 </p>
-                                <p
-                                  className={cn(
-                                    "text-[10px]",
-                                    "text-zinc-500"
-                                  )}
-                                >
+                                <p className={cn("text-[10px]", "text-zinc-500")}>
                                   {location.country}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               {pingData?.status === "pending" && (
-                                <span
-                                  className={cn(
-                                    "text-xs",
-                                    "text-zinc-600"
-                                  )}
-                                >
-                                  --
-                                </span>
+                                <span className={cn("text-xs", "text-zinc-600")}>--</span>
                               )}
                               {pingData?.status === "pinging" && (
-                                <Spinner
-                                  className={cn(
-                                    "h-3 w-3",
-                                    "text-zinc-500"
-                                  )}
-                                />
+                                <Spinner className={cn("h-3 w-3", "text-zinc-500")} />
                               )}
                               {pingData?.status === "done" && (
                                 <span
@@ -947,22 +816,10 @@ const SettingsPage = (): JSX.Element | null => {
                                 </span>
                               )}
                               {pingData?.status === "error" && (
-                                <span
-                                  className={cn(
-                                    "text-xs",
-                                    "text-red-400"
-                                  )}
-                                >
-                                  Error
-                                </span>
+                                <span className={cn("text-xs", "text-red-400")}>Error</span>
                               )}
                               {isSelected && (
-                                <BsCheck
-                                  className={cn(
-                                    "h-4 w-4",
-                                    "text-amber-400"
-                                  )}
-                                />
+                                <BsCheck className={cn("h-4 w-4", "text-amber-400")} />
                               )}
                               {isCurrentLocation && (
                                 <span
@@ -991,7 +848,7 @@ const SettingsPage = (): JSX.Element | null => {
                 )}
               >
                 <TextureButton
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={startPinging}
                   disabled={isPinging || pingCooldown > 0}
@@ -1010,17 +867,15 @@ const SettingsPage = (): JSX.Element | null => {
                 </TextureButton>
                 <div className="flex gap-2">
                   <TextureButton
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setTransferModalOpen(false)}
-                    className={cn(
-                      "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                    )}
+                    className={cn("border-zinc-700 text-zinc-400 hover:text-zinc-100")}
                   >
                     <span className="text-xs tracking-wider uppercase">Cancel</span>
                   </TextureButton>
                   <TextureButton
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={handleTransfer}
                     disabled={!selectedLocation}
@@ -1052,12 +907,7 @@ const SettingsPage = (): JSX.Element | null => {
 
       {/* Server Split Modal */}
       <Dialog open={splitModalOpen} onOpenChange={setSplitModalOpen}>
-        <DialogContent
-          className={cn(
-            "sm:max-w-lg",
-            "border-zinc-800 bg-[#0f0f0f]"
-          )}
-        >
+        <DialogContent className={cn("sm:max-w-lg", "border-zinc-800 bg-[#0f0f0f]")}>
           <DialogHeader>
             <DialogTitle
               className={cn(
@@ -1068,9 +918,7 @@ const SettingsPage = (): JSX.Element | null => {
               <BsLayers className="h-5 w-5" />
               SPLIT SERVER
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-500")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-500")}>
               Divide this server&apos;s resources into two separate instances.
             </DialogDescription>
           </DialogHeader>
@@ -1089,17 +937,8 @@ const SettingsPage = (): JSX.Element | null => {
             {/* CPU Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  CPU Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
+                <Label>CPU Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
                   {splitResources.cpu}% / {100 - splitResources.cpu}%
                 </span>
               </div>
@@ -1113,29 +952,16 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
 
             {/* Memory Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Memory Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
+                <Label>Memory Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
                   {Math.round((settings.memoryLimit * splitResources.memory) / 100)} MB /{" "}
                   {Math.round((settings.memoryLimit * (100 - splitResources.memory)) / 100)} MB
                 </span>
@@ -1150,29 +976,16 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
 
             {/* Disk Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Disk Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
+                <Label>Disk Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
                   {Math.round((settings.diskLimit * splitResources.disk) / 100)} MB /{" "}
                   {Math.round((settings.diskLimit * (100 - splitResources.disk)) / 100)} MB
                 </span>
@@ -1187,35 +1000,26 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
             <TextureButton
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => setSplitModalOpen(false)}
-              className={cn(
-                "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-              )}
+              className={cn("border-zinc-700 text-zinc-400 hover:text-zinc-100")}
             >
               <span className="text-xs tracking-wider uppercase">Cancel</span>
             </TextureButton>
             <TextureButton
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={handleSplitServer}
-              className={cn(
-                "gap-2",
-                "border-zinc-600 text-zinc-300 hover:text-zinc-100"
-              )}
+              className={cn("gap-2", "border-zinc-600 text-zinc-300 hover:text-zinc-100")}
             >
               <BsLayers className="h-3 w-3" />
               <span className="text-xs tracking-wider uppercase">Split Server</span>

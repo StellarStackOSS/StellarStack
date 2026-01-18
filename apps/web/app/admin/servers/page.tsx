@@ -7,7 +7,6 @@ import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
 import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
 import {
   ContextMenu,
@@ -24,11 +23,10 @@ import {
   RefreshCwIcon,
   ServerIcon,
   SquareIcon,
-  TrashIcon
+  TrashIcon,
 } from "lucide-react";
-import {AdminPageHeader, AdminSearchBar, AdminEmptyState} from "components/AdminPageComponents";
+import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
 import {useServerMutations, useServers} from "@/hooks/queries";
-import {CornerAccents, useAdminTheme} from "@/hooks/use-admin-theme";
 import type {Server} from "@/lib/api";
 import {toast} from "sonner";
 
@@ -75,13 +73,14 @@ export default function AdminServersPage() {
   const filteredServers = useMemo(() => {
     if (!searchQuery) return serversList;
     const query = searchQuery.toLowerCase();
-    return serversList.filter((server) =>
-      server.name.toLowerCase().includes(query) ||
-      server.shortId?.toLowerCase().includes(query) ||
-      server.status.toLowerCase().includes(query) ||
-      server.blueprint?.name?.toLowerCase().includes(query) ||
-      server.node?.displayName?.toLowerCase().includes(query) ||
-      server.owner?.name?.toLowerCase().includes(query)
+    return serversList.filter(
+      (server) =>
+        server.name.toLowerCase().includes(query) ||
+        server.shortId?.toLowerCase().includes(query) ||
+        server.status.toLowerCase().includes(query) ||
+        server.blueprint?.name?.toLowerCase().includes(query) ||
+        server.node?.displayName?.toLowerCase().includes(query) ||
+        server.owner?.name?.toLowerCase().includes(query)
     );
   }, [serversList, searchQuery]);
 
@@ -91,21 +90,17 @@ export default function AdminServersPage() {
   };
 
   return (
-    <div className={cn(
-      "min-h-svh transition-colors relative bg-[#0b0b0a]",
-    )}>
-      <AnimatedBackground  />
-      <FloatingDots count={15} />
-
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
+      <AnimatedBackground />
       <div className="relative p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto max-w-6xl">
           <FadeIn delay={0}>
             <AdminPageHeader
               title="SERVERS"
               description="Manage all game servers"
               action={{
                 label: "Create Server",
-                icon: <PlusIcon className="w-4 h-4" />,
+                icon: <PlusIcon className="h-4 w-4" />,
                 onClick: () => router.push("/admin/servers/new"),
               }}
             />
@@ -122,11 +117,15 @@ export default function AdminServersPage() {
             <div className="space-y-3">
               {isLoading ? (
                 <div className="flex justify-center py-12">
-                  <Spinner className="w-6 h-6" />
+                  <Spinner className="h-6 w-6" />
                 </div>
               ) : filteredServers.length === 0 ? (
                 <AdminEmptyState
-                  message={searchQuery ? "No servers match your search." : "No servers found. Create your first server."}
+                  message={
+                    searchQuery
+                      ? "No servers match your search."
+                      : "No servers found. Create your first server."
+                  }
                 />
               ) : (
                 filteredServers.map((server, index) => (
@@ -135,47 +134,53 @@ export default function AdminServersPage() {
                       <ContextMenuTrigger asChild>
                         <div
                           className={cn(
-                            "relative p-5 border transition-all hover:scale-[1.005] group cursor-context-menu bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 shadow-lg shadow-black/20 hover:border-zinc-700",
+                            "group relative cursor-context-menu border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-5 shadow-lg shadow-black/20 transition-all hover:scale-[1.005] hover:border-zinc-700"
                           )}
                         >
-                          <CornerAccents size="sm" />
-
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className={cn(
-                                "p-2.5 border border-zinc-700 bg-zinc-800/50",
-                              )}>
-                                <ServerIcon className={cn("w-5 h-5 text-zinc-400")} />
+                              <div className={cn("border border-zinc-700 bg-zinc-800/50 p-2.5")}>
+                                <ServerIcon className={cn("h-5 w-5 text-zinc-400")} />
                               </div>
                               <div>
                                 <div className="flex items-center gap-3">
-                                  <h2 className={cn(
-                                    "text-sm font-medium uppercase tracking-wider text-zinc-100",
-                                  )}>
+                                  <h2
+                                    className={cn(
+                                      "text-sm font-medium tracking-wider text-zinc-100 uppercase"
+                                    )}
+                                  >
                                     {server.name}
                                   </h2>
-                                  <span className={cn(
-                                    "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border",
-                                    getStatusStyle(server.status)
-                                  )}>
+                                  <span
+                                    className={cn(
+                                      "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                                      getStatusStyle(server.status)
+                                    )}
+                                  >
                                     {server.status}
                                   </span>
                                   {server.shortId && (
-                                    <span className={cn(
-                                      "text-[10px] font-mono px-1.5 py-0.5 border text-zinc-500 border-zinc-700",
-                                    )}>
+                                    <span
+                                      className={cn(
+                                        "border border-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500"
+                                      )}
+                                    >
                                       {server.shortId}
                                     </span>
                                   )}
                                 </div>
-                                <div className={cn(
-                                  "flex items-center gap-3 mt-1 text-xs text-zinc-500",
-                                )}>
+                                <div
+                                  className={cn(
+                                    "mt-1 flex items-center gap-3 text-xs text-zinc-500"
+                                  )}
+                                >
                                   <span>{server.blueprint?.name || "Unknown"}</span>
                                   <span className={cn("text-zinc-700")}>•</span>
                                   <span>{server.node?.displayName || "Unknown"}</span>
                                   <span className={cn("text-zinc-700")}>•</span>
-                                  <span className="font-mono">{server.memory}MB / {server.cpu}%</span>
+                                  <span className="font-mono">
+                                    {server.memory}MB / {server.cpu}%
+                                  </span>
                                   <span className={cn("text-zinc-700")}>•</span>
                                   <span>{server.owner?.name || "Unknown"}</span>
                                 </div>
@@ -184,84 +189,84 @@ export default function AdminServersPage() {
 
                             <div className="flex items-center gap-2">
                               <TextureButton
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => router.push(`/servers/${server.id}`)}
                               >
-                                <ExternalLinkIcon className="w-3.5 h-3.5" />
+                                <ExternalLinkIcon className="h-3.5 w-3.5" />
                               </TextureButton>
                               {server.status === "STOPPED" && (
                                 <TextureButton
-                                  variant="outline"
+                                  variant="secondary"
                                   size="sm"
                                   onClick={() => handleAction(server, "start")}
                                   disabled={start.isPending}
                                 >
-                                  <PlayIcon className="w-3.5 h-3.5" />
+                                  <PlayIcon className="h-3.5 w-3.5" />
                                 </TextureButton>
                               )}
                               {server.status === "RUNNING" && (
                                 <>
                                   <TextureButton
-                                    variant="outline"
+                                    variant="secondary"
                                     size="sm"
                                     onClick={() => handleAction(server, "stop")}
                                     disabled={stop.isPending}
                                   >
-                                    <SquareIcon className="w-3.5 h-3.5" />
+                                    <SquareIcon className="h-3.5 w-3.5" />
                                   </TextureButton>
                                   <TextureButton
-                                    variant="outline"
+                                    variant="secondary"
                                     size="sm"
                                     onClick={() => handleAction(server, "restart")}
                                     disabled={restart.isPending}
                                   >
-                                    <RefreshCwIcon className="w-3.5 h-3.5" />
+                                    <RefreshCwIcon className="h-3.5 w-3.5" />
                                   </TextureButton>
                                 </>
                               )}
                               <TextureButton
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
                               >
-                                <EditIcon className="w-3.5 h-3.5" />
+                                <EditIcon className="h-3.5 w-3.5" />
                               </TextureButton>
                               <TextureButton
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => setDeleteConfirmServer(server)}
                               >
-                                <TrashIcon className="w-3.5 h-3.5" />
+                                <TrashIcon className="h-3.5 w-3.5" />
                               </TextureButton>
                             </div>
                           </div>
                         </div>
                       </ContextMenuTrigger>
-                      <ContextMenuContent className={cn(
-                        "min-w-[180px] bg-zinc-900 border-zinc-700",
-                      )}>
+                      <ContextMenuContent
+                        className={cn("min-w-[180px] border-zinc-700 bg-zinc-900")}
+                      >
                         <ContextMenuItem
                           onClick={() => router.push(`/servers/${server.id}`)}
-                          className="gap-2 cursor-pointer"
+                          className="cursor-pointer gap-2"
                         >
-                          <ExternalLinkIcon className="w-4 h-4" />
+                          <ExternalLinkIcon className="h-4 w-4" />
                           Open Server
                         </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
-                          className="gap-2 cursor-pointer"
+                          className="cursor-pointer gap-2"
                         >
-                          <EditIcon className="w-4 h-4" />
+                          <EditIcon className="h-4 w-4" />
                           Edit Server
                         </ContextMenuItem>
                         <ContextMenuSeparator className={"bg-zinc-700"} />
                         {server.status === "STOPPED" && (
                           <ContextMenuItem
                             onClick={() => handleAction(server, "start")}
-                            className="gap-2 cursor-pointer"
+                            className="cursor-pointer gap-2"
                           >
-                            <PlayIcon className="w-4 h-4" />
+                            <PlayIcon className="h-4 w-4" />
                             Start Server
                           </ContextMenuItem>
                         )}
@@ -269,16 +274,16 @@ export default function AdminServersPage() {
                           <>
                             <ContextMenuItem
                               onClick={() => handleAction(server, "stop")}
-                              className="gap-2 cursor-pointer"
+                              className="cursor-pointer gap-2"
                             >
-                              <SquareIcon className="w-4 h-4" />
+                              <SquareIcon className="h-4 w-4" />
                               Stop Server
                             </ContextMenuItem>
                             <ContextMenuItem
                               onClick={() => handleAction(server, "restart")}
-                              className="gap-2 cursor-pointer"
+                              className="cursor-pointer gap-2"
                             >
-                              <RefreshCwIcon className="w-4 h-4" />
+                              <RefreshCwIcon className="h-4 w-4" />
                               Restart Server
                             </ContextMenuItem>
                           </>
@@ -286,10 +291,10 @@ export default function AdminServersPage() {
                         <ContextMenuSeparator className={"bg-zinc-700"} />
                         <ContextMenuItem
                           onClick={() => setDeleteConfirmServer(server)}
-                          className="gap-2 cursor-pointer"
+                          className="cursor-pointer gap-2"
                           variant="destructive"
                         >
-                          <TrashIcon className="w-4 h-4" />
+                          <TrashIcon className="h-4 w-4" />
                           Delete Server
                         </ContextMenuItem>
                       </ContextMenuContent>

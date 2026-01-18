@@ -19,6 +19,7 @@ export * from "./sonner";
 export * from "./spinner";
 export * from "./switch";
 export * from "./table";
+export * from "./data-table";
 export * from "./tabs";
 export * from "./tooltip";
 

@@ -53,16 +53,24 @@ export const ConfirmationModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         {children}
         <DialogFooter>
-          <TextureButton variant="secondary" onClick={handleCancel} disabled={isLoading}>
+          <TextureButton
+            className="w-full"
+            variant="secondary"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
             {cancelLabel}
           </TextureButton>
-          <TextureButton variant="destructive" onClick={handleConfirm} disabled={isLoading}>
+          <TextureButton
+            className="w-full"
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={isLoading}
+          >
             {isLoading ? "Loading..." : confirmLabel}
           </TextureButton>
         </DialogFooter>

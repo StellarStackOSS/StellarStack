@@ -1,21 +1,21 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {Switch} from "@workspace/ui/components/switch";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {BsGlobe, BsHddNetwork, BsKey, BsMoon, BsPlus, BsStar, BsStarFill, BsSun, BsTrash,} from "react-icons/bs";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {type Allocation, features, servers, type SubdomainFeatureStatus} from "@/lib/api";
-import {useSession} from "@/lib/auth-client";
+import { type JSX, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Switch } from "@workspace/ui/components/switch";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { BsGlobe, BsHddNetwork, BsKey, BsPlus, BsStar, BsStarFill, BsTrash } from "react-icons/bs";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { type Allocation, features, servers, type SubdomainFeatureStatus } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
+import { Label } from "@workspace/ui/components/label";
 
 interface Subdomain {
   id: string;
@@ -234,12 +234,7 @@ const NetworkPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   NETWORK
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -247,11 +242,6 @@ const NetworkPage = (): JSX.Element | null => {
                 </p>
               </div>
             </div>
-            <TextureButton
-              variant="outline"
-              size="sm"
-            >
-            </TextureButton>
           </div>
 
           {/* Port Allocations Section */}
@@ -259,14 +249,9 @@ const NetworkPage = (): JSX.Element | null => {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <BsHddNetwork
-                    className={cn("h-5 w-5", "text-zinc-400")}
-                  />
+                  <BsHddNetwork className={cn("h-5 w-5", "text-zinc-400")} />
                   <h2
-                    className={cn(
-                      "text-sm font-medium tracking-wider uppercase",
-                      "text-zinc-300"
-                    )}
+                    className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
                   >
                     Port Allocations
                   </h2>
@@ -276,7 +261,7 @@ const NetworkPage = (): JSX.Element | null => {
                 </span>
               </div>
               <TextureButton
-                variant="outline"
+                variant="minimal"
                 size="sm"
                 onClick={openAddAllocationModal}
                 disabled={!canAddAllocation}
@@ -288,21 +273,11 @@ const NetworkPage = (): JSX.Element | null => {
             </div>
 
             {loading ? (
-              <div
-                className={cn(
-                  "border p-8 text-center",
-                  "border-zinc-800 text-zinc-500"
-                )}
-              >
+              <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
                 Loading allocations...
               </div>
             ) : allocations.length === 0 ? (
-              <div
-                className={cn(
-                  "border p-8 text-center",
-                  "border-zinc-800 text-zinc-500"
-                )}
-              >
+              <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
                 No allocations assigned to this server.
               </div>
             ) : (
@@ -311,46 +286,12 @@ const NetworkPage = (): JSX.Element | null => {
                   <div
                     key={allocation.id}
                     className={cn(
-                      "relative border p-4 transition-all",
-                      true
-                        ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                        : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
+                      "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 transition-all"
                     )}
                   >
-                    {/* Corner decorations */}
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        "border-zinc-500"
-                      )}
-                    />
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            "font-mono text-lg font-medium",
-                            "text-zinc-100"
-                          )}
-                        >
+                        <div className={cn("font-mono text-lg font-medium", "text-zinc-100")}>
                           {allocation.ip}:{allocation.port}
                         </div>
                         <div className="flex items-center gap-2">
@@ -365,9 +306,7 @@ const NetworkPage = (): JSX.Element | null => {
                             </span>
                           )}
                           {allocation.alias && (
-                            <span
-                              className={cn("text-sm", "text-zinc-500")}
-                            >
+                            <span className={cn("text-sm", "text-zinc-500")}>
                               {allocation.alias}
                             </span>
                           )}
@@ -376,7 +315,7 @@ const NetworkPage = (): JSX.Element | null => {
                       <div className="flex items-center gap-2">
                         {!isPrimary(allocation) && (
                           <TextureButton
-                            variant="outline"
+                            variant="minimal"
                             size="sm"
                             disabled={settingPrimary === allocation.id}
                             onClick={() => handleSetPrimary(allocation)}
@@ -390,14 +329,12 @@ const NetworkPage = (): JSX.Element | null => {
                           </TextureButton>
                         )}
                         {isPrimary(allocation) && (
-                          <div
-                            className={cn("p-2", "text-yellow-400")}
-                          >
+                          <div className={cn("p-2", "text-yellow-400")}>
                             <BsStarFill className="h-4 w-4" />
                           </div>
                         )}
                         <TextureButton
-                          variant="outline"
+                          variant="minimal"
                           size="sm"
                           disabled={isPrimary(allocation) || allocations.length <= 1}
                           onClick={() => openDeletePortModal(allocation)}
@@ -419,31 +356,19 @@ const NetworkPage = (): JSX.Element | null => {
                 <div className="flex items-center gap-2">
                   <BsGlobe className={cn("h-5 w-5", "text-zinc-400")} />
                   <h2
-                    className={cn(
-                      "text-sm font-medium tracking-wider uppercase",
-                      "text-zinc-300"
-                    )}
+                    className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
                   >
                     Subdomains
                   </h2>
                 </div>
-                <TextureButton
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddSubdomainModal}
-                >
+                <TextureButton variant="minimal" size="sm" onClick={openAddSubdomainModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Add Subdomain</span>
                 </TextureButton>
               </div>
 
               {subdomains.length === 0 ? (
-                <div
-                  className={cn(
-                    "border p-8 text-center",
-                    "border-zinc-800 text-zinc-500"
-                  )}
-                >
+                <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
                   No subdomains configured. Add a subdomain to create a friendly URL for your
                   server.
                 </div>
@@ -457,40 +382,9 @@ const NetworkPage = (): JSX.Element | null => {
                         "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                       )}
                     >
-                      {/* Corner decorations */}
-                      <div
-                        className={cn(
-                          "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                          "border-zinc-500"
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                          "border-zinc-500"
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                          "border-zinc-500"
-                        )}
-                      />
-                      <div
-                        className={cn(
-                          "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                          "border-zinc-500"
-                        )}
-                      />
-
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div
-                            className={cn(
-                              "font-mono text-sm",
-                              "text-zinc-100"
-                            )}
-                          >
+                          <div className={cn("font-mono text-sm", "text-zinc-100")}>
                             {sub.subdomain}.{sub.domain}
                           </div>
                           <div className="flex items-center gap-2">
@@ -505,14 +399,12 @@ const NetworkPage = (): JSX.Element | null => {
                               </span>
                             )}
                           </div>
-                          <span
-                            className={cn("text-sm", "text-zinc-500")}
-                          >
+                          <span className={cn("text-sm", "text-zinc-500")}>
                             → Port {sub.targetPort}
                           </span>
                         </div>
                         <TextureButton
-                          variant="outline"
+                          variant="minimal"
                           size="sm"
                           onClick={() => openDeleteSubdomainModal(sub)}
                         >
@@ -531,12 +423,7 @@ const NetworkPage = (): JSX.Element | null => {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BsKey className={cn("h-5 w-5", "text-zinc-400")} />
-                <h2
-                  className={cn(
-                    "text-sm font-medium tracking-wider uppercase",
-                    "text-zinc-300"
-                  )}
-                >
+                <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}>
                   SFTP Connection
                 </h2>
               </div>
@@ -548,82 +435,24 @@ const NetworkPage = (): JSX.Element | null => {
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  "border-zinc-500"
-                )}
-              />
-
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
-                  <label
-                    className={cn(
-                      "mb-1 block text-xs tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Host
-                  </label>
-                  <div
-                    className={cn("font-mono text-sm", "text-zinc-100")}
-                  >
-                    {server?.node?.host || (
-                      <span className="text-zinc-600">Loading...</span>
-                    )}
+                  <Label>Host</Label>
+                  <div className={cn("font-mono text-sm", "text-zinc-100")}>
+                    {server?.node?.host || <span className="text-zinc-600">Loading...</span>}
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    className={cn(
-                      "mb-1 block text-xs tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Port
-                  </label>
-                  <div
-                    className={cn("font-mono text-sm", "text-zinc-100")}
-                  >
+                  <Label>Port</Label>
+                  <div className={cn("font-mono text-sm", "text-zinc-100")}>
                     {server?.node?.sftpPort ?? 2022}
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    className={cn(
-                      "mb-1 block text-xs tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Username
-                  </label>
-                  <div
-                    className={cn(
-                      "font-mono text-sm break-all",
-                      "text-zinc-100"
-                    )}
-                  >
+                  <Label>Username</Label>
+                  <div className={cn("font-mono text-sm break-all", "text-zinc-100")}>
                     {server && session?.user ? (
                       `${server.id}.${session.user.email}`
                     ) : (
@@ -635,7 +464,7 @@ const NetworkPage = (): JSX.Element | null => {
 
               <div className="mt-6 flex gap-3">
                 <TextureButton
-                  variant="outline"
+                  variant="minimal"
                   onClick={() => {
                     if (!server || !session?.user) return;
                     const host = server.node?.host || "localhost";
@@ -651,7 +480,7 @@ const NetworkPage = (): JSX.Element | null => {
                 </TextureButton>
 
                 <TextureButton
-                  variant="outline"
+                  variant="minimal"
                   onClick={() => {
                     if (!server || !session?.user) return;
                     const host = server.node?.host || "localhost";
@@ -673,7 +502,6 @@ const NetworkPage = (): JSX.Element | null => {
         </div>
       </div>
 
-      {/* Delete Port Modal */}
       <ConfirmationModal
         open={deletePortModalOpen}
         onOpenChange={setDeletePortModalOpen}
@@ -696,14 +524,7 @@ const NetworkPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Subdomain Name
-            </label>
+            <Label>Subdomain Name</Label>
             <div className="flex items-center gap-2">
               <Input
                 value={subdomainName}
@@ -714,24 +535,16 @@ const NetworkPage = (): JSX.Element | null => {
                   "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
                 )}
               />
-              <span className={cn("shrink-0 text-sm", "text-zinc-500")}>
-                .stellarstack.app
-              </span>
+              <span className={cn("shrink-0 text-sm", "text-zinc-500")}>.stellarstack.app</span>
             </div>
           </div>
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Target Port
-            </label>
+            <Label>Target Port</Label>
             {allocations.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {allocations.map((allocation) => (
-                  <TextureButton variant="minimal"
+                  <TextureButton
+                    variant="minimal"
                     key={allocation.id}
                     type="button"
                     onClick={() => setSubdomainTargetPort(allocation.port.toString())}
@@ -753,36 +566,20 @@ const NetworkPage = (): JSX.Element | null => {
                         )}
                       </div>
                       {allocation.alias && (
-                        <span className={cn("text-xs", "text-zinc-500")}>
-                          {allocation.alias}
-                        </span>
+                        <span className={cn("text-xs", "text-zinc-500")}>{allocation.alias}</span>
                       )}
                     </div>
                   </TextureButton>
                 ))}
               </div>
             ) : (
-              <div
-                className={cn(
-                  "border p-4 text-center",
-                  "border-zinc-700 bg-zinc-800/50"
-                )}
-              >
-                <p className={cn("text-sm", "text-zinc-400")}>
-                  No allocations available.
-                </p>
+              <div className={cn("border p-4 text-center", "border-zinc-700 bg-zinc-800/50")}>
+                <p className={cn("text-sm", "text-zinc-400")}>No allocations available.</p>
               </div>
             )}
           </div>
           <div className="flex items-center justify-between">
-            <label
-              className={cn(
-                "text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Enable SSL
-            </label>
+            <Label>Enable SSL</Label>
             <Switch checked={subdomainSsl} onCheckedChange={setSubdomainSsl} />
           </div>
         </div>
@@ -812,18 +609,12 @@ const NetworkPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Available Allocations
-            </label>
+            <Label>Available Allocations</Label>
             {availableAllocations.length > 0 ? (
               <div className="max-h-64 space-y-2 overflow-y-auto">
                 {availableAllocations.map((allocation) => (
-                  <TextureButton variant="minimal"
+                  <TextureButton
+                    variant="minimal"
                     key={allocation.id}
                     type="button"
                     onClick={() => setSelectedNewAllocation(allocation.id)}
@@ -833,21 +624,14 @@ const NetworkPage = (): JSX.Element | null => {
                         {allocation.ip}:{allocation.port}
                       </span>
                       {allocation.alias && (
-                        <span className={cn("text-xs", "text-zinc-500")}>
-                          {allocation.alias}
-                        </span>
+                        <span className={cn("text-xs", "text-zinc-500")}>{allocation.alias}</span>
                       )}
                     </div>
                   </TextureButton>
                 ))}
               </div>
             ) : (
-              <div
-                className={cn(
-                  "border p-4 text-center",
-                  "border-zinc-700 bg-zinc-800/50"
-                )}
-              >
+              <div className={cn("border p-4 text-center", "border-zinc-700 bg-zinc-800/50")}>
                 <p className={cn("text-sm", "text-zinc-400")}>
                   No available allocations on this node.
                 </p>

@@ -2,44 +2,19 @@
 
 import {type JSX, useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
 import {cn} from "@workspace/ui/lib/utils";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FloatingDots} from "@workspace/ui/components/floating-particles";
 import {signIn} from "@/lib/auth-client";
 import {useAuth} from "hooks/auth-provider";
-import {setup} from "@/lib/api";
 import {toast} from "sonner";
-import {Spinner} from "@workspace/ui/components";
 import LoginForm from "@/components/LoginForm/LoginForm";
 
 const LoginPage = (): JSX.Element | null => {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [checkingSetup, setCheckingSetup] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Check if system needs setup
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const status = await setup.status();
-        if (!status.initialized) {
-          // No users exist, redirect to setup
-          router.push("/setup");
-          return;
-        }
-      } catch {
-        // If check fails, continue to login
-      } finally {
-        setCheckingSetup(false);
-      }
-    };
-    checkStatus();
-  }, [router]);
-
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push("/servers");
@@ -73,34 +48,13 @@ const LoginPage = (): JSX.Element | null => {
     }
   };
 
-  if (checkingSetup) {
-    return (
-      <div
-        className={cn(
-          "relative flex min-h-svh items-center justify-center transition-colors bg-[#0b0b0a]",
-        )}
-      >
-        <AnimatedBackground />
-        <FloatingDots count={15} />
-        <div
-          className={cn(
-            "text-sm tracking-wider uppercase text-zinc-500",
-          )}
-        >
-          <Spinner />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
-        "relative flex min-h-svh items-center justify-center transition-colors bg-[#0b0b0a]",
+        "relative flex min-h-svh items-center justify-center bg-[#0b0b0a] transition-colors"
       )}
     >
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <LoginForm handleLogin={handleLogin} isLoading={isLoading} error={error} />
     </div>

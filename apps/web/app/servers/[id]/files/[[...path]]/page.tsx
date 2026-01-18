@@ -1,13 +1,12 @@
 "use client";
 
-import React, {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {AnimatePresence, motion} from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
@@ -15,10 +14,9 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Checkbox} from "@workspace/ui/components/checkbox";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@workspace/ui/components/table";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,18 +24,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@workspace/ui/components/context-menu";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
 import {
   BsArrowLeft,
   BsChevronDown,
@@ -51,7 +48,6 @@ import {
   BsFileEarmark,
   BsFileText,
   BsFolder,
-  BsHddFill,
   BsPencil,
   BsPlus,
   BsSearch,
@@ -61,16 +57,17 @@ import {
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import type {FileInfo} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {useAuth} from "hooks/auth-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {useSoundEffects} from "@/hooks/useSoundEffects";
-import {toast} from "sonner";
-import {useUploads} from "@/components/upload-provider";
-import {Input} from "@workspace/ui/components";
+import type { FileInfo } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
+import { toast } from "sonner";
+import { useUploads } from "@/components/upload-provider";
+import { DataTable, Input } from "@workspace/ui/components";
+import { Label } from "@workspace/ui/components/label";
 
 interface FileItem {
   id: string;
@@ -132,127 +129,6 @@ const parseDaemonError = (error: unknown): string => {
   }
   return "An unknown error occurred";
 };
-
-interface FileTableRowProps {
-  row: any;
-  file: FileItem;
-  onRename: (file: FileItem) => void;
-  onEditPermissions: (file: FileItem) => void;
-  onEdit: (file: FileItem) => void;
-  onDelete: (file: FileItem) => void;
-  serverId: string;
-  isEditable: (fileName: string) => boolean;
-}
-
-const FileTableRow = React.memo(({
-  row,
-  file,
-  onRename,
-  onEditPermissions,
-  onEdit,
-  onDelete,
-  serverId,
-  isEditable,
-}: FileTableRowProps) => {
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <motion.tr
-          layout
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          data-state={row.getIsSelected() && "selected"}
-          className={cn(
-            "cursor-pointer border-b transition-colors border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50")}
-        >
-          {row.getVisibleCells().map((cell: any) => (
-            <TableCell key={cell.id} className="px-4 py-3">
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-          ))}
-        </motion.tr>
-      </ContextMenuTrigger>
-      <ContextMenuContent
-        className={cn(
-          "min-w-[160px] border-zinc-700 bg-zinc-900")}
-      >
-        <ContextMenuItem
-          onClick={() => onRename(file)}
-          className={cn(
-            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
-        >
-          <BsPencil className="h-3 w-3" />
-          Rename
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => onEditPermissions(file)}
-          className={cn(
-            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
-        >
-          <BsTerminal className="h-3 w-3" />
-          Permissions
-        </ContextMenuItem>
-        {file.type === "file" && isEditable(file.name) && (
-          <ContextMenuItem
-            onClick={() => onEdit(file)}
-            className={cn(
-              "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
-          >
-            <BsFileText className="h-3 w-3" />
-            Edit
-          </ContextMenuItem>
-        )}
-        {file.type === "file" && (
-          <ContextMenuItem
-            onClick={async () => {
-              try {
-                const { downloadUrl } = await servers.files.getDownloadToken(
-                  serverId,
-                  file.path
-                );
-                window.open(
-                  `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
-                  "_blank"
-                );
-              } catch (error) {
-                toast.error("Failed to generate download link");
-              }
-            }}
-            className={cn(
-              "cursor-pointer gap-2 text-xs tracking-wider uppercase text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100")}
-          >
-            <BsDownload className="h-3 w-3" />
-            Download
-          </ContextMenuItem>
-        )}
-        <ContextMenuSeparator
-          className={"bg-zinc-700"}
-        />
-        <ContextMenuItem
-          onClick={() => onDelete(file)}
-          className={cn(
-            "cursor-pointer gap-2 text-xs tracking-wider uppercase text-red-400 focus:bg-red-950/50 focus:text-red-300")}
-        >
-          <BsTrash className="h-3 w-3" />
-          Delete
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-}, (prevProps, nextProps) => {
-  // Custom comparison to avoid re-renders when row data hasn't changed
-  return (
-    prevProps.file.id === nextProps.file.id &&
-    prevProps.file.name === nextProps.file.name &&
-    prevProps.file.size === nextProps.file.size &&
-    prevProps.file.modified === nextProps.file.modified &&
-    prevProps.row.getIsSelected() === nextProps.row.getIsSelected()
-  );
-});
-
-FileTableRow.displayName = "FileTableRow";
 
 const FilesPage = (): JSX.Element | null => {
   const params = useParams();
@@ -843,10 +719,7 @@ const FilesPage = (): JSX.Element | null => {
             }
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
-            className={cn(
-              "border-zinc-600",
-              "data-[state=checked]:bg-zinc-600"
-            )}
+            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
           />
         ),
         cell: ({ row }) => (
@@ -854,10 +727,7 @@ const FilesPage = (): JSX.Element | null => {
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
-            className={cn(
-              "border-zinc-600",
-              "data-[state=checked]:bg-zinc-600"
-            )}
+            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
           />
         ),
         enableSorting: false,
@@ -867,7 +737,8 @@ const FilesPage = (): JSX.Element | null => {
         accessorKey: "name",
         header: ({ column }) => {
           return (
-            <TextureButton variant="minimal"
+            <button
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Name
@@ -878,7 +749,7 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </TextureButton>
+            </button>
           );
         },
         cell: ({ row }) => {
@@ -888,15 +759,10 @@ const FilesPage = (): JSX.Element | null => {
               {file.type === "folder" ? (
                 <BsFolder className={cn("h-4 w-4", "text-amber-400")} />
               ) : (
-                <BsFileEarmark
-                  className={cn("h-4 w-4", "text-zinc-400")}
-                />
+                <BsFileEarmark className={cn("h-4 w-4", "text-zinc-400")} />
               )}
               <span
-                className={cn(
-                  "cursor-pointer hover:underline",
-                  "text-zinc-200"
-                )}
+                className={cn("cursor-pointer hover:underline", "text-zinc-200")}
                 onClick={() => {
                   if (file.type === "folder") {
                     navigateToFolder(file.name);
@@ -915,7 +781,8 @@ const FilesPage = (): JSX.Element | null => {
         accessorKey: "size",
         header: ({ column }) => {
           return (
-            <TextureButton variant="minimal"
+            <button
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Size
@@ -926,20 +793,19 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </TextureButton>
+            </button>
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", "text-zinc-500")}>
-            {row.getValue("size")}
-          </span>
+          <span className={cn("text-xs", "text-zinc-500")}>{row.getValue("size")}</span>
         ),
       },
       {
         accessorKey: "modified",
         header: ({ column }) => {
           return (
-            <TextureButton variant="minimal"
+            <button
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Modified
@@ -950,13 +816,11 @@ const FilesPage = (): JSX.Element | null => {
               ) : (
                 <BsChevronExpand className="h-3 w-3 opacity-50" />
               )}
-            </TextureButton>
+            </button>
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", "text-zinc-500")}>
-            {row.getValue("modified")}
-          </span>
+          <span className={cn("text-xs", "text-zinc-500")}>{row.getValue("modified")}</span>
         ),
       },
       {
@@ -967,16 +831,13 @@ const FilesPage = (): JSX.Element | null => {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <TextureButton variant="minimal">
+                <TextureButton size="sm" variant="ghost" className="w-fit">
                   <BsThreeDotsVertical className="h-4 w-4" />
                 </TextureButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className={cn(
-                  "min-w-[160px]",
-                  "border-zinc-700 bg-zinc-900"
-                )}
+                className={cn("min-w-[160px]", "border-zinc-700 bg-zinc-900")}
               >
                 <DropdownMenuItem
                   onClick={() => handleRename(file)}
@@ -1151,15 +1012,9 @@ const FilesPage = (): JSX.Element | null => {
                     const isLast = index === breadcrumbSegments.length - 1;
                     return (
                       <span key={pathUpToHere} className="flex items-center gap-1">
-                        <span className={cn("text-sm", "text-zinc-600")}>
-                          /
-                        </span>
+                        <span className={cn("text-sm", "text-zinc-600")}>/</span>
                         {isLast ? (
-                          <span
-                            className={cn("text-sm", "text-zinc-300")}
-                          >
-                            {segment}
-                          </span>
+                          <span className={cn("text-sm", "text-zinc-300")}>{segment}</span>
                         ) : (
                           <Link
                             href={`${getBasePath()}${pathUpToHere}`}
@@ -1184,25 +1039,20 @@ const FilesPage = (): JSX.Element | null => {
             )}
           >
             <div className="flex items-center gap-4">
-              <BsHddFill className={cn("h-5 w-5", "text-zinc-400")} />
+              <img src="/icons/24-file-download.svg" alt="storage_icon" />
               <div className="flex-1">
                 <div className="mb-2 flex items-center justify-between">
-                  <span
-                    className={cn(
-                      "text-xs tracking-wider uppercase",
-                      "text-zinc-400"
-                    )}
-                  >
+                  <span className={cn("text-xs tracking-wider uppercase", "text-zinc-400")}>
                     Storage
                   </span>
                   <span className={cn("text-xs", "text-zinc-400")}>
                     {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
                   </span>
                 </div>
-                <div className={cn("h-2 w-full", "bg-zinc-800")}>
+                <div className={cn("h-2 w-full", "rounded-lg bg-zinc-800")}>
                   <div
                     className={cn(
-                      "h-full transition-all",
+                      "h-full rounded-lg transition-all",
                       storagePercentage > 90
                         ? "bg-red-500"
                         : storagePercentage > 70
@@ -1232,7 +1082,7 @@ const FilesPage = (): JSX.Element | null => {
                   <BsArrowLeft className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
                 </TextureButton>
-                <TextureButton variant="minimal" onClick={handleNewFile}>
+                <TextureButton variant="minimal" onClick={handleNewFolder}>
                   <BsPlus className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New Folder
@@ -1264,15 +1114,13 @@ const FilesPage = (): JSX.Element | null => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
                     className={cn(
-                      "h-9 w-32 border pr-8 pl-9 text-xs transition-colors outline-none sm:w-48",
-                      true
-                        ? "border-zinc-700 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-                        : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+                      "h-9 w-full border border-zinc-700 bg-zinc-900/50 pr-14 pl-9 text-xs text-zinc-200 transition-colors outline-none placeholder:text-zinc-600 focus:border-zinc-500 sm:w-48"
                     )}
                   />
                   {searchQuery && (
                     <TextureButton
-                      variant="minimal"
+                      variant="ghost"
+                      className="absolute top-1/2 right-1 w-fit -translate-y-1/2 p-0"
                       onClick={() => setSearchQuery("")}
                     >
                       <BsX className="h-4 w-4" />
@@ -1287,11 +1135,7 @@ const FilesPage = (): JSX.Element | null => {
                   <BsTerminal className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
                 </TextureButton>
-                <TextureButton
-                  variant="minimal"
-                  onClick={handleUploadClick}
-                  title="Upload Files"
-                >
+                <TextureButton variant="minimal" onClick={handleUploadClick} title="Upload Files">
                   <BsUpload className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
                 </TextureButton>
@@ -1324,77 +1168,14 @@ const FilesPage = (): JSX.Element | null => {
           </div>
 
           {/* Data Table */}
-          <div
-            className={cn(
-              "relative rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
-            <Table>
-              <TableHeader className="sticky top-0 z-20">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className={cn(
-                          "px-4 text-[10px] font-medium tracking-wider uppercase text-zinc-500")}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className={cn(
-                        "h-24 text-center text-sm text-zinc-500",
-                      )}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <Spinner className="h-4 w-4" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <AnimatePresence mode="popLayout">
-                    {table.getRowModel().rows?.length ? (
-                      table.getRowModel().rows.map((row) => (
-                        <FileTableRow
-                          key={row.original.id}
-                          row={row}
-                          file={row.original}
-                          onRename={handleRename}
-                          onEditPermissions={handleEditPermissions}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                          serverId={serverId}
-                          isEditable={isEditable}
-                        />
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={columns.length}
-                          className={cn(
-                            "h-24 text-center text-sm text-zinc-500")}
-                        >
-                          {searchQuery
-                            ? `No files matching "${searchQuery}" found.`
-                            : "No files found."}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </AnimatePresence>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            table={table}
+            columns={columns}
+            isLoading={isLoading}
+            emptyMessage={
+              searchQuery ? `No files matching "${searchQuery}" found.` : "No files found."
+            }
+          />
 
           {/* Footer */}
           <div className={cn("mt-4 text-xs", "text-zinc-600")}>
@@ -1430,19 +1211,9 @@ const FilesPage = (): JSX.Element | null => {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               >
-                <BsCloudUpload
-                  className={cn(
-                    "mx-auto mb-4 h-16 w-16",
-                    "text-zinc-400"
-                  )}
-                />
+                <BsCloudUpload className={cn("mx-auto mb-4 h-16 w-16", "text-zinc-400")} />
               </motion.div>
-              <p
-                className={cn(
-                  "text-xl font-light tracking-wider",
-                  "text-zinc-200"
-                )}
-              >
+              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>
                 DROP FILES TO UPLOAD
               </p>
               <p className={cn("mt-2 text-sm", "text-zinc-500")}>
@@ -1505,7 +1276,7 @@ const FilesPage = (): JSX.Element | null => {
         onSubmit={confirmNewFolder}
         isValid={newFolderName.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFolderName}
           onChange={(e) => setNewFolderName(e.target.value)}
@@ -1532,27 +1303,19 @@ const FilesPage = (): JSX.Element | null => {
           onChange={(e) => setNewFileNameInput(e.target.value)}
           placeholder="File name (e.g., config.yml)"
           className={cn(
-            "w-full border px-3 py-2 text-sm transition-colors outline-none border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500",)}
+            "w-full border border-zinc-700/50 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200 transition-colors outline-none placeholder:text-zinc-600 focus:border-zinc-500"
+          )}
         />
       </FormModal>
 
       {/* SFTP Connection Modal */}
       <Dialog open={sftpModalOpen} onOpenChange={setSftpModalOpen}>
-        <DialogContent
-          className={cn(
-            "max-w-2xl",
-            "border-zinc-800 bg-zinc-900"
-          )}
-        >
+        <DialogContent className={cn("max-w-2xl", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
-            <DialogTitle
-              className={cn("text-lg font-semibold", "text-zinc-100")}
-            >
+            <DialogTitle className={cn("text-lg font-semibold", "text-zinc-100")}>
               SFTP Connection Details
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-400")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-400")}>
               Use these credentials to connect to your server via SFTP
             </DialogDescription>
           </DialogHeader>
@@ -1562,18 +1325,12 @@ const FilesPage = (): JSX.Element | null => {
               <div className="space-y-3">
                 {/* Host */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Host
-                  </label>
+                  <Label>Host</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
+                      )}
                     >
                       {server.node.host}
                     </code>
@@ -1591,18 +1348,12 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Port */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Port
-                  </label>
+                  <Label>Port</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
+                      )}
                     >
                       {server.node.sftpPort}
                     </code>
@@ -1620,18 +1371,12 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Username */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Username
-                  </label>
+                  <Label>Username</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm border-zinc-800 bg-zinc-950 text-zinc-200")}
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
+                      )}
                     >
                       {server.id}.{user.email}
                     </code>
@@ -1649,18 +1394,12 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Password */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Password
-                  </label>
+                  <Label>Password</Label>
                   <div className="mt-1">
                     <div
                       className={cn(
-                        "rounded border px-3 py-2 text-sm border-zinc-800 bg-zinc-950 text-zinc-400")}
+                        "rounded border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-400"
+                      )}
                     >
                       Your account password
                     </div>
@@ -1669,18 +1408,16 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Connection String */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
+                  <Label
+                    className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-500")}
                   >
                     Connection String
-                  </label>
+                  </Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm break-all whitespace-normal border-zinc-800 bg-zinc-950 text-zinc-200")}
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm break-all whitespace-normal text-zinc-200"
+                      )}
                     >
                       sftp://{server.id}.{user.email}@{server.node.host}:{server.node.sftpPort}
                     </code>
@@ -1702,26 +1439,11 @@ const FilesPage = (): JSX.Element | null => {
               </div>
 
               {/* Instructions */}
-              <div
-                className={cn(
-                  "mt-6 rounded border p-4",
-                  "border-zinc-800 bg-zinc-950/50"
-                )}
-              >
-                <h4
-                  className={cn(
-                    "mb-2 text-sm font-semibold",
-                    "text-zinc-300"
-                  )}
-                >
+              <div className={cn("mt-6 rounded border p-4", "border-zinc-800 bg-zinc-950/50")}>
+                <h4 className={cn("mb-2 text-sm font-semibold", "text-zinc-300")}>
                   Popular SFTP Clients:
                 </h4>
-                <ul
-                  className={cn(
-                    "list-inside list-disc space-y-1 text-sm",
-                    "text-zinc-400"
-                  )}
-                >
+                <ul className={cn("list-inside list-disc space-y-1 text-sm", "text-zinc-400")}>
                   <li>FileZilla (Windows, macOS, Linux)</li>
                   <li>WinSCP (Windows)</li>
                   <li>Cyberduck (Windows, macOS)</li>
@@ -1735,21 +1457,12 @@ const FilesPage = (): JSX.Element | null => {
 
       {/* Permissions Editor Modal */}
       <Dialog open={permissionsModalOpen} onOpenChange={setPermissionsModalOpen}>
-        <DialogContent
-          className={cn(
-            "max-w-md",
-            "border-zinc-800 bg-zinc-900"
-          )}
-        >
+        <DialogContent className={cn("max-w-md", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
-            <DialogTitle
-              className={cn("text-lg font-semibold", "text-zinc-100")}
-            >
+            <DialogTitle className={cn("text-lg font-semibold", "text-zinc-100")}>
               Edit Permissions
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-400")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-400")}>
               {fileToEditPermissions
                 ? `Change permissions for "${fileToEditPermissions.name}"`
                 : ""}
@@ -1758,16 +1471,12 @@ const FilesPage = (): JSX.Element | null => {
           {fileToEditPermissions && (
             <div className="mt-4 space-y-4">
               {/* Permission Grid */}
-              <div
-                className={cn(
-                  "overflow-hidden rounded border",
-                  "border-zinc-800"
-                )}
-              >
+              <div className={cn("overflow-hidden rounded border", "border-zinc-800")}>
                 {/* Header Row */}
                 <div
                   className={cn(
-                    "grid grid-cols-4 border-b text-xs font-semibold tracking-wider uppercase border-zinc-800 bg-zinc-950 text-zinc-400")}
+                    "grid grid-cols-4 border-b border-zinc-800 bg-zinc-950 text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                  )}
                 >
                   <div className="p-3"></div>
                   <div className="p-3 text-center">Read</div>
@@ -1776,20 +1485,8 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
 
                 {/* Owner Row */}
-                <div
-                  className={cn(
-                    "grid grid-cols-4 border-b",
-                    "border-zinc-800"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Owner
-                  </div>
+                <div className={cn("grid grid-cols-4 border-b", "border-zinc-800")}>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Owner</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.owner.read}
@@ -1829,20 +1526,8 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
 
                 {/* Group Row */}
-                <div
-                  className={cn(
-                    "grid grid-cols-4 border-b",
-                    "border-zinc-800"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Group
-                  </div>
+                <div className={cn("grid grid-cols-4 border-b", "border-zinc-800")}>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Group</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.group.read}
@@ -1883,14 +1568,7 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Others Row */}
                 <div className="grid grid-cols-4">
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Others
-                  </div>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Others</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.others.read}
@@ -1931,12 +1609,7 @@ const FilesPage = (): JSX.Element | null => {
               </div>
 
               {/* Octal Preview */}
-              <div
-                className={cn(
-                  "rounded border p-4",
-                  "border-zinc-800 bg-zinc-950/50"
-                )}
-              >
+              <div className={cn("rounded border p-4", "border-zinc-800 bg-zinc-950/50")}>
                 <div
                   className={cn(
                     "mb-2 text-xs font-medium tracking-wider uppercase",
@@ -1945,9 +1618,7 @@ const FilesPage = (): JSX.Element | null => {
                 >
                   Octal Representation
                 </div>
-                <code
-                  className={cn("font-mono text-lg", "text-zinc-200")}
-                >
+                <code className={cn("font-mono text-lg", "text-zinc-200")}>
                   {(permissions.owner.read ? 4 : 0) +
                     (permissions.owner.write ? 2 : 0) +
                     (permissions.owner.execute ? 1 : 0)}
@@ -1962,17 +1633,10 @@ const FilesPage = (): JSX.Element | null => {
 
               {/* Actions */}
               <div className="mt-6 flex justify-end gap-2">
-                <TextureButton
-                  variant="minimal"
-                  onClick={() => setPermissionsModalOpen(false)}
-                >
+                <TextureButton variant="minimal" onClick={() => setPermissionsModalOpen(false)}>
                   Cancel
                 </TextureButton>
-                <TextureButton
-                  onClick={confirmPermissions}
-                >
-                  Apply
-                </TextureButton>
+                <TextureButton onClick={confirmPermissions}>Apply</TextureButton>
               </div>
             </div>
           )}
@@ -2008,9 +1672,7 @@ const FilesPage = (): JSX.Element | null => {
               onChange={handleFileSelect}
               className="absolute inset-0 h-full w-full cursor-pointer rounded-lg opacity-0"
             />
-            <BsCloudUpload
-              className={cn("mx-auto mb-3 h-10 w-10", "text-zinc-600")}
-            />
+            <BsCloudUpload className={cn("mx-auto mb-3 h-10 w-10", "text-zinc-600")} />
             <p className={cn("text-sm", "text-zinc-400")}>
               Drag and drop files here, or click to browse
             </p>
@@ -2022,54 +1684,27 @@ const FilesPage = (): JSX.Element | null => {
           {/* File list */}
           {uploadFiles.length > 0 && (
             <div className="space-y-2">
-              <p
-                className={cn(
-                  "text-xs tracking-wider uppercase",
-                  "text-zinc-500"
-                )}
-              >
+              <p className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                 {uploadFiles.length} file(s) selected
               </p>
-              <div
-                className={cn(
-                  "max-h-40 overflow-y-auto border",
-                  "border-zinc-800"
-                )}
-              >
+              <div className={cn("max-h-40 overflow-y-auto border", "border-zinc-800")}>
                 {uploadFiles.map((file, index) => (
                   <div
                     key={index}
                     className={cn(
                       "flex items-center justify-between px-3 py-2",
-                      index !== uploadFiles.length - 1 &&
-                        ("border-b border-zinc-800")
+                      index !== uploadFiles.length - 1 && "border-b border-zinc-800"
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <BsFileEarmark
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          "text-zinc-500"
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "truncate text-sm",
-                          "text-zinc-300"
-                        )}
-                      >
-                        {file.name}
-                      </span>
-                      <span
-                        className={cn(
-                          "shrink-0 text-xs",
-                          "text-zinc-600"
-                        )}
-                      >
+                      <BsFileEarmark className={cn("h-4 w-4 shrink-0", "text-zinc-500")} />
+                      <span className={cn("truncate text-sm", "text-zinc-300")}>{file.name}</span>
+                      <span className={cn("shrink-0 text-xs", "text-zinc-600")}>
                         {formatFileSize(file.size)}
                       </span>
                     </div>
-                    <TextureButton variant="minimal"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => removeUploadFile(index)}
                       disabled={isUploading}
                     >
@@ -2085,9 +1720,7 @@ const FilesPage = (): JSX.Element | null => {
           {isUploading && (
             <div className="flex items-center justify-center gap-3 py-2">
               <Spinner className={cn("h-4 w-4", "text-zinc-400")} />
-              <span className={cn("text-sm", "text-zinc-400")}>
-                Uploading files...
-              </span>
+              <span className={cn("text-sm", "text-zinc-400")}>Uploading files...</span>
             </div>
           )}
         </div>

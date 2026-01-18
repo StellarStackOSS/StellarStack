@@ -1,135 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import {useEffect, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
 import {
+  ArrowLeftIcon,
+  CheckCircle2Icon,
   CloudIcon,
   GlobeIcon,
-  MailIcon,
-  CheckCircle2Icon,
-  XCircleIcon,
   Loader2Icon,
+  MailIcon,
+  PaletteIcon,
   SaveIcon,
   TestTube2Icon,
-  ArrowLeftIcon,
-  PaletteIcon,
+  XCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { adminSettings, type CloudflareSettings, type SubdomainSettings, type EmailSettings, type BrandingSettings } from "@/lib/api";
-import { toast } from "sonner";
-
-const InputField = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  disabled,
-  helperText,
-}: {
-  label: string;
-  type?: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  helperText?: string;
-}) => {
-  return (
-    <div>
-      <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={cn(
-          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500",
-        )}
-      />
-      {helperText && (
-        <p className={cn("text-xs mt-1 text-zinc-500")}>{helperText}</p>
-      )}
-    </div>
-  );
-};
-
-const Toggle = ({
-  label,
-  checked,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-  disabled?: boolean;
-}) => {
-  return (
-    <label className="flex items-center gap-3 cursor-pointer">
-      <div
-        className={cn(
-          "relative w-10 h-5 rounded-full transition-colors",
-          checked
-            ? "bg-green-600"
-            : "bg-zinc-700",
-          disabled && "opacity-50 cursor-not-allowed"
-        )}
-        onClick={() => !disabled && onChange(!checked)}
-      >
-        <div
-          className={cn(
-            "absolute top-0.5 w-4 h-4 rounded-full transition-transform bg-white",
-            checked ? "translate-x-5" : "translate-x-0.5"
-          )}
-        />
-      </div>
-      <span className={cn("text-sm text-zinc-300")}>{label}</span>
-    </label>
-  );
-};
-
-const Select = ({
-  label,
-  value,
-  onChange,
-  options,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-}) => {
-  return (
-    <div>
-      <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className={cn(
-          "w-full px-4 py-2 text-sm border focus:outline-none transition-colors disabled:opacity-50 bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500",
-        )}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-};
+import {
+  adminSettings,
+  type BrandingSettings,
+  type CloudflareSettings,
+  type EmailSettings,
+  type SubdomainSettings,
+} from "@/lib/api";
+import {toast} from "sonner";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Label} from "@workspace/ui/components/label";
+import {Input, Switch} from "@workspace/ui/components";
+import {Textarea} from "@workspace/ui/components/textarea";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
 
 const SettingsSection = ({
   title,
@@ -153,20 +53,16 @@ const SettingsSection = ({
   testResult?: { success: boolean; message?: string } | null;
 }) => {
   return (
-    <div
-      className={cn(
-        "relative p-6 border bg-zinc-900/50 border-zinc-700/50",
-      )}
-    >
+    <div className={cn("relative border border-zinc-700/50 bg-zinc-900/50 p-6")}>
       {/* Corner accents */}
-      <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700")} />
-      <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700")} />
-      <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700")} />
-      <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700")} />
+      <div className={cn("absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-700")} />
+      <div className={cn("absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-700")} />
+      <div className={cn("absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-700")} />
+      <div className={cn("absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-700")} />
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <Icon className={cn("w-5 h-5 text-zinc-400")} />
+      <div className="mb-4 flex items-center gap-3">
+        <Icon className={cn("h-5 w-5 text-zinc-400")} />
         <div>
           <h2 className={cn("font-medium text-zinc-100")}>{title}</h2>
           <p className={cn("text-xs text-zinc-500")}>{description}</p>
@@ -174,22 +70,22 @@ const SettingsSection = ({
       </div>
 
       {/* Content */}
-      <div className="space-y-4 mb-6">{children}</div>
+      <div className="mb-6 space-y-4">{children}</div>
 
       {/* Test Result */}
       {testResult && (
         <div
           className={cn(
-            "flex items-center gap-2 p-3 mb-4 border text-sm",
+            "mb-4 flex items-center gap-2 border p-3 text-sm",
             testResult.success
               ? "border-green-700/50 bg-green-900/20 text-green-400"
               : "border-red-700/50 bg-red-900/20 text-red-400"
           )}
         >
           {testResult.success ? (
-            <CheckCircle2Icon className="w-4 h-4" />
+            <CheckCircle2Icon className="h-4 w-4" />
           ) : (
-            <XCircleIcon className="w-4 h-4" />
+            <XCircleIcon className="h-4 w-4" />
           )}
           {testResult.message || (testResult.success ? "Test successful" : "Test failed")}
         </div>
@@ -197,19 +93,21 @@ const SettingsSection = ({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <TextureButton variant="minimal"
-          onClick={onSave}
-          disabled={isSaving}
-        >
-          {isSaving ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <SaveIcon className="w-4 h-4" />}
+        <TextureButton variant="minimal" onClick={onSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" />
+          ) : (
+            <SaveIcon className="h-4 w-4" />
+          )}
           Save
         </TextureButton>
         {onTest && (
-          <TextureButton variant="minimal"
-            onClick={onTest}
-            disabled={isTesting}
-          >
-            {isTesting ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <TestTube2Icon className="w-4 h-4" />}
+          <TextureButton variant="minimal" onClick={onTest} disabled={isTesting}>
+            {isTesting ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : (
+              <TestTube2Icon className="h-4 w-4" />
+            )}
             Test Connection
           </TextureButton>
         )}
@@ -230,7 +128,10 @@ export default function AdminSettingsPage() {
   });
   const [savingCloudflare, setSavingCloudflare] = useState(false);
   const [testingCloudflare, setTestingCloudflare] = useState(false);
-  const [cloudflareTestResult, setCloudflareTestResult] = useState<{ success: boolean; message?: string } | null>(null);
+  const [cloudflareTestResult, setCloudflareTestResult] = useState<{
+    success: boolean;
+    message?: string;
+  } | null>(null);
 
   // Subdomain state
   const [subdomains, setSubdomains] = useState<SubdomainSettings>({
@@ -258,7 +159,10 @@ export default function AdminSettingsPage() {
   const [savingEmail, setSavingEmail] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState("");
-  const [emailTestResult, setEmailTestResult] = useState<{ success: boolean; message?: string } | null>(null);
+  const [emailTestResult, setEmailTestResult] = useState<{
+    success: boolean;
+    message?: string;
+  } | null>(null);
 
   // Branding state
   const [branding, setBranding] = useState<BrandingSettings>({
@@ -398,37 +302,32 @@ export default function AdminSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-svh flex items-center justify-center bg-[#0b0b0a]")}>
-        <Loader2Icon className={cn("w-8 h-8 animate-spin text-zinc-400")} />
+      <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
+        <Loader2Icon className={cn("h-8 w-8 animate-spin text-zinc-400")} />
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8">
               <Link
                 href="/admin"
                 className={cn(
-                  "inline-flex items-center gap-2 text-xs uppercase tracking-wider mb-4 hover:opacity-70 transition-opacity text-zinc-500",
+                  "mb-4 inline-flex items-center gap-2 text-xs tracking-wider text-zinc-500 uppercase transition-opacity hover:opacity-70"
                 )}
               >
-                <ArrowLeftIcon className="w-4 h-4" />
+                <ArrowLeftIcon className="h-4 w-4" />
                 Back to Dashboard
               </Link>
-              <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-                SETTINGS
-              </h1>
-              <p className={cn("text-sm mt-1 text-zinc-500")}>
-                Configure system-wide settings
-              </p>
+              <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>SETTINGS</h1>
+              <p className={cn("mt-1 text-sm text-zinc-500")}>Configure system-wide settings</p>
             </div>
           </FadeIn>
 
@@ -445,31 +344,40 @@ export default function AdminSettingsPage() {
                 isTesting={testingCloudflare}
                 testResult={cloudflareTestResult}
               >
-                <Toggle
-                  label="Enable Cloudflare Integration"
-                  checked={cloudflare.enabled}
-                  onChange={(v) => setCloudflare({ ...cloudflare, enabled: v })}
-                />
-                <InputField
-                  label="API Token"
-                  type="password"
-                  value={cloudflare.apiToken}
-                  onChange={(v) => setCloudflare({ ...cloudflare, apiToken: v })}
-                  placeholder="Enter Cloudflare API token"
-                  helperText="Create a token with Zone:Read and DNS:Edit permissions"
-                />
-                <InputField
-                  label="Zone ID"
-                  value={cloudflare.zoneId}
-                  onChange={(v) => setCloudflare({ ...cloudflare, zoneId: v })}
-                  placeholder="Enter zone ID"
-                />
-                <InputField
-                  label="Domain"
-                  value={cloudflare.domain}
-                  onChange={(v) => setCloudflare({ ...cloudflare, domain: v })}
-                  placeholder="example.com"
-                />
+                <div>
+                  <Switch
+                    checked={cloudflare.enabled}
+                    onCheckedChange={(v) => setCloudflare({ ...cloudflare, enabled: v })}
+                  />
+                  <Label>Enable Cloudflare Integration</Label>
+                </div>
+                <div>
+                  <Label>API Token</Label>
+                  <Input
+                    type="password"
+                    value={cloudflare.apiToken}
+                    onChange={(e) => setCloudflare({ ...cloudflare, apiToken: e.target.value })}
+                    placeholder="Enter Cloudflare API token"
+                  />
+                </div>
+                <div>
+                  <Label>Zone ID</Label>
+                  <Input
+                    type="text"
+                    value={cloudflare.zoneId}
+                    onChange={(e) => setCloudflare({ ...cloudflare, zoneId: e.target.value })}
+                    placeholder="Enter zone ID"
+                  />
+                </div>
+                <div>
+                  <Label>Domain</Label>
+                  <Input
+                    type="text"
+                    value={cloudflare.domain}
+                    onChange={(e) => setCloudflare({ ...cloudflare, domain: e.target.value })}
+                    placeholder="example.com"
+                  />
+                </div>
               </SettingsSection>
             </FadeIn>
 
@@ -481,33 +389,51 @@ export default function AdminSettingsPage() {
                 onSave={handleSaveSubdomains}
                 isSaving={savingSubdomains}
               >
-                <Toggle
-                  label="Enable Subdomains"
-                  checked={subdomains.enabled}
-                  onChange={(v) => setSubdomains({ ...subdomains, enabled: v })}
-                />
-                <InputField
-                  label="Base Domain"
-                  value={subdomains.baseDomain}
-                  onChange={(v) => setSubdomains({ ...subdomains, baseDomain: v })}
-                  placeholder="servers.example.com"
-                  helperText="Subdomains will be created under this domain (e.g., myserver.servers.example.com)"
-                />
-                <Select
-                  label="DNS Provider"
-                  value={subdomains.dnsProvider}
-                  onChange={(v) => setSubdomains({ ...subdomains, dnsProvider: v as "cloudflare" | "manual" })}
-                  options={[
-                    { value: "manual", label: "Manual DNS" },
-                    { value: "cloudflare", label: "Cloudflare (automatic)" },
-                  ]}
-                />
-                {subdomains.dnsProvider === "cloudflare" && (
-                  <Toggle
-                    label="Auto-provision DNS records"
-                    checked={subdomains.autoProvision}
-                    onChange={(v) => setSubdomains({ ...subdomains, autoProvision: v })}                  
+                <div>
+                  <Switch
+                    checked={subdomains.enabled}
+                    onCheckedChange={(v) => setSubdomains({ ...subdomains, enabled: v })}
                   />
+                  <Label>Enable Subdomains</Label>
+                </div>
+                <div>
+                  <Label>Base Domain</Label>
+                  <Input
+                    type="text"
+                    value={subdomains.baseDomain}
+                    onChange={(e) => setSubdomains({ ...subdomains, baseDomain: e.target.value })}
+                    placeholder="servers.example.com"
+                  />
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>
+                    Subdomains will be created under this domain (e.g.,
+                    myserver.servers.example.com)
+                  </p>
+                </div>
+                <div>
+                  <Label>DNS Provider</Label>
+                  <Select
+                    value={subdomains.dnsProvider}
+                    onValueChange={(v: string) =>
+                      setSubdomains({ ...subdomains, dnsProvider: v as "cloudflare" | "manual" })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual DNS</SelectItem>
+                      <SelectItem value="cloudflare">Cloudflare (automatic)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {subdomains.dnsProvider === "cloudflare" && (
+                  <div>
+                    <Switch
+                      checked={subdomains.autoProvision}
+                      onCheckedChange={(v) => setSubdomains({ ...subdomains, autoProvision: v })}
+                    />
+                    <Label>Auto-provision DNS records</Label>
+                  </div>
                 )}
               </SettingsSection>
             </FadeIn>
@@ -523,85 +449,129 @@ export default function AdminSettingsPage() {
                 isTesting={testingEmail}
                 testResult={emailTestResult}
               >
-                <Select
-                  label="Email Provider"
-                  value={email.provider}
-                  onChange={(v) => setEmail({ ...email, provider: v as EmailSettings["provider"] })}
-                  options={[
-                    { value: "smtp", label: "SMTP" },
-                    { value: "resend", label: "Resend" },
-                    { value: "sendgrid", label: "SendGrid" },
-                    { value: "mailgun", label: "Mailgun" },
-                  ]}
-                />
-                <InputField
-                  label="From Email"
-                  type="email"
-                  value={email.fromEmail}
-                  onChange={(v) => setEmail({ ...email, fromEmail: v })}
-                  placeholder="noreply@example.com"
-                />
-                <InputField
-                  label="From Name"
-                  value={email.fromName}
-                  onChange={(v) => setEmail({ ...email, fromName: v })}
-                  placeholder="StellarStack"
-                />
+                <div>
+                  <Label>Email Provider</Label>
+                  <Select
+                    value={email.provider}
+                    onValueChange={(v: string) =>
+                      setEmail({ ...email, provider: v as EmailSettings["provider"] })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="smtp">SMTP</SelectItem>
+                      <SelectItem value="resend">Resend</SelectItem>
+                      <SelectItem value="sendgrid">SendGrid</SelectItem>
+                      <SelectItem value="mailgun">Mailgun</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>From Email</Label>
+                  <Input
+                    type="email"
+                    value={email.fromEmail}
+                    onChange={(e) => setEmail({ ...email, fromEmail: e.target.value })}
+                    placeholder="noreply@example.com"
+                  />
+                </div>
+                <div>
+                  <Label>From Name</Label>
+                  <Input
+                    type="text"
+                    value={email.fromName}
+                    onChange={(e) => setEmail({ ...email, fromName: e.target.value })}
+                    placeholder="StellarStack"
+                  />
+                </div>
 
                 {email.provider === "smtp" && (
                   <>
-                    <InputField
-                      label="SMTP Host"
-                      value={email.smtp?.host || ""}
-                      onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, host: v } })}
-                      placeholder="smtp.example.com"
-                    />
-                    <InputField
-                      label="SMTP Port"
-                      type="number"
-                      value={String(email.smtp?.port || 587)}
-                      onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, port: parseInt(v) || 587 } })}
-                      placeholder="587"
-                    />
-                    <Toggle
-                      label="Use TLS/SSL"
-                      checked={email.smtp?.secure || false}
-                      onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, secure: v } })}
-                    />
-                    <InputField
-                      label="SMTP Username"
-                      value={email.smtp?.username || ""}
-                      onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, username: v } })}
-                      placeholder="username"
-                    />
-                    <InputField
-                      label="SMTP Password"
-                      type="password"
-                      value={email.smtp?.password || ""}
-                      onChange={(v) => setEmail({ ...email, smtp: { ...email.smtp!, password: v } })}
-                      placeholder="••••••••"
-                    />
+                    <div>
+                      <Label>SMTP Host</Label>
+                      <Input
+                        type="text"
+                        value={email.smtp?.host || ""}
+                        onChange={(e) =>
+                          setEmail({ ...email, smtp: { ...email.smtp!, host: e.target.value } })
+                        }
+                        placeholder="smtp.example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label>SMTP Port</Label>
+                      <Input
+                        type="number"
+                        value={String(email.smtp?.port || 587)}
+                        onChange={(e) =>
+                          setEmail({
+                            ...email,
+                            smtp: { ...email.smtp!, port: parseInt(e.target.value) || 587 },
+                          })
+                        }
+                        placeholder="587"
+                      />
+                    </div>
+                    <div>
+                      <Switch
+                        checked={email.smtp?.secure || false}
+                        onCheckedChange={(v) =>
+                          setEmail({ ...email, smtp: { ...email.smtp!, secure: v } })
+                        }
+                      />
+                      <Label>Use TLS/SSL</Label>
+                    </div>
+                    <div>
+                      <Label>SMTP Username</Label>
+                      <Input
+                        type="text"
+                        value={email.smtp?.username || ""}
+                        onChange={(e) =>
+                          setEmail({ ...email, smtp: { ...email.smtp!, username: e.target.value } })
+                        }
+                        placeholder="username"
+                      />
+                    </div>
+                    <div>
+                      <Label>SMTP Password</Label>
+                      <Input
+                        type="password"
+                        value={email.smtp?.password || ""}
+                        onChange={(e) =>
+                          setEmail({ ...email, smtp: { ...email.smtp!, password: e.target.value } })
+                        }
+                        placeholder="••••••••"
+                      />
+                    </div>
                   </>
                 )}
 
                 {email.provider !== "smtp" && (
-                  <InputField
-                    label="API Key"
-                    type="password"
-                    value={email.apiKey || ""}
-                    onChange={(v) => setEmail({ ...email, apiKey: v })}
-                    placeholder="Enter API key"
-                  />
+                  <div>
+                    <Label>API Key</Label>
+                    <Input
+                      type="password"
+                      value={email.apiKey || ""}
+                      onChange={(e) => setEmail({ ...email, apiKey: e.target.value })}
+                      placeholder="Enter API key"
+                    />
+                  </div>
                 )}
 
-                <InputField
-                  label="Test Email Address"
-                  type="email"
-                  value={testEmailAddress}
-                  onChange={setTestEmailAddress}
-                  placeholder="test@example.com"
-                  helperText="Enter an email address to send a test email"
-                />
+                <div>
+                  <Label>Test Email Address</Label>
+                  <Input
+                    type="email"
+                    value={testEmailAddress}
+                    onChange={(e) => setTestEmailAddress(e.target.value)}
+                    placeholder="test@example.com"
+                  />
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>
+                    Enter an email address to send a test email
+                  </p>
+                </div>
               </SettingsSection>
             </FadeIn>
 
@@ -613,94 +583,117 @@ export default function AdminSettingsPage() {
                 onSave={handleSaveBranding}
                 isSaving={savingBranding}
               >
-                <InputField
-                  label="Application Name"
-                  value={branding.appName}
-                  onChange={(v) => setBranding({ ...branding, appName: v })}
-                  placeholder="StellarStack"
-                  helperText="The name displayed throughout the application"
-                />
-                <InputField
-                  label="Logo URL"
-                  value={branding.logoUrl || ""}
-                  onChange={(v) => setBranding({ ...branding, logoUrl: v || null })}
-                  placeholder="https://example.com/logo.png"
-                  helperText="URL to your logo image (recommended: 200x50px)"
-                />
-                <InputField
-                  label="Favicon URL"
-                  value={branding.faviconUrl || ""}
-                  onChange={(v) => setBranding({ ...branding, faviconUrl: v || null })}
-                  placeholder="https://example.com/favicon.ico"
-                  helperText="URL to your favicon"
-                />
                 <div>
-                  <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
-                    Primary Color
-                  </label>
+                  <Label>Application Name</Label>
+                  <Input
+                    type="text"
+                    value={branding.appName}
+                    onChange={(e) => setBranding({ ...branding, appName: e.target.value })}
+                    placeholder="StellarStack"
+                  />
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>
+                    The name displayed throughout the application
+                  </p>
+                </div>
+                <div>
+                  <Label>Logo URL</Label>
+                  <Input
+                    type="text"
+                    value={branding.logoUrl || ""}
+                    onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value || null })}
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>
+                    URL to your logo image (recommended: 200x50px)
+                  </p>
+                </div>
+                <div>
+                  <Label>Favicon URL</Label>
+                  <Input
+                    type="text"
+                    value={branding.faviconUrl || ""}
+                    onChange={(e) =>
+                      setBranding({ ...branding, faviconUrl: e.target.value || null })
+                    }
+                    placeholder="https://example.com/favicon.ico"
+                  />
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>URL to your favicon</p>
+                </div>
+                <div>
+                  <Label>Primary Color</Label>
                   <div className="flex items-center gap-3">
-                    <input
+                    <Input
                       type="color"
                       value={branding.primaryColor}
                       onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                      className="w-10 h-10 border-0 cursor-pointer"
+                      className="h-10 w-10 cursor-pointer border-0"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={branding.primaryColor}
                       onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
                       placeholder="#22c55e"
-                      className={cn(
-                        "flex-1 px-4 py-2 text-sm border focus:outline-none transition-colors bg-zinc-900 border-zinc-700 text-zinc-100 focus:border-zinc-500",
-                      )}
                     />
                   </div>
                 </div>
-                <InputField
-                  label="Support Email"
-                  type="email"
-                  value={branding.supportEmail}
-                  onChange={(v) => setBranding({ ...branding, supportEmail: v })}
-                  placeholder="support@example.com"
-                />
-                <InputField
-                  label="Support URL"
-                  value={branding.supportUrl || ""}
-                  onChange={(v) => setBranding({ ...branding, supportUrl: v || null })}
-                  placeholder="https://support.example.com"
-                />
-                <InputField
-                  label="Terms of Service URL"
-                  value={branding.termsUrl || ""}
-                  onChange={(v) => setBranding({ ...branding, termsUrl: v || null })}
-                  placeholder="https://example.com/terms"
-                />
-                <InputField
-                  label="Privacy Policy URL"
-                  value={branding.privacyUrl || ""}
-                  onChange={(v) => setBranding({ ...branding, privacyUrl: v || null })}
-                  placeholder="https://example.com/privacy"
-                />
-                <InputField
-                  label="Footer Text"
-                  value={branding.footerText}
-                  onChange={(v) => setBranding({ ...branding, footerText: v })}
-                  placeholder="Powered by StellarStack"
-                />
                 <div>
-                  <label className={cn("block text-xs uppercase tracking-wider mb-2 text-zinc-400")}>
-                    Custom CSS
-                  </label>
-                  <textarea
+                  <Label>Support Email</Label>
+                  <Input
+                    type="email"
+                    value={branding.supportEmail}
+                    onChange={(e) => setBranding({ ...branding, supportEmail: e.target.value })}
+                    placeholder="support@example.com"
+                  />
+                </div>
+                <div>
+                  <Label>Support URL</Label>
+                  <Input
+                    type="text"
+                    value={branding.supportUrl || ""}
+                    onChange={(e) =>
+                      setBranding({ ...branding, supportUrl: e.target.value || null })
+                    }
+                    placeholder="https://support.example.com"
+                  />
+                </div>
+                <div>
+                  <Label>Terms of Service URL</Label>
+                  <Input
+                    type="text"
+                    value={branding.termsUrl || ""}
+                    onChange={(e) => setBranding({ ...branding, termsUrl: e.target.value || null })}
+                    placeholder="https://example.com/terms"
+                  />
+                </div>
+                <div>
+                  <Label>Privacy Policy URL</Label>
+                  <Input
+                    type="text"
+                    value={branding.privacyUrl || ""}
+                    onChange={(e) =>
+                      setBranding({ ...branding, privacyUrl: e.target.value || null })
+                    }
+                    placeholder="https://example.com/privacy"
+                  />
+                </div>
+                <div>
+                  <Label>Footer Text</Label>
+                  <Input
+                    type="text"
+                    value={branding.footerText}
+                    onChange={(e) => setBranding({ ...branding, footerText: e.target.value })}
+                    placeholder="Powered by StellarStack"
+                  />
+                </div>
+                <div>
+                  <Label>Custom CSS</Label>
+                  <Textarea
                     value={branding.customCss}
                     onChange={(e) => setBranding({ ...branding, customCss: e.target.value })}
                     placeholder="/* Custom CSS styles */"
                     rows={6}
-                    className={cn(
-                      "w-full px-4 py-2 text-sm font-mono border focus:outline-none transition-colors resize-y bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-600 focus:border-zinc-500",
-                    )}
                   />
-                  <p className={cn("text-xs mt-1 text-zinc-500")}>
+                  <p className={cn("mt-1 text-xs text-zinc-500")}>
                     Advanced: Add custom CSS to override default styles (admins only)
                   </p>
                 </div>

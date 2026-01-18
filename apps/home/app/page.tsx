@@ -1,62 +1,49 @@
 "use client";
 
-import { useState, useEffect, useRef, type JSX } from "react";
-import { useTheme as useNextTheme } from "next-themes";
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import Zoom from "react-medium-image-zoom";
+import {type JSX, useEffect, useRef, useState} from "react";
+import {useTheme as useNextTheme} from "next-themes";
+import {AnimatePresence, motion, useInView} from "framer-motion";
 import "react-medium-image-zoom/dist/styles.css";
 import "swiper/css";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
+import {cn} from "@workspace/ui/lib/utils";
+import type {GridItemConfig} from "@workspace/ui/components/drag-drop-grid";
 import {
-  BsServer,
-  BsShieldCheck,
-  BsLightningCharge,
-  BsGithub,
   BsArrowRight,
-  BsCheck,
-  BsTerminal,
+  BsCodeSlash,
   BsDatabase,
+  BsFileEarmarkLock,
+  BsKey,
+  BsLightningCharge,
+  BsLock,
   BsPeople,
   BsPersonWorkspace,
-  BsCodeSlash,
-  BsImage,
+  BsServer,
+  BsShieldCheck,
   BsShieldLock,
-  BsKey,
-  BsLock,
-  BsFileEarmarkLock,
+  BsTerminal,
 } from "react-icons/bs";
 import {
+  SiDocker,
+  SiGrafana,
+  SiHono,
   SiNextdotjs,
-  SiReact,
-  SiTypescript,
+  SiNodedotjs,
   SiPostgresql,
   SiPrisma,
-  SiDocker,
-  SiTailwindcss,
-  SiHono,
+  SiPrometheus,
+  SiReact,
   SiRedis,
-  SiNodedotjs,
-  SiTurborepo,
   SiRust,
   SiStorybook,
+  SiTailwindcss,
   SiTraefikproxy,
-  SiPrometheus,
-  SiGrafana,
+  SiTurborepo,
+  SiTypescript,
 } from "react-icons/si";
-import { Footer } from "@/components/Footer";
-import { Navigation } from "@/components/Navigation";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import {
-  TextureCard,
-  TextureCardContent,
-  TextureCardHeader,
-  TextureSeparator,
-} from "@workspace/ui/components/texture-card";
-import { Mail } from "lucide-react";
-import { AnimatedBackground, FloatingDots } from "@workspace/ui/components";
-import { Dithering } from "@paper-design/shaders-react";
+import {Footer} from "@/components/Footer";
+import {Navigation} from "@/components/Navigation";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {AnimatedBackground} from "@workspace/ui/components";
 
 // Technology stack
 const technologies = [

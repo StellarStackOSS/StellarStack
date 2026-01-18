@@ -1,18 +1,25 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {useTheme as useNextTheme} from "next-themes";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {BsClipboard, BsExclamationTriangle, BsEye, BsEyeSlash, BsMoon, BsPlus, BsSun, BsTrash,} from "react-icons/bs";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import { type JSX, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import {
+  BsClipboard,
+  BsExclamationTriangle,
+  BsEye,
+  BsEyeSlash,
+  BsPlus,
+  BsTrash,
+} from "react-icons/bs";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { Label } from "@workspace/ui/components/label";
 
 interface Database {
   id: string;
@@ -150,12 +157,7 @@ const DatabasesPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   DATABASES
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -164,11 +166,7 @@ const DatabasesPage = (): JSX.Element | null => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <TextureButton
-                variant="outline"
-                size="sm"
-                onClick={openCreateModal}
-              >
+              <TextureButton variant="secondary" size="sm" onClick={openCreateModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Database</span>
               </TextureButton>
@@ -202,32 +200,6 @@ const DatabasesPage = (): JSX.Element | null => {
                   "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                 )}
               >
-                {/* Corner decorations */}
-                <div
-                  className={cn(
-                    "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                    "border-zinc-500"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                    "border-zinc-500"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                    "border-zinc-500"
-                  )}
-                />
-                <div
-                  className={cn(
-                    "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                    "border-zinc-500"
-                  )}
-                />
-
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="mb-4 flex items-center gap-3">
@@ -251,57 +223,23 @@ const DatabasesPage = (): JSX.Element | null => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label
-                          className={cn(
-                            "text-[10px] font-medium tracking-wider uppercase",
-                            "text-zinc-500"
-                          )}
-                        >
-                          Host
-                        </label>
-                        <div
-                          className={cn(
-                            "mt-1 font-mono text-sm",
-                            "text-zinc-300"
-                          )}
-                        >
+                        <Label>Host</Label>
+                        <div className={cn("mt-1 font-mono text-sm", "text-zinc-300")}>
                           {db.host}:{db.port}
                         </div>
                       </div>
                       <div>
-                        <label
-                          className={cn(
-                            "text-[10px] font-medium tracking-wider uppercase",
-                            "text-zinc-500"
-                          )}
-                        >
-                          Size
-                        </label>
-                        <div
-                          className={cn("mt-1 text-sm", "text-zinc-300")}
-                        >
-                          {db.size}
-                        </div>
+                        <Label>Size</Label>
+                        <div className={cn("mt-1 text-sm", "text-zinc-300")}>{db.size}</div>
                       </div>
                       <div>
-                        <label
-                          className={cn(
-                            "text-[10px] font-medium tracking-wider uppercase",
-                            "text-zinc-500"
-                          )}
-                        >
-                          Username
-                        </label>
+                        <Label>Username</Label>
                         <div className="mt-1 flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "font-mono text-sm",
-                              "text-zinc-300"
-                            )}
-                          >
+                          <span className={cn("font-mono text-sm", "text-zinc-300")}>
                             {db.username}
                           </span>
-                          <TextureButton variant="minimal"
+                          <TextureButton
+                            variant="minimal"
                             onClick={() => copyToClipboard(db.username)}
                           >
                             <BsClipboard className="h-3 w-3" />
@@ -309,33 +247,20 @@ const DatabasesPage = (): JSX.Element | null => {
                         </div>
                       </div>
                       <div>
-                        <label
-                          className={cn(
-                            "text-[10px] font-medium tracking-wider uppercase",
-                            "text-zinc-500"
-                          )}
-                        >
-                          Password
-                        </label>
+                        <Label>Password</Label>
                         <div className="mt-1 flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "font-mono text-sm",
-                              "text-zinc-300"
-                            )}
-                          >
+                          <span className={cn("font-mono text-sm", "text-zinc-300")}>
                             {visiblePasswords.includes(db.id) ? db.password : "••••••••"}
                           </span>
-                          <TextureButton variant="minimal"
-                            onClick={() => togglePassword(db.id)}
-                          >
+                          <TextureButton variant="minimal" onClick={() => togglePassword(db.id)}>
                             {visiblePasswords.includes(db.id) ? (
                               <BsEyeSlash className="h-3 w-3" />
                             ) : (
                               <BsEye className="h-3 w-3" />
                             )}
                           </TextureButton>
-                          <TextureButton variant="minimal"
+                          <TextureButton
+                            variant="minimal"
                             onClick={() => copyToClipboard(db.password)}
                           >
                             <BsClipboard className="h-3 w-3" />
@@ -344,11 +269,7 @@ const DatabasesPage = (): JSX.Element | null => {
                       </div>
                     </div>
                   </div>
-                  <TextureButton
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openDeleteModal(db)}
-                  >
+                  <TextureButton variant="secondary" size="sm" onClick={() => openDeleteModal(db)}>
                     <BsTrash className="h-4 w-4" />
                   </TextureButton>
                 </div>
@@ -370,14 +291,9 @@ const DatabasesPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
+            <Label className={cn("mb-2 block text-xs tracking-wider uppercase", "text-zinc-400")}>
               Database Name
-            </label>
+            </Label>
             <Input
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
