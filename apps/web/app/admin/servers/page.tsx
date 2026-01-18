@@ -315,7 +315,6 @@ export default function AdminServersPage() {
         description={`Are you sure you want to delete "${deleteConfirmServer?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

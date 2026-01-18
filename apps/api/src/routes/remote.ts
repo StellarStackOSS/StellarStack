@@ -612,6 +612,47 @@ remote.post("/backups/:uuid/restore", async (c) => {
 });
 
 // ============================================================================
+// Schedule Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/servers/:serverId/schedule-executing
+ * Report schedule task execution status
+ */
+const scheduleExecutingSchema = z.object({
+  schedule_id: z.string(),
+  task_index: z.number().nullable().optional(),
+});
+
+remote.post("/servers/:serverId/schedule-executing", async (c) => {
+  const node = c.get("node");
+  const { serverId } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = scheduleExecutingSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Verify server exists on this node
+  const server = await db.server.findFirst({
+    where: { id: serverId, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Broadcast schedule execution status to WebSocket clients
+  emitServerEvent("schedule:executing", serverId, {
+    schedule_id: parsed.data.schedule_id,
+    task_index: parsed.data.task_index ?? null,
+  });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
 // Transfer Endpoints
 // ============================================================================
 

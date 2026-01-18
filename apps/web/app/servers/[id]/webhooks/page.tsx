@@ -369,7 +369,6 @@ const WebhooksPage = (): JSX.Element | null => {
         description="Are you sure you want to delete this webhook? This action cannot be undone."
         onConfirm={handleDelete}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   );

@@ -422,6 +422,26 @@ impl HttpClient {
 
         Ok(())
     }
+
+    /// Notify API about schedule task execution status
+    pub async fn notify_schedule_executing(
+        &self,
+        server_uuid: &str,
+        schedule_id: &str,
+        task_index: Option<usize>,
+    ) -> ApiResult<()> {
+        self.request::<serde_json::Value>(
+            Method::POST,
+            &format!("servers/{}/schedule-executing", server_uuid),
+            Some(serde_json::json!({
+                "schedule_id": schedule_id,
+                "task_index": task_index,
+            })),
+        )
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

@@ -166,8 +166,8 @@ fn backup_routes() -> Router<AppState> {
 fn schedule_routes() -> Router<AppState> {
     Router::new()
         .route("/sync", post(handlers::schedules::sync_schedules))
+        .route("/:scheduleId/run", post(handlers::schedules::execute_schedule))
         .route("/", post(handlers::schedules::create_schedule))
         .route("/", axum::routing::patch(handlers::schedules::update_schedule))
         .route("/", delete(handlers::schedules::delete_schedule))
-        .route("/execute", post(handlers::schedules::execute_schedule))
 }

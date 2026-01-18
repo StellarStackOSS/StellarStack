@@ -1,31 +1,23 @@
 "use client";
 
-import { type JSX, useState } from "react";
-import { useParams } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import {
-  BsCheckCircle,
-  BsCloudDownload,
-  BsDownload,
-  BsLock,
-  BsPlus,
-  BsTrash,
-  BsUnlock,
-} from "react-icons/bs";
-import { useBackupMutations, useBackups } from "@/hooks/queries";
-import type { Backup } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Label } from "@workspace/ui/components/label";
+import {type JSX, useState} from "react";
+import {useParams} from "next/navigation";
+import {AnimatePresence, motion} from "framer-motion";
+import {cn} from "@workspace/ui/lib/utils";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {BsCheckCircle, BsCloudDownload, BsDownload, BsLock, BsPlus, BsTrash, BsUnlock,} from "react-icons/bs";
+import {useBackupMutations, useBackups} from "@/hooks/queries";
+import type {Backup} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Label} from "@workspace/ui/components/label";
 
 const BackupsPage = (): JSX.Element | null => {
   const params = useParams();
@@ -387,7 +379,6 @@ const BackupsPage = (): JSX.Element | null => {
         description={`Are you sure you want to restore "${selectedBackup?.name}"? This will replace your current server data with the backup contents.`}
         onConfirm={handleRestore}
         confirmLabel="Restore"
-        variant="danger"
         isLoading={restore.isPending}
       />
 
@@ -399,7 +390,6 @@ const BackupsPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedBackup?.name}"? This action cannot be undone.`}
         onConfirm={handleDelete}
         confirmLabel="Delete"
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

@@ -1,36 +1,28 @@
 "use client";
 
-import { type JSX, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsClock,
-  BsEnvelope,
-  BsPencil,
-  BsPersonFill,
-  BsPlus,
-  BsShieldFill,
-  BsTrash,
-} from "react-icons/bs";
-import { toast } from "sonner";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useAuth } from "hooks/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import {type JSX, useMemo, useRef, useState} from "react";
+import {useParams} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Input} from "@workspace/ui/components/input";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsClock, BsEnvelope, BsPencil, BsPersonFill, BsPlus, BsShieldFill, BsTrash,} from "react-icons/bs";
+import {toast} from "sonner";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useAuth} from "hooks/auth-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
 import {
   usePermissionDefinitions,
   useServerInvitations,
   useServerMemberMutations,
   useServerMembers,
 } from "@/hooks/queries";
-import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
-import { Label } from "@workspace/ui/components/label";
+import type {PermissionCategory, ServerInvitation, ServerMember} from "@/lib/api";
+import {Label} from "@workspace/ui/components/label";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();
@@ -608,7 +600,6 @@ const UsersPage = (): JSX.Element | null => {
         description={`Are you sure you want to remove ${selectedMember?.user.name} from this server? They will lose all access.`}
         onConfirm={handleRemoveMember}
         confirmLabel="Remove"
-        variant="danger"
         isLoading={removeMember.isPending}
       />
 
@@ -620,7 +611,6 @@ const UsersPage = (): JSX.Element | null => {
         description={`Are you sure you want to cancel the invitation for ${selectedInvitation?.email}?`}
         onConfirm={handleCancelInvitation}
         confirmLabel="Cancel Invitation"
-        variant="danger"
         isLoading={cancelInvitation.isPending}
       />
     </div>

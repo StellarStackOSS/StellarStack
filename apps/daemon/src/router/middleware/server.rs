@@ -15,13 +15,21 @@ use serde_json::json;
 use crate::server::Server;
 use super::super::AppState;
 
+/// Wrapper for server_id path parameter
+#[derive(serde::Deserialize)]
+pub struct ServerPath {
+    pub server_id: String,
+}
+
 /// Extract server from path parameter and add to request extensions
 pub async fn extract_server(
     State(state): State<AppState>,
-    Path(server_id): Path<String>,
+    Path(server_path): Path<(String,)>,
     mut request: Request<Body>,
     next: Next,
 ) -> Response {
+    let server_id = server_path.0;
+
     // Look up the server
     let server = match state.manager.get(&server_id) {
         Some(server) => server,

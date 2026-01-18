@@ -4,6 +4,7 @@ import * as React from "react";
 import {ColumnDef, flexRender, Table as TanstackTable} from "@tanstack/react-table";
 
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "../table";
+import {Spinner} from "@workspace/ui/components";
 
 
 interface DataTableProps<TData> {
@@ -47,9 +48,7 @@ export function DataTable<TData>({
                 colSpan={columns.length}
                 className="h-24 text-center text-sm text-zinc-500"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
-                </div>
+                <Spinner/>
               </TableCell>
             </TableRow>
           ) : rows.length ? (

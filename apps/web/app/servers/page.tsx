@@ -2,14 +2,14 @@
 
 import {type JSX, useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
 import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {BsChevronRight, BsServer} from "react-icons/bs";
+import {BsChevronRight} from "react-icons/bs";
 import type {Server} from "@/lib/api";
 import {servers as serversApi} from "@/lib/api";
 import {useAuth} from "hooks/auth-provider";
 import {toast} from "sonner";
+import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 
 type ServerStatus =
   | "INSTALLING"
@@ -127,28 +127,22 @@ const ServersPage = (): JSX.Element | null => {
               <div className={"text-primary py-12 text-center text-xs"}>No servers found.</div>
             ) : (
               servers.map((server) => (
-                <TextureButton variant="minimal"
+                //TODO: FIGURE OUT WHAT TF DO WE WANT TO DO HERE??
+                <TextureButton variant="secondary" className="w-full flex flex-row justify-between"
                   key={server.id}
                   onClick={() => handleServerSelect(server.id)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-4">
-                      <div className="border p-3 border-zinc-700 bg-zinc-800/50">
-                        <BsServer className="h-6 w-6 text-zinc-400" />
+                      <div>
+                        <img alt="icon" src="/icons/24-storage.svg"/>
                       </div>
                       <div>
                         <div className="flex items-center gap-3">
-                          <h2 className="text-sm font-medium tracking-wider uppercase text-zinc-100">
+                          <h2 className="text-sm font-medium tracking-wider uppercase text-white">
                             {server.name}
                           </h2>
-                          <span
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                              getStatusColor(server.status)
-                            )}
-                          >
-                            {server.status}
-                          </span>
+                          <ServerStatusBadge server={server}/>
                         </div>
                         <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
                           <span>{getGameType(server)}</span>

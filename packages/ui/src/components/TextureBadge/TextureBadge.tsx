@@ -1,23 +1,23 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@workspace/ui/lib/utils";
+import {Slot} from "@radix-ui/react-slot";
+import {cva, type VariantProps} from "class-variance-authority";
+import {cn} from "@workspace/ui/lib/utils";
 
 const textureBadgeOuter = cva("", {
   variants: {
     variant: {
       primary:
-        "border border-black/10 dark:border-neutral-950 bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px]",
+        "bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px]",
       secondary:
-        "border border-black/20 bg-white/60 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px]",
+        "bg-white/60 dark:bg-neutral-600/50 p-[1px]",
       accent:
-        "border border-black/10 dark:border-neutral-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px]",
+        "bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px]",
       destructive:
-        "border border-black/10 dark:border-neutral-950 bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px]",
+        "bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px]",
       success:
-        "border border-black/10 dark:border-neutral-950 bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px]",
+        "bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px]",
       warning:
-        "border border-black/10 dark:border-neutral-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px]",
+        "bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px]",
     },
     size: {
       sm: "rounded-[4px]",

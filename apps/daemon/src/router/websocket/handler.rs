@@ -454,6 +454,13 @@ impl WebsocketHandler {
                 })))
             }
 
+            Event::ScheduleExecuting { schedule_id, task_index } => {
+                Some(WsOutgoing::new("schedule executing", json!({
+                    "schedule_id": schedule_id,
+                    "task_index": task_index
+                })))
+            }
+
             _ => None,
         }
     }

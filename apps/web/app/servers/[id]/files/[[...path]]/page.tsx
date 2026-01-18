@@ -1,9 +1,9 @@
 "use client";
 
-import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import {AnimatePresence, motion} from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -14,9 +14,9 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Checkbox } from "@workspace/ui/components/checkbox";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Checkbox} from "@workspace/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,17 +24,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/ui/components/dialog";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
 import {
   BsArrowLeft,
   BsChevronDown,
@@ -50,24 +44,23 @@ import {
   BsFolder,
   BsPencil,
   BsPlus,
-  BsSearch,
   BsTerminal,
   BsThreeDotsVertical,
   BsTrash,
   BsUpload,
   BsX,
 } from "react-icons/bs";
-import type { FileInfo } from "@/lib/api";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useAuth } from "hooks/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { useSoundEffects } from "@/hooks/useSoundEffects";
-import { toast } from "sonner";
-import { useUploads } from "@/components/upload-provider";
-import { DataTable, Input } from "@workspace/ui/components";
-import { Label } from "@workspace/ui/components/label";
+import type {FileInfo} from "@/lib/api";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useAuth} from "hooks/auth-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {useSoundEffects} from "@/hooks/useSoundEffects";
+import {toast} from "sonner";
+import {useUploads} from "@/components/upload-provider";
+import {DataTable, Input} from "@workspace/ui/components";
+import {Label} from "@workspace/ui/components/label";
 
 interface FileItem {
   id: string;
@@ -248,20 +241,29 @@ const FilesPage = (): JSX.Element | null => {
         path: f.path,
       }));
       setFiles(mappedFiles);
-      // Refresh disk usage after file list changes
-      fetchDiskUsage();
     } catch (error) {
       toast.error("Failed to fetch files");
       setFiles([]);
     } finally {
       setIsLoading(false);
     }
-  }, [serverId, currentPath, fetchDiskUsage]);
+  }, [serverId, currentPath]);
 
   useEffect(() => {
     fetchFiles();
     setRowSelection({});
   }, [fetchFiles]);
+
+  // Poll disk usage independently to avoid cascading re-renders
+  useEffect(() => {
+    // Fetch disk usage on component mount
+    fetchDiskUsage();
+
+    // Poll disk usage every 5 seconds
+    const interval = setInterval(fetchDiskUsage, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchDiskUsage]);
 
   // Global drag-and-drop handlers
   useEffect(() => {
@@ -1101,32 +1103,14 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <BsSearch
-                    className={cn(
-                      "absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 transition-colors",
-                      "text-zinc-500"
-                    )}
-                  />
-                  <Input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className={cn(
-                      "h-9 w-full border border-zinc-700 bg-zinc-900/50 pr-14 pl-9 text-xs text-zinc-200 transition-colors outline-none placeholder:text-zinc-600 focus:border-zinc-500 sm:w-48"
-                    )}
-                  />
-                  {searchQuery && (
-                    <TextureButton
-                      variant="ghost"
-                      className="absolute top-1/2 right-1 w-fit -translate-y-1/2 p-0"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      <BsX className="h-4 w-4" />
-                    </TextureButton>
-                  )}
-                </div>
+                {/*TODO: TO ADD BACK THE SEARCH*/}
+                {/*<Input*/}
+                {/*    type="text"*/}
+                {/*    value={searchQuery}*/}
+                {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
+                {/*    placeholder="Search..."*/}
+                {/*    className="pt-0 mt-0 w-1/4"*/}
+                {/*/>*/}
                 <TextureButton
                   variant="minimal"
                   onClick={() => setSftpModalOpen(true)}
@@ -1230,7 +1214,6 @@ const FilesPage = (): JSX.Element | null => {
         title="Delete File"
         description={`Are you sure you want to delete "${fileToDelete?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
-        variant="danger"
         onConfirm={confirmDelete}
       />
 
@@ -1241,7 +1224,6 @@ const FilesPage = (): JSX.Element | null => {
         title="Delete Files"
         description={`Are you sure you want to delete ${selectedCount} selected file(s)? This action cannot be undone.`}
         confirmLabel="Delete All"
-        variant="danger"
         onConfirm={confirmBulkDelete}
       />
 

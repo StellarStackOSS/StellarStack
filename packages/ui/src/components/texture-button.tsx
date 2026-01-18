@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva } from "class-variance-authority";
-import { cn } from "@workspace/ui/lib/utils";
+import {Slot} from "@radix-ui/react-slot";
+import {cva} from "class-variance-authority";
+import {cn} from "@workspace/ui/lib/utils";
 
-const buttonVariantsOuter = cva("", {
+const buttonVariantsOuter = cva("transition-all duration-300", {
   variants: {
     variant: {
       primary:
@@ -21,7 +21,7 @@ const buttonVariantsOuter = cva("", {
         "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/20 bg-white/50 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px] ease-in-out",
 
       minimal:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group w-full border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group w-full border-[1px] dark:border-[1px] border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
 
       icon: "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group rounded-full border border-black/10 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/50 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-700 dark:hover:to-neutral-600 active:bg-neutral-200 dark:active:bg-neutral-800",
 
@@ -50,7 +50,7 @@ const buttonVariantsOuter = cva("", {
   },
 });
 
-const innerDivVariants = cva("w-full h-full flex items-center justify-center", {
+const innerDivVariants = cva("w-full h-full flex items-center justify-center transition-all duration-300", {
   variants: {
     variant: {
       primary:

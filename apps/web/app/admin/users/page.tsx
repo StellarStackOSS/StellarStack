@@ -409,7 +409,6 @@ export default function UsersPage() {
         description={`Are you sure you want to delete "${deleteConfirmUser?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

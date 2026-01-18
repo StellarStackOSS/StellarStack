@@ -396,6 +396,9 @@ model Schedule {
   // When schedule processing started (null if never run)
   isProcessing Boolean @default(false)
 
+  // Which task index is currently executing (-1 or null if not running)
+  executingTaskIndex Int?
+
   // Last run timestamp
   lastRunAt DateTime?
 
@@ -428,6 +431,9 @@ model ScheduleTask {
 
   // Sequence order (tasks execute in order)
   sequence Int @default(0)
+
+  // How this task should be triggered: "TIME_DELAY" or "ON_COMPLETION"
+  triggerMode String @default("TIME_DELAY")
 
   // Relations
   scheduleId String

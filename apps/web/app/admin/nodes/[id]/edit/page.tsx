@@ -660,7 +660,6 @@ export default function EditNodePage() {
         title="Regenerate Token"
         description="This will invalidate the current daemon token. The daemon will need to be reconfigured with the new token. This action cannot be undone."
         confirmLabel={regenerateToken.isPending ? "Regenerating..." : "Regenerate"}
-        variant="danger"
         isLoading={regenerateToken.isPending}
       />
     </div>

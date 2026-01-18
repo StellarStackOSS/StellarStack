@@ -38,6 +38,7 @@ export type WSEventType =
   | "backup:created"
   | "backup:deleted"
   | "backup:status"
+  | "schedule:executing" // Schedule task execution status
   | "auth_success" // Authentication successful
   | "auth_error" // Authentication failed
   | "subscribed" // Successfully subscribed to server
@@ -79,7 +80,27 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       try {
-        const data: WSEvent = JSON.parse(event.data);
+        const rawData = JSON.parse(event.data);
+
+        // Convert daemon message format (event/args) to WSEvent format (type/data)
+        let data: WSEvent;
+        if ('event' in rawData && 'args' in rawData) {
+          // Daemon WebSocket format
+          const convertedType = (rawData.event as string).replace(/\s+/g, ':');
+          console.log("[WebSocket] Daemon message - event:", rawData.event, "-> type:", convertedType);
+          data = {
+            type: convertedType as WSEventType,
+            data: rawData.args?.[0],
+            serverId: rawData.serverId,
+            userId: rawData.userId,
+          };
+          console.log("[WebSocket] Converted data:", data);
+        } else {
+          // API WebSocket format (already in WSEvent format)
+          data = rawData as WSEvent;
+          console.log("[WebSocket] API message - type:", data.type);
+        }
+
         setLastMessage(data);
 
         switch (data.type) {

@@ -4,15 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { Layout, Layouts } from "react-grid-layout";
 import { Responsive, WidthProvider } from "react-grid-layout";
 import { cn } from "@workspace/ui/lib/utils";
-import { BsArrowsFullscreen, BsGripVertical, BsX } from "react-icons/bs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog";
+import { BsArrowsFullscreen, BsGripVertical } from "react-icons/bs";
 import type {
   DragDropGridContextValue,
   DragDropGridProps,
@@ -270,16 +262,6 @@ export const DragDropGrid = ({
     }
   }, []);
 
-  // Remove item function
-  const onRemoveRef = useRef(onRemoveItem);
-  onRemoveRef.current = onRemoveItem;
-
-  const removeItem = useCallback((itemId: string) => {
-    if (onRemoveRef.current) {
-      onRemoveRef.current(itemId);
-    }
-  }, []);
-
   // Get dropping item size based on allItems config
   const droppingItem = useCallback(() => {
     // Default dropping item size
@@ -294,7 +276,6 @@ export const DragDropGrid = ({
         getItemMinSize,
         getItemMaxSize,
         canResize,
-        removeItem,
         isEditing,
         removeConfirmLabels,
       }}
@@ -384,10 +365,9 @@ export const GridItem = ({
   className,
   showResizeHandle = true,
   showDragHandle = true,
-  showRemoveHandle = true,
   ...props
 }: GridItemProps) => {
-  const { cycleItemSize, getItemSize, canResize, removeItem, isEditing, removeConfirmLabels } =
+  const { cycleItemSize, getItemSize, canResize, isEditing, removeConfirmLabels } =
     useDragDropGrid();
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const size = getItemSize(itemId);
@@ -397,17 +377,6 @@ export const GridItem = ({
     e.preventDefault();
     e.stopPropagation();
     cycleItemSize(itemId);
-  };
-
-  const handleRemoveClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowRemoveConfirm(true);
-  };
-
-  const handleConfirmRemove = () => {
-    setShowRemoveConfirm(false);
-    removeItem(itemId);
   };
 
   return (
@@ -435,20 +404,17 @@ export const GridItem = ({
 
       {/* Resize handle */}
       {showResizeHandle && isResizable && isEditing && (
-        <button
+        <TextureButton
           onClick={handleResize}
           onTouchEnd={(e) => {
             e.preventDefault();
             handleResize(e as unknown as React.MouseEvent);
           }}
-          className={cn(
-            "absolute top-2 right-2 z-20 cursor-pointer border border-zinc-700 bg-zinc-800/80 p-1.5 hover:border-zinc-600 hover:bg-zinc-700"
-          )}
           title={`Size: ${size.toUpperCase()} (click to cycle)`}
           type="button"
         >
           <BsArrowsFullscreen className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
-        </button>
+        </TextureButton>
       )}
 
       {/* Content wrapper */}
@@ -465,48 +431,6 @@ export const GridItem = ({
           </TextureButton>
         )}
       </div>
-
-      {/* Remove handle */}
-      {showRemoveHandle && isEditing && (
-        <TextureButton
-          onClick={handleRemoveClick}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleRemoveClick(e as unknown as React.MouseEvent);
-          }}
-          title="Remove card"
-          className="w-fit cursor-pointer opacity-50 hover:opacity-100"
-          variant="destructive"
-          type="button"
-        >
-          <BsX className={cn("pointer-events-none h-3.5 w-3.5 text-white")} />
-        </TextureButton>
-      )}
-
-      {/* Remove confirmation dialog */}
-      <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>{removeConfirmLabels?.title ?? "Remove Card"}</DialogTitle>
-            <DialogDescription>
-              {removeConfirmLabels?.description ??
-                "Are you sure you want to remove this card from the dashboard?"}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <TextureButton
-              variant="minimal"
-              onClick={() => setShowRemoveConfirm(false)}
-              type="button"
-            >
-              {removeConfirmLabels?.cancel ?? "Cancel"}
-            </TextureButton>
-            <TextureButton variant="destructive" onClick={handleConfirmRemove} type="button">
-              {removeConfirmLabels?.confirm ?? "Remove"}
-            </TextureButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

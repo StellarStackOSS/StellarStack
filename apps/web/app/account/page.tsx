@@ -497,7 +497,6 @@ const AccountPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedPasskey?.name || "this passkey"}"? You will no longer be able to sign in using this passkey.`}
         onConfirm={handleDeletePasskey}
         confirmLabel="Delete"
-        variant="danger"
       />
 
       {/* Disable 2FA Modal */}

@@ -1,25 +1,18 @@
 "use client";
 
-import { type JSX, useState } from "react";
-import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsClipboard,
-  BsExclamationTriangle,
-  BsEye,
-  BsEyeSlash,
-  BsPlus,
-  BsTrash,
-} from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { Label } from "@workspace/ui/components/label";
+import {type JSX, useState} from "react";
+import {useParams} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Input} from "@workspace/ui/components/input";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsClipboard, BsExclamationTriangle, BsEye, BsEyeSlash, BsPlus, BsTrash,} from "react-icons/bs";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {Label} from "@workspace/ui/components/label";
 
 interface Database {
   id: string;
@@ -318,7 +311,6 @@ const DatabasesPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedDb?.name}"? All data in this database will be permanently lost.`}
         onConfirm={handleDelete}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   );

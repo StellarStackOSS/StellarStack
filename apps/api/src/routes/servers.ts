@@ -2297,6 +2297,7 @@ const scheduleSchema = z.object({
       payload: z.string().optional(),
       timeOffset: z.number().int().min(0).default(0),
       sequence: z.number().int().min(0).default(0),
+      triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
     })
   ),
 });
@@ -2487,9 +2488,26 @@ servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async 
       return c.json({ error: "Schedule not found" }, 404);
     }
 
-    // TODO: Trigger schedule execution on daemon
-    // const fullServer = await getServerWithNode(server.id);
-    // await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules/${scheduleId}/run`);
+    // Get the server's node to send request to daemon
+    const fullServer = await getServerWithNode(server.id);
+    if (!fullServer) {
+      return c.json({ error: "Server node not found" }, 500);
+    }
+
+    // Send schedule execution request to daemon
+    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules/${scheduleId}/run`, {
+      id: schedule.id,
+      name: schedule.name,
+      cronExpression: schedule.cronExpression,
+      enabled: schedule.isActive,
+      tasks: schedule.tasks,
+    });
+
+    // Update lastRunAt timestamp
+    await db.schedule.update({
+      where: { id: scheduleId },
+      data: { lastRunAt: new Date() },
+    });
 
     console.log(`[Schedule] Triggered schedule ${scheduleId} manually`);
 
@@ -2502,6 +2520,38 @@ servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async 
   } catch (error: any) {
     console.error("[Schedule] Failed to trigger schedule:", error.message);
     return c.json({ error: error.message }, 500);
+  }
+});
+
+// Update currently executing task in schedule (called by daemon)
+servers.patch("/:serverId/schedules/:scheduleId/executing-task", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+  const body = await c.req.json().catch(() => ({}));
+  const { taskIndex } = body;
+
+  try {
+    // Validate schedule exists
+    const schedule = await db.schedule.findFirst({
+      where: { id: scheduleId, serverId: server.id },
+    });
+
+    if (!schedule) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    // Update executing task index
+    const updated = await db.schedule.update({
+      where: { id: scheduleId },
+      data: { executingTaskIndex: taskIndex ?? null },
+    });
+
+    console.log(`[Schedule] Updated executing task for ${scheduleId}: task ${taskIndex}`);
+
+    return c.json({ success: true, executingTaskIndex: updated.executingTaskIndex });
+  } catch (error: any) {
+    console.error(`[Schedule] Failed to update executing task: ${error.message}`);
+    return c.json({ error: "Failed to update executing task" }, 500);
   }
 });
 

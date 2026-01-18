@@ -332,6 +332,7 @@ export interface ScheduleTask {
   payload?: string;
   sequence: number;
   timeOffset: number;
+  triggerMode?: "TIME_DELAY" | "ON_COMPLETION";
 }
 
 export interface Schedule {
@@ -341,6 +342,7 @@ export interface Schedule {
   tasks: ScheduleTask[];
   isActive: boolean;
   isProcessing?: boolean;
+  executingTaskIndex?: number | null;
   lastRunAt?: string;
   nextRunAt?: string;
   createdAt: string;
@@ -355,6 +357,7 @@ export interface CreateScheduleData {
     payload?: string;
     sequence: number;
     timeOffset: number;
+    triggerMode?: "TIME_DELAY" | "ON_COMPLETION";
   }>;
   isActive?: boolean;
 }

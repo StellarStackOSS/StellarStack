@@ -67,6 +67,13 @@ pub enum RedisMessage {
         checksum: Option<String>,
         size: u64,
     },
+
+    /// Schedule task execution status
+    ScheduleExecuting {
+        server_id: String,
+        schedule_id: String,
+        task_index: Option<usize>,
+    },
 }
 
 /// Redis publisher for broadcasting events
@@ -216,6 +223,14 @@ impl RedisPublisher {
                 })
             }
 
+            Event::ScheduleExecuting { schedule_id, task_index } => {
+                Some(RedisMessage::ScheduleExecuting {
+                    server_id: self.server_id.clone(),
+                    schedule_id: schedule_id.clone(),
+                    task_index: *task_index,
+                })
+            }
+
             // Other events don't need Redis publishing
             Event::BackupRestoreStarted { .. } |
             Event::BackupRestoreCompleted { .. } |
@@ -247,6 +262,9 @@ impl RedisPublisher {
             RedisMessage::BackupStarted { server_id, .. } |
             RedisMessage::BackupCompleted { server_id, .. } => {
                 format!("{}:server:{}:backup", self.prefix, server_id)
+            }
+            RedisMessage::ScheduleExecuting { server_id, .. } => {
+                format!("{}:server:{}:schedule", self.prefix, server_id)
             }
         }
     }
