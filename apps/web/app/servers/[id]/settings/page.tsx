@@ -1,44 +1,25 @@
 "use client";
 
-import { type JSX, useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Slider } from "@workspace/ui/components/slider";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
-import {
-  BsCheck,
-  BsCheckCircle,
-  BsExclamationTriangle,
-  BsGeoAlt,
-  BsGlobe,
-  BsLayers,
-} from "react-icons/bs";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { toast } from "sonner";
+import {type JSX, useCallback, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {motion} from "framer-motion";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
+import {Spinner} from "@workspace/ui/components/spinner";
+import {Slider} from "@workspace/ui/components/slider";
+import {Label} from "@workspace/ui/components/label";
+import {Input} from "@workspace/ui/components/input";
+import {Textarea} from "@workspace/ui/components/textarea";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import {BsCheck, BsCheckCircle, BsExclamationTriangle, BsGeoAlt, BsGlobe, BsLayers,} from "react-icons/bs";
+import {servers} from "@/lib/api";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {toast} from "sonner";
 
 interface ServerSettings {
   name: string;
@@ -695,7 +676,6 @@ const SettingsPage = (): JSX.Element | null => {
         description="Are you sure you want to reinstall this server? This will stop the server and run the installation script again with your current configuration. Existing server files will be preserved but may be overwritten by the installation."
         onConfirm={handleReinstall}
         confirmLabel="Reinstall"
-        variant="danger"
         isLoading={isReinstalling}
       />
 
@@ -902,7 +882,6 @@ const SettingsPage = (): JSX.Element | null => {
         description={`Are you sure you want to transfer this server to ${locations.find((l) => l.id === selectedLocation)?.city}, ${locations.find((l) => l.id === selectedLocation)?.country}? The server will be stopped during the transfer process.`}
         onConfirm={confirmTransfer}
         confirmLabel="Transfer"
-        variant="danger"
       />
 
       {/* Server Split Modal */}

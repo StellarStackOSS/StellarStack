@@ -32,7 +32,6 @@ export interface DragDropGridContextValue {
   getItemMinSize: (itemId: string) => GridSize | undefined;
   getItemMaxSize: (itemId: string) => GridSize | undefined;
   canResize: (itemId: string) => boolean;
-  removeItem: (itemId: string) => void;
   isEditing: boolean;
   removeConfirmLabels?: RemoveConfirmLabels;
 }

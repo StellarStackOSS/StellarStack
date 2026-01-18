@@ -540,6 +540,7 @@ export default function EditServerPage() {
                     </div>
                   </div>
 
+                  {/*TODO: UPDATE THE DIALOG TO USE THE NEW ONE*/}
                   {/* Blueprint Change */}
                   <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
@@ -566,6 +567,7 @@ export default function EditServerPage() {
                     </div>
                   </div>
 
+                  {/*TODO: ADD THE OPTION TO SET LIMITS ON ALLOCATIONS*/}
                   {/* Allocations */}
                   <div className={cn("border-t border-zinc-700/50 pt-4")}>
                     <div className="mb-4 flex items-center justify-between">
@@ -827,6 +829,7 @@ export default function EditServerPage() {
                       </div>
                     )}
 
+                    {/*TODO: UPDATE TO USE THE NEW DIALOG SYSTEM*/}
                     {!showTransferHistory && (
                       <div className="mt-4">
                         <TextureButton
@@ -879,7 +882,6 @@ export default function EditServerPage() {
         title="Reinstall Server"
         description="This will completely wipe the server's files and run the installation script again. All data will be lost. This action cannot be undone."
         confirmLabel={isReinstalling ? "Reinstalling..." : "Reinstall"}
-        variant="danger"
         isLoading={isReinstalling}
       />
 

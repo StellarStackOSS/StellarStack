@@ -7,7 +7,7 @@ import { useDragDropGrid } from "../drag-drop-grid";
 import type { CardProps, NodeData, SystemInfoCardLabels } from "../dashboard-cards-types";
 
 interface SystemInformationCardProps extends CardProps {
-  nodeData: NodeData;
+  nodeData: NodeData | null;
   labels: SystemInfoCardLabels;
 }
 
@@ -27,6 +27,10 @@ export const SystemInformationCard = ({
   const labelColor = "text-zinc-500";
   const valueColor = "text-zinc-200";
 
+  if (nodeData === null) {
+    return <></>;
+  }
+
   // Use shortId from nodeData if available, otherwise slice from full id
   const shortId = nodeData.shortId || nodeData.id.slice(-4);
   const shortLocation =
@@ -35,20 +39,10 @@ export const SystemInformationCard = ({
   if (isXxs) {
     return (
       <UsageCard className="flex h-full items-center justify-between px-6">
-        <span
-          className={cn(
-            "text-xs font-medium uppercase",
-            "text-zinc-400"
-          )}
-        >
+        <span className={cn("text-xs font-medium uppercase", "text-zinc-400")}>
           {labels.titleShort}
         </span>
-        <span
-          className={cn(
-            "ml-4 truncate font-mono text-sm",
-            "text-zinc-100"
-          )}
-        >
+        <span className={cn("ml-4 truncate font-mono text-sm", "text-zinc-100")}>
           {nodeData.name}
         </span>
       </UsageCard>

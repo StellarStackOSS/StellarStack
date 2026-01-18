@@ -508,7 +508,6 @@ export default function NodesPage() {
         description={`Are you sure you want to delete "${deleteConfirmNode?.displayName}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

@@ -1,29 +1,20 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsArrowRight,
-  BsCpu,
-  BsExclamationTriangle,
-  BsHdd,
-  BsMemory,
-  BsPlus,
-  BsServer,
-  BsTrash,
-} from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { type ChildServer, servers } from "@/lib/api";
-import { toast } from "sonner";
+import {type JSX, useEffect, useState} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {Input} from "@workspace/ui/components/input";
+import {Label} from "@workspace/ui/components/label";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsArrowRight, BsCpu, BsExclamationTriangle, BsHdd, BsMemory, BsPlus, BsServer, BsTrash,} from "react-icons/bs";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {type ChildServer, servers} from "@/lib/api";
+import {toast} from "sonner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -526,7 +517,6 @@ const SplitPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedChild?.name}"? This will permanently delete the server and all its data. Resources will be returned to the parent server.`}
         onConfirm={handleDeleteChild}
         confirmLabel="Delete Server"
-        variant="danger"
       />
     </div>
   );

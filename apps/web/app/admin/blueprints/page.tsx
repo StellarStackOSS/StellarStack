@@ -643,7 +643,6 @@ export default function BlueprintsPage() {
         description={`Are you sure you want to delete "${deleteConfirmBlueprint?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

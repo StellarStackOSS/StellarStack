@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import {useState} from "react";
+import {useParams, usePathname} from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -29,14 +29,14 @@ import {
   UserIcon,
   UsersIcon,
 } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
-import { useAuth } from "hooks/auth-provider";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { BsArrowLeft } from "react-icons/bs";
-import { motion } from "framer-motion";
-import { WaveText } from "@/components/wave-text";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { useServerWebSocket } from "@/hooks/useServerWebSocket";
+import {cn} from "@workspace/ui/lib/utils";
+import {useAuth} from "hooks/auth-provider";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {BsArrowLeft} from "react-icons/bs";
+import {AnimatePresence, motion} from "framer-motion";
+import {WaveText} from "@/components/wave-text";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {useServerWebSocket} from "@/hooks/useServerWebSocket";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -153,7 +153,7 @@ export const UnifiedSidebar = () => {
     if (variant === "admin") {
       return (
         <>
-          <TextureButton>
+          <TextureButton variant="minimal" className="w-full">
             <Link href="/servers" className="flex flex-row gap-2">
               <BsArrowLeft className="h-4 w-4" />
               <span className="text-xs font-medium tracking-wider uppercase">Back to Panel</span>
@@ -314,7 +314,6 @@ export const UnifiedSidebar = () => {
   };
 
   const userMenuItems = renderUserMenuItems();
-  const isAdminVariant = variant === "admin";
 
   return (
     <Sidebar
@@ -332,35 +331,18 @@ export const UnifiedSidebar = () => {
         {variant === "app" && <ServerStatsContent />}
 
         <div className="relative">
-          <TextureButton variant="minimal" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+          <TextureButton variant="secondary" className="flex flex-row justify-between text-start w-full" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center text-xs font-medium uppercase",
-                isAdminVariant
-                  ? "border border-amber-700/50 bg-amber-900/50 text-amber-400"
-                  : "border border-zinc-700 bg-zinc-800 text-zinc-300"
-              )}
+                "flex h-8 w-8 items-center justify-center text-xs font-medium uppercase border border-zinc-700 bg-zinc-800 text-zinc-300")}
             >
               {user.initials}
             </div>
             <div className="min-w-0 flex-1">
               <div
-                className={cn(
-                  isAdminVariant
-                    ? "flex items-center gap-1.5 truncate text-xs font-medium"
-                    : "truncate text-xs font-medium text-zinc-200"
-                )}
+                className={cn("truncate text-xs font-medium text-zinc-200")}
               >
                 {user.name}
-                {isAdminVariant && (
-                  <span
-                    className={cn(
-                      "bg-amber-900/50 px-1.5 py-0.5 text-[9px] tracking-wider text-amber-400 uppercase"
-                    )}
-                  >
-                    Admin
-                  </span>
-                )}
               </div>
               <div className={cn("truncate text-[10px] text-zinc-500")}>{user.email}</div>
             </div>
@@ -372,42 +354,53 @@ export const UnifiedSidebar = () => {
             />
           </TextureButton>
 
-          {isUserMenuOpen && (
-            <div
-              className={cn(
-                "absolute right-0 bottom-full left-0 z-50 mb-1 border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
-              )}
-            >
-              {userMenuItems.map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
-                  )}
-                >
-                  <item.icon className={cn("h-4 w-4 text-zinc-500")} />
-                  <span className="tracking-wider uppercase">{item.title}</span>
-                </Link>
-              ))}
-
-              {userMenuItems.length > 0 && (
-                <div className={cn("my-1 border-t border-zinc-700/50")} />
-              )}
-
-              <TextureButton
-                variant="minimal"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  handleSignOut();
-                }}
+          <AnimatePresence>
+            {isUserMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.15, ease: "easeInOut" }}
+                className={cn(
+                  "absolute rounded-lg right-0 bottom-[120%] left-0 z-50 mb-1 border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
+                )}
               >
-                <LogOutIcon className="h-4 w-4" />
-                <span className="tracking-wider uppercase">Sign Out</span>
-              </TextureButton>
-            </div>
-          )}
+                <div>
+                  {userMenuItems.map((item) => (
+                    <Link
+                      key={item.title}
+                      href={item.href}
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+                      )}
+                    >
+                      <item.icon className={cn("h-4 w-4 text-zinc-500")} />
+                      <span className="tracking-wider uppercase">{item.title}</span>
+                    </Link>
+                  ))}
+
+                  {userMenuItems.length > 0 && (
+                    <div className={cn("my-1 border-t border-zinc-700/50")} />
+                  )}
+
+                  <div className="p-2">
+                    <TextureButton
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        handleSignOut();
+                      }}
+                    >
+                      <LogOutIcon className="h-4 w-4" />
+                      <span className="tracking-wider uppercase">Sign Out</span>
+                    </TextureButton>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className={cn("mt-3 text-center text-[10px] tracking-wider text-zinc-600 uppercase")}>

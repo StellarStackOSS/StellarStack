@@ -138,6 +138,14 @@ pub enum Event {
 
     /// Server configuration updated
     ConfigurationUpdated,
+
+    /// Schedule task is executing
+    ScheduleExecuting {
+        /// Schedule ID
+        schedule_id: String,
+        /// Currently executing task index (None if schedule finished)
+        task_index: Option<usize>,
+    },
 }
 
 /// Event bus for broadcasting events to multiple subscribers
