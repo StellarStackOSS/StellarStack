@@ -88,7 +88,6 @@ export interface CoreUsage {
 
 export interface UsageMetricCardProps extends CardProps {
   percentage: number;
-  details: string[];
   tooltipContent?: ReactNode;
   history?: number[];
   color?: string;
@@ -96,7 +95,6 @@ export interface UsageMetricCardProps extends CardProps {
 
 export interface CpuCardProps extends CardProps {
   percentage: number;
-  details: string[];
   tooltipContent?: ReactNode;
   history?: number[];
   coreUsage?: CoreUsage[];

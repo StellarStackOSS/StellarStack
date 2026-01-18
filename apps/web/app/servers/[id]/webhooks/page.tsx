@@ -1,28 +1,23 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
-import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsPlus,
-  BsTrash,
-  BsPencil,
-  BsGlobe,
-  BsCheck2,
-  BsX,
-  BsArrowRepeat,
-} from "react-icons/bs";
-import { TbWand } from "react-icons/tb";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
-import { webhooks, type Webhook, type WebhookEvent } from "@/lib/api";
-import { toast } from "sonner";
+import {type JSX, useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import {FormModal} from "@workspace/ui/components/form-modal";
+import {BsGlobe, BsPencil, BsPlus, BsTrash,} from "react-icons/bs";
+import {TbWand} from "react-icons/tb";
+import {useServer} from "components/ServerStatusPages/server-provider";
+import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
+import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import {EmptyState, PageHeader, StatusBadge} from "components/ServerPageComponents";
+import {WebhookEventSelector} from "./WebhookEventSelector";
+import {WebhookUrlField} from "./WebhookUrlField";
+import {type Webhook, type WebhookEvent, webhooks} from "@/lib/api";
+import {toast} from "sonner";
+import {Label} from "@workspace/ui/components/label";
+import {Card} from "@workspace/ui/components";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -198,53 +193,19 @@ const WebhooksPage = (): JSX.Element | null => {
 
       <div className="relative p-8">
         <div className="mx-auto max-w-6xl">
-          {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-              <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
-                  WEBHOOKS
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Server {serverId} • {webhookList.length} webhooks
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+          <PageHeader
+            title="WEBHOOKS"
+            subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
+            actions={
+              <TextureButton
+                variant="minimal"
                 onClick={openAddModal}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                )}
               >
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Webhook</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  "hidden"
-                )}
-              >
-              </Button>
-            </div>
-          </div>
+              </TextureButton>
+            }
+          />
 
           {/* Loading State */}
           {loading ? (
@@ -252,102 +213,17 @@ const WebhooksPage = (): JSX.Element | null => {
               Loading webhooks...
             </div>
           ) : webhookList.length === 0 ? (
-            <div
-              className={cn(
-                "relative border p-8 text-center",
-                "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-              )}
-            >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  "border-zinc-500"
-                )}
-              />
-
-              <BsGlobe
-                className={cn("mx-auto mb-4 h-12 w-12", "text-zinc-600")}
-              />
-              <h3
-                className={cn(
-                  "mb-2 text-lg font-medium",
-                  "text-zinc-300"
-                )}
-              >
-                No Webhooks
-              </h3>
-              <p className={cn("mb-4 text-sm", "text-zinc-500")}>
-                Add a webhook to receive notifications about server events.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openAddModal}
-                className={cn(
-                  "gap-2",
-                  "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                )}
-              >
-                <BsPlus className="h-4 w-4" />
-                Add Webhook
-              </Button>
-            </div>
+            <EmptyState
+              icon={<BsGlobe className="h-12 w-12" />}
+              title="No Webhooks"
+              description="Add a webhook to receive notifications about server events."
+              action={{ label: "Add Webhook", onClick: openAddModal }}
+            />
           ) : (
             /* Webhooks List */
             <div className="space-y-4">
               {webhookList.map((webhook) => (
-                <div
-                  key={webhook.id}
-                  className={cn(
-                    "relative border p-6 transition-all",
-                    "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                  )}
-                >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      "border-zinc-500"
-                    )}
-                  />
-
+                <Card key={webhook.id}>
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex items-center gap-3">
@@ -370,70 +246,44 @@ const WebhooksPage = (): JSX.Element | null => {
                           >
                             {webhook.url}
                           </span>
-                          <span
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                              webhook.enabled
-                                ? "border-green-700/50 text-green-400"
-                                : "border-zinc-700 text-zinc-500"
-                            )}
-                          >
-                            {webhook.enabled ? "Active" : "Disabled"}
-                          </span>
+                          <StatusBadge
+                            label={webhook.enabled ? "Active" : "Disabled"}
+                            color={webhook.enabled ? "green" : "zinc"}
+                          />
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {webhook.events.map((event) => (
-                          <span
+                          <StatusBadge
                             key={event}
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                              "border-zinc-700 text-zinc-400"
-                            )}
-                          >
-                            {event.replace(/_/g, " ")}
-                          </span>
+                            label={event.replace(/_/g, " ")}
+                          />
                         ))}
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => openEditModal(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        )}
                       >
                         <BsPencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => handleTestWebhook(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-blue-900/60 text-blue-400/80 hover:border-blue-700 hover:text-blue-300"
-                        )}
                         title="Send test message to webhook"
                       >
                         <TbWand className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </TextureButton>
+                      <TextureButton
+                        variant="destructive"
                         onClick={() => openDeleteModal(webhook)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        )}
                       >
                         <BsTrash className="h-4 w-4" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -451,84 +301,14 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} />
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Discord Webhook URL
-            </label>
-            <Input
-              type="url"
-              value={formUrl}
-              onChange={(e) => setFormUrl(e.target.value)}
-              placeholder="https://discordapp.com/api/webhooks/..."
-              className={cn(
-                "font-mono text-sm transition-all",
-                "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-              )}
+            <Label>Events</Label>
+            <WebhookEventSelector
+              events={webhookEvents}
+              selectedEvents={formEvents}
+              onToggle={toggleEvent}
             />
-            <p className={cn("mt-1 text-xs", "text-zinc-500")}>
-              Get this from your Discord server's webhook settings
-            </p>
-          </div>
-          <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Events
-            </label>
-            <div className="space-y-2">
-              {webhookEvents.map((event) => (
-                <button
-                  key={event.value}
-                  type="button"
-                  onClick={() => toggleEvent(event.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
-                    formEvents.includes(event.value)
-                      ? "border-zinc-500 bg-zinc-800"
-                      : "border-zinc-700 hover:border-zinc-600"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded border",
-                      formEvents.includes(event.value)
-                        ? "border-green-500 bg-green-500/20"
-                        : "border-zinc-600"
-                    )}
-                  >
-                    {formEvents.includes(event.value) && (
-                      <BsCheck2
-                        className={cn(
-                          "h-3 w-3",
-                          "text-green-400"
-                        )}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div
-                      className={cn(
-                        "text-sm font-medium",
-                        "text-zinc-200"
-                      )}
-                    >
-                      {event.label}
-                    </div>
-                    <div className={cn("text-xs", "text-zinc-500")}>
-                      {event.description}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </FormModal>
@@ -544,47 +324,11 @@ const WebhooksPage = (): JSX.Element | null => {
         isValid={isFormValid}
       >
         <div className="space-y-4">
+          <WebhookUrlField value={formUrl} onChange={setFormUrl} />
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Discord Webhook URL
-            </label>
-            <Input
-              type="url"
-              value={formUrl}
-              onChange={(e) => setFormUrl(e.target.value)}
-              placeholder="https://discordapp.com/api/webhooks/..."
-              className={cn(
-                "font-mono text-sm transition-all",
-                "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-              )}
-            />
-            <p className={cn("mt-1 text-xs", "text-zinc-500")}>
-              Get this from your Discord server's webhook settings
-            </p>
-          </div>
-          <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Status
-            </label>
-            <button
-              type="button"
+            <Label>Status</Label>
+            <TextureButton
               onClick={() => setFormEnabled(!formEnabled)}
-              className={cn(
-                "flex w-full items-center gap-3 border p-3 transition-all",
-                formEnabled
-                  ? "border-green-700/50 bg-green-900/20"
-                  : "border-zinc-700"
-              )}
             >
               <div
                 className={cn(
@@ -604,63 +348,15 @@ const WebhooksPage = (): JSX.Element | null => {
               <span className={cn("text-sm", "text-zinc-300")}>
                 {formEnabled ? "Enabled" : "Disabled"}
               </span>
-            </button>
+            </TextureButton>
           </div>
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Events
-            </label>
-            <div className="space-y-2">
-              {webhookEvents.map((event) => (
-                <button
-                  key={event.value}
-                  type="button"
-                  onClick={() => toggleEvent(event.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3 border p-3 text-left transition-all",
-                    formEvents.includes(event.value)
-                      ? "border-zinc-500 bg-zinc-800"
-                      : "border-zinc-700 hover:border-zinc-600"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded border",
-                      formEvents.includes(event.value)
-                        ? "border-green-500 bg-green-500/20"
-                        : "border-zinc-600"
-                    )}
-                  >
-                    {formEvents.includes(event.value) && (
-                      <BsCheck2
-                        className={cn(
-                          "h-3 w-3",
-                          "text-green-400"
-                        )}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div
-                      className={cn(
-                        "text-sm font-medium",
-                        "text-zinc-200"
-                      )}
-                    >
-                      {event.label}
-                    </div>
-                    <div className={cn("text-xs", "text-zinc-500")}>
-                      {event.description}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <Label>Events</Label>
+            <WebhookEventSelector
+              events={webhookEvents}
+              selectedEvents={formEvents}
+              onToggle={toggleEvent}
+            />
           </div>
         </div>
       </FormModal>
@@ -673,7 +369,6 @@ const WebhooksPage = (): JSX.Element | null => {
         description="Are you sure you want to delete this webhook? This action cannot be undone."
         onConfirm={handleDelete}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   );

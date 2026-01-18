@@ -4,6 +4,7 @@ import { useUploads } from "@/components/upload-provider";
 import { Upload, X, ArrowUp } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { motion } from "framer-motion";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 export function UploadProgressIndicator() {
   const { uploads, removeUpload } = useUploads();
@@ -44,15 +45,14 @@ export function UploadProgressIndicator() {
           </div>
         </div>
 
-        <button
+        <TextureButton variant="minimal"
           onClick={() => {
             uploads.forEach((upload) => removeUpload(upload.id));
           }}
-          className="rounded p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
           title="Cancel all uploads"
         >
           <X className="h-4 w-4" />
-        </button>
+        </TextureButton>
       </div>
     </motion.div>
   );

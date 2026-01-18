@@ -1,17 +1,15 @@
 "use client";
 
-import { memo } from "react";
-import { SidebarProvider, SidebarInset } from "@workspace/ui/components/sidebar";
-import { AccountSidebar } from "@/components/account-sidebar";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
+import {memo} from "react";
+import {SidebarInset, SidebarProvider} from "@workspace/ui/components/sidebar";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {UnifiedSidebar} from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {
   return (
     <>
       <AnimatedBackground />
-      <FloatingDots count={15} />
     </>
   );
 });
@@ -25,7 +23,7 @@ export default function AccountLayout({
     <>
       <PersistentBackground />
       <SidebarProvider>
-        <AccountSidebar />
+        <UnifiedSidebar />
         <SidebarInset>{children}</SidebarInset>
       </SidebarProvider>
     </>

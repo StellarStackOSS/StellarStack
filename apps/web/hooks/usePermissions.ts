@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAuth } from "@/components/auth-provider";
-import { useServer } from "@/components/server-provider";
-import { hasPermission, hasAnyPermission, hasAllPermissions, Permission, PERMISSIONS } from "@/lib/permissions";
+import { useAuth } from "hooks/auth-provider";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import {
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+  Permission,
+  PERMISSIONS,
+} from "@/lib/permissions";
 
 interface UsePermissionsResult {
   // The user's permissions for the current server

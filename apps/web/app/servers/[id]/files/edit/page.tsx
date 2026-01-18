@@ -1,27 +1,27 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2, File } from "lucide-react";
+import { ArrowLeft, File, Loader2, Save } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { CodeEditor, detectLanguage } from "@/components/code-editor";
+import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
-import { useServer } from "@/components/server-provider";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
 
 export default function FileEditPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme } = useTheme();
 
   const serverId = params.id as string;
   const filePath = searchParams.get("path") || "";
   const fileName = filePath.split("/").pop() || "file";
-
-  const { server } = useServer();
 
   // Fetch file content
   const { data: originalContent, isLoading, error } = useFileContent(serverId, filePath);
@@ -32,10 +32,6 @@ export default function FileEditPage() {
   // Local state for editing
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Set initial content when loaded
   useEffect(() => {
@@ -105,10 +101,6 @@ export default function FileEditPage() {
   );
   const isMedia = isImage || isVideo || isAudio;
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <div className={cn("relative min-h-screen", "bg-black")}>
       {/* Background is now rendered in the layout for persistence */}
@@ -123,15 +115,11 @@ export default function FileEditPage() {
             )}
           >
             <div className="flex items-center gap-4">
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "p-2 transition-colors",
-                  "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                )}
               >
                 <ArrowLeft className="h-5 w-5" />
-              </button>
+              </TextureButton>
 
               <div className="flex items-center gap-3">
                 <div
@@ -167,24 +155,14 @@ export default function FileEditPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "border px-2 py-1 text-xs tracking-wider uppercase",
-                  "border-zinc-700 text-zinc-400"
-                )}
-              >
+              <TextureBadge variant="accent" className="uppercase">
                 {language}
-              </span>
+              </TextureBadge>
 
-              <button
+              <TextureButton
+                variant="minimal"
                 onClick={handleSave}
                 disabled={!hasChanges || write.isPending}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors",
-                  hasChanges && !write.isPending
-                    ? "bg-white text-black hover:bg-zinc-200"
-                    : "cursor-not-allowed bg-zinc-800 text-zinc-500"
-                )}
               >
                 {write.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -192,7 +170,7 @@ export default function FileEditPage() {
                   <Save className="h-4 w-4" />
                 )}
                 Save
-              </button>
+              </TextureButton>
             </div>
           </header>
         </FadeIn>
@@ -208,15 +186,11 @@ export default function FileEditPage() {
               <p className={cn("text-lg", "text-red-400")}>
                 Failed to load file
               </p>
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "px-4 py-2 text-sm",
-                  "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                )}
               >
                 Go Back
-              </button>
+              </TextureButton>
             </div>
           ) : isMedia ? (
             <div className="flex h-full items-center justify-center p-8">
@@ -246,7 +220,6 @@ export default function FileEditPage() {
                     </div>
                   </div>
                 )}
-
                 {isAudio && (
                   <div className="flex w-full max-w-2xl flex-col items-center gap-6">
                     <div className="w-full rounded-xl border-2 border-zinc-700/30 p-12">
@@ -263,7 +236,7 @@ export default function FileEditPage() {
               </div>
             </div>
           ) : (
-            <CodeEditor
+            <FileEditor
               value={content}
               onChange={handleContentChange}
               filename={fileName}

@@ -81,43 +81,43 @@ remote.get("/servers", async (c) => {
     }
     environment["SERVER_MEMORY"] = String(server.memory);
 
-    // Determine docker image
-    let dockerImage = server.dockerImage || `${blueprint.imageName}:${blueprint.imageTag}`;
-    if (blueprint.registry) {
-      dockerImage = `${blueprint.registry}/${dockerImage}`;
+    // Determine docker image from native format
+    let dockerImage = server.dockerImage;
+    if (!dockerImage) {
+      const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+      const images = Object.values(dockerImages);
+      dockerImage = images.length > 0 ? images[0] : "alpine:latest";
     }
 
-    // Build stop configuration
+    // Build stop configuration from native format
     let stopConfig: any = { type: "signal", value: "SIGTERM" };
-    if (blueprint.stopCommand) {
-      stopConfig = { type: "command", value: blueprint.stopCommand };
+    const configData = (blueprint.config as any) || {};
+    if (configData.stop) {
+      const stopCommand = configData.stop;
+      stopConfig = stopCommand.toUpperCase().startsWith("SIG")
+        ? { type: "signal", value: stopCommand }
+        : { type: "command", value: stopCommand };
     }
 
-    // Build startup detection - handle various formats
+    // Build startup detection from native format (config.startup JSON)
     let donePatterns: string[] = [];
-    let startupDetection: any = blueprint.startupDetection;
+    const startupConfigStr = configData.startup;
 
-    // Try to parse if it's a string (may be double-stringified)
-    if (typeof startupDetection === "string") {
+    if (startupConfigStr) {
       try {
-        startupDetection = JSON.parse(startupDetection);
-      } catch {
-        // If parsing fails, try to extract pattern from malformed JSON string
-        // Pattern like: {"done": ")! For help, type "} -> extract just the pattern
-        const match = startupDetection.match(/"done":\s*"([^"]+)"/);
-        if (match) {
-          donePatterns = [match[1]];
-        }
-        startupDetection = null;
-      }
-    }
+        const startupConfig = typeof startupConfigStr === "string"
+          ? JSON.parse(startupConfigStr)
+          : startupConfigStr;
 
-    // If we still have startupDetection as an object, extract done patterns
-    if (startupDetection && typeof startupDetection === "object") {
-      if (typeof startupDetection.done === "string") {
-        donePatterns = [startupDetection.done];
-      } else if (Array.isArray(startupDetection.done)) {
-        donePatterns = startupDetection.done.filter((p: any) => typeof p === "string");
+        if (startupConfig.done) {
+          if (Array.isArray(startupConfig.done)) {
+            donePatterns = startupConfig.done.filter((p: any) => typeof p === "string");
+          } else if (typeof startupConfig.done === "string") {
+            donePatterns = [startupConfig.done];
+          }
+        }
+      } catch {
+        // If parsing fails, continue with empty patterns
       }
     }
 
@@ -155,7 +155,7 @@ remote.get("/servers", async (c) => {
         },
         egg: {
           id: blueprint.id,
-          file_denylist: [],
+          file_denylist: blueprint.fileDenylist || [],
         },
         mounts: [],
       },
@@ -166,7 +166,7 @@ remote.get("/servers", async (c) => {
           strip_ansi: false,
         },
         stop: stopConfig,
-        configs: buildConfigFiles(blueprint.configFiles),
+        configs: [],
       },
     };
   });
@@ -213,42 +213,43 @@ remote.get("/servers/:uuid", async (c) => {
   }
   environment["SERVER_MEMORY"] = String(server.memory);
 
-  // Determine docker image
-  let dockerImage = server.dockerImage || `${blueprint.imageName}:${blueprint.imageTag}`;
-  if (blueprint.registry) {
-    dockerImage = `${blueprint.registry}/${dockerImage}`;
+  // Determine docker image from native format
+  let dockerImage = server.dockerImage;
+  if (!dockerImage) {
+    const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+    const images = Object.values(dockerImages);
+    dockerImage = images.length > 0 ? images[0] : "alpine:latest";
   }
 
-  // Build stop configuration
+  // Build stop configuration from native format
   let stopConfig: any = { type: "signal", value: "SIGTERM" };
-  if (blueprint.stopCommand) {
-    stopConfig = { type: "command", value: blueprint.stopCommand };
+  const configData = (blueprint.config as any) || {};
+  if (configData.stop) {
+    const stopCommand = configData.stop;
+    stopConfig = stopCommand.toUpperCase().startsWith("SIG")
+      ? { type: "signal", value: stopCommand }
+      : { type: "command", value: stopCommand };
   }
 
-  // Build startup detection - handle various formats
+  // Build startup detection from native format (config.startup JSON)
   let donePatterns: string[] = [];
-  let startupDetection: any = blueprint.startupDetection;
+  const startupConfigStr = configData.startup;
 
-  // Try to parse if it's a string (may be double-stringified)
-  if (typeof startupDetection === "string") {
+  if (startupConfigStr) {
     try {
-      startupDetection = JSON.parse(startupDetection);
-    } catch {
-      // If parsing fails, try to extract pattern from malformed JSON string
-      const match = startupDetection.match(/"done":\s*"([^"]+)"/);
-      if (match) {
-        donePatterns = [match[1]];
-      }
-      startupDetection = null;
-    }
-  }
+      const startupConfig = typeof startupConfigStr === "string"
+        ? JSON.parse(startupConfigStr)
+        : startupConfigStr;
 
-  // If we still have startupDetection as an object, extract done patterns
-  if (startupDetection && typeof startupDetection === "object") {
-    if (typeof startupDetection.done === "string") {
-      donePatterns = [startupDetection.done];
-    } else if (Array.isArray(startupDetection.done)) {
-      donePatterns = startupDetection.done.filter((p: any) => typeof p === "string");
+      if (startupConfig.done) {
+        if (Array.isArray(startupConfig.done)) {
+          donePatterns = startupConfig.done.filter((p: any) => typeof p === "string");
+        } else if (typeof startupConfig.done === "string") {
+          donePatterns = [startupConfig.done];
+        }
+      }
+    } catch {
+      // If parsing fails, continue with empty patterns
     }
   }
 
@@ -285,7 +286,7 @@ remote.get("/servers/:uuid", async (c) => {
       },
       egg: {
         id: blueprint.id,
-        file_denylist: [],
+        file_denylist: blueprint.fileDenylist || [],
       },
       mounts: [],
       process_configuration: {
@@ -295,7 +296,7 @@ remote.get("/servers/:uuid", async (c) => {
           strip_ansi: false,
         },
         stop: stopConfig,
-        configs: buildConfigFiles(blueprint.configFiles),
+        configs: [],
       },
     },
   });
@@ -407,8 +408,14 @@ remote.get("/servers/:uuid/install", async (c) => {
   environment["SERVER_MEMORY"] = String(server.memory);
   environment["SERVER_DISK"] = String(server.disk);
 
+  // Extract installation script from native format
+  const scriptData = (blueprint.scripts as any) || {};
+  const installationScript = scriptData.installation?.script;
+  const installationContainer = scriptData.installation?.container || "ghcr.io/ptero-eggs/installers:alpine";
+  const installationEntrypoint = scriptData.installation?.entrypoint || "ash";
+
   // Return empty script if no install script
-  if (!blueprint.installScript || blueprint.installScript.trim().length === 0) {
+  if (!installationScript || installationScript.trim().length === 0) {
     return c.json({
       data: {
         container_image: "alpine:latest",
@@ -421,9 +428,9 @@ remote.get("/servers/:uuid/install", async (c) => {
 
   return c.json({
     data: {
-      container_image: blueprint.installContainer || "ghcr.io/ptero-eggs/installers:alpine",
-      entrypoint: blueprint.installEntrypoint || "ash",
-      script: blueprint.installScript,
+      container_image: installationContainer,
+      entrypoint: installationEntrypoint,
+      script: installationScript,
       environment,
     },
   });
@@ -599,6 +606,47 @@ remote.post("/backups/:uuid/restore", async (c) => {
         successful: parsed.data.successful,
       },
     },
+  });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Schedule Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/servers/:serverId/schedule-executing
+ * Report schedule task execution status
+ */
+const scheduleExecutingSchema = z.object({
+  schedule_id: z.string(),
+  task_index: z.number().nullable().optional(),
+});
+
+remote.post("/servers/:serverId/schedule-executing", async (c) => {
+  const node = c.get("node");
+  const { serverId } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = scheduleExecutingSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Verify server exists on this node
+  const server = await db.server.findFirst({
+    where: { id: serverId, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Broadcast schedule execution status to WebSocket clients
+  emitServerEvent("schedule:executing", serverId, {
+    schedule_id: parsed.data.schedule_id,
+    task_index: parsed.data.task_index ?? null,
   });
 
   return c.json({ success: true });

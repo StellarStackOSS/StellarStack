@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { CpuIcon, MapPinIcon, ServerIcon, PackageIcon, UsersIcon, SettingsIcon } from "lucide-react";
+import {useEffect, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {FadeIn} from "@workspace/ui/components/fade-in";
+import {CpuIcon, MapPinIcon, PackageIcon, ServerIcon, SettingsIcon, UsersIcon} from "lucide-react";
 import Link from "next/link";
-import { nodes, locations, servers, blueprints, account } from "@/lib/api";
-import type { Node, Location, Server, Blueprint, User } from "@/lib/api";
+import type {Blueprint, Location, Node, Server, User} from "@/lib/api";
+import {account, blueprints, locations, nodes, servers} from "@/lib/api";
 
 interface StatCardProps {
   title: string;
@@ -62,7 +61,6 @@ const StatCard = ({ title, value, icon: Icon, href, color = "zinc" }: StatCardPr
 };
 
 export default function AdminOverviewPage() {
-  const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState({
     nodes: 0,
     nodesOnline: 0,
@@ -73,10 +71,6 @@ export default function AdminOverviewPage() {
     users: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     async function fetchStats() {
@@ -111,7 +105,6 @@ export default function AdminOverviewPage() {
   return (
     <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">

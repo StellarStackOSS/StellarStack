@@ -35,6 +35,10 @@ const authConfig = {
     },
   },
   plugins: [
+    // captcha({
+    //   provider: 'cloudflare-turnstile',
+    //   secretKey: process.env.TURNSTILE_SECRET_KEY ?? ""
+    // }),
     admin(),
     twoFactor({
       issuer: "StellarStack",

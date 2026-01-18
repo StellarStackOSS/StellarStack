@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, type JSX } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { BsBell, BsCheck, BsCheckAll, BsExclamationTriangle, BsInfoCircle, BsServer, BsShieldExclamation } from "react-icons/bs";
+import {type JSX, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
+import {AnimatedBackground} from "@workspace/ui/components/animated-background";
+import {SidebarTrigger} from "@workspace/ui/components/sidebar";
+import {
+  BsBell,
+  BsCheck,
+  BsCheckAll,
+  BsExclamationTriangle,
+  BsInfoCircle,
+  BsServer,
+  BsShieldExclamation
+} from "react-icons/bs";
 
 type NotificationType = "info" | "warning" | "error" | "success" | "server" | "security";
 
@@ -117,7 +124,6 @@ const NotificationsPage = (): JSX.Element | null => {
       "min-h-svh transition-colors relative bg-[#0b0b0a]",
     )}>
       <AnimatedBackground />
-      <FloatingDots count={15} />
 
       <div className="relative p-8">
         <div className="max-w-6xl mx-auto">
@@ -151,17 +157,13 @@ const NotificationsPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   onClick={markAllAsRead}
-                  className={cn(
-                    "transition-all gap-2 border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500",
-                  )}
                 >
                   <BsCheckAll className="w-4 h-4" />
                   <span className="text-xs uppercase tracking-wider">Mark All Read</span>
-                </Button>
+                </TextureButton>
               )}
             </div>
           </div>
@@ -187,14 +189,9 @@ const NotificationsPage = (): JSX.Element | null => {
               </div>
             ) : (
               notifications.map((notification, index) => (
-                <button
+                <TextureButton variant="minimal"
                   key={notification.id}
                   onClick={() => markAsRead(notification.id)}
-                  className={cn(
-                    "w-full flex items-start gap-4 px-6 py-4 transition-colors text-left hover:bg-zinc-800/30",
-                    index !== notifications.length - 1 && ("border-b border-zinc-800/50"),
-                    !notification.read && ("bg-zinc-800/20"),
-                  )}
                 >
                   <div className={cn(
                     "w-8 h-8 flex items-center justify-center border shrink-0 mt-0.5 border-zinc-700 bg-zinc-800/50",
@@ -230,7 +227,7 @@ const NotificationsPage = (): JSX.Element | null => {
                   )}>
                     {notification.timestamp}
                   </span>
-                </button>
+                </TextureButton>
               ))
             )}
           </div>

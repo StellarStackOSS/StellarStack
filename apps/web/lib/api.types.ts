@@ -124,20 +124,33 @@ export interface Blueprint {
   description?: string;
   category?: string;
   author?: string;
-  imageName: string;
-  imageTag?: string;
-  registry?: string;
-  dockerImages?: Record<string, string>;
-  startup?: string;
-  stopCommand?: string;
-  configFiles?: Record<string, unknown>;
-  startupDetection?: Record<string, unknown>;
-  installScript?: string;
-  installContainer?: string;
-  installEntrypoint?: string;
-  variables?: BlueprintVariable[];
-  features?: string[];
+
+  // Pterodactyl metadata
+  metaVersion: string;
+  updateUrl?: string;
+
+  // Native Pterodactyl structures
+  fileDenylist: string[];
+  dockerImages: Record<string, string>;
+  startup: string;
+
+  // Complete Pterodactyl config structure
+  // Format: { files?: string (JSON), startup?: string (JSON), logs?: string (JSON), stop?: string }
   config: Record<string, unknown>;
+
+  // Complete Pterodactyl scripts structure
+  // Format: { installation?: { script: string, container?: string, entrypoint?: string } }
+  scripts: Record<string, unknown>;
+
+  // Server variables (preserves all Pterodactyl properties)
+  variables: BlueprintVariable[];
+
+  // Features array
+  features: string[];
+
+  // Default container configuration (Docker Compose compatible)
+  dockerConfig: Record<string, unknown>;
+
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
@@ -158,10 +171,15 @@ export interface CreateBlueprintData {
   name: string;
   description?: string;
   category?: string;
-  imageName: string;
-  imageTag?: string;
-  registry?: string;
-  config: Record<string, unknown>;
+  author?: string;
+  dockerImages?: Record<string, string>;
+  startup?: string;
+  config?: Record<string, unknown>;
+  scripts?: Record<string, unknown>;
+  variables?: BlueprintVariable[];
+  features?: string[];
+  fileDenylist?: string[];
+  dockerConfig?: Record<string, unknown>;
   isPublic?: boolean;
 }
 
@@ -314,6 +332,7 @@ export interface ScheduleTask {
   payload?: string;
   sequence: number;
   timeOffset: number;
+  triggerMode?: "TIME_DELAY" | "ON_COMPLETION";
 }
 
 export interface Schedule {
@@ -323,6 +342,7 @@ export interface Schedule {
   tasks: ScheduleTask[];
   isActive: boolean;
   isProcessing?: boolean;
+  executingTaskIndex?: number | null;
   lastRunAt?: string;
   nextRunAt?: string;
   createdAt: string;
@@ -337,6 +357,7 @@ export interface CreateScheduleData {
     payload?: string;
     sequence: number;
     timeOffset: number;
+    triggerMode?: "TIME_DELAY" | "ON_COMPLETION";
   }>;
   isActive?: boolean;
 }
