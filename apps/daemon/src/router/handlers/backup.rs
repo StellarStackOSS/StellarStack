@@ -34,8 +34,15 @@ pub async fn list_backups(
 ) -> Result<Json<BackupListResponse>, ApiError> {
     let backup_dir = state.config.system.backup_directory.join(server.uuid());
 
+    info!(
+        "Listing backups for server {} in directory: {:?}",
+        server.uuid(),
+        backup_dir
+    );
+
     match server::list_backups(&backup_dir) {
         Ok(backups) => {
+            info!("Found {} backups for server {}", backups.len(), server.uuid());
             let response = BackupListResponse {
                 backups: backups
                     .into_iter()
@@ -49,7 +56,7 @@ pub async fn list_backups(
             Ok(Json(response))
         }
         Err(e) => {
-            error!("Failed to list backups: {}", e);
+            error!("Failed to list backups for server {}: {}", server.uuid(), e);
             Err(ApiError::internal(e.to_string()))
         }
     }

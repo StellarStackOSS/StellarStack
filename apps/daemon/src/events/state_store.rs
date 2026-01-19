@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use chrono::Utc;
 use parking_lot::RwLock;
 use redis::aio::ConnectionManager;
 use redis::AsyncCommands;
@@ -13,6 +14,13 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, warn};
 
 use super::ProcessState;
+
+/// A log entry with timestamp for Redis storage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimestampedLogEntry {
+    pub line: String,
+    pub timestamp: i64, // milliseconds since epoch
+}
 
 /// Maximum number of console log lines to store per server
 const MAX_CONSOLE_LINES: usize = 500;
@@ -209,25 +217,42 @@ impl RedisStateStore {
     // Console Logs
     // ========================================================================
 
-    /// Append console log line
+    /// Append console log line with timestamp
     pub async fn append_console_log(&self, server_id: &str, line: &str) {
+        self.append_console_log_with_timestamp(server_id, line, Utc::now().timestamp_millis()).await;
+    }
+
+    /// Append console log line with specific timestamp
+    pub async fn append_console_log_with_timestamp(&self, server_id: &str, line: &str, timestamp: i64) {
         let Some(mut conn) = self.get_connection() else {
             return;
         };
 
         let key = format!("{}:console:{}", self.prefix, server_id);
+        let entry = TimestampedLogEntry {
+            line: line.to_string(),
+            timestamp,
+        };
+
+        let value = match serde_json::to_string(&entry) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Failed to serialize console log entry: {}", e);
+                return;
+            }
+        };
 
         // Push to list and trim to max size
         let _: Result<(), redis::RedisError> = redis::pipe()
-            .rpush(&key, line)
+            .rpush(&key, &value)
             .ltrim(&key, -(MAX_CONSOLE_LINES as isize), -1)
             .expire(&key, STATE_TTL_SECONDS as i64)
             .query_async(&mut conn)
             .await;
     }
 
-    /// Get console log history
-    pub async fn get_console_logs(&self, server_id: &str) -> Vec<String> {
+    /// Get console log history with timestamps
+    pub async fn get_console_logs(&self, server_id: &str) -> Vec<TimestampedLogEntry> {
         let Some(mut conn) = self.get_connection() else {
             return Vec::new();
         };
@@ -235,7 +260,22 @@ impl RedisStateStore {
         let key = format!("{}:console:{}", self.prefix, server_id);
         let result: Result<Vec<String>, redis::RedisError> = conn.lrange(&key, 0, -1).await;
 
-        result.unwrap_or_default()
+        result
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|s| {
+                // Try to parse as JSON (new format)
+                if let Ok(entry) = serde_json::from_str::<TimestampedLogEntry>(&s) {
+                    Some(entry)
+                } else {
+                    // Fallback for old format (plain string) - use current time
+                    Some(TimestampedLogEntry {
+                        line: s,
+                        timestamp: Utc::now().timestamp_millis(),
+                    })
+                }
+            })
+            .collect()
     }
 
     /// Clear console logs for a server
@@ -252,24 +292,41 @@ impl RedisStateStore {
     // Install Logs
     // ========================================================================
 
-    /// Append install log line
+    /// Append install log line with timestamp
     pub async fn append_install_log(&self, server_id: &str, line: &str) {
+        self.append_install_log_with_timestamp(server_id, line, Utc::now().timestamp_millis()).await;
+    }
+
+    /// Append install log line with specific timestamp
+    pub async fn append_install_log_with_timestamp(&self, server_id: &str, line: &str, timestamp: i64) {
         let Some(mut conn) = self.get_connection() else {
             return;
         };
 
         let key = format!("{}:install:{}", self.prefix, server_id);
+        let entry = TimestampedLogEntry {
+            line: line.to_string(),
+            timestamp,
+        };
+
+        let value = match serde_json::to_string(&entry) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Failed to serialize install log entry: {}", e);
+                return;
+            }
+        };
 
         let _: Result<(), redis::RedisError> = redis::pipe()
-            .rpush(&key, line)
+            .rpush(&key, &value)
             .ltrim(&key, -(MAX_INSTALL_LINES as isize), -1)
             .expire(&key, STATE_TTL_SECONDS as i64)
             .query_async(&mut conn)
             .await;
     }
 
-    /// Get install log history
-    pub async fn get_install_logs(&self, server_id: &str) -> Vec<String> {
+    /// Get install log history with timestamps
+    pub async fn get_install_logs(&self, server_id: &str) -> Vec<TimestampedLogEntry> {
         let Some(mut conn) = self.get_connection() else {
             return Vec::new();
         };
@@ -277,7 +334,22 @@ impl RedisStateStore {
         let key = format!("{}:install:{}", self.prefix, server_id);
         let result: Result<Vec<String>, redis::RedisError> = conn.lrange(&key, 0, -1).await;
 
-        result.unwrap_or_default()
+        result
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|s| {
+                // Try to parse as JSON (new format)
+                if let Ok(entry) = serde_json::from_str::<TimestampedLogEntry>(&s) {
+                    Some(entry)
+                } else {
+                    // Fallback for old format (plain string) - use current time
+                    Some(TimestampedLogEntry {
+                        line: s,
+                        timestamp: Utc::now().timestamp_millis(),
+                    })
+                }
+            })
+            .collect()
     }
 
     /// Clear install logs for a server

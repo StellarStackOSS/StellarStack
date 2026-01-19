@@ -91,14 +91,14 @@ const ServerStatsContent = () => {
   return (
     <>
       {statsData.current && (
-        <div className={cn("space-y-2 border-t border-zinc-800 px-3 py-2")}>
+        <div className={cn("space-y-2 text-xs font-mono px-3 py-2")}>
           <div className="flex items-center justify-between text-xs">
             <span className={"text-zinc-500"}>CPU</span>
-            <span className={"text-zinc-300"}>{cpuPercent.toFixed(1)}%</span>
+            <span className={"text-zinc-300 font-bold"}>{cpuPercent.toFixed(1)}%</span>
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className={"text-zinc-500"}>RAM</span>
-            <span className={"text-zinc-300"}>{memPercent.toFixed(1)}%</span>
+            <span className={"text-zinc-300 font-bold"}>{memPercent.toFixed(1)}%</span>
           </div>
         </div>
       )}

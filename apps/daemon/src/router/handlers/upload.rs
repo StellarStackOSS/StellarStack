@@ -1,20 +1,25 @@
 //! File upload handler
 
+use std::sync::Arc;
 use axum::{
     extract::{Multipart, Query, State},
-    Json,
+    Extension, Json,
 };
 use serde::Deserialize;
+use tracing::debug;
 
 use super::super::AppState;
 use super::ApiError;
 use crate::filesystem::Filesystem;
+use crate::server::Server;
 
 /// Upload file query parameters
 #[derive(Debug, Deserialize)]
 pub struct UploadFileQuery {
-    /// JWT token for authentication
-    pub token: String,
+    /// JWT token for authentication (legacy)
+    pub token: Option<String>,
+    /// Server UUID (when using Bearer auth)
+    pub server: Option<String>,
     /// Directory to upload to
     #[serde(default)]
     pub directory: String,
@@ -34,12 +39,21 @@ pub async fn upload_file(
     Query(query): Query<UploadFileQuery>,
     mut multipart: Multipart,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    // Validate JWT token
-    let claims = validate_upload_token(&query.token, &state.config.remote.token)
-        .map_err(|e| ApiError::forbidden(e))?;
+    // Determine server_uuid from either token or direct param
+    let server_uuid = if let Some(token) = &query.token {
+        // Legacy: JWT token auth
+        let claims = validate_upload_token(token, &state.config.remote.token)
+            .map_err(|e| ApiError::forbidden(e))?;
+        claims.server_uuid
+    } else if let Some(server) = &query.server {
+        // Direct server param (requires Bearer auth from middleware)
+        server.clone()
+    } else {
+        return Err(ApiError::bad_request("Either 'token' or 'server' parameter required"));
+    };
 
     // Get server
-    let server = state.manager.get(&claims.server_uuid)
+    let server = state.manager.get(&server_uuid)
         .ok_or_else(|| ApiError::not_found("Server not found"))?;
 
     // Get filesystem
@@ -51,9 +65,11 @@ pub async fn upload_file(
     ).map_err(|e| ApiError::internal(e.to_string()))?;
 
     // Determine upload directory
-    let directory = claims.directory
-        .or_else(|| if query.directory.is_empty() { None } else { Some(query.directory.clone()) })
-        .unwrap_or_default();
+    let directory = if query.directory.is_empty() {
+        String::new()
+    } else {
+        query.directory.clone()
+    };
 
     let mut uploaded_files = Vec::new();
 
@@ -85,6 +101,81 @@ pub async fn upload_file(
 
         // Write file
         fs.write_file(&file_path, &data).await?;
+
+        uploaded_files.push(serde_json::json!({
+            "name": filename,
+            "size": data.len(),
+            "mime_type": content_type,
+        }));
+    }
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "files": uploaded_files
+    })))
+}
+
+/// Upload file query parameters for authenticated endpoint
+#[derive(Debug, Deserialize)]
+pub struct AuthenticatedUploadQuery {
+    /// Directory to upload to
+    #[serde(default)]
+    pub directory: String,
+}
+
+/// Upload file via authenticated endpoint (server extracted from middleware)
+pub async fn authenticated_upload_file(
+    Extension(server): Extension<Arc<Server>>,
+    Query(query): Query<AuthenticatedUploadQuery>,
+    mut multipart: Multipart,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    // Get filesystem
+    let config = server.config();
+    let fs = Filesystem::new(
+        server.data_dir().clone(),
+        config.disk_bytes(),
+        config.egg.file_denylist.clone(),
+    ).map_err(|e| ApiError::internal(e.to_string()))?;
+
+    // Determine upload directory
+    let directory = if query.directory.is_empty() {
+        String::new()
+    } else {
+        query.directory.clone()
+    };
+
+    let mut uploaded_files = Vec::new();
+
+    // Process multipart form
+    while let Some(field) = multipart.next_field().await
+        .map_err(|e| ApiError::bad_request(e.to_string()))?
+    {
+        let filename = field.file_name()
+            .map(|s| s.to_string())
+            .ok_or_else(|| ApiError::bad_request("Missing filename"))?;
+
+        let content_type = field.content_type()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+
+        // Build file path
+        let file_path = if directory.is_empty() {
+            filename.clone()
+        } else {
+            format!("{}/{}", directory.trim_end_matches('/'), filename)
+        };
+
+        // Read file data
+        let data = field.bytes().await
+            .map_err(|e| ApiError::bad_request(e.to_string()))?;
+
+        // Check disk space before writing
+        fs.disk_usage().has_space_for(data.len() as u64)?;
+
+        // Write file
+        fs.write_file(&file_path, &data).await?;
+
+        debug!("Uploaded file: {} ({} bytes)", file_path, data.len());
 
         uploaded_files.push(serde_json::json!({
             "name": filename,

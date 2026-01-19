@@ -49,6 +49,9 @@ import {
   BsTrash,
   BsUpload,
   BsX,
+  BsImage,
+  BsPlayCircle,
+  BsVolumeUp,
 } from "react-icons/bs";
 import type {FileInfo} from "@/lib/api";
 import {servers} from "@/lib/api";
@@ -61,6 +64,8 @@ import {toast} from "sonner";
 import {useUploads} from "@/components/upload-provider";
 import {DataTable, Input} from "@workspace/ui/components";
 import {Label} from "@workspace/ui/components/label";
+import {getMediaType, isMediaFile} from "@/lib/media-utils";
+import {MediaPreviewModal} from "@/components/MediaViewer/MediaPreviewModal";
 
 interface FileItem {
   id: string;
@@ -181,6 +186,10 @@ const FilesPage = (): JSX.Element | null => {
     group: { read: true, write: false, execute: false },
     others: { read: true, write: false, execute: false },
   });
+
+  // Media preview modal state
+  const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
+  const [mediaPreviewFile, setMediaPreviewFile] = useState<FileItem | null>(null);
 
   // Storage info - total from server allocation, used from actual disk usage
   const storageUsedGB = diskUsage.used / (1024 * 1024 * 1024);
@@ -633,6 +642,18 @@ const FilesPage = (): JSX.Element | null => {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isBinaryFile = (filename: string): boolean => {
+    const binaryExtensions = [
+      "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico",
+      "mp4", "webm", "mov", "avi", "mkv", "flv", "wmv", "m4v",
+      "mp3", "wav", "ogg", "m4a", "flac", "aac", "wma",
+      "zip", "tar", "gz", "7z", "rar", "exe", "dll", "so",
+      "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
+    ];
+    const ext = filename.split(".").pop()?.toLowerCase() || "";
+    return binaryExtensions.includes(ext);
+  };
+
   const confirmUpload = async () => {
     if (uploadFiles.length === 0) return;
     setIsUploading(true);
@@ -655,9 +676,30 @@ const FilesPage = (): JSX.Element | null => {
       });
 
       try {
-        const content = await file.text();
         const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
-        await servers.files.create(serverId, filePath, "file", content);
+
+        if (isBinaryFile(file.name)) {
+          // For binary files, use multipart FormData upload
+          const formData = new FormData();
+          formData.append("file", file, file.name);
+
+          const uploadDir = currentPath === "/" ? "" : currentPath;
+          const uploadUrl = `/api/servers/${serverId}/files/upload${uploadDir ? `?directory=${encodeURIComponent(uploadDir)}` : ""}`;
+
+          const response = await fetch(uploadUrl, {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+          }
+        } else {
+          // For text files, read as text and use the create endpoint
+          const content = await file.text();
+          await servers.files.create(serverId, filePath, "file", content);
+        }
 
         newFiles.push({
           id: filePath,
@@ -756,10 +798,18 @@ const FilesPage = (): JSX.Element | null => {
         },
         cell: ({ row }) => {
           const file = row.original;
+          const mediaType = getMediaType(file.name);
+
           return (
             <div className="flex items-center gap-3">
               {file.type === "folder" ? (
                 <BsFolder className={cn("h-4 w-4", "text-amber-400")} />
+              ) : mediaType === "image" ? (
+                <BsImage className={cn("h-4 w-4", "text-cyan-400")} />
+              ) : mediaType === "video" ? (
+                <BsPlayCircle className={cn("h-4 w-4", "text-purple-400")} />
+              ) : mediaType === "audio" ? (
+                <BsVolumeUp className={cn("h-4 w-4", "text-orange-400")} />
               ) : (
                 <BsFileEarmark className={cn("h-4 w-4", "text-zinc-400")} />
               )}
@@ -768,6 +818,9 @@ const FilesPage = (): JSX.Element | null => {
                 onClick={() => {
                   if (file.type === "folder") {
                     navigateToFolder(file.name);
+                  } else if (file.type === "file" && isMediaFile(file.name)) {
+                    setMediaPreviewFile(file);
+                    setMediaPreviewOpen(true);
                   } else if (file.type === "file" && isEditable(file.name)) {
                     handleEdit(file);
                   }
@@ -861,6 +914,21 @@ const FilesPage = (): JSX.Element | null => {
                   <BsTerminal className="h-3 w-3" />
                   Permissions
                 </DropdownMenuItem>
+                {file.type === "file" && isMediaFile(file.name) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setMediaPreviewFile(file);
+                      setMediaPreviewOpen(true);
+                    }}
+                    className={cn(
+                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                      "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                    )}
+                  >
+                    <BsEye className="h-3 w-3" />
+                    View
+                  </DropdownMenuItem>
+                )}
                 {file.type === "file" && isEditable(file.name) && (
                   <DropdownMenuItem
                     onClick={() => handleEdit(file)}
@@ -1707,6 +1775,21 @@ const FilesPage = (): JSX.Element | null => {
           )}
         </div>
       </FormModal>
+
+      {/* Media Preview Modal */}
+      {mediaPreviewFile && (
+        <MediaPreviewModal
+          isOpen={mediaPreviewOpen}
+          fileName={mediaPreviewFile.name}
+          filePath={mediaPreviewFile.path}
+          serverId={serverId}
+          onClose={() => {
+            setMediaPreviewOpen(false);
+            setMediaPreviewFile(null);
+          }}
+          fetchFile={(serverId, path) => servers.files.read(serverId, path)}
+        />
+      )}
     </div>
   );
 };

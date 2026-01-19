@@ -157,13 +157,14 @@ export const useServerWebSocket = ({
                 break;
 
               case "console history":
-                // Handle bulk log history (array of lines)
+                // Handle bulk log history (array of lines with timestamps)
                 if (Array.isArray(data.lines)) {
                   const historyLines: ConsoleLine[] = data.lines
-                    .map((line: string) => {
-                      const text = stripAnsi(line).replace(/\r?\n$/, "");
+                    .map((entry: { line: string; timestamp: number }) => {
+                      const text = stripAnsi(entry.line).replace(/\r?\n$/, "");
+                      const timestamp = entry.timestamp ? new Date(entry.timestamp) : new Date();
                       return text.trim()
-                        ? { text, type: "stdout" as const, timestamp: new Date() }
+                        ? { text, type: "stdout" as const, timestamp }
                         : null;
                     })
                     .filter((line: ConsoleLine | null): line is ConsoleLine => line !== null);
@@ -253,6 +254,15 @@ export const useServerWebSocket = ({
                   disk_bytes: data.disk_bytes ?? 0,
                   disk_limit_bytes: data.disk_limit_bytes ?? 0,
                 };
+
+                // Initialize prevNetworkRef on first stats message if not already set
+                if (!prevNetworkRef.current) {
+                  prevNetworkRef.current = {
+                    rx: newStats.network.rx_bytes,
+                    tx: newStats.network.tx_bytes,
+                    timestamp: now,
+                  };
+                }
 
                 setStats((prev) => {
                   const now = Date.now();

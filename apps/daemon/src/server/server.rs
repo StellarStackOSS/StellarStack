@@ -889,11 +889,26 @@ impl Server {
 
         let result = process.run().await;
 
-        // Report to panel
-        let _ = self.api_client.set_installation_status(
-            &config.uuid,
-            result.is_ok(),
-        ).await;
+        // Only mark as installed when the container is destroyed (after_execute completes)
+        // This happens inside process.run() after the installation completes
+        if result.is_ok() {
+            info!("Installation completed successfully, install container has been destroyed for {}", config.uuid);
+
+            // Report to panel that installation was successful
+            let _ = self.api_client.set_installation_status(
+                &config.uuid,
+                true,
+            ).await;
+
+            // Sync the server status to the panel so it knows installation is done
+            let _ = self.sync_status_to_panel().await;
+        } else {
+            // Report to panel that installation failed
+            let _ = self.api_client.set_installation_status(
+                &config.uuid,
+                false,
+            ).await;
+        }
 
         result
     }
@@ -937,13 +952,13 @@ impl Server {
                 error!("Failed to attach to running container {}: {}", uuid, e);
             }
 
-            // Restore cached console logs from Redis
+            // Restore cached console logs from Redis (with original timestamps)
             if let Some(ref store) = self.state_store {
                 let cached_logs = store.get_console_logs(&uuid).await;
                 if !cached_logs.is_empty() {
                     info!("Restoring {} cached console lines for server {}", cached_logs.len(), uuid);
-                    for line in cached_logs {
-                        self.console_sink.push(line.into_bytes());
+                    for entry in cached_logs {
+                        self.console_sink.push_with_timestamp(entry.line.into_bytes(), entry.timestamp);
                     }
                 }
             }
