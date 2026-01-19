@@ -190,6 +190,7 @@ export interface PterodactylEgg {
   description?: string | null;
   features?: string[];
   docker_images?: Record<string, string>;
+  file_denylist?: string[];
   startup?: string;
   config?: {
     files?: string;
