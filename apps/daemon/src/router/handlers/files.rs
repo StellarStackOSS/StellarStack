@@ -66,6 +66,44 @@ pub async fn write_file(
     })))
 }
 
+/// Create file or directory request
+#[derive(Debug, Deserialize)]
+pub struct CreateFileRequest {
+    pub path: String,
+    #[serde(rename = "type")]
+    pub file_type: String,
+    #[serde(default)]
+    pub content: Option<String>,
+}
+
+/// Create a file or directory
+pub async fn create_file(
+    Extension(server): Extension<Arc<Server>>,
+    Json(request): Json<CreateFileRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let fs = get_filesystem(&server)?;
+
+    match request.file_type.as_str() {
+        "directory" => {
+            fs.create_directory(&request.path).await?;
+            Ok(Json(serde_json::json!({
+                "success": true
+            })))
+        }
+        "file" => {
+            let content = request.content.as_deref().unwrap_or("");
+            fs.write_file(&request.path, content.as_bytes()).await?;
+            Ok(Json(serde_json::json!({
+                "success": true
+            })))
+        }
+        _ => Err(ApiError::bad_request(format!(
+            "Invalid type '{}'. Must be 'file' or 'directory'",
+            request.file_type
+        ))),
+    }
+}
+
 /// Create directory request
 #[derive(Debug, Deserialize)]
 pub struct CreateDirectoryRequest {

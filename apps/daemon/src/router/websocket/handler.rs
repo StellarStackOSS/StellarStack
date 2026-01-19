@@ -121,22 +121,30 @@ async fn handle_socket(socket: WebSocket, state: AppState, server: Arc<Server>, 
         })).to_json()
     )).await;
 
-    // Send buffered console history (so client sees recent logs)
-    let console_history = server.console_sink().get_history_strings();
+    // Send buffered console history with timestamps (so client sees recent logs)
+    let console_history = server.console_sink().get_history_with_timestamps();
     if !console_history.is_empty() {
         debug!("Sending {} buffered console lines to WebSocket for {}", console_history.len(), server.uuid());
+        let lines_with_timestamps: Vec<serde_json::Value> = console_history
+            .into_iter()
+            .map(|(line, timestamp)| json!({ "line": line, "timestamp": timestamp }))
+            .collect();
         let _ = sender.send(Message::Text(
-            WsOutgoing::new("console history", json!({ "lines": console_history })).to_json()
+            WsOutgoing::new("console history", json!({ "lines": lines_with_timestamps })).to_json()
         )).await;
     }
 
-    // Send buffered install history if installation is in progress
+    // Send buffered install history with timestamps if installation is in progress
     if claims.has_permission("admin.websocket.install") {
-        let install_history = server.install_sink().get_history_strings();
+        let install_history = server.install_sink().get_history_with_timestamps();
         if !install_history.is_empty() {
             debug!("Sending {} buffered install lines to WebSocket for {}", install_history.len(), server.uuid());
+            let lines_with_timestamps: Vec<serde_json::Value> = install_history
+                .into_iter()
+                .map(|(line, timestamp)| json!({ "line": line, "timestamp": timestamp }))
+                .collect();
             let _ = sender.send(Message::Text(
-                WsOutgoing::new("install history", json!({ "lines": install_history })).to_json()
+                WsOutgoing::new("install history", json!({ "lines": lines_with_timestamps })).to_json()
             )).await;
         }
     }
@@ -370,22 +378,32 @@ impl WebsocketHandler {
         None
     }
 
-    /// Handle send logs request - returns buffered console logs
+    /// Handle send logs request - returns buffered console logs with timestamps
     async fn handle_send_logs(&self) -> Option<WsOutgoing> {
-        // Return buffered console history from the sink
-        let lines = self.server.console_sink().get_history_strings();
+        // Return buffered console history with timestamps from the sink
+        let history = self.server.console_sink().get_history_with_timestamps();
 
-        if lines.is_empty() {
+        if history.is_empty() {
             // If no buffered logs, try to read from Docker logs as fallback
+            // Docker logs don't have our timestamps, so use current time
             match self.server.read_logs(100).await {
                 Ok(docker_lines) if !docker_lines.is_empty() => {
-                    return Some(WsOutgoing::new("console history", json!({ "lines": docker_lines })));
+                    let timestamp = chrono::Utc::now().timestamp_millis();
+                    let lines_with_timestamps: Vec<serde_json::Value> = docker_lines
+                        .into_iter()
+                        .map(|line| json!({ "line": line, "timestamp": timestamp }))
+                        .collect();
+                    return Some(WsOutgoing::new("console history", json!({ "lines": lines_with_timestamps })));
                 }
                 _ => return None,
             }
         }
 
-        Some(WsOutgoing::new("console history", json!({ "lines": lines })))
+        let lines_with_timestamps: Vec<serde_json::Value> = history
+            .into_iter()
+            .map(|(line, timestamp)| json!({ "line": line, "timestamp": timestamp }))
+            .collect();
+        Some(WsOutgoing::new("console history", json!({ "lines": lines_with_timestamps })))
     }
 
     /// Convert a server event to WebSocket message

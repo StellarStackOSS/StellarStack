@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useMemo, useState} from "react";
+import Link from "next/link";
 import {cn} from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
 import {Spinner} from "@workspace/ui/components/spinner";
@@ -21,6 +22,7 @@ import {
   UploadIcon,
   UserIcon,
   VariableIcon,
+  GitBranch,
 } from "lucide-react";
 import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
 import {useBlueprintMutations, useBlueprints} from "@/hooks/queries";
@@ -221,6 +223,12 @@ export default function BlueprintsPage() {
             />
 
             <div className="mb-6 flex gap-2">
+              <Link href="/admin/blueprints/builder">
+                <TextureButton variant="minimal">
+                  <GitBranch className="h-4 w-4" />
+                  Open Builder
+                </TextureButton>
+              </Link>
               <TextureButton onClick={() => setIsImportModalOpen(true)} variant="minimal">
                 <UploadIcon className="h-4 w-4" />
                 Import Egg
@@ -345,10 +353,20 @@ export default function BlueprintsPage() {
                         >
                           <DownloadIcon className="h-3 w-3" />
                         </TextureButton>
+                        <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            title="Edit in Builder"
+                          >
+                            <GitBranch className="h-3 w-3" />
+                          </TextureButton>
+                        </Link>
                         <TextureButton
                           variant="minimal"
                           size="sm"
                           onClick={() => handleEdit(blueprint)}
+                          title="Edit Form"
                         >
                           <EditIcon className="h-3 w-3" />
                         </TextureButton>

@@ -428,7 +428,7 @@ function LightBoard({
   );
 
   return (
-    <div ref={containerRef} style={{ width: "100vw" }}>
+    <div ref={containerRef} className="rounded-lg contain">
       {columns > 0 && (
         <canvas
           ref={canvasRef}

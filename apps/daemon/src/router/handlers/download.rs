@@ -13,6 +13,7 @@ use tokio_util::io::ReaderStream;
 use super::super::AppState;
 use super::ApiError;
 use crate::filesystem::Filesystem;
+use tracing::debug;
 
 /// Download file query parameters
 /// Supports both JWT token auth and direct server/file params (when called from Panel API)
@@ -65,11 +66,18 @@ pub async fn download_file(
     ).map_err(|e| ApiError::internal(e.to_string()))?;
 
     // Resolve path safely
+    debug!("Download request - server_uuid: {}, file_path: {}, data_dir: {:?}",
+        server_uuid, file_path, server.data_dir());
+
     let safe_path = fs.safe_path(&file_path)?;
+    debug!("Resolved safe_path: {:?}", safe_path.resolved());
 
     if !safe_path.exists() {
+        debug!("File does not exist at resolved path: {:?}", safe_path.resolved());
         return Err(ApiError::not_found("File not found"));
     }
+
+    debug!("File exists, proceeding with download: {:?}", safe_path.resolved());
 
     if !safe_path.is_file() {
         return Err(ApiError::bad_request("Path is not a file"));

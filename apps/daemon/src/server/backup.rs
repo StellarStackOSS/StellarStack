@@ -497,23 +497,31 @@ pub fn delete_backup(backup_dir: &Path, backup_uuid: &str) -> Result<(), BackupE
 pub fn list_backups(backup_dir: &Path) -> Result<Vec<BackupInfo>, BackupError> {
     let mut backups = Vec::new();
 
+    debug!("Listing backups in directory: {:?}", backup_dir);
+
     if !backup_dir.exists() {
+        debug!("Backup directory does not exist: {:?}", backup_dir);
         return Ok(backups);
     }
 
     for entry in fs::read_dir(backup_dir)? {
         let entry = entry?;
         let path = entry.path();
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("?");
+
+        debug!("Found entry: {}", file_name);
 
         if path.is_file() {
             if let Some(ext) = path.extension() {
                 if ext == "gz" {
                     if let Some(stem) = path.file_stem() {
                         if let Some(stem_str) = stem.to_str() {
+                            debug!("Checking tar.gz file: {}", stem_str);
                             if stem_str.ends_with(".tar") {
                                 let uuid = stem_str.strip_suffix(".tar").unwrap_or(stem_str);
                                 let metadata = fs::metadata(&path)?;
 
+                                debug!("Adding backup to list: uuid={}, size={}", uuid, metadata.len());
                                 backups.push(BackupInfo {
                                     uuid: uuid.to_string(),
                                     size: metadata.len(),
@@ -531,6 +539,7 @@ pub fn list_backups(backup_dir: &Path) -> Result<Vec<BackupInfo>, BackupError> {
         }
     }
 
+    debug!("Discovered {} backups in {:?}", backups.len(), backup_dir);
     Ok(backups)
 }
 

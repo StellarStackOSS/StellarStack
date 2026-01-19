@@ -96,14 +96,14 @@ const parseCronToCronState = (cronExpr: string): CronState => {
     const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
 
     // Try to parse minute and hour
-    const parsedMinute = parseInt(minute);
-    const parsedHour = parseInt(hour);
+    const parsedMinute = parseInt(minute!);
+    const parsedHour = parseInt(hour!);
 
     if (isNaN(parsedMinute) || isNaN(parsedHour)) return defaultState;
 
     // Check if it's a weekly schedule (specific days)
     if (dayOfWeek !== "*" && dayOfMonth === "*") {
-      const days = dayOfWeek.split(",").map((d) => parseInt(d)).filter((d) => !isNaN(d));
+      const days = dayOfWeek!.split(",").map((d) => parseInt(d)).filter((d) => !isNaN(d));
       if (days.length > 0) {
         return {
           frequency: "weekly",
@@ -261,12 +261,12 @@ const SchedulesPage = (): JSX.Element | null => {
       const [movedTask] = newTasks.splice(fromIndex, 1);
 
       // If moving to first position and task is waiting for completion, force TIME_DELAY
-      if (toIndex === 0 && movedTask.triggerMode === "ON_COMPLETION") {
-        movedTask.triggerMode = "TIME_DELAY";
-        movedTask.timeOffset = 0;
+      if (toIndex === 0 && movedTask?.triggerMode === "ON_COMPLETION") {
+        movedTask!.triggerMode = "TIME_DELAY";
+        movedTask!.timeOffset = 0;
       }
 
-      newTasks.splice(toIndex, 0, movedTask);
+      if (movedTask) newTasks.splice(toIndex, 0, movedTask);
       return newTasks.map((t, i) => ({ ...t, sequence: i }));
     });
   }, []);
@@ -722,7 +722,7 @@ const SchedulesPage = (): JSX.Element | null => {
                       <div
                         className={cn(
                           "h-6 w-0.5",
-                          formTasks[index].triggerMode === "TIME_DELAY"
+                          task.triggerMode === "TIME_DELAY"
                             ? "bg-gradient-to-b from-blue-500 to-blue-400"
                             : "bg-gradient-to-b from-purple-500 to-purple-400"
                         )}

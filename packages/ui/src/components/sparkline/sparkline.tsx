@@ -10,14 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { useId } from "react";
-
-interface SparklineProps {
-  data: number[];
-  color?: string;
-  height?: number;
-  minDomain?: number;
-  maxDomain?: number;
-}
+import type { SparklineProps, DualSparklineProps } from "./types";
 
 export const Sparkline = ({
   data,
@@ -71,16 +64,6 @@ export const Sparkline = ({
     </div>
   );
 };
-
-interface DualSparklineProps {
-  data1: number[];
-  data2: number[];
-  color1?: string;
-  color2?: string;
-  height?: number;
-  minDomain?: number;
-  maxDomain?: number;
-}
 
 export const DualSparkline = ({
   data1,
