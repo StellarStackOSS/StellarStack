@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.0...v1.3.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* Fix an issue with the folder structure ([93ab507](https://github.com/StellarStackOSS/StellarStack/commit/93ab507a6954681e626fe3f41584f5cd79f00feb))
+
 ## [1.3.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.2.0...v1.3.0) (2026-01-20)
 
 
