@@ -53,3 +53,4 @@ Installer/.env
 # Comment out if you want to track go.mod/go.sum for reproducibility
 # Installer/go.mod
 # Installer/go.sum
+nul
