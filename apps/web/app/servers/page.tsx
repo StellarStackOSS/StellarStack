@@ -1,15 +1,17 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {BsChevronRight} from "react-icons/bs";
-import type {Server} from "@/lib/api";
-import {servers as serversApi} from "@/lib/api";
-import {useAuth} from "hooks/auth-provider";
-import {toast} from "sonner";
+import { type JSX, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsChevronRight } from "react-icons/bs";
+import type { Server } from "@/lib/api";
+import { servers as serversApi } from "@/lib/api";
+import { useAuth } from "hooks/auth-provider";
+import { toast } from "sonner";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
+import { Spinner } from "@workspace/ui/components";
+import { renderVersion } from "@/components/UnifiedSidebar/UnifiedSidebar";
+import { cn } from "@workspace/ui/lib/utils";
 
 type ServerStatus =
   | "INSTALLING"
@@ -52,28 +54,6 @@ const ServersPage = (): JSX.Element | null => {
     router.push("/");
   };
 
-  const getStatusColor = (status: ServerStatus) => {
-    switch (status) {
-      case "RUNNING":
-        return "text-green-500 border-green-500";
-      case "STOPPED":
-        return "text-zinc-500 border-zinc-500";
-      case "STARTING":
-      case "STOPPING":
-      case "MAINTENANCE":
-        return "text-amber-500 border-amber-500";
-      case "INSTALLING":
-      case "RESTORING":
-        return "text-blue-500 border-blue-500";
-      case "SUSPENDED":
-        return "text-red-400 border-red-400";
-      case "ERROR":
-        return "text-red-500 border-red-500";
-      default:
-        return "text-zinc-500 border-zinc-500";
-    }
-  };
-
   const getLocationString = (server: Server) => {
     if (server.node?.location) {
       const loc = server.node.location;
@@ -83,86 +63,79 @@ const ServersPage = (): JSX.Element | null => {
     return server.node?.displayName || "Unknown";
   };
 
-  const getGameType = (server: Server) => {
+  const getCore = (server: Server) => {
     return server.blueprint?.name || "Unknown";
   };
 
   return (
-    <div
-      className="relative min-h-svh transition-colors bg-[#0b0b0a]"
-    >
-      <AnimatedBackground />
-
+    <div className="relative min-h-svh w-full bg-[#0b0b0a] transition-colors">
       {/* Header */}
-      <div className="relative p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-8 flex items-center justify-between">
+      <div className="relative flex flex-col items-center p-5 md:p-8">
+        <div className="w-full max-w-7xl">
+          <div className="mb-8 flex w-full items-center justify-between">
             <div>
-              <h1 className="text-xl font-light tracking-wider text-zinc-100">
-                YOUR SERVERS
-              </h1>
-              <p className="mt-1 text-xs text-zinc-500">
-                Select a server to manage
-              </p>
+              <h1 className="text-xl font-light tracking-wider text-zinc-100">YOUR SERVERS</h1>
+              <p className="mt-1 text-xs text-zinc-500">Select a server to manage</p>
             </div>
-            <div className="flex w-1/4 items-center gap-2">
+            <div className="flex items-center gap-2">
               {isAdmin && (
-                <TextureButton onClick={() => router.push("/admin")} variant="minimal">
+                <TextureButton onClick={() => router.push("/admin")} variant="accent">
                   <span className="uppercase">Admin</span>
                 </TextureButton>
               )}
-              <TextureButton onClick={handleSignOut}>
+              <TextureButton variant="minimal" onClick={handleSignOut}>
                 <span className="uppercase">Sign Out</span>
               </TextureButton>
             </div>
           </div>
 
           {/* Server List */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {isLoading ? (
               <div className="py-12 text-center text-sm text-zinc-500">
-                Loading servers...
+                <Spinner />
               </div>
             ) : servers.length === 0 ? (
               <div className={"text-primary py-12 text-center text-xs"}>No servers found.</div>
             ) : (
               servers.map((server) => (
                 //TODO: FIGURE OUT WHAT TF DO WE WANT TO DO HERE??
-                <TextureButton variant="secondary" className="w-full flex flex-row justify-between"
+                <div
+                  className="relative flex cursor-pointer flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-101"
                   key={server.id}
                   onClick={() => handleServerSelect(server.id)}
                 >
-                  <div className="flex items-center justify-between w-full">
+                  <div className="flex w-full items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div>
-                        <img alt="icon" src="/icons/24-storage.svg"/>
-                      </div>
-                      <div>
                         <div className="flex items-center gap-3">
-                          <h2 className="text-sm font-medium tracking-wider uppercase text-white">
+                          <h2 className="text-sm font-medium tracking-wider text-white uppercase">
                             {server.name}
                           </h2>
-                          <ServerStatusBadge server={server}/>
+                          <ServerStatusBadge server={server} />
                         </div>
                         <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
-                          <span>{getGameType(server)}</span>
+                          <span>{getCore(server)}</span>
                           <span>-</span>
                           <span>{server.memory}MB RAM</span>
                           <span>-</span>
                           <span>{getLocationString(server)}</span>
                         </div>
                         {server.description && (
-                          <div className="mt-2 text-xs text-zinc-600">
-                            {server.description}
-                          </div>
+                          <div className="mt-2 text-xs text-zinc-600">{server.description}</div>
                         )}
                       </div>
                     </div>
-                    <BsChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 text-zinc-600 group-hover:text-zinc-400" />
+                    <BsChevronRight className="h-5 w-5 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400" />
                   </div>
-                </TextureButton>
+                </div>
               ))
             )}
+          </div>
+          <div
+            className={cn("mt-6 text-center text-[10px] tracking-wider text-zinc-600 uppercase")}
+          >
+            {renderVersion()}
           </div>
         </div>
       </div>

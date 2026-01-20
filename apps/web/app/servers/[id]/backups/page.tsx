@@ -1,23 +1,26 @@
 "use client";
 
-import {type JSX, useState} from "react";
-import {useParams} from "next/navigation";
-import {AnimatePresence, motion} from "framer-motion";
-import {cn} from "@workspace/ui/lib/utils";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {BsCheckCircle, BsCloudDownload, BsDownload, BsLock, BsPlus, BsTrash, BsUnlock,} from "react-icons/bs";
-import {useBackupMutations, useBackups} from "@/hooks/queries";
-import type {Backup} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Label} from "@workspace/ui/components/label";
+import { type JSX, useState } from "react";
+import { useParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@workspace/ui/lib/utils";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { BsCloudDownload, BsDownload, BsLock, BsPlus, BsTrash, BsUnlock } from "react-icons/bs";
+import { useBackupMutations, useBackups } from "@/hooks/queries";
+import type { Backup } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Label } from "@workspace/ui/components/label";
+import ServerBackupStatusBadge, {
+  convertServerBackupStatusToIcon,
+} from "@/components/ServerBackupStatusBadge/ServerBackupStatusBadge";
 
 const BackupsPage = (): JSX.Element | null => {
   const params = useParams();
@@ -154,28 +157,10 @@ const BackupsPage = (): JSX.Element | null => {
     }
   };
 
-  // TODO: Extract to a utils
-  const getStatusIcon = (status: Backup["status"]) => {
-    switch (status) {
-      case "COMPLETED":
-        return <BsCheckCircle className="h-4 w-4 text-green-500" />;
-      case "IN_PROGRESS":
-        return <Spinner className="h-4 w-4" />;
-      case "RESTORING":
-        return <BsCloudDownload className="h-4 w-4 text-amber-500" />;
-      case "FAILED":
-        return <BsTrash className="h-4 w-4 text-red-500" />;
-      default:
-        return <BsCheckCircle className="h-4 w-4 text-green-500" />;
-    }
-  };
-
   return (
     <div className="relative min-h-svh transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="relative p-5 md:p-8">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center justify-between gap-4">
@@ -220,12 +205,12 @@ const BackupsPage = (): JSX.Element | null => {
                 Loading backups...
               </div>
             ) : backupsDisabled ? (
-              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
+              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 <p className="mb-2">Backups are not available for this server.</p>
                 <p className="text-xs">Contact an administrator to enable backups.</p>
               </div>
             ) : backups.length === 0 ? (
-              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
+              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 No backups found. Create your first backup.
               </div>
             ) : (
@@ -243,9 +228,9 @@ const BackupsPage = (): JSX.Element | null => {
                       "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] hover:border-zinc-700"
                     )}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {getStatusIcon(backup.status)}
+                    <div className="flex w-full flex-wrap items-center justify-between gap-4">
+                      <div className="flex w-full items-center gap-4">
+                        {convertServerBackupStatusToIcon(backup.status)}
                         <div>
                           <div className="flex items-center gap-3">
                             <h3
@@ -268,18 +253,7 @@ const BackupsPage = (): JSX.Element | null => {
                               </span>
                             )}
                             {backup.status !== "COMPLETED" && (
-                              <span
-                                className={cn(
-                                  "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                  backup.status === "IN_PROGRESS" &&
-                                    "border-blue-500/50 text-blue-400",
-                                  backup.status === "RESTORING" &&
-                                    "border-amber-500/50 text-amber-400",
-                                  backup.status === "FAILED" && "border-red-500/50 text-red-400"
-                                )}
-                              >
-                                {backup.status.replace("_", " ")}
-                              </span>
+                              <ServerBackupStatusBadge status={backup.status} />
                             )}
                           </div>
                           <div
@@ -291,11 +265,11 @@ const BackupsPage = (): JSX.Element | null => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex w-full flex-nowrap items-center gap-2 overflow-x-auto">
                         <TextureButton
                           variant="minimal"
                           onClick={() => handleToggleLock(backup)}
-                          disabled={lock.isPending}
+                          disabled={lock.isPending || backup.status !== "COMPLETED"}
                           title={backup.isLocked ? "Unlock backup" : "Lock backup"}
                         >
                           {backup.isLocked ? (
@@ -307,19 +281,23 @@ const BackupsPage = (): JSX.Element | null => {
                         <TextureButton
                           variant="minimal"
                           onClick={() => handleDownload(backup)}
-                          disabled={getDownloadToken.isPending}
+                          disabled={getDownloadToken.isPending || backup.status !== "COMPLETED"}
                           title="Download backup"
                         >
                           <BsDownload className="h-4 w-4" />
                           <span className="text-xs tracking-wider uppercase">Download</span>
                         </TextureButton>
-                        <TextureButton variant="minimal" onClick={() => openRestoreModal(backup)}>
+                        <TextureButton
+                          disabled={backup.status !== "COMPLETED"}
+                          variant="minimal"
+                          onClick={() => openRestoreModal(backup)}
+                        >
                           <BsCloudDownload className="h-4 w-4" />
                           <span className="text-xs tracking-wider uppercase">Restore</span>
                         </TextureButton>
                         <TextureButton
                           variant="destructive"
-                          disabled={backup.isLocked}
+                          disabled={backup.isLocked || backup.status !== "COMPLETED"}
                           onClick={() => openDeleteModal(backup)}
                         >
                           <BsTrash className="h-4 w-4" />

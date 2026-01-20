@@ -1,23 +1,36 @@
 "use client";
 
-import {useMemo, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {DataTable} from "@workspace/ui/components/data-table";
-import {ArrowLeftIcon, EditIcon, PlusIcon, SearchIcon, ShieldIcon, TrashIcon, UserIcon,} from "lucide-react";
-import {useUserMutations, useUsers} from "@/hooks/queries";
-import {useAuth} from "hooks/auth-provider";
-import type {User} from "@/lib/api";
-import {toast} from "sonner";
-import {ColumnDef, getCoreRowModel, useReactTable} from "@tanstack/react-table";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { DataTable } from "@workspace/ui/components/data-table";
+import {
+  ArrowLeftIcon,
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  ShieldIcon,
+  TrashIcon,
+  UserIcon,
+} from "lucide-react";
+import { useUserMutations, useUsers } from "@/hooks/queries";
+import { useAuth } from "hooks/auth-provider";
+import type { User } from "@/lib/api";
+import { toast } from "sonner";
+import { ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -265,9 +278,8 @@ export default function UsersPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">

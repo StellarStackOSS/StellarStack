@@ -1,17 +1,12 @@
 "use client";
 
-import {memo} from "react";
-import {SidebarInset, SidebarProvider} from "@workspace/ui/components/sidebar";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {UnifiedSidebar} from "@/components/UnifiedSidebar/UnifiedSidebar";
+import { memo } from "react";
+import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
+import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {
-  return (
-    <>
-      <AnimatedBackground />
-    </>
-  );
+  return <></>;
 });
 
 export default function AccountLayout({

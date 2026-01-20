@@ -1,14 +1,13 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@workspace/ui/components/tabs";
-import {Switch} from "@workspace/ui/components/switch";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { Switch } from "@workspace/ui/components/switch";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   ArrowLeftIcon,
   BoxIcon,
@@ -19,13 +18,19 @@ import {
   ServerIcon,
   VariableIcon,
 } from "lucide-react";
-import {useBlueprints, useNode, useNodes, useServerMutations, useUsers} from "@/hooks/queries";
-import type {CreateServerData} from "@/lib/api";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import { useBlueprints, useNode, useNodes, useServerMutations, useUsers } from "@/hooks/queries";
+import type { CreateServerData } from "@/lib/api";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function NewServerPage() {
   const router = useRouter();
@@ -154,7 +159,6 @@ export default function NewServerPage() {
   if (isLoading) {
     return (
       <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <AnimatedBackground />
         <Spinner className="h-6 w-6" />
       </div>
     );
@@ -162,10 +166,8 @@ export default function NewServerPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">

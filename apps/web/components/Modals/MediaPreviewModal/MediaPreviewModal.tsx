@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/
 import { Spinner } from "@workspace/ui/components/spinner";
 import { cn } from "@workspace/ui/lib/utils";
 import { getMediaType } from "@/lib/media-utils";
-import { MediaViewer } from "./MediaViewer";
+import { MediaViewer } from "../../MediaViewer/MediaViewer";
 
 interface MediaPreviewModalProps {
   isOpen: boolean;
@@ -50,7 +50,11 @@ export function MediaPreviewModal({
             : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
         // For binary media (video/audio/images), use the binary download endpoint
-        if (mediaType === "video" || mediaType === "audio" || (mediaType === "image" && !fileName.endsWith(".svg"))) {
+        if (
+          mediaType === "video" ||
+          mediaType === "audio" ||
+          (mediaType === "image" && !fileName.endsWith(".svg"))
+        ) {
           try {
             // Use the public download endpoint with server and file parameters
             const downloadUrl = `${apiUrl}/download/file?server=${encodeURIComponent(serverId)}&file=${encodeURIComponent(filePath)}`;
@@ -94,18 +98,22 @@ export function MediaPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={cn(
-        "border-zinc-700 bg-black/80 backdrop-blur-sm",
-        mediaType === "video" ? "max-w-4xl" : mediaType === "audio" ? "max-w-2xl" : "max-h-[80vh]"
-      )}>
+      <DialogContent
+        className={cn(
+          "border-zinc-700 bg-black/80 backdrop-blur-sm",
+          mediaType === "video" ? "max-w-4xl" : mediaType === "audio" ? "max-w-2xl" : "max-h-[80vh]"
+        )}
+      >
         <DialogHeader>
           <DialogTitle className="text-zinc-200">{fileName}</DialogTitle>
         </DialogHeader>
 
-        <div className={cn(
-          "flex items-center justify-center",
-          mediaType === "video" ? "min-h-[400px]" : "min-h-[300px]"
-        )}>
+        <div
+          className={cn(
+            "flex items-center justify-center",
+            mediaType === "video" ? "min-h-[400px]" : "min-h-[300px]"
+          )}
+        >
           {isLoading ? (
             <Spinner className="h-8 w-8" />
           ) : error ? (
@@ -114,11 +122,7 @@ export function MediaPreviewModal({
               <p className="text-xs text-zinc-500">{error}</p>
             </div>
           ) : isMedia && (content || blobUrl) ? (
-            <MediaViewer
-              fileName={fileName}
-              content={content}
-              blobUrl={blobUrl}
-            />
+            <MediaViewer fileName={fileName} content={content} blobUrl={blobUrl} />
           ) : (
             <p className="text-sm text-zinc-400">Unsupported file type or empty content</p>
           )}

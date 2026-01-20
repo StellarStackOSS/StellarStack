@@ -1,71 +1,53 @@
 "use client";
 
-import {type JSX, useCallback, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {motion} from "framer-motion";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Slider} from "@workspace/ui/components/slider";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
-import {BsCheck, BsCheckCircle, BsExclamationTriangle, BsGeoAlt, BsGlobe, BsLayers,} from "react-icons/bs";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
+import { type JSX, useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { Slider } from "@workspace/ui/components/slider";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
+  BsCheck,
+  BsCheckCircle,
+  BsExclamationTriangle,
+  BsGeoAlt,
+  BsGlobe,
+  BsLayers,
+} from "react-icons/bs";
+import type { Blueprint } from "@/lib/api";
+import { blueprints, servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
 
 interface ServerSettings {
   name: string;
   description: string;
-  serverType: string;
-  cpuLimit: number;
-  memoryLimit: number;
-  diskLimit: number;
-  oomDisabled: boolean;
+  blueprintId?: string;
+  memoryLimit?: string;
+  diskLimit?: string;
 }
-
-interface ServerTypeOption {
-  id: string;
-  name: string;
-  category: string;
-}
-
-const serverTypes: ServerTypeOption[] = [
-  // Minecraft
-  { id: "mc-paper", name: "Paper", category: "Minecraft" },
-  { id: "mc-spigot", name: "Spigot", category: "Minecraft" },
-  { id: "mc-bukkit", name: "Bukkit", category: "Minecraft" },
-  { id: "mc-vanilla", name: "Vanilla", category: "Minecraft" },
-  { id: "mc-forge", name: "Forge", category: "Minecraft" },
-  { id: "mc-fabric", name: "Fabric", category: "Minecraft" },
-  { id: "mc-purpur", name: "Purpur", category: "Minecraft" },
-  { id: "mc-bungeecord", name: "BungeeCord", category: "Minecraft" },
-  { id: "mc-velocity", name: "Velocity", category: "Minecraft" },
-  // Survival/Sandbox
-  { id: "rust", name: "Rust", category: "Survival" },
-  { id: "ark", name: "ARK: Survival Evolved", category: "Survival" },
-  { id: "valheim", name: "Valheim", category: "Survival" },
-  { id: "terraria", name: "Terraria", category: "Survival" },
-  { id: "7dtd", name: "7 Days to Die", category: "Survival" },
-  // Factory/Building
-  { id: "satisfactory", name: "Satisfactory", category: "Factory" },
-  { id: "factorio", name: "Factorio", category: "Factory" },
-  // FPS/Shooters
-  { id: "csgo", name: "Counter-Strike 2", category: "FPS" },
-  { id: "tf2", name: "Team Fortress 2", category: "FPS" },
-  { id: "gmod", name: "Garry's Mod", category: "FPS" },
-  // Other
-  { id: "palworld", name: "Palworld", category: "Other" },
-  { id: "vrising", name: "V Rising", category: "Other" },
-  { id: "projectzomboid", name: "Project Zomboid", category: "Other" },
-];
 
 interface Location {
   id: string;
@@ -275,27 +257,9 @@ const locations: Location[] = [
 ];
 
 const defaultSettings: ServerSettings = {
-  name: "US-WEST-NODE-1",
-  description: "Primary Minecraft server for US West region",
-  serverType: "mc-paper",
-  cpuLimit: 200,
-  memoryLimit: 4096,
-  diskLimit: 10240,
-  oomDisabled: false,
+  name: "",
+  description: "",
 };
-
-// Group server types by category
-const serverTypesByCategory = serverTypes.reduce<Record<string, ServerTypeOption[]>>(
-  (acc, type) => {
-    const category = type.category;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category]!.push(type);
-    return acc;
-  },
-  {}
-);
 
 const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
@@ -303,6 +267,8 @@ const SettingsPage = (): JSX.Element | null => {
   const { server, isInstalling } = useServer();
   const [settings, setSettings] = useState<ServerSettings>(defaultSettings);
   const [originalSettings, setOriginalSettings] = useState<ServerSettings>(defaultSettings);
+  const [blueprintList, setBlueprintList] = useState<Blueprint[]>([]);
+  const [isLoadingBlueprints, setIsLoadingBlueprints] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [reinstallModalOpen, setReinstallModalOpen] = useState(false);
   const [isReinstalling, setIsReinstalling] = useState(false);
@@ -401,6 +367,38 @@ const SettingsPage = (): JSX.Element | null => {
     }
   }, [pingCooldown]);
 
+  // Load blueprints
+  useEffect(() => {
+    const loadBlueprints = async () => {
+      setIsLoadingBlueprints(true);
+      try {
+        const list = await blueprints.list();
+        setBlueprintList(list);
+      } catch (error) {
+        toast.error("Failed to load cores");
+      } finally {
+        setIsLoadingBlueprints(false);
+      }
+    };
+    loadBlueprints();
+  }, []);
+
+  // Initialize settings from server
+  useEffect(() => {
+    if (server) {
+      setSettings({
+        name: server.name,
+        description: server.description || "",
+        blueprintId: server.blueprintId || "",
+      });
+      setOriginalSettings({
+        name: server.name,
+        description: server.description || "",
+        blueprintId: server.blueprintId || "",
+      });
+    }
+  }, [server]);
+
   useEffect(() => {
     if (transferModalOpen) {
       startPinging();
@@ -467,11 +465,23 @@ const SettingsPage = (): JSX.Element | null => {
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
-  const handleSave = () => {
-    setOriginalSettings({ ...settings });
-    setSaveModalOpen(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      // Check if blueprint changed
+      if (settings.blueprintId && settings.blueprintId !== originalSettings.blueprintId) {
+        await servers.changeBlueprint(serverId, {
+          blueprintId: settings.blueprintId,
+          reinstall: false,
+        });
+        toast.success("Core changed successfully");
+      }
+      setOriginalSettings({ ...settings });
+      setSaveModalOpen(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save settings");
+    }
   };
 
   const handleReset = () => {
@@ -502,7 +512,7 @@ const SettingsPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -561,10 +571,7 @@ const SettingsPage = (): JSX.Element | null => {
 
           {/* General Settings */}
           <div
-            className={cn(
-              "relative mb-6 border p-6",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
+            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
           >
             <h2
               className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
@@ -590,26 +597,21 @@ const SettingsPage = (): JSX.Element | null => {
                 />
               </div>
               <div>
-                <Label>Server Type</Label>
+                <Label>Core</Label>
                 <Select
-                  value={settings.serverType}
-                  onValueChange={(value) => handleSettingChange("serverType", value)}
+                  value={settings.blueprintId || ""}
+                  onValueChange={(value) => handleSettingChange("blueprintId", value)}
+                  disabled={isLoadingBlueprints}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue placeholder="Select a core..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(serverTypesByCategory).map(([category, types]) => (
-                      <div key={category}>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-zinc-500">
-                          {category}
-                        </div>
-                        {types.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </div>
+                    {blueprintList.map((blueprint) => (
+                      <SelectItem key={blueprint.id} value={blueprint.id}>
+                        {blueprint.name}
+                        {blueprint.category && ` - ${blueprint.category}`}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -617,17 +619,46 @@ const SettingsPage = (): JSX.Element | null => {
             </div>
           </div>
 
-          {/* Resource Limits - DISABLED: User cannot modify resource limits from settings */}
-          {/* Server Location - DISABLED: Server transfer feature is not yet implemented */}
-          {/* Server Splitting - DISABLED: Server splitting feature is not yet implemented */}
+          {/* Resource Limits */}
+          <div
+            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
+          >
+            <h2
+              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
+            >
+              Resource Limits
+            </h2>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>CPU</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {server?.cpu || 0}%
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>
+                  {Math.floor((server?.cpu || 0) / 100)} core
+                  {Math.floor((server?.cpu || 0) / 100) !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Memory</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {Math.floor((server?.memory || 0) / 1024)} GB
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.memory || 0} MiB</p>
+              </div>
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Disk</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {Math.floor((server?.disk || 0) / 1024)} GB
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.disk || 0} MiB</p>
+              </div>
+            </div>
+          </div>
 
           {/* Danger Zone */}
-          <div
-            className={cn(
-              "relative border p-6",
-              "border-red-900/30 bg-gradient-to-b from-red-950/20 via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
+          <div className={cn("relative rounded-lg border p-6", "border-red-900/30 bg-zinc-900/50")}>
             <div className="mb-6 flex items-center gap-2">
               <BsExclamationTriangle className={cn("h-4 w-4", "text-red-400")} />
               <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-red-400")}>
@@ -686,8 +717,8 @@ const SettingsPage = (): JSX.Element | null => {
       >
         <DialogContent
           className={cn(
-            "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-5xl",
-            "border-zinc-800 bg-[#0f0f0f]"
+            "flex max-h-[85vh] flex-col overflow-hidden rounded-lg sm:max-w-5xl",
+            "border-zinc-800 bg-zinc-900"
           )}
         >
           <DialogHeader>
@@ -886,7 +917,7 @@ const SettingsPage = (): JSX.Element | null => {
 
       {/* Server Split Modal */}
       <Dialog open={splitModalOpen} onOpenChange={setSplitModalOpen}>
-        <DialogContent className={cn("sm:max-w-lg", "border-zinc-800 bg-[#0f0f0f]")}>
+        <DialogContent className={cn("rounded-lg sm:max-w-lg", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
             <DialogTitle
               className={cn(
@@ -941,7 +972,9 @@ const SettingsPage = (): JSX.Element | null => {
               <div className="mb-3 flex items-center justify-between">
                 <Label>Memory Allocation</Label>
                 <span className={cn("font-mono text-xs", "text-zinc-400")}>
+                  {/*@ts-ignore*/}
                   {Math.round((settings.memoryLimit * splitResources.memory) / 100)} MB /{" "}
+                  {/*@ts-ignore*/}
                   {Math.round((settings.memoryLimit * (100 - splitResources.memory)) / 100)} MB
                 </span>
               </div>
@@ -965,8 +998,9 @@ const SettingsPage = (): JSX.Element | null => {
               <div className="mb-3 flex items-center justify-between">
                 <Label>Disk Allocation</Label>
                 <span className={cn("font-mono text-xs", "text-zinc-400")}>
-                  {Math.round((settings.diskLimit * splitResources.disk) / 100)} MB /{" "}
-                  {Math.round((settings.diskLimit * (100 - splitResources.disk)) / 100)} MB
+                  {/*@ts-ignore*/}
+                  {Math.round((settings.diskLimit ?? 0) / 100)} MB / {/*@ts-ignore*/}
+                  {Math.round((settings.diskLimit ?? 0) / 100)} MB
                 </span>
               </div>
               <Slider

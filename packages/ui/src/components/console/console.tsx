@@ -6,7 +6,6 @@ import { cn } from "@workspace/ui/lib/utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import { TimestampColumnTooltip } from "./timestamp-tooltip";
 import { ScrollContext } from "./scroll-context";
-import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
 import { Input } from "@workspace/ui/components";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 
@@ -186,11 +185,6 @@ export const Console = ({
       <div
         className={cn("flex items-center justify-between border-b px-4 py-2", "border-zinc-200/10")}
       >
-        <div className="flex flex-row gap-2">
-          <TextureBadge>All logs (96)</TextureBadge>
-          <TextureBadge variant="secondary">Errors (3)</TextureBadge>
-          <TextureBadge variant="secondary">Warnings (96)</TextureBadge>
-        </div>
         <div className="flex items-center gap-2">
           {!autoScroll && (
             <button
@@ -279,28 +273,25 @@ export const Console = ({
       </ScrollContext.Provider>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className={cn("border-t", "border-zinc-200/10")}>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <span className={cn("font-mono text-sm", "text-zinc-600")}>$</span>
-          <Input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isOffline ? "Connection lost..." : "Enter command..."}
-            disabled={isOffline}
-            className={cn(
-              "flex-1 border-none bg-transparent font-mono text-sm outline-none",
-              "text-zinc-200 placeholder:text-zinc-700",
-              isOffline && "cursor-not-allowed"
-            )}
-          />
+      <form onSubmit={handleSubmit} className={cn("h-fit border-t border-zinc-200/10 p-2")}>
+        <div className="flex items-center gap-1">
+          <div className="w-full">
+            <Input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isOffline ? "Connection lost..." : "Enter command..."}
+              disabled={isOffline}
+              className={cn("mt-0 bg-orange-500", isOffline && "cursor-not-allowed")}
+            />
+          </div>
           {showSendButton && (
             <TextureButton
               type="submit"
               disabled={isOffline || !inputValue.trim()}
-              variant="secondary"
+              variant="primary"
               aria-label="Send command"
             >
               <BsSend className="h-4 w-4" />

@@ -1,23 +1,24 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {BsGlobe, BsPencil, BsPlus, BsTrash,} from "react-icons/bs";
-import {TbWand} from "react-icons/tb";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {EmptyState, PageHeader, StatusBadge} from "components/ServerPageComponents";
-import {WebhookEventSelector} from "./WebhookEventSelector";
-import {WebhookUrlField} from "./WebhookUrlField";
-import {type Webhook, type WebhookEvent, webhooks} from "@/lib/api";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
-import {Card} from "@workspace/ui/components";
+import { type JSX, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { BsGlobe, BsPencil, BsPlus, BsTrash } from "react-icons/bs";
+import { TbWand } from "react-icons/tb";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { WebhookEventSelector } from "./WebhookEventSelector";
+import { WebhookUrlField } from "./WebhookUrlField";
+import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Card } from "@workspace/ui/components";
+import { EmptyState } from "@/components/EmptyState/EmptyState";
+import { PageHeader } from "@/components/PageHeader/PageHeader";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -118,7 +119,7 @@ const WebhooksPage = (): JSX.Element | null => {
       setAddModalOpen(false);
       resetForm();
       toast.success("Webhook created");
-      
+
       try {
         await webhooks.test(newWebhook.id);
         toast.success("Test message sent to webhook");
@@ -192,15 +193,12 @@ const WebhooksPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <PageHeader
             title="WEBHOOKS"
             subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
             actions={
-              <TextureButton
-                variant="minimal"
-                onClick={openAddModal}
-              >
+              <TextureButton variant="minimal" onClick={openAddModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Webhook</span>
               </TextureButton>
@@ -209,9 +207,7 @@ const WebhooksPage = (): JSX.Element | null => {
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center", "text-zinc-500")}>
-              Loading webhooks...
-            </div>
+            <div className={cn("py-12 text-center", "text-zinc-500")}>Loading webhooks...</div>
           ) : webhookList.length === 0 ? (
             <EmptyState
               icon={<BsGlobe className="h-12 w-12" />}
@@ -233,9 +229,7 @@ const WebhooksPage = (): JSX.Element | null => {
                             "border-zinc-700 bg-zinc-800/50"
                           )}
                         >
-                          <BsGlobe
-                            className={cn("h-4 w-4", "text-zinc-400")}
-                          />
+                          <BsGlobe className={cn("h-4 w-4", "text-zinc-400")} />
                         </div>
                         <div className="flex items-center gap-2">
                           <span
@@ -246,26 +240,20 @@ const WebhooksPage = (): JSX.Element | null => {
                           >
                             {webhook.url}
                           </span>
-                          <StatusBadge
-                            label={webhook.enabled ? "Active" : "Disabled"}
-                            color={webhook.enabled ? "green" : "zinc"}
-                          />
+                          {/*<StatusBadge*/}
+                          {/*  label={webhook.enabled ? "Active" : "Disabled"}*/}
+                          {/*  color={webhook.enabled ? "green" : "zinc"}*/}
+                          {/*/>*/}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {webhook.events.map((event) => (
-                          <StatusBadge
-                            key={event}
-                            label={event.replace(/_/g, " ")}
-                          />
-                        ))}
+                        {/*{webhook.events.map((event) => (*/}
+                        {/*  <StatusBadge key={event} label={event.replace(/_/g, " ")} />*/}
+                        {/*))}*/}
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <TextureButton
-                        variant="minimal"
-                        onClick={() => openEditModal(webhook)}
-                      >
+                      <TextureButton variant="minimal" onClick={() => openEditModal(webhook)}>
                         <BsPencil className="h-4 w-4" />
                       </TextureButton>
                       <TextureButton
@@ -275,10 +263,7 @@ const WebhooksPage = (): JSX.Element | null => {
                       >
                         <TbWand className="h-4 w-4" />
                       </TextureButton>
-                      <TextureButton
-                        variant="destructive"
-                        onClick={() => openDeleteModal(webhook)}
-                      >
+                      <TextureButton variant="destructive" onClick={() => openDeleteModal(webhook)}>
                         <BsTrash className="h-4 w-4" />
                       </TextureButton>
                     </div>
@@ -327,15 +312,11 @@ const WebhooksPage = (): JSX.Element | null => {
           <WebhookUrlField value={formUrl} onChange={setFormUrl} />
           <div>
             <Label>Status</Label>
-            <TextureButton
-              onClick={() => setFormEnabled(!formEnabled)}
-            >
+            <TextureButton onClick={() => setFormEnabled(!formEnabled)}>
               <div
                 className={cn(
                   "relative h-5 w-10 rounded-full transition-colors",
-                  formEnabled
-                    ? "bg-green-600"
-                    : "bg-zinc-700"
+                  formEnabled ? "bg-green-600" : "bg-zinc-700"
                 )}
               >
                 <div

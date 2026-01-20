@@ -1,22 +1,22 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {BsArrowRepeat, BsCheckCircle, BsInfoCircle} from "react-icons/bs";
-import type {DockerImageOption, StartupVariable} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {toast} from "sonner";
+import { type JSX, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
+import type { DockerImageOption, StartupVariable } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { toast } from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
   const params = useParams();
@@ -181,7 +181,7 @@ const StartupPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">

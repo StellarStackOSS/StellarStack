@@ -22,9 +22,5 @@ interface WebSocketProviderProps {
 export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { isConnected } = useGlobalWebSocket();
 
-  return (
-    <WebSocketContext.Provider value={{ isConnected }}>
-      {children}
-    </WebSocketContext.Provider>
-  );
+  return <WebSocketContext.Provider value={{ isConnected }}>{children}</WebSocketContext.Provider>;
 };

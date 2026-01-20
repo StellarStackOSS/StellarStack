@@ -1,7 +1,7 @@
 "use client";
 
-import { useUploads } from "@/components/upload-provider";
-import { Upload, X, ArrowUp } from "lucide-react";
+import { useUploads } from "@/components/Providers/UploadProvider/UploadProvider";
+import { ArrowUp, Upload, X } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { motion } from "framer-motion";
 import { TextureButton } from "@workspace/ui/components/texture-button";
@@ -45,7 +45,8 @@ export function UploadProgressIndicator() {
           </div>
         </div>
 
-        <TextureButton variant="minimal"
+        <TextureButton
+          variant="minimal"
           onClick={() => {
             uploads.forEach((upload) => removeUpload(upload.id));
           }}

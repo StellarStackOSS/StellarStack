@@ -298,7 +298,14 @@ servers.get("/:serverId", requireServerAccess, async (c) => {
           },
         },
       },
-      blueprint: true,
+      blueprint: {
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          description: true,
+        },
+      },
       owner: {
         select: { id: true, name: true, email: true },
       },
@@ -479,9 +486,10 @@ servers.post("/", requireAdmin, async (c) => {
   const startupConfig = blueprint.config as any;
   if (startupConfig?.startup) {
     try {
-      const parsed_startup = typeof startupConfig.startup === "string"
-        ? JSON.parse(startupConfig.startup)
-        : startupConfig.startup;
+      const parsed_startup =
+        typeof startupConfig.startup === "string"
+          ? JSON.parse(startupConfig.startup)
+          : startupConfig.startup;
 
       if (parsed_startup.done) {
         if (Array.isArray(parsed_startup.done)) {
@@ -2495,13 +2503,18 @@ servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async 
     }
 
     // Send schedule execution request to daemon
-    await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules/${scheduleId}/run`, {
-      id: schedule.id,
-      name: schedule.name,
-      cronExpression: schedule.cronExpression,
-      enabled: schedule.isActive,
-      tasks: schedule.tasks,
-    });
+    await daemonRequest(
+      fullServer.node,
+      "POST",
+      `/api/servers/${server.id}/schedules/${scheduleId}/run`,
+      {
+        id: schedule.id,
+        name: schedule.name,
+        cronExpression: schedule.cronExpression,
+        enabled: schedule.isActive,
+        tasks: schedule.tasks,
+      }
+    );
 
     // Update lastRunAt timestamp
     await db.schedule.update({
@@ -2977,9 +2990,10 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
       const startupConfig = blueprint?.config as any;
       if (startupConfig?.startup) {
         try {
-          const parsed_startup = typeof startupConfig.startup === "string"
-            ? JSON.parse(startupConfig.startup)
-            : startupConfig.startup;
+          const parsed_startup =
+            typeof startupConfig.startup === "string"
+              ? JSON.parse(startupConfig.startup)
+              : startupConfig.startup;
 
           if (parsed_startup.done) {
             if (Array.isArray(parsed_startup.done)) {
@@ -2993,7 +3007,10 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
             }
           }
         } catch (e) {
-          console.error(`[Child Server Create] Failed to parse startup config for ${childServer.name}:`, e);
+          console.error(
+            `[Child Server Create] Failed to parse startup config for ${childServer.name}:`,
+            e
+          );
         }
       }
 

@@ -1,13 +1,12 @@
 "use client";
 
-import {useMemo, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,10 +24,10 @@ import {
   SquareIcon,
   TrashIcon,
 } from "lucide-react";
-import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
-import {useServerMutations, useServers} from "@/hooks/queries";
-import type {Server} from "@/lib/api";
-import {toast} from "sonner";
+import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+import { useServerMutations, useServers } from "@/hooks/queries";
+import type { Server } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AdminServersPage() {
   const router = useRouter();
@@ -91,9 +90,8 @@ export default function AdminServersPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full">
           <FadeIn delay={0}>
             <AdminPageHeader
               title="SERVERS"
@@ -134,12 +132,16 @@ export default function AdminServersPage() {
                       <ContextMenuTrigger asChild>
                         <div
                           className={cn(
-                            "group relative cursor-context-menu border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-5 shadow-lg shadow-black/20 transition-all hover:scale-[1.005] hover:border-zinc-700"
+                            "group relative cursor-context-menu rounded-lg border border-zinc-700 bg-zinc-900/50 p-5 transition-all hover:border-zinc-600"
                           )}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className={cn("border border-zinc-700 bg-zinc-800/50 p-2.5")}>
+                              <div
+                                className={cn(
+                                  "rounded border border-zinc-700 bg-zinc-800/50 p-2.5"
+                                )}
+                              >
                                 <ServerIcon className={cn("h-5 w-5 text-zinc-400")} />
                               </div>
                               <div>

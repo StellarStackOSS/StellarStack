@@ -1,20 +1,15 @@
 "use client";
 
-import {memo, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {SidebarInset, SidebarProvider} from "@workspace/ui/components/sidebar";
-import {useAuth} from "hooks/auth-provider";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {cn} from "@workspace/ui/lib/utils";
-import {UnifiedSidebar} from "@/components/UnifiedSidebar/UnifiedSidebar";
+import { memo, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
+import { useAuth } from "hooks/auth-provider";
+import { cn } from "@workspace/ui/lib/utils";
+import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {
-  return (
-    <>
-      <AnimatedBackground />
-    </>
-  );
+  return <></>;
 });
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -34,17 +29,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div
-        className={cn(
-          "flex min-h-svh items-center justify-center bg-[#0b0b0a]",
-        )}
-      >
+      <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
         <PersistentBackground />
-        <div
-          className={cn(
-            "relative z-10 text-sm tracking-wider uppercase text-zinc-500",
-          )}
-        >
+        <div className={cn("relative z-10 text-sm tracking-wider text-zinc-500 uppercase")}>
           Loading...
         </div>
       </div>
@@ -61,11 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <PersistentBackground />
       <SidebarProvider>
         <UnifiedSidebar />
-        <SidebarInset
-          className={cn("transition-colors bg-transparent")}
-        >
-          {children}
-        </SidebarInset>
+        <SidebarInset className={cn("bg-transparent transition-colors")}>{children}</SidebarInset>
       </SidebarProvider>
     </>
   );
