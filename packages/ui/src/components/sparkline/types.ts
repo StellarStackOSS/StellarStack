@@ -1,4 +1,3 @@
-// Common props shared between sparkline components
 export interface BaseSparklineProps {
   height?: number;
   minDomain?: number;

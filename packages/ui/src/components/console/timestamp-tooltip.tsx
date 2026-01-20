@@ -61,20 +61,12 @@ export const TimestampColumnTooltip = ({ timestamp, position }: TimestampColumnT
   return createPortal(
     <div
       className={cn(
-        "fixed z-50 p-3 border min-w-[280px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-100 backdrop-blur-md",
-        "bg-[#0f0f0f]/80 border-zinc-200/10"
-      )}
+        "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100 border-zinc-200/10 bg-[#0f0f0f]/80")}
       style={{
         top: position.top,
         left: position.left,
       }}
     >
-      {/* Corner accents */}
-      <div className={cn("absolute top-0 left-0 w-2 h-2 border-t border-l", "border-zinc-500")} />
-      <div className={cn("absolute top-0 right-0 w-2 h-2 border-t border-r", "border-zinc-500")} />
-      <div className={cn("absolute bottom-0 left-0 w-2 h-2 border-b border-l", "border-zinc-500")} />
-      <div className={cn("absolute bottom-0 right-0 w-2 h-2 border-b border-r", "border-zinc-500")} />
-
       <div className="space-y-2 text-xs">
         <div className="flex justify-between gap-4">
           <span className="text-zinc-500">{formats.localTimezone}</span>

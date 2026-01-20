@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
 import { cn } from "@workspace/ui/lib/utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import { TimestampColumnTooltip } from "./timestamp-tooltip";
 import { ScrollContext } from "./scroll-context";
+import { Input } from "@workspace/ui/components";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 const formatTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -47,9 +49,7 @@ export const Console = ({
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number } | null>(
     null
   );
-  const timestampColumnRef = useRef<HTMLTableCellElement>(null);
 
-  // Auto-scroll to bottom when new lines are added (smooth)
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -174,54 +174,17 @@ export const Console = ({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col border transition-colors",
+        "relative flex h-full flex-col rounded-lg border transition-colors",
         "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
         isOffline && "opacity-60",
         className
       )}
       onClick={handleConsoleClick}
     >
-      {/* Corner accents */}
-      <div
-        className={cn(
-          "pointer-events-none absolute top-0 left-0 h-3 w-3 border-t border-l",
-          "border-zinc-500"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute top-0 right-0 h-3 w-3 border-t border-r",
-          "border-zinc-500"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute bottom-0 left-0 h-3 w-3 border-b border-l",
-          "border-zinc-500"
-        )}
-      />
-      <div
-        className={cn(
-          "pointer-events-none absolute right-0 bottom-0 h-3 w-3 border-r border-b",
-          "border-zinc-500"
-        )}
-      />
-
       {/* Header */}
       <div
-        className={cn(
-          "flex items-center justify-between border-b px-4 py-2",
-          "border-zinc-200/10"
-        )}
+        className={cn("flex items-center justify-between border-b px-4 py-2", "border-zinc-200/10")}
       >
-        <span
-          className={cn(
-            "text-xs font-medium tracking-wider uppercase",
-            "text-zinc-400"
-          )}
-        >
-          Console
-        </span>
         <div className="flex items-center gap-2">
           {!autoScroll && (
             <button
@@ -234,17 +197,12 @@ export const Console = ({
                   });
                 }
               }}
-              className={cn(
-                "text-xs transition-colors",
-                "text-zinc-500 hover:text-zinc-300"
-              )}
+              className={cn("text-xs transition-colors", "text-zinc-500 hover:text-zinc-300")}
             >
               Scroll to bottom
             </button>
           )}
-          <span className={cn("text-xs", "text-zinc-600")}>
-            {displayLines.length} lines
-          </span>
+          <span className={cn("text-xs", "text-zinc-600")}>{displayLines.length} lines</span>
         </div>
       </div>
 
@@ -255,12 +213,7 @@ export const Console = ({
           {isOffline && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
               <div className="flex flex-col items-center gap-2">
-                <span
-                  className={cn(
-                    "text-xs tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
+                <span className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                   Server is offline
                 </span>
               </div>
@@ -286,10 +239,7 @@ export const Console = ({
             <table className="w-full border-collapse">
               <tbody>
                 {displayLines.map((line) => (
-                  <tr
-                    key={line.id}
-                    className={cn("group", "hover:bg-zinc-900/50")}
-                  >
+                  <tr key={line.id} className={cn("group", "hover:bg-zinc-900/50")}>
                     <td
                       className={cn(
                         "w-[110px] cursor-default py-0.5 pr-4 align-top whitespace-nowrap transition-colors",
@@ -316,51 +266,36 @@ export const Console = ({
 
             {/* Timestamp column tooltip */}
             {hoveredTimestamp && tooltipPosition && (
-              <TimestampColumnTooltip
-                timestamp={hoveredTimestamp}
-                position={tooltipPosition}
-              />
+              <TimestampColumnTooltip timestamp={hoveredTimestamp} position={tooltipPosition} />
             )}
           </div>
         </div>
       </ScrollContext.Provider>
 
       {/* Input */}
-      <form
-        onSubmit={handleSubmit}
-        className={cn("border-t", "border-zinc-200/10")}
-      >
-        <div className="flex items-center gap-3 px-4 py-3">
-          <span className={cn("font-mono text-sm", "text-zinc-600")}>
-            $
-          </span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isOffline ? "Connection lost..." : "Enter command..."}
-            disabled={isOffline}
-            className={cn(
-              "flex-1 border-none bg-transparent font-mono text-sm outline-none",
-              "text-zinc-200 placeholder:text-zinc-700",
-              isOffline && "cursor-not-allowed"
-            )}
-          />
+      <form onSubmit={handleSubmit} className={cn("h-fit border-t border-zinc-200/10 p-2")}>
+        <div className="flex items-center gap-1">
+          <div className="w-full">
+            <Input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isOffline ? "Connection lost..." : "Enter command..."}
+              disabled={isOffline}
+              className={cn("mt-0 bg-orange-500", isOffline && "cursor-not-allowed")}
+            />
+          </div>
           {showSendButton && (
-            <button
+            <TextureButton
               type="submit"
               disabled={isOffline || !inputValue.trim()}
-              className={cn(
-                "flex items-center justify-center rounded p-2 transition-all",
-                "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200",
-                (isOffline || !inputValue.trim()) && "cursor-not-allowed opacity-40"
-              )}
+              variant="primary"
               aria-label="Send command"
             >
               <BsSend className="h-4 w-4" />
-            </button>
+            </TextureButton>
           )}
         </div>
       </form>

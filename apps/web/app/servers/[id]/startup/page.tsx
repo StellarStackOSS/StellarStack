@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { BsInfoCircle, BsCheckCircle, BsArrowRepeat } from "react-icons/bs";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
+import type { DockerImageOption, StartupVariable } from "@/lib/api";
 import { servers } from "@/lib/api";
-import type { StartupVariable, DockerImageOption } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
@@ -178,7 +181,7 @@ const StartupPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -189,12 +192,7 @@ const StartupPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   STARTUP PARAMETERS
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -204,29 +202,14 @@ const StartupPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {hasChanges && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                >
+                <TextureButton variant="minimal" onClick={handleReset}>
                   <span className="text-xs tracking-wider uppercase">Reset</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
-                size="sm"
+              <TextureButton
+                variant="minimal"
                 onClick={() => setSaveModalOpen(true)}
                 disabled={!hasChanges}
-                className={cn(
-                  "gap-2 transition-all",
-                  saved
-                    ? "border-green-500/50 text-green-400"
-                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-                )}
               >
                 {saved ? (
                   <>
@@ -236,16 +219,11 @@ const StartupPage = (): JSX.Element | null => {
                 ) : (
                   <span className="text-xs tracking-wider uppercase">Save Changes</span>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </TextureButton>
+              <TextureButton
+                variant="minimal"
                 onClick={() => setReinstallModalOpen(true)}
                 disabled={hasChanges}
-                className={cn(
-                  "gap-2 transition-all",
-                  "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-                )}
                 title={
                   hasChanges
                     ? "Save changes first before reinstalling"
@@ -254,7 +232,7 @@ const StartupPage = (): JSX.Element | null => {
               >
                 <BsArrowRepeat className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
 
@@ -266,61 +244,19 @@ const StartupPage = (): JSX.Element | null => {
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  "border-zinc-500"
-                )}
-              />
-
-              <label
-                className={cn(
-                  "text-[10px] font-medium tracking-wider uppercase",
-                  "text-zinc-500"
-                )}
-              >
-                Docker Image
-              </label>
+              <Label>Docker Image</Label>
               <div className="mt-3 flex flex-wrap gap-2">
                 {dockerImages.map((img) => (
-                  <button
+                  <TextureButton
                     key={img.image}
+                    variant="minimal"
                     onClick={() => handleDockerImageChange(img.image)}
-                    className={cn(
-                      "border px-3 py-2 text-xs font-medium tracking-wider uppercase transition-all",
-                      selectedDockerImage === img.image
-                        ? "border-purple-500 bg-purple-500/20 text-purple-300"
-                        : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                    )}
                   >
                     {img.label}
-                  </button>
+                  </TextureButton>
                 ))}
               </div>
-              <p
-                className={cn(
-                  "mt-2 font-mono text-[10px]",
-                  "text-zinc-600"
-                )}
-              >
+              <p className={cn("mt-2 font-mono text-[10px]", "text-zinc-600")}>
                 {selectedDockerImage}
               </p>
             </div>
@@ -333,39 +269,7 @@ const StartupPage = (): JSX.Element | null => {
               "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
-            <label
-              className={cn(
-                "text-[10px] font-medium tracking-wider uppercase",
-                "text-zinc-500"
-              )}
-            >
-              Startup Command
-            </label>
+            <Label>Startup Command</Label>
             <div
               className={cn(
                 "mt-2 overflow-x-auto border p-3 font-mono text-xs",
@@ -383,66 +287,22 @@ const StartupPage = (): JSX.Element | null => {
               "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 right-0 h-2 w-2 border-b border-r",
-                "border-zinc-500"
-              )}
-            />
-            <label
-              className={cn(
-                "text-[10px] font-medium tracking-wider uppercase",
-                "text-zinc-500"
-              )}
-            >
-              Custom Startup Commands
-            </label>
-            <p
-              className={cn(
-                "mt-1 mb-3 text-xs",
-                "text-zinc-400"
-              )}
-            >
-              Additional commands to append to the startup command. These will be executed after the main command.
+            <Label>Custom Startup Commands</Label>
+            <p className={cn("mt-1 mb-3 text-xs", "text-zinc-400")}>
+              Additional commands to append to the startup command. These will be executed after the
+              main command.
             </p>
-            <textarea
+            <Textarea
               value={customStartupCommands}
               onChange={(e) => handleCustomStartupCommandsChange(e.target.value)}
               placeholder="e.g., && echo 'Server started' || --additional-flag"
               rows={3}
-              className={cn(
-                "w-full resize-y border p-3 font-mono text-xs outline-none transition-colors",
-                "border-zinc-700/50 bg-zinc-900/50 text-zinc-300 placeholder:text-zinc-600 focus:border-zinc-500"
-              )}
             />
           </div>
 
           {/* Variables */}
           {variables.length === 0 ? (
-            <div
-              className={cn(
-                "border py-12 text-center",
-                "border-zinc-800 text-zinc-500"
-              )}
-            >
+            <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
               No startup variables configured for this blueprint.
             </div>
           ) : (
@@ -455,32 +315,6 @@ const StartupPage = (): JSX.Element | null => {
                     "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                   )}
                 >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      "border-zinc-500"
-                    )}
-                  />
-
                   <div className="flex items-start justify-between gap-6">
                     <div className="flex-1">
                       <div className="mb-2 flex items-center gap-3">
@@ -511,26 +345,16 @@ const StartupPage = (): JSX.Element | null => {
                           </span>
                         )}
                       </div>
-                      <p className={cn("mb-4 text-xs", "text-zinc-500")}>
-                        {variable.description}
-                      </p>
-                      <input
+                      <p className={cn("mb-4 text-xs", "text-zinc-500")}>{variable.description}</p>
+                      <Input
                         type="text"
                         value={variable.value}
                         onChange={(e) => handleVariableChange(variable.envVariable, e.target.value)}
                         disabled={!variable.userEditable}
-                        className={cn(
-                          "w-full border px-3 py-2 font-mono text-sm transition-colors outline-none",
-                          !variable.userEditable && "cursor-not-allowed opacity-60",
-                          "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 disabled:bg-zinc-800/50"
-                        )}
                         placeholder={variable.defaultValue}
                       />
                       <div
-                        className={cn(
-                          "mt-2 flex items-center gap-1 text-[10px]",
-                          "text-zinc-600"
-                        )}
+                        className={cn("mt-2 flex items-center gap-1 text-[10px]", "text-zinc-600")}
                       >
                         <BsInfoCircle className="h-3 w-3" />
                         <span>Default: {variable.defaultValue || "(empty)"}</span>
@@ -569,7 +393,6 @@ const StartupPage = (): JSX.Element | null => {
         description="This will delete the current container and create a new one with the saved configuration. All running processes will be stopped and any unsaved data may be lost. Are you sure you want to continue?"
         onConfirm={handleReinstall}
         confirmLabel="Reinstall"
-        variant="danger"
         isLoading={isReinstalling}
       />
     </div>

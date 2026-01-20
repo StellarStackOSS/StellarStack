@@ -18,7 +18,8 @@ export type WSEventType =
   | "node:status"
   | "backup:created"
   | "backup:deleted"
-  | "backup:status";
+  | "backup:status"
+  | "schedule:executing";
 
 /**
  * WebSocket event structure

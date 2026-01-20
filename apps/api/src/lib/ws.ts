@@ -93,8 +93,7 @@ class WebSocketManager {
             select: {
               id: true,
               name: true,
-              imageName: true,
-              imageTag: true,
+              dockerImages: true,
             },
           },
         },

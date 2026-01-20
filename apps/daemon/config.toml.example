@@ -1,0 +1,73 @@
+# StellarStack Daemon Configuration (Local Development)
+
+debug = true
+
+[api]
+host = "0.0.0.0"
+port = 8080
+upload_limit = 100  # MB
+trusted_proxies = []
+
+[api.ssl]
+enabled = false
+cert = ""
+key = ""
+
+[system]
+# Paths can be relative (resolved from config file directory) or absolute
+root_directory = "../.stellar"
+data_directory = "../.stellar/volumes"
+backup_directory = "../.stellar/backups"
+archive_directory = "../.stellar/archives"
+tmp_directory = "../.stellar/tmp"
+log_directory = "../.stellar/logs"
+username = "stellar"
+timezone = "UTC"
+disk_check_interval = 60
+
+[system.user]
+uid = 1000
+gid = 1000
+
+[docker]
+# Socket is auto-detected based on OS:
+# - Linux: /var/run/docker.sock
+# - macOS: ~/.colima/default/docker.sock or ~/.docker/run/docker.sock
+# - Windows: npipe:////./pipe/docker_engine
+# Uncomment to override:
+# socket = "unix:///var/run/docker.sock"
+tmpfs_size = 100  # MB
+container_pid_limit = 512
+dns = ["1.1.1.1", "1.0.0.1"]
+
+[docker.network]
+name = "bridge"
+interface = "172.17.0.1"
+driver = "bridge"
+is_internal = false
+
+[docker.installer_limits]
+memory = 1024  # MB
+cpu = 100      # 100% = 1 core
+
+[docker.overhead]
+default = 0
+
+[remote]
+url = "http://localhost:3001"
+token_id = ""
+token = ""
+timeout = 30
+boot_servers_per_page = 50
+
+[redis]
+enabled = true
+url = "redis://127.0.0.1:6379"
+prefix = "stellar"
+
+[sftp]
+enabled = true
+bind_address = "0.0.0.0"
+bind_port = 2022
+read_only = false
+host_key = "../.stellar/ssh_host_key"

@@ -31,12 +31,12 @@ jobs:
         service: [api, web]
         include:
           - service: api
-            dockerfile: docker/dockerfiles/Dockerfile.api
+            dockerfile: docker/cores/api/Dockerfile
             image_name: stellarstack-api
             context: .
 
           - service: web
-            dockerfile: docker/dockerfiles/Dockerfile.web
+            dockerfile: docker/cores/web/Dockerfile
             image_name: stellarstack-web
             context: .
 

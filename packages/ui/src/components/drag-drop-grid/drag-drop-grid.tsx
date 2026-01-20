@@ -1,35 +1,23 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  createContext,
-  useContext,
-} from "react";
-import { Responsive, WidthProvider } from "react-grid-layout";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsGripVertical, BsArrowsFullscreen, BsX } from "react-icons/bs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import {createContext, useCallback, useContext, useEffect, useRef, useState} from "react";
+import type {Layout, Layouts} from "react-grid-layout";
+import {Responsive, WidthProvider} from "react-grid-layout";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsArrowsFullscreen, BsGripVertical} from "react-icons/bs";
 import type {
-  GridSize,
-  GridSizeConfig,
-  GridItemConfig,
-  RemoveConfirmLabels,
   DragDropGridContextValue,
   DragDropGridProps,
+  GridItemConfig,
   GridItemProps,
+  GridSize,
+  GridSizeConfig,
+  RemoveConfirmLabels,
 } from "./types";
-import type { Layout, Layouts } from "react-grid-layout";
+// Import react-grid-layout styles
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 
 export type {
   GridSize,
@@ -42,10 +30,6 @@ export type {
   Layout,
   Layouts,
 };
-
-// Import react-grid-layout styles
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -60,10 +44,11 @@ export const gridSizeConfig: Record<GridSize, GridSizeConfig> = {
   md: { w: 6, h: 5 }, // ~314px height
   lg: { w: 6, h: 6 }, // ~380px height (2x xs height)
   xl: { w: 12, h: 6 }, // ~380px height
-  xxl: { w: 12, h: 10 }, // ~644px height, full width, for console
+  xxl: { w: 12, h: 12 }, // ~644px height, full width, for console
+  "xxl-wide": { w: 12, h: 2 }, // ~116px height, full width, for full-width header cards
 };
 
-const SIZE_ORDER: GridSize[] = ["xxs", "xxs-wide", "xs", "sm", "md", "lg", "xl", "xxl"];
+const SIZE_ORDER: GridSize[] = ["xxs", "xxs-wide", "xs", "sm", "md", "lg", "xl", "xxl", "xxl-wide"];
 
 // Breakpoints configuration
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
@@ -143,18 +128,12 @@ export const DragDropGrid = ({
   savedLayouts,
   removeConfirmLabels,
   isDroppable = false,
-  allItems,
   ...props
 }: DragDropGridProps) => {
   const [items, setItems] = useState<GridItemConfig[]>(externalItems);
-  const [layouts, setLayouts] = useState<Layouts>(() => savedLayouts || generateResponsiveLayouts(externalItems));
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Delay enabling transitions to prevent initial animation
-  useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+  const [layouts, setLayouts] = useState<Layouts>(
+    () => savedLayouts || generateResponsiveLayouts(externalItems)
+  );
 
   // Use ref to always have latest callback without causing re-renders
   const onLayoutChangeRef = useRef(onLayoutChange);
@@ -207,93 +186,72 @@ export const DragDropGrid = ({
     [items]
   );
 
-  const cycleItemSize = useCallback(
-    (itemId: string) => {
-      // Get current items from state
-      setItems((prevItems) => {
-        const item = prevItems.find((i) => i.i === itemId);
-        if (!item) return prevItems;
+  const cycleItemSize = useCallback((itemId: string) => {
+    // Get current items from state
+    setItems((prevItems) => {
+      const item = prevItems.find((i) => i.i === itemId);
+      if (!item) return prevItems;
 
-        let nextSize: GridSize;
+      let nextSize: GridSize;
 
-        // If allowedSizes is specified, cycle through those only
-        if (item.allowedSizes && item.allowedSizes.length > 0) {
-          const currentAllowedIndex = item.allowedSizes.indexOf(item.size);
-          const nextAllowedIndex = (currentAllowedIndex + 1) % item.allowedSizes.length;
-          nextSize = item.allowedSizes[nextAllowedIndex] as GridSize;
-        } else {
-          // Use min/max range
-          const currentIndex = SIZE_ORDER.indexOf(item.size);
-          const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
-          const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
+      // If allowedSizes is specified, cycle through those only
+      if (item.allowedSizes && item.allowedSizes.length > 0) {
+        const currentAllowedIndex = item.allowedSizes.indexOf(item.size);
+        const nextAllowedIndex = (currentAllowedIndex + 1) % item.allowedSizes.length;
+        nextSize = item.allowedSizes[nextAllowedIndex] as GridSize;
+      } else {
+        // Use min/max range
+        const currentIndex = SIZE_ORDER.indexOf(item.size);
+        const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
+        const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
 
-          // Calculate next index within the allowed range
-          let nextIndex = currentIndex + 1;
+        // Calculate next index within the allowed range
+        let nextIndex = currentIndex + 1;
 
-          // If we exceed maxSize, wrap back to minSize
-          if (nextIndex > maxIndex) {
-            nextIndex = minIndex;
-          }
-
-          nextSize = SIZE_ORDER[nextIndex] as GridSize;
+        // If we exceed maxSize, wrap back to minSize
+        if (nextIndex > maxIndex) {
+          nextIndex = minIndex;
         }
 
-        const newItems = prevItems.map((i) =>
-          i.i === itemId ? { ...i, size: nextSize } : i
-        );
+        nextSize = SIZE_ORDER[nextIndex] as GridSize;
+      }
 
-        // Update layouts
-        const newLayouts = generateResponsiveLayouts(newItems);
-        setLayouts(newLayouts);
+      const newItems = prevItems.map((i) => (i.i === itemId ? { ...i, size: nextSize } : i));
 
-        // Schedule callback outside of setState
-        setTimeout(() => {
-          console.log("[DragDropGrid] cycleItemSize calling onLayoutChange with:", newItems);
-          onLayoutChangeRef.current?.(newItems, newLayouts);
-        }, 0);
+      // Update layouts
+      const newLayouts = generateResponsiveLayouts(newItems);
+      setLayouts(newLayouts);
 
-        return newItems;
-      });
-    },
-    []
-  );
+      // Schedule callback outside of setState
+      setTimeout(() => {
+        console.log("[DragDropGrid] cycleItemSize calling onLayoutChange with:", newItems);
+        onLayoutChangeRef.current?.(newItems, newLayouts);
+      }, 0);
 
-  const handleLayoutChange = useCallback(
-    (currentLayout: Layout[], allLayouts: Layouts) => {
-      setLayouts(allLayouts);
-      // Save layouts when dragging completes
-      console.log("[DragDropGrid] handleLayoutChange - saving layouts");
-      setItems((currentItems) => {
-        setTimeout(() => {
-          onLayoutChangeRef.current?.(currentItems, allLayouts);
-        }, 0);
-        return currentItems;
-      });
-    },
-    []
-  );
+      return newItems;
+    });
+  }, []);
+
+  const handleLayoutChange = useCallback((currentLayout: Layout[], allLayouts: Layouts) => {
+    setLayouts(allLayouts);
+    // Save layouts when dragging completes
+    console.log("[DragDropGrid] handleLayoutChange - saving layouts");
+    setItems((currentItems) => {
+      setTimeout(() => {
+        onLayoutChangeRef.current?.(currentItems, allLayouts);
+      }, 0);
+      return currentItems;
+    });
+  }, []);
 
   // Handle external drop
   const onDropRef = useRef(onDropItem);
   onDropRef.current = onDropItem;
 
-  const handleDrop = useCallback(
-    (layout: Layout[], layoutItem: Layout, event: Event) => {
-      const droppedItemId = (event as DragEvent).dataTransfer?.getData("text/plain");
-      if (droppedItemId && onDropRef.current) {
-        onDropRef.current(droppedItemId, layoutItem);
-      }
-    },
-    []
-  );
-
-  // Remove item function
-  const onRemoveRef = useRef(onRemoveItem);
-  onRemoveRef.current = onRemoveItem;
-
-  const removeItem = useCallback((itemId: string) => {
-    if (onRemoveRef.current) {
-      onRemoveRef.current(itemId);
+  const handleDrop = useCallback((layout: Layout[], layoutItem: Layout, event: Event) => {
+    const droppedItemId = (event as DragEvent).dataTransfer?.getData("text/plain");
+    if (droppedItemId && onDropRef.current) {
+      onDropRef.current(droppedItemId, layoutItem);
     }
   }, []);
 
@@ -304,8 +262,18 @@ export const DragDropGrid = ({
   }, []);
 
   return (
-    <DragDropGridContext.Provider value={{ cycleItemSize, getItemSize, getItemMinSize, getItemMaxSize, canResize, removeItem, isEditing, removeConfirmLabels }}>
-      <div className={cn("drag-drop-grid", !isMounted && "no-transition", className)} {...props}>
+    <DragDropGridContext.Provider
+      value={{
+        cycleItemSize,
+        getItemSize,
+        getItemMinSize,
+        getItemMaxSize,
+        canResize,
+        isEditing,
+        removeConfirmLabels,
+      }}
+    >
+      <div className={cn("drag-drop-grid", className)} {...props}>
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
@@ -326,7 +294,7 @@ export const DragDropGrid = ({
         </ResponsiveGridLayout>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         .drag-drop-grid .react-grid-item {
           transition: all 200ms ease;
           transition-property: left, top, width, height;
@@ -347,9 +315,9 @@ export const DragDropGrid = ({
           visibility: hidden;
         }
         .drag-drop-grid .react-grid-placeholder {
-          background: rgba(113, 113, 122, 0.15);
+          background: rgba(113, 113, 122, 0.5);
           border: 1px solid rgba(161, 161, 170, 0.3);
-          border-radius: 0;
+          border-radius: 12px;
           transition-duration: 100ms;
           z-index: 2;
         }
@@ -390,10 +358,10 @@ export const GridItem = ({
   className,
   showResizeHandle = true,
   showDragHandle = true,
-  showRemoveHandle = true,
   ...props
 }: GridItemProps) => {
-  const { cycleItemSize, getItemSize, canResize, removeItem, isEditing, removeConfirmLabels } = useDragDropGrid();
+  const { cycleItemSize, getItemSize, canResize, isEditing, removeConfirmLabels } =
+    useDragDropGrid();
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const size = getItemSize(itemId);
   const isResizable = canResize(itemId);
@@ -404,110 +372,58 @@ export const GridItem = ({
     cycleItemSize(itemId);
   };
 
-  const handleRemoveClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowRemoveConfirm(true);
-  };
-
-  const handleConfirmRemove = () => {
-    setShowRemoveConfirm(false);
-    removeItem(itemId);
-  };
-
-  const buttonBase = "px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors border bg-transparent";
-  const buttonColors = "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100";
-  const buttonDestructive = "border-red-900/60 text-red-400/90 hover:border-red-700/80 hover:text-red-300";
-
   return (
     <div
       key={itemId}
       data-item-id={itemId}
-      className={cn("relative h-full w-full group", isEditing && "select-none", className)}
+      className={cn(
+        "group relative flex h-full w-full flex-row gap-2",
+        isEditing && "rounded-lg bg-white/5 p-2 select-none",
+        className
+      )}
       {...props}
     >
       {/* Drag handle */}
       {showDragHandle && isEditing && (
-        <div
-          className="drag-handle absolute top-2 left-2 z-10 p-1.5 cursor-grab active:cursor-grabbing border bg-zinc-800/80 border-zinc-700"
+        <TextureButton
+          variant="icon"
+          className={cn("drag-handle w-fit cursor-grab active:cursor-grabbing")}
           style={{ touchAction: "none" }}
           title="Drag to reorder"
         >
-          <BsGripVertical className="w-3.5 h-3.5 pointer-events-none text-zinc-400" />
-        </div>
+          <BsGripVertical className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
+        </TextureButton>
       )}
-
-      {/* Remove handle */}
-      {showRemoveHandle && isEditing && (
-        <button
-          onClick={handleRemoveClick}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleRemoveClick(e as unknown as React.MouseEvent);
-          }}
-          className="absolute top-2 left-10 z-20 p-1.5 cursor-pointer border bg-zinc-800/80 border-red-900/60 hover:border-red-700/80 hover:bg-zinc-700"
-          title="Remove card"
-          type="button"
-        >
-          <BsX className="w-3.5 h-3.5 pointer-events-none text-red-400/80" />
-        </button>
-      )}
-
-      {/* Remove confirmation dialog */}
-      <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>
-              {removeConfirmLabels?.title ?? "Remove Card"}
-            </DialogTitle>
-            <DialogDescription>
-              {removeConfirmLabels?.description ?? "Are you sure you want to remove this card from the dashboard?"}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <button
-              onClick={() => setShowRemoveConfirm(false)}
-              className={cn(buttonBase, buttonColors)}
-              type="button"
-            >
-              {removeConfirmLabels?.cancel ?? "Cancel"}
-            </button>
-            <button
-              onClick={handleConfirmRemove}
-              className={cn(buttonBase, buttonDestructive)}
-              type="button"
-            >
-              {removeConfirmLabels?.confirm ?? "Remove"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Resize handle */}
       {showResizeHandle && isResizable && isEditing && (
-        <button
+        <TextureButton
           onClick={handleResize}
           onTouchEnd={(e) => {
             e.preventDefault();
             handleResize(e as unknown as React.MouseEvent);
           }}
-          className="absolute top-2 right-2 z-20 p-1.5 cursor-pointer border bg-zinc-800/80 border-zinc-700 hover:border-zinc-600 hover:bg-zinc-700"
           title={`Size: ${size.toUpperCase()} (click to cycle)`}
           type="button"
         >
-          <BsArrowsFullscreen className="w-3.5 h-3.5 pointer-events-none text-zinc-400" />
-        </button>
-      )}
-
-      {/* Size indicator badge */}
-      {isEditing && (
-        <div className="absolute bottom-2 right-2 z-10 px-2 py-0.5 text-[10px] font-mono uppercase opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border bg-zinc-800/80 border-zinc-700 text-zinc-400">
-          {size}
-        </div>
+          <BsArrowsFullscreen className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
+        </TextureButton>
       )}
 
       {/* Content wrapper */}
-      <div className="h-full w-full overflow-hidden">{children}</div>
+      <div className="relative h-full w-full overflow-hidden">
+        {children}
+        {isEditing && (
+          <TextureButton
+            variant="minimal"
+            className={cn(
+              "text-xxs pointer-events-none absolute right-2 bottom-2 z-10 w-fit uppercase opacity-0 transition-opacity group-hover:opacity-100"
+            )}
+          >
+            {size}
+          </TextureButton>
+        )}
+      </div>
     </div>
   );
 };

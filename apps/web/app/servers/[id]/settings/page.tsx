@@ -1,80 +1,53 @@
 "use client";
 
-import { useState, useEffect, useCallback, type JSX } from "react";
+import { type JSX, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@workspace/ui/components/dialog";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Slider } from "@workspace/ui/components/slider";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
-  BsExclamationTriangle,
-  BsCheckCircle,
-  BsGlobe,
-  BsGeoAlt,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
   BsCheck,
+  BsCheckCircle,
+  BsExclamationTriangle,
+  BsGeoAlt,
+  BsGlobe,
   BsLayers,
 } from "react-icons/bs";
-import { servers } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import type { Blueprint } from "@/lib/api";
+import { blueprints, servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
 
 interface ServerSettings {
   name: string;
   description: string;
-  serverType: string;
-  cpuLimit: number;
-  memoryLimit: number;
-  diskLimit: number;
-  oomDisabled: boolean;
+  blueprintId?: string;
+  memoryLimit?: string;
+  diskLimit?: string;
 }
-
-interface ServerTypeOption {
-  id: string;
-  name: string;
-  category: string;
-}
-
-const serverTypes: ServerTypeOption[] = [
-  // Minecraft
-  { id: "mc-paper", name: "Paper", category: "Minecraft" },
-  { id: "mc-spigot", name: "Spigot", category: "Minecraft" },
-  { id: "mc-bukkit", name: "Bukkit", category: "Minecraft" },
-  { id: "mc-vanilla", name: "Vanilla", category: "Minecraft" },
-  { id: "mc-forge", name: "Forge", category: "Minecraft" },
-  { id: "mc-fabric", name: "Fabric", category: "Minecraft" },
-  { id: "mc-purpur", name: "Purpur", category: "Minecraft" },
-  { id: "mc-bungeecord", name: "BungeeCord", category: "Minecraft" },
-  { id: "mc-velocity", name: "Velocity", category: "Minecraft" },
-  // Survival/Sandbox
-  { id: "rust", name: "Rust", category: "Survival" },
-  { id: "ark", name: "ARK: Survival Evolved", category: "Survival" },
-  { id: "valheim", name: "Valheim", category: "Survival" },
-  { id: "terraria", name: "Terraria", category: "Survival" },
-  { id: "7dtd", name: "7 Days to Die", category: "Survival" },
-  // Factory/Building
-  { id: "satisfactory", name: "Satisfactory", category: "Factory" },
-  { id: "factorio", name: "Factorio", category: "Factory" },
-  // FPS/Shooters
-  { id: "csgo", name: "Counter-Strike 2", category: "FPS" },
-  { id: "tf2", name: "Team Fortress 2", category: "FPS" },
-  { id: "gmod", name: "Garry's Mod", category: "FPS" },
-  // Other
-  { id: "palworld", name: "Palworld", category: "Other" },
-  { id: "vrising", name: "V Rising", category: "Other" },
-  { id: "projectzomboid", name: "Project Zomboid", category: "Other" },
-];
 
 interface Location {
   id: string;
@@ -284,35 +257,18 @@ const locations: Location[] = [
 ];
 
 const defaultSettings: ServerSettings = {
-  name: "US-WEST-NODE-1",
-  description: "Primary Minecraft server for US West region",
-  serverType: "mc-paper",
-  cpuLimit: 200,
-  memoryLimit: 4096,
-  diskLimit: 10240,
-  oomDisabled: false,
+  name: "",
+  description: "",
 };
-
-// Group server types by category
-const serverTypesByCategory = serverTypes.reduce<Record<string, ServerTypeOption[]>>(
-  (acc, type) => {
-    const category = type.category;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category]!.push(type);
-    return acc;
-  },
-  {}
-);
 
 const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
   const { server, isInstalling } = useServer();
-  const [mounted, setMounted] = useState(false);
   const [settings, setSettings] = useState<ServerSettings>(defaultSettings);
   const [originalSettings, setOriginalSettings] = useState<ServerSettings>(defaultSettings);
+  const [blueprintList, setBlueprintList] = useState<Blueprint[]>([]);
+  const [isLoadingBlueprints, setIsLoadingBlueprints] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [reinstallModalOpen, setReinstallModalOpen] = useState(false);
   const [isReinstalling, setIsReinstalling] = useState(false);
@@ -335,10 +291,6 @@ const SettingsPage = (): JSX.Element | null => {
     memory: 50,
     disk: 50,
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Simulate pinging locations one by one when modal opens
   const startPinging = useCallback(() => {
@@ -415,6 +367,38 @@ const SettingsPage = (): JSX.Element | null => {
     }
   }, [pingCooldown]);
 
+  // Load blueprints
+  useEffect(() => {
+    const loadBlueprints = async () => {
+      setIsLoadingBlueprints(true);
+      try {
+        const list = await blueprints.list();
+        setBlueprintList(list);
+      } catch (error) {
+        toast.error("Failed to load cores");
+      } finally {
+        setIsLoadingBlueprints(false);
+      }
+    };
+    loadBlueprints();
+  }, []);
+
+  // Initialize settings from server
+  useEffect(() => {
+    if (server) {
+      setSettings({
+        name: server.name,
+        description: server.description || "",
+        blueprintId: server.blueprintId || "",
+      });
+      setOriginalSettings({
+        name: server.name,
+        description: server.description || "",
+        blueprintId: server.blueprintId || "",
+      });
+    }
+  }, [server]);
+
   useEffect(() => {
     if (transferModalOpen) {
       startPinging();
@@ -454,8 +438,6 @@ const SettingsPage = (): JSX.Element | null => {
     return acc;
   }, {});
 
-  if (!mounted) return null;
-
   if (isInstalling) {
     return (
       <div className="min-h-svh">
@@ -483,11 +465,23 @@ const SettingsPage = (): JSX.Element | null => {
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
-  const handleSave = () => {
-    setOriginalSettings({ ...settings });
-    setSaveModalOpen(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      // Check if blueprint changed
+      if (settings.blueprintId && settings.blueprintId !== originalSettings.blueprintId) {
+        await servers.changeBlueprint(serverId, {
+          blueprintId: settings.blueprintId,
+          reinstall: false,
+        });
+        toast.success("Core changed successfully");
+      }
+      setOriginalSettings({ ...settings });
+      setSaveModalOpen(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save settings");
+    }
   };
 
   const handleReset = () => {
@@ -518,7 +512,7 @@ const SettingsPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -529,12 +523,7 @@ const SettingsPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   SERVER SETTINGS
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -544,8 +533,8 @@ const SettingsPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {hasChanges && (
-                <Button
-                  variant="outline"
+                <TextureButton
+                  variant="secondary"
                   size="sm"
                   onClick={handleReset}
                   className={cn(
@@ -554,10 +543,10 @@ const SettingsPage = (): JSX.Element | null => {
                   )}
                 >
                   <span className="text-xs tracking-wider uppercase">Reset</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
+              <TextureButton
+                variant="secondary"
                 size="sm"
                 onClick={() => setSaveModalOpen(true)}
                 disabled={!hasChanges}
@@ -576,195 +565,116 @@ const SettingsPage = (): JSX.Element | null => {
                 ) : (
                   <span className="text-xs tracking-wider uppercase">Save Changes</span>
                 )}
-              </Button>
-
+              </TextureButton>
             </div>
           </div>
 
           {/* General Settings */}
           <div
-            className={cn(
-              "relative mb-6 border p-6",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
+            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
             <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase",
-                "text-zinc-300"
-              )}
+              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
             >
               General
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Server Name
-                </label>
-                <input
+                <Label>Server Name</Label>
+                <Input
                   type="text"
                   value={settings.name}
                   onChange={(e) => handleSettingChange("name", e.target.value)}
-                  className={cn(
-                    "mt-2 w-full border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
                 />
               </div>
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Description
-                </label>
-                <textarea
+                <Label>Description</Label>
+                <Textarea
                   value={settings.description}
                   onChange={(e) => handleSettingChange("description", e.target.value)}
                   rows={3}
-                  className={cn(
-                    "mt-2 w-full resize-none border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
                 />
               </div>
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
+                <Label>Core</Label>
+                <Select
+                  value={settings.blueprintId || ""}
+                  onValueChange={(value) => handleSettingChange("blueprintId", value)}
+                  disabled={isLoadingBlueprints}
                 >
-                  Server Type
-                </label>
-                <select
-                  value={settings.serverType}
-                  onChange={(e) => handleSettingChange("serverType", e.target.value)}
-                  className={cn(
-                    "mt-2 w-full cursor-pointer border px-3 py-2 text-sm transition-colors outline-none",
-                    "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500"
-                  )}
-                >
-                  {Object.entries(serverTypesByCategory).map(([category, types]) => (
-                    <optgroup
-                      key={category}
-                      label={category}
-                      className={"bg-zinc-900 text-zinc-400"}
-                    >
-                      {types.map((type) => (
-                        <option
-                          key={type.id}
-                          value={type.id}
-                          className={
-                            "bg-zinc-900 text-zinc-200"
-                          }
-                        >
-                          {type.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a core..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blueprintList.map((blueprint) => (
+                      <SelectItem key={blueprint.id} value={blueprint.id}>
+                        {blueprint.name}
+                        {blueprint.category && ` - ${blueprint.category}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
 
-          {/* Resource Limits - DISABLED: User cannot modify resource limits from settings */}
-          {/* Server Location - DISABLED: Server transfer feature is not yet implemented */}
-          {/* Server Splitting - DISABLED: Server splitting feature is not yet implemented */}
+          {/* Resource Limits */}
+          <div
+            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
+          >
+            <h2
+              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
+            >
+              Resource Limits
+            </h2>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>CPU</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {server?.cpu || 0}%
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>
+                  {Math.floor((server?.cpu || 0) / 100)} core
+                  {Math.floor((server?.cpu || 0) / 100) !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Memory</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {Math.floor((server?.memory || 0) / 1024)} GB
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.memory || 0} MiB</p>
+              </div>
+              <div>
+                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Disk</div>
+                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
+                  {Math.floor((server?.disk || 0) / 1024)} GB
+                </div>
+                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.disk || 0} MiB</p>
+              </div>
+            </div>
+          </div>
 
           {/* Danger Zone */}
-          <div
-            className={cn(
-              "relative border p-6",
-              "border-red-900/30 bg-gradient-to-b from-red-950/20 via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-red-800"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-red-800"
-              )}
-            />
-
+          <div className={cn("relative rounded-lg border p-6", "border-red-900/30 bg-zinc-900/50")}>
             <div className="mb-6 flex items-center gap-2">
-              <BsExclamationTriangle
-                className={cn("h-4 w-4", "text-red-400")}
-              />
-              <h2
-                className={cn(
-                  "text-sm font-medium tracking-wider uppercase",
-                  "text-red-400"
-                )}
-              >
+              <BsExclamationTriangle className={cn("h-4 w-4", "text-red-400")} />
+              <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-red-400")}>
                 Danger Zone
               </h2>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <h3
-                  className={cn("text-sm font-medium", "text-zinc-200")}
-                >
-                  Reinstall Server
-                </h3>
+                <h3 className={cn("text-sm font-medium", "text-zinc-200")}>Reinstall Server</h3>
                 <p className={cn("mt-1 text-xs", "text-zinc-500")}>
                   This will reinstall the server with its current configuration
                 </p>
               </div>
-              <Button
-                variant="outline"
+              <TextureButton
+                variant="secondary"
                 size="sm"
                 onClick={() => setReinstallModalOpen(true)}
                 className={cn(
@@ -773,7 +683,7 @@ const SettingsPage = (): JSX.Element | null => {
                 )}
               >
                 <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </Button>
+              </TextureButton>
             </div>
           </div>
         </div>
@@ -797,7 +707,6 @@ const SettingsPage = (): JSX.Element | null => {
         description="Are you sure you want to reinstall this server? This will stop the server and run the installation script again with your current configuration. Existing server files will be preserved but may be overwritten by the installation."
         onConfirm={handleReinstall}
         confirmLabel="Reinstall"
-        variant="danger"
         isLoading={isReinstalling}
       />
 
@@ -808,8 +717,8 @@ const SettingsPage = (): JSX.Element | null => {
       >
         <DialogContent
           className={cn(
-            "flex max-h-[85vh] flex-col overflow-hidden sm:max-w-5xl",
-            "border-zinc-800 bg-[#0f0f0f]"
+            "flex max-h-[85vh] flex-col overflow-hidden rounded-lg sm:max-w-5xl",
+            "border-zinc-800 bg-zinc-900"
           )}
         >
           <DialogHeader>
@@ -822,9 +731,7 @@ const SettingsPage = (): JSX.Element | null => {
               <BsGlobe className="h-5 w-5" />
               TRANSFER SERVER
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-500")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-500")}>
               Select a new location for your server. Latency is measured from your current position.
             </DialogDescription>
           </DialogHeader>
@@ -842,29 +749,14 @@ const SettingsPage = (): JSX.Element | null => {
           ) : (
             <>
               {/* Current Location */}
-              <div
-                className={cn(
-                  "mb-4 border px-4 py-3",
-                  "border-zinc-800 bg-zinc-900/50"
-                )}
-              >
+              <div className={cn("mb-4 border px-4 py-3", "border-zinc-800 bg-zinc-900/50")}>
                 <div className="flex items-center gap-3">
                   <BsGeoAlt className={cn("h-4 w-4", "text-zinc-400")} />
                   <div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-wider uppercase",
-                        "text-zinc-500"
-                      )}
-                    >
+                    <span className={cn("text-[10px] tracking-wider uppercase", "text-zinc-500")}>
                       Current Location
                     </span>
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        "text-zinc-200"
-                      )}
-                    >
+                    <p className={cn("text-sm font-medium", "text-zinc-200")}>
                       {locations.find((l) => l.id === currentLocation)?.flag}{" "}
                       {locations.find((l) => l.id === currentLocation)?.city},{" "}
                       {locations.find((l) => l.id === currentLocation)?.country}
@@ -912,42 +804,20 @@ const SettingsPage = (): JSX.Element | null => {
                             <div className="flex items-center gap-2.5">
                               <span className="text-base">{location.flag}</span>
                               <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-medium",
-                                    "text-zinc-200"
-                                  )}
-                                >
+                                <p className={cn("text-sm font-medium", "text-zinc-200")}>
                                   {location.city}
                                 </p>
-                                <p
-                                  className={cn(
-                                    "text-[10px]",
-                                    "text-zinc-500"
-                                  )}
-                                >
+                                <p className={cn("text-[10px]", "text-zinc-500")}>
                                   {location.country}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               {pingData?.status === "pending" && (
-                                <span
-                                  className={cn(
-                                    "text-xs",
-                                    "text-zinc-600"
-                                  )}
-                                >
-                                  --
-                                </span>
+                                <span className={cn("text-xs", "text-zinc-600")}>--</span>
                               )}
                               {pingData?.status === "pinging" && (
-                                <Spinner
-                                  className={cn(
-                                    "h-3 w-3",
-                                    "text-zinc-500"
-                                  )}
-                                />
+                                <Spinner className={cn("h-3 w-3", "text-zinc-500")} />
                               )}
                               {pingData?.status === "done" && (
                                 <span
@@ -957,22 +827,10 @@ const SettingsPage = (): JSX.Element | null => {
                                 </span>
                               )}
                               {pingData?.status === "error" && (
-                                <span
-                                  className={cn(
-                                    "text-xs",
-                                    "text-red-400"
-                                  )}
-                                >
-                                  Error
-                                </span>
+                                <span className={cn("text-xs", "text-red-400")}>Error</span>
                               )}
                               {isSelected && (
-                                <BsCheck
-                                  className={cn(
-                                    "h-4 w-4",
-                                    "text-amber-400"
-                                  )}
-                                />
+                                <BsCheck className={cn("h-4 w-4", "text-amber-400")} />
                               )}
                               {isCurrentLocation && (
                                 <span
@@ -1000,8 +858,8 @@ const SettingsPage = (): JSX.Element | null => {
                   "border-zinc-800"
                 )}
               >
-                <Button
-                  variant="outline"
+                <TextureButton
+                  variant="secondary"
                   size="sm"
                   onClick={startPinging}
                   disabled={isPinging || pingCooldown > 0}
@@ -1017,20 +875,18 @@ const SettingsPage = (): JSX.Element | null => {
                         ? `Wait ${pingCooldown}s`
                         : "Refresh Ping"}
                   </span>
-                </Button>
+                </TextureButton>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
+                  <TextureButton
+                    variant="secondary"
                     size="sm"
                     onClick={() => setTransferModalOpen(false)}
-                    className={cn(
-                      "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                    )}
+                    className={cn("border-zinc-700 text-zinc-400 hover:text-zinc-100")}
                   >
                     <span className="text-xs tracking-wider uppercase">Cancel</span>
-                  </Button>
-                  <Button
-                    variant="outline"
+                  </TextureButton>
+                  <TextureButton
+                    variant="secondary"
                     size="sm"
                     onClick={handleTransfer}
                     disabled={!selectedLocation}
@@ -1041,7 +897,7 @@ const SettingsPage = (): JSX.Element | null => {
                   >
                     <BsGlobe className="h-3 w-3" />
                     <span className="text-xs tracking-wider uppercase">Transfer</span>
-                  </Button>
+                  </TextureButton>
                 </div>
               </div>
             </>
@@ -1057,17 +913,11 @@ const SettingsPage = (): JSX.Element | null => {
         description={`Are you sure you want to transfer this server to ${locations.find((l) => l.id === selectedLocation)?.city}, ${locations.find((l) => l.id === selectedLocation)?.country}? The server will be stopped during the transfer process.`}
         onConfirm={confirmTransfer}
         confirmLabel="Transfer"
-        variant="danger"
       />
 
       {/* Server Split Modal */}
       <Dialog open={splitModalOpen} onOpenChange={setSplitModalOpen}>
-        <DialogContent
-          className={cn(
-            "sm:max-w-lg",
-            "border-zinc-800 bg-[#0f0f0f]"
-          )}
-        >
+        <DialogContent className={cn("rounded-lg sm:max-w-lg", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
             <DialogTitle
               className={cn(
@@ -1078,9 +928,7 @@ const SettingsPage = (): JSX.Element | null => {
               <BsLayers className="h-5 w-5" />
               SPLIT SERVER
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-500")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-500")}>
               Divide this server&apos;s resources into two separate instances.
             </DialogDescription>
           </DialogHeader>
@@ -1099,17 +947,8 @@ const SettingsPage = (): JSX.Element | null => {
             {/* CPU Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  CPU Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
+                <Label>CPU Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
                   {splitResources.cpu}% / {100 - splitResources.cpu}%
                 </span>
               </div>
@@ -1123,30 +962,19 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
 
             {/* Memory Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Memory Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
+                <Label>Memory Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
+                  {/*@ts-ignore*/}
                   {Math.round((settings.memoryLimit * splitResources.memory) / 100)} MB /{" "}
+                  {/*@ts-ignore*/}
                   {Math.round((settings.memoryLimit * (100 - splitResources.memory)) / 100)} MB
                 </span>
               </div>
@@ -1160,31 +988,19 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
 
             {/* Disk Split */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase",
-                    "text-zinc-500"
-                  )}
-                >
-                  Disk Allocation
-                </label>
-                <span
-                  className={cn("font-mono text-xs", "text-zinc-400")}
-                >
-                  {Math.round((settings.diskLimit * splitResources.disk) / 100)} MB /{" "}
-                  {Math.round((settings.diskLimit * (100 - splitResources.disk)) / 100)} MB
+                <Label>Disk Allocation</Label>
+                <span className={cn("font-mono text-xs", "text-zinc-400")}>
+                  {/*@ts-ignore*/}
+                  {Math.round((settings.diskLimit ?? 0) / 100)} MB / {/*@ts-ignore*/}
+                  {Math.round((settings.diskLimit ?? 0) / 100)} MB
                 </span>
               </div>
               <Slider
@@ -1197,39 +1013,30 @@ const SettingsPage = (): JSX.Element | null => {
                 }
               />
               <div className="mt-2 flex justify-between">
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  New Server
-                </span>
-                <span className={cn("text-[10px]", "text-zinc-600")}>
-                  This Server
-                </span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>New Server</span>
+                <span className={cn("text-[10px]", "text-zinc-600")}>This Server</span>
               </div>
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
+            <TextureButton
+              variant="secondary"
               size="sm"
               onClick={() => setSplitModalOpen(false)}
-              className={cn(
-                "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-              )}
+              className={cn("border-zinc-700 text-zinc-400 hover:text-zinc-100")}
             >
               <span className="text-xs tracking-wider uppercase">Cancel</span>
-            </Button>
-            <Button
-              variant="outline"
+            </TextureButton>
+            <TextureButton
+              variant="secondary"
               size="sm"
               onClick={handleSplitServer}
-              className={cn(
-                "gap-2",
-                "border-zinc-600 text-zinc-300 hover:text-zinc-100"
-              )}
+              className={cn("gap-2", "border-zinc-600 text-zinc-300 hover:text-zinc-100")}
             >
               <BsLayers className="h-3 w-3" />
               <span className="text-xs tracking-wider uppercase">Split Server</span>
-            </Button>
+            </TextureButton>
           </div>
         </DialogContent>
       </Dialog>

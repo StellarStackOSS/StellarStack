@@ -23,9 +23,9 @@ import {
   BsGlobe,
   BsTrash,
 } from "react-icons/bs";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useActivity } from "@/hooks/queries";
 import type { ActivityLog } from "@/lib/api";
 
@@ -298,14 +298,12 @@ const ActivityPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center gap-4">
-            <SidebarTrigger className="transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100" />
+            <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
             <div>
-              <h1 className="text-2xl font-light tracking-wider text-zinc-100">
-                ACTIVITY LOG
-              </h1>
+              <h1 className="text-2xl font-light tracking-wider text-zinc-100">ACTIVITY LOG</h1>
               <p className="mt-1 text-sm text-zinc-500">
                 Server {server?.shortId || serverId.slice(0, 8)} • {logs.length} recent activities
               </p>
@@ -338,9 +336,7 @@ const ActivityPage = (): JSX.Element | null => {
                 return (
                   <div
                     key={activity.id}
-                    className={cn(
-                      index !== logs.length - 1 && "border-b border-zinc-800/50"
-                    )}
+                    className={cn(index !== logs.length - 1 && "border-b border-zinc-800/50")}
                   >
                     <div
                       onClick={() => hasMetadata && toggleExpanded(activity.id)}
@@ -359,9 +355,7 @@ const ActivityPage = (): JSX.Element | null => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-zinc-200">
-                            {config.label}
-                          </span>
+                          <span className="text-sm font-medium text-zinc-200">{config.label}</span>
                           {activity.ip && (
                             <span className="border border-zinc-700 px-2 py-0.5 text-xs text-zinc-500">
                               {activity.ip}
@@ -412,7 +406,7 @@ const ActivityPage = (): JSX.Element | null => {
                             <div className="ml-8 grid grid-cols-2 gap-4 border border-zinc-800 bg-zinc-900/50 p-4 md:grid-cols-3 lg:grid-cols-4">
                               {Object.entries(activity.metadata).map(([key, value]) => (
                                 <div key={key}>
-                                  <span className="block text-[10px] font-medium tracking-wider uppercase text-zinc-500">
+                                  <span className="block text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
                                     {key.replace(/_/g, " ")}
                                   </span>
                                   <span className="mt-0.5 block font-mono text-xs break-all text-zinc-300">

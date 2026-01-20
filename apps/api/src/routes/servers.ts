@@ -245,7 +245,7 @@ servers.get("/", requireAuth, async (c) => {
         },
       },
       blueprint: {
-        select: { id: true, name: true, imageName: true },
+        select: { id: true, name: true },
       },
       owner: {
         select: { id: true, name: true, email: true },
@@ -298,7 +298,14 @@ servers.get("/:serverId", requireServerAccess, async (c) => {
           },
         },
       },
-      blueprint: true,
+      blueprint: {
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          description: true,
+        },
+      },
       owner: {
         select: { id: true, name: true, email: true },
       },
@@ -457,7 +464,9 @@ servers.post("/", requireAdmin, async (c) => {
   }
 
   // Determine which docker image to use
-  const dockerImage = parsed.data.dockerImage || `${blueprint.imageName}:${blueprint.imageTag}`;
+  const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+  const dockerImageOptions = Object.values(dockerImages);
+  const dockerImage = parsed.data.dockerImage || dockerImageOptions[0] || "alpine:latest";
 
   // Build startup command with variable substitution
   let invocation = blueprint.startup || "";
@@ -470,19 +479,56 @@ servers.post("/", requireAdmin, async (c) => {
   // Get primary allocation
   const primaryAllocation = allocations[0];
 
-  // Parse startup detection from blueprint
-  const startupDetection = (blueprint.startupDetection as any) || {};
+  // Extract startup detection patterns from config.startup JSON
+  // Pterodactyl format: { "done": ["pattern1", "pattern2"], "user_interaction": [...] }
   const startupDonePatterns: string[] = [];
 
-  // Handle various formats of startupDetection
-  if (typeof startupDetection.done === "string") {
-    startupDonePatterns.push(startupDetection.done);
-  } else if (Array.isArray(startupDetection.done)) {
-    startupDonePatterns.push(...startupDetection.done);
-  } else if (typeof startupDetection === "string") {
-    // Simple string format
-    startupDonePatterns.push(startupDetection);
+  const startupConfig = blueprint.config as any;
+  if (startupConfig?.startup) {
+    try {
+      const parsed_startup =
+        typeof startupConfig.startup === "string"
+          ? JSON.parse(startupConfig.startup)
+          : startupConfig.startup;
+
+      if (parsed_startup.done) {
+        if (Array.isArray(parsed_startup.done)) {
+          for (const pattern of parsed_startup.done) {
+            if (typeof pattern === "string" && pattern.trim()) {
+              startupDonePatterns.push(pattern.trim());
+            }
+          }
+        } else if (typeof parsed_startup.done === "string" && parsed_startup.done.trim()) {
+          startupDonePatterns.push(parsed_startup.done.trim());
+        }
+      }
+    } catch (e) {
+      console.error(`[Server Create] Failed to parse startup config for ${blueprint.name}:`, e);
+    }
   }
+
+  // Log startup patterns for debugging
+  if (startupDonePatterns.length === 0) {
+    console.error(
+      `⚠️  [Server Create] WARNING: No startup patterns found for ${blueprint.name}! Server will be marked as RUNNING immediately when it starts.`
+    );
+    console.error(
+      `⚠️  [Server Create] Make sure blueprint has valid startupDetection configuration.`
+    );
+  }
+  console.log(
+    `[Server Create] Startup detection patterns for ${blueprint.name}:`,
+    startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
+  );
+
+  // Extract install script from native format
+  const scriptData = (blueprint.scripts as any) || {};
+  const installationScript = scriptData.installation?.script;
+  const hasInstallScript = installationScript && installationScript.trim().length > 0;
+
+  // Extract stop command from config
+  const configData = (blueprint.config as any) || {};
+  const stopCommand = configData.stop || "SIGTERM";
 
   // Build daemon request in the format the Rust daemon expects
   const daemonRequest_body = {
@@ -490,7 +536,7 @@ servers.post("/", requireAdmin, async (c) => {
     name: server.name,
     suspended: false,
     invocation: invocation,
-    skip_egg_scripts: !blueprint.installScript,
+    skip_egg_scripts: !hasInstallScript,
     build: {
       memory_limit: parsed.data.memory * 1024 * 1024, // MiB to bytes
       swap: parsed.data.swap === -1 ? -1 : parsed.data.swap * 1024 * 1024, // MiB to bytes
@@ -519,7 +565,7 @@ servers.post("/", requireAdmin, async (c) => {
     },
     egg: {
       id: blueprint.id,
-      file_denylist: [],
+      file_denylist: blueprint.fileDenylist || [],
     },
     mounts: [],
     // Process configuration for startup detection and stop handling
@@ -529,9 +575,9 @@ servers.post("/", requireAdmin, async (c) => {
         user_interaction: [],
         strip_ansi: false,
       },
-      stop: blueprint.stopCommand
-        ? { type: "command", value: blueprint.stopCommand }
-        : { type: "signal", value: "SIGTERM" },
+      stop: stopCommand.toUpperCase().startsWith("SIG")
+        ? { type: "signal", value: stopCommand }
+        : { type: "command", value: stopCommand },
       configs: [],
     },
   };
@@ -541,7 +587,6 @@ servers.post("/", requireAdmin, async (c) => {
     const result = await daemonRequest(node, "POST", `/api/servers`, daemonRequest_body);
 
     // Update server status based on whether installation is needed
-    const hasInstallScript = blueprint.installScript && blueprint.installScript.trim().length > 0;
     const newStatus = hasInstallScript ? "INSTALLING" : "STOPPED";
 
     await db.server.update({
@@ -1347,8 +1392,9 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
   if (!selectedDockerImage && dockerImageOptions.length > 0) {
     selectedDockerImage = dockerImageOptions[0].image;
   } else if (!selectedDockerImage) {
-    // Fall back to blueprint's primary image
-    selectedDockerImage = blueprint.imageName + ":" + blueprint.imageTag;
+    // Fall back to first available docker image from blueprint
+    const images = Object.values(dockerImages);
+    selectedDockerImage = images.length > 0 ? images[0] : "alpine:latest";
   }
 
   // Build startup command with variable substitution
@@ -1360,6 +1406,10 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
   // Replace SERVER_MEMORY placeholder with memory limit
   startupCommand = startupCommand.replace(/\{\{SERVER_MEMORY\}\}/g, String(fullServer.memory));
 
+  // Extract stop command from config
+  const configData = (blueprint.config as any) || {};
+  const stopCommand = configData.stop || "stop";
+
   return c.json({
     variables: variables.filter((v) => v.userViewable),
     dockerImages: dockerImageOptions,
@@ -1367,7 +1417,7 @@ servers.get("/:serverId/startup", requireServerAccess, async (c) => {
     startupCommand,
     customStartupCommands: fullServer.customStartupCommands || "",
     features: (blueprint.features as string[]) || [],
-    stopCommand: blueprint.stopCommand || "stop",
+    stopCommand,
   });
 });
 
@@ -1412,10 +1462,6 @@ servers.patch("/:serverId/startup", requireServerAccess, async (c) => {
   if (parsed.data.dockerImage) {
     const dockerImages = (fullServer.blueprint.dockerImages as Record<string, string>) || {};
     const validImages = Object.values(dockerImages);
-
-    // Also allow the primary blueprint image
-    const primaryImage = fullServer.blueprint.imageName + ":" + fullServer.blueprint.imageTag;
-    validImages.push(primaryImage);
 
     if (validImages.includes(parsed.data.dockerImage)) {
       updateData.dockerImage = parsed.data.dockerImage;
@@ -1875,40 +1921,32 @@ servers.get("/:serverId/backups", requireServerAccess, async (c) => {
   const server = c.get("server");
 
   try {
-    const fullServer = await getServerWithNode(server.id);
-    const response = await daemonRequest(
-      fullServer.node,
-      "GET",
-      `/api/servers/${server.id}/backup`
-    );
-    // Get backups array from response
-    const rawBackups = response.backups || response || [];
+    // List backups from database (source of truth)
+    const dbBackups = await db.backup.findMany({
+      where: { serverId: server.id },
+      orderBy: { createdAt: "desc" },
+    });
 
-    // Transform daemon response to expected frontend format
-    const backups = rawBackups.map((backup: any) => ({
-      id: backup.uuid || backup.id,
-      name: backup.name || `Backup ${new Date(backup.created_at * 1000).toLocaleDateString()}`,
-      size: backup.size || 0,
+    // Transform database records to expected frontend format
+    const backups = dbBackups.map((backup) => ({
+      id: backup.id,
+      name: backup.name,
+      size: Number(backup.size), // BigInt to number
       checksum: backup.checksum,
-      checksumType: "sha256",
-      status: backup.status || "COMPLETED",
-      isLocked: backup.is_locked || backup.isLocked || false,
-      storagePath: backup.storage_path,
-      serverId: server.id,
-      ignoredFiles: backup.ignored_files || [],
-      completedAt: backup.completed_at
-        ? new Date(backup.completed_at * 1000).toISOString()
-        : undefined,
-      createdAt: backup.created_at
-        ? new Date(backup.created_at * 1000).toISOString()
-        : new Date().toISOString(),
-      updatedAt: backup.updated_at
-        ? new Date(backup.updated_at * 1000).toISOString()
-        : new Date().toISOString(),
+      checksumType: backup.checksumType,
+      status: backup.status,
+      isLocked: backup.isLocked,
+      storagePath: backup.storagePath,
+      serverId: backup.serverId,
+      ignoredFiles: backup.ignoredFiles || [],
+      completedAt: backup.completedAt?.toISOString(),
+      createdAt: backup.createdAt.toISOString(),
+      updatedAt: backup.updatedAt.toISOString(),
     }));
 
     return c.json(backups);
   } catch (error: any) {
+    console.error(`[Backup List] Failed to list backups for server ${server.id}:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1928,6 +1966,27 @@ servers.post("/:serverId/backups", requireServerAccess, requireNotSuspended, asy
       `/api/servers/${server.id}/backup`,
       { uuid: backupUuid, ignore: body.ignore || [] }
     );
+
+    // Save backup record to database
+    if (backup.success) {
+      const backupName = body.name || `Backup ${new Date().toLocaleDateString()}`;
+      await db.backup.create({
+        data: {
+          id: backupUuid,
+          name: backupName,
+          size: backup.size || 0,
+          checksum: backup.checksum,
+          checksumType: "sha256",
+          status: "COMPLETED",
+          isLocked: body.locked || false,
+          serverId: server.id,
+          ignoredFiles: body.ignore || [],
+          completedAt: new Date(),
+        },
+      });
+      console.log(`[Backup Create] Successfully saved backup ${backupUuid} to database`);
+    }
+
     await logActivityFromContext(c, ActivityEvents.BACKUP_CREATE, {
       serverId: server.id,
       metadata: { backupId: backupUuid },
@@ -1940,8 +1999,22 @@ servers.post("/:serverId/backups", requireServerAccess, requireNotSuspended, asy
       data: { backupId: backupUuid },
     }).catch(() => {});
 
-    return c.json(backup);
+    return c.json({
+      id: backupUuid,
+      name: body.name || `Backup ${new Date().toLocaleDateString()}`,
+      size: backup.size || 0,
+      checksum: backup.checksum,
+      checksumType: "sha256",
+      status: "COMPLETED",
+      isLocked: body.locked || false,
+      serverId: server.id,
+      ignoredFiles: body.ignore || [],
+      completedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
   } catch (error: any) {
+    console.error(`[Backup Create] Failed to create backup:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -1958,6 +2031,24 @@ servers.post("/:serverId/backups/restore", requireServerAccess, requireNotSuspen
   console.log(`[Backup Restore] Attempting to restore backup ${id} for server ${server.id}`);
 
   try {
+    // Check if backup exists
+    const backup = await db.backup.findUnique({
+      where: { id },
+    });
+
+    if (!backup || backup.serverId !== server.id) {
+      return c.json({ error: "Backup not found" }, 404);
+    }
+
+    // Check if backup is in a valid state
+    if (backup.status === "RESTORING" || backup.status === "IN_PROGRESS") {
+      return c.json({ error: "Backup is not ready for restoration" }, 409);
+    }
+
+    if (backup.status === "FAILED") {
+      return c.json({ error: "Cannot restore from a failed backup" }, 400);
+    }
+
     // Update backup status to RESTORING
     await db.backup.update({
       where: { id },
@@ -2101,13 +2192,41 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
   console.log(`[Backup Delete] Attempting to delete backup ${id} for server ${server.id}`);
 
   try {
-    const fullServer = await getServerWithNode(server.id);
-    const result = await daemonRequest(
-      fullServer.node,
-      "DELETE",
-      `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
-    );
-    console.log(`[Backup Delete] Successfully deleted backup ${id} from daemon`);
+    // Check if backup exists and is not locked
+    const backup = await db.backup.findUnique({
+      where: { id },
+    });
+
+    if (!backup || backup.serverId !== server.id) {
+      console.warn(`[Backup Delete] Backup ${id} not found in database`);
+      return c.json({ error: "Backup not found" }, 404);
+    }
+
+    if (backup.isLocked) {
+      console.warn(`[Backup Delete] Cannot delete locked backup ${id}`);
+      return c.json({ error: "Cannot delete locked backup" }, 403);
+    }
+
+    try {
+      const fullServer = await getServerWithNode(server.id);
+      const result = await daemonRequest(
+        fullServer.node,
+        "DELETE",
+        `/api/servers/${server.id}/backup/${encodeURIComponent(id)}`
+      );
+      console.log(`[Backup Delete] Successfully deleted backup ${id} from daemon`);
+    } catch (daemonError: any) {
+      console.warn(`[Backup Delete] Daemon error deleting backup ${id}:`, daemonError.message);
+      // If daemon file not found, still remove from database (cleanup)
+      if (daemonError.message.includes("404") || daemonError.message.includes("not found")) {
+        console.log(
+          `[Backup Delete] Backup ${id} already deleted from daemon, cleaning up database`
+        );
+      } else {
+        // If it's a different error, re-throw
+        throw daemonError;
+      }
+    }
 
     // Delete from database
     await db.backup.delete({
@@ -2127,7 +2246,7 @@ servers.delete("/:serverId/backups/delete", requireServerAccess, requireNotSuspe
       data: { backupId: id },
     }).catch(() => {});
 
-    return c.json(result);
+    return c.json({ success: true });
   } catch (error: any) {
     console.error(`[Backup Delete] Failed to delete backup ${id}:`, error.message);
     return c.json({ error: error.message }, 500);
@@ -2186,6 +2305,7 @@ const scheduleSchema = z.object({
       payload: z.string().optional(),
       timeOffset: z.number().int().min(0).default(0),
       sequence: z.number().int().min(0).default(0),
+      triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
     })
   ),
 });
@@ -2376,9 +2496,31 @@ servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async 
       return c.json({ error: "Schedule not found" }, 404);
     }
 
-    // TODO: Trigger schedule execution on daemon
-    // const fullServer = await getServerWithNode(server.id);
-    // await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules/${scheduleId}/run`);
+    // Get the server's node to send request to daemon
+    const fullServer = await getServerWithNode(server.id);
+    if (!fullServer) {
+      return c.json({ error: "Server node not found" }, 500);
+    }
+
+    // Send schedule execution request to daemon
+    await daemonRequest(
+      fullServer.node,
+      "POST",
+      `/api/servers/${server.id}/schedules/${scheduleId}/run`,
+      {
+        id: schedule.id,
+        name: schedule.name,
+        cronExpression: schedule.cronExpression,
+        enabled: schedule.isActive,
+        tasks: schedule.tasks,
+      }
+    );
+
+    // Update lastRunAt timestamp
+    await db.schedule.update({
+      where: { id: scheduleId },
+      data: { lastRunAt: new Date() },
+    });
 
     console.log(`[Schedule] Triggered schedule ${scheduleId} manually`);
 
@@ -2391,6 +2533,38 @@ servers.post("/:serverId/schedules/:scheduleId/run", requireServerAccess, async 
   } catch (error: any) {
     console.error("[Schedule] Failed to trigger schedule:", error.message);
     return c.json({ error: error.message }, 500);
+  }
+});
+
+// Update currently executing task in schedule (called by daemon)
+servers.patch("/:serverId/schedules/:scheduleId/executing-task", requireServerAccess, async (c) => {
+  const server = c.get("server");
+  const { scheduleId } = c.req.param();
+  const body = await c.req.json().catch(() => ({}));
+  const { taskIndex } = body;
+
+  try {
+    // Validate schedule exists
+    const schedule = await db.schedule.findFirst({
+      where: { id: scheduleId, serverId: server.id },
+    });
+
+    if (!schedule) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    // Update executing task index
+    const updated = await db.schedule.update({
+      where: { id: scheduleId },
+      data: { executingTaskIndex: taskIndex ?? null },
+    });
+
+    console.log(`[Schedule] Updated executing task for ${scheduleId}: task ${taskIndex}`);
+
+    return c.json({ success: true, executingTaskIndex: updated.executingTaskIndex });
+  } catch (error: any) {
+    console.error(`[Schedule] Failed to update executing task: ${error.message}`);
+    return c.json({ error: "Failed to update executing task" }, 500);
   }
 });
 
@@ -2809,16 +2983,54 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
       invocation = invocation.replace(/\{\{SERVER_IP\}\}/g, allocation.ip);
       invocation = invocation.replace(/\{\{SERVER_MEMORY\}\}/g, String(Number(childMemory)));
 
-      // Parse startup detection from blueprint
-      const startupDetection = (blueprint?.startupDetection as any) || {};
+      // Extract startup detection patterns from config.startup JSON
+      // Pterodactyl format: { "done": ["pattern1", "pattern2"], "user_interaction": [...] }
       const startupDonePatterns: string[] = [];
-      if (typeof startupDetection.done === "string") {
-        startupDonePatterns.push(startupDetection.done);
-      } else if (Array.isArray(startupDetection.done)) {
-        startupDonePatterns.push(...startupDetection.done);
-      } else if (typeof startupDetection === "string") {
-        startupDonePatterns.push(startupDetection);
+
+      const startupConfig = blueprint?.config as any;
+      if (startupConfig?.startup) {
+        try {
+          const parsed_startup =
+            typeof startupConfig.startup === "string"
+              ? JSON.parse(startupConfig.startup)
+              : startupConfig.startup;
+
+          if (parsed_startup.done) {
+            if (Array.isArray(parsed_startup.done)) {
+              for (const pattern of parsed_startup.done) {
+                if (typeof pattern === "string" && pattern.trim()) {
+                  startupDonePatterns.push(pattern.trim());
+                }
+              }
+            } else if (typeof parsed_startup.done === "string" && parsed_startup.done.trim()) {
+              startupDonePatterns.push(parsed_startup.done.trim());
+            }
+          }
+        } catch (e) {
+          console.error(
+            `[Child Server Create] Failed to parse startup config for ${childServer.name}:`,
+            e
+          );
+        }
       }
+
+      if (startupDonePatterns.length === 0) {
+        console.error(
+          `⚠️  [Child Server Create] WARNING: No startup patterns found for ${childServer.name}! Server will be marked as RUNNING immediately when it starts.`
+        );
+      }
+      console.log(
+        `[Child Server Create] Startup detection patterns for ${childServer.name}:`,
+        startupDonePatterns.length > 0 ? startupDonePatterns : "NONE"
+      );
+
+      // Extract install script and stop command from native format
+      const scriptData = blueprint?.scripts as any;
+      const installationScript = scriptData?.installation?.script;
+      const hasInstallScript = installationScript && installationScript.trim().length > 0;
+
+      const configData = blueprint?.config as any;
+      const stopCommand = configData?.stop || "SIGTERM";
 
       // Build the daemon request in the format the Rust daemon expects
       const daemonRequest_body = {
@@ -2826,7 +3038,7 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
         name: childServer.name,
         suspended: false,
         invocation: invocation,
-        skip_egg_scripts: !blueprint?.installScript,
+        skip_egg_scripts: !hasInstallScript,
         build: {
           memory_limit: Number(childMemory) * 1024 * 1024, // MiB to bytes
           swap: 0,
@@ -2850,7 +3062,7 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
         },
         egg: {
           id: blueprint?.id || parentServer.blueprintId,
-          file_denylist: [],
+          file_denylist: blueprint?.fileDenylist || [],
         },
         mounts: [],
         process_configuration: {
@@ -2859,18 +3071,14 @@ servers.post("/:serverId/split", requireServerAccess, requireNotSuspended, async
             user_interaction: [],
             strip_ansi: false,
           },
-          stop: blueprint?.stopCommand
-            ? { type: "command", value: blueprint.stopCommand }
-            : { type: "signal", value: "SIGTERM" },
+          stop: stopCommand.toUpperCase().startsWith("SIG")
+            ? { type: "signal", value: stopCommand }
+            : { type: "command", value: stopCommand },
           configs: [],
         },
       };
 
       await daemonRequest(parentServer.node, "POST", "/api/servers", daemonRequest_body);
-
-      // Trigger installation if there's an install script
-      const hasInstallScript =
-        blueprint?.installScript && blueprint.installScript.trim().length > 0;
       if (hasInstallScript) {
         try {
           await daemonRequest(parentServer.node, "POST", `/api/servers/${childServer.id}/install`);

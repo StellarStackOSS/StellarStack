@@ -1,31 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  SortingState,
   useReactTable,
+  VisibilityState,
 } from "@tanstack/react-table";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,13 +24,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@workspace/ui/components/context-menu";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
@@ -52,39 +36,42 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
-  BsSun,
-  BsMoon,
-  BsFolder,
-  BsFileEarmark,
-  BsUpload,
-  BsDownload,
-  BsTrash,
   BsArrowLeft,
-  BsPlus,
-  BsChevronUp,
   BsChevronDown,
   BsChevronExpand,
-  BsThreeDotsVertical,
-  BsPencil,
-  BsFileText,
-  BsHddFill,
-  BsX,
+  BsChevronUp,
+  BsClipboard,
   BsCloudUpload,
+  BsDownload,
   BsEye,
   BsEyeSlash,
-  BsSearch,
+  BsFileEarmark,
+  BsFileText,
+  BsFolder,
+  BsImage,
+  BsPencil,
+  BsPlayCircle,
+  BsPlus,
   BsTerminal,
-  BsClipboard,
+  BsThreeDotsVertical,
+  BsTrash,
+  BsUpload,
+  BsVolumeUp,
+  BsX,
 } from "react-icons/bs";
-import { servers } from "@/lib/api";
 import type { FileInfo } from "@/lib/api";
-import { useServer } from "@/components/server-provider";
-import { useAuth } from "@/components/auth-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
-import { useUploads, type UploadProgress } from "@/components/upload-provider";
+import { useUploads } from "@/components/Providers/UploadProvider/UploadProvider";
+import { DataTable, Input } from "@workspace/ui/components";
+import { Label } from "@workspace/ui/components/label";
+import { getMediaType, isMediaFile } from "@/lib/media-utils";
+import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
 
 interface FileItem {
   id: string;
@@ -155,7 +142,7 @@ const FilesPage = (): JSX.Element | null => {
   const { server, isInstalling } = useServer();
   const { user } = useAuth();
   const { playSound } = useSoundEffects();
-  const { uploads, addUpload, updateUpload, removeUpload } = useUploads();
+  const { addUpload, updateUpload, removeUpload } = useUploads();
 
   // Derive current path from URL params
   const currentPath = pathSegments && pathSegments.length > 0 ? "/" + pathSegments.join("/") : "/";
@@ -196,6 +183,7 @@ const FilesPage = (): JSX.Element | null => {
     }
     return false;
   });
+  // TODO: ADD BACK SEARCH FUNCTIONALITY TO THE FILES PAGE
   const [searchQuery, setSearchQuery] = useState("");
   const [sftpModalOpen, setSftpModalOpen] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
@@ -205,6 +193,10 @@ const FilesPage = (): JSX.Element | null => {
     group: { read: true, write: false, execute: false },
     others: { read: true, write: false, execute: false },
   });
+
+  // Media preview modal state
+  const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
+  const [mediaPreviewFile, setMediaPreviewFile] = useState<FileItem | null>(null);
 
   // Storage info - total from server allocation, used from actual disk usage
   const storageUsedGB = diskUsage.used / (1024 * 1024 * 1024);
@@ -265,20 +257,29 @@ const FilesPage = (): JSX.Element | null => {
         path: f.path,
       }));
       setFiles(mappedFiles);
-      // Refresh disk usage after file list changes
-      fetchDiskUsage();
     } catch (error) {
       toast.error("Failed to fetch files");
       setFiles([]);
     } finally {
       setIsLoading(false);
     }
-  }, [serverId, currentPath, fetchDiskUsage]);
+  }, [serverId, currentPath]);
 
   useEffect(() => {
     fetchFiles();
     setRowSelection({});
   }, [fetchFiles]);
+
+  // Poll disk usage independently to avoid cascading re-renders
+  useEffect(() => {
+    // Fetch disk usage on component mount
+    fetchDiskUsage();
+
+    // Poll disk usage every 5 seconds
+    const interval = setInterval(fetchDiskUsage, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchDiskUsage]);
 
   // Global drag-and-drop handlers
   useEffect(() => {
@@ -648,6 +649,51 @@ const FilesPage = (): JSX.Element | null => {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isBinaryFile = (filename: string): boolean => {
+    const binaryExtensions = [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "svg",
+      "bmp",
+      "ico",
+      "mp4",
+      "webm",
+      "mov",
+      "avi",
+      "mkv",
+      "flv",
+      "wmv",
+      "m4v",
+      "mp3",
+      "wav",
+      "ogg",
+      "m4a",
+      "flac",
+      "aac",
+      "wma",
+      "zip",
+      "tar",
+      "gz",
+      "7z",
+      "rar",
+      "exe",
+      "dll",
+      "so",
+      "pdf",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "ppt",
+      "pptx",
+    ];
+    const ext = filename.split(".").pop()?.toLowerCase() || "";
+    return binaryExtensions.includes(ext);
+  };
+
   const confirmUpload = async () => {
     if (uploadFiles.length === 0) return;
     setIsUploading(true);
@@ -670,9 +716,30 @@ const FilesPage = (): JSX.Element | null => {
       });
 
       try {
-        const content = await file.text();
         const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
-        await servers.files.create(serverId, filePath, "file", content);
+
+        if (isBinaryFile(file.name)) {
+          // For binary files, use multipart FormData upload
+          const formData = new FormData();
+          formData.append("file", file, file.name);
+
+          const uploadDir = currentPath === "/" ? "" : currentPath;
+          const uploadUrl = `/api/servers/${serverId}/files/upload${uploadDir ? `?directory=${encodeURIComponent(uploadDir)}` : ""}`;
+
+          const response = await fetch(uploadUrl, {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+          }
+        } else {
+          // For text files, read as text and use the create endpoint
+          const content = await file.text();
+          await servers.files.create(serverId, filePath, "file", content);
+        }
 
         newFiles.push({
           id: filePath,
@@ -736,10 +803,7 @@ const FilesPage = (): JSX.Element | null => {
             }
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
-            className={cn(
-              "border-zinc-600",
-              "data-[state=checked]:bg-zinc-600"
-            )}
+            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
           />
         ),
         cell: ({ row }) => (
@@ -747,10 +811,7 @@ const FilesPage = (): JSX.Element | null => {
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
-            className={cn(
-              "border-zinc-600",
-              "data-[state=checked]:bg-zinc-600"
-            )}
+            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
           />
         ),
         enableSorting: false,
@@ -761,10 +822,7 @@ const FilesPage = (): JSX.Element | null => {
         header: ({ column }) => {
           return (
             <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Name
@@ -780,23 +838,29 @@ const FilesPage = (): JSX.Element | null => {
         },
         cell: ({ row }) => {
           const file = row.original;
+          const mediaType = getMediaType(file.name);
+
           return (
             <div className="flex items-center gap-3">
               {file.type === "folder" ? (
                 <BsFolder className={cn("h-4 w-4", "text-amber-400")} />
+              ) : mediaType === "image" ? (
+                <BsImage className={cn("h-4 w-4", "text-cyan-400")} />
+              ) : mediaType === "video" ? (
+                <BsPlayCircle className={cn("h-4 w-4", "text-purple-400")} />
+              ) : mediaType === "audio" ? (
+                <BsVolumeUp className={cn("h-4 w-4", "text-orange-400")} />
               ) : (
-                <BsFileEarmark
-                  className={cn("h-4 w-4", "text-zinc-400")}
-                />
+                <BsFileEarmark className={cn("h-4 w-4", "text-zinc-400")} />
               )}
               <span
-                className={cn(
-                  "cursor-pointer hover:underline",
-                  "text-zinc-200"
-                )}
+                className={cn("cursor-pointer hover:underline", "text-zinc-200")}
                 onClick={() => {
                   if (file.type === "folder") {
                     navigateToFolder(file.name);
+                  } else if (file.type === "file" && isMediaFile(file.name)) {
+                    setMediaPreviewFile(file);
+                    setMediaPreviewOpen(true);
                   } else if (file.type === "file" && isEditable(file.name)) {
                     handleEdit(file);
                   }
@@ -813,10 +877,7 @@ const FilesPage = (): JSX.Element | null => {
         header: ({ column }) => {
           return (
             <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Size
@@ -831,9 +892,7 @@ const FilesPage = (): JSX.Element | null => {
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", "text-zinc-500")}>
-            {row.getValue("size")}
-          </span>
+          <span className={cn("text-xs", "text-zinc-500")}>{row.getValue("size")}</span>
         ),
       },
       {
@@ -841,10 +900,7 @@ const FilesPage = (): JSX.Element | null => {
         header: ({ column }) => {
           return (
             <button
-              className={cn(
-                "flex items-center gap-2 transition-colors",
-                "hover:text-zinc-100"
-              )}
+              className={cn("flex items-center gap-2 transition-colors", "hover:text-zinc-100")}
               onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             >
               Modified
@@ -859,9 +915,7 @@ const FilesPage = (): JSX.Element | null => {
           );
         },
         cell: ({ row }) => (
-          <span className={cn("text-xs", "text-zinc-500")}>
-            {row.getValue("modified")}
-          </span>
+          <span className={cn("text-xs", "text-zinc-500")}>{row.getValue("modified")}</span>
         ),
       },
       {
@@ -872,21 +926,13 @@ const FilesPage = (): JSX.Element | null => {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "p-1 transition-colors",
-                    "text-zinc-500 hover:text-zinc-200"
-                  )}
-                >
+                <TextureButton size="sm" variant="ghost" className="w-fit">
                   <BsThreeDotsVertical className="h-4 w-4" />
-                </button>
+                </TextureButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className={cn(
-                  "min-w-[160px]",
-                  "border-zinc-700 bg-zinc-900"
-                )}
+                className={cn("min-w-[160px]", "border-zinc-700 bg-zinc-900")}
               >
                 <DropdownMenuItem
                   onClick={() => handleRename(file)}
@@ -908,6 +954,21 @@ const FilesPage = (): JSX.Element | null => {
                   <BsTerminal className="h-3 w-3" />
                   Permissions
                 </DropdownMenuItem>
+                {file.type === "file" && isMediaFile(file.name) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setMediaPreviewFile(file);
+                      setMediaPreviewOpen(true);
+                    }}
+                    className={cn(
+                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
+                      "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                    )}
+                  >
+                    <BsEye className="h-3 w-3" />
+                    View
+                  </DropdownMenuItem>
+                )}
                 {file.type === "file" && isEditable(file.name) && (
                   <DropdownMenuItem
                     onClick={() => handleEdit(file)}
@@ -1031,11 +1092,11 @@ const FilesPage = (): JSX.Element | null => {
   }
 
   return (
-    <div className="relative min-h-svh transition-colors">
+    <div className="relative transition-colors">
       {/* Background is now rendered in the layout for persistence */}
 
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="relative h-full p-5 md:p-8">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1046,19 +1107,7 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
-                  FILE MANAGER
-                </h1>
-                {/* Breadcrumb Navigation */}
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  <span className={cn("text-sm", "text-zinc-500")}>
-                    {server?.name || `Server ${serverId}`} -
-                  </span>
+                <div className="flex flex-wrap items-center gap-1">
                   <Link
                     href={getBasePath()}
                     className={cn(
@@ -1066,22 +1115,16 @@ const FilesPage = (): JSX.Element | null => {
                       "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
-                    /
+                    / home
                   </Link>
                   {breadcrumbSegments.map((segment, index) => {
                     const pathUpToHere = "/" + breadcrumbSegments.slice(0, index + 1).join("/");
                     const isLast = index === breadcrumbSegments.length - 1;
                     return (
                       <span key={pathUpToHere} className="flex items-center gap-1">
-                        <span className={cn("text-sm", "text-zinc-600")}>
-                          /
-                        </span>
+                        <span className={cn("text-sm", "text-zinc-600")}>/</span>
                         {isLast ? (
-                          <span
-                            className={cn("text-sm", "text-zinc-300")}
-                          >
-                            {segment}
-                          </span>
+                          <span className={cn("text-sm", "text-zinc-300")}>{segment}</span>
                         ) : (
                           <Link
                             href={`${getBasePath()}${pathUpToHere}`}
@@ -1099,61 +1142,27 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
               </div>
             </div>
-
           </div>
-
-          {/* Storage Indicator */}
           <div
             className={cn(
-              "relative mb-6 border p-4",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
             <div className="flex items-center gap-4">
-              <BsHddFill className={cn("h-5 w-5", "text-zinc-400")} />
+              <img src="/icons/24-file-download.svg" alt="storage_icon" />
               <div className="flex-1">
                 <div className="mb-2 flex items-center justify-between">
-                  <span
-                    className={cn(
-                      "text-xs tracking-wider uppercase",
-                      "text-zinc-400"
-                    )}
-                  >
+                  <span className={cn("text-xs tracking-wider uppercase", "text-zinc-400")}>
                     Storage
                   </span>
                   <span className={cn("text-xs", "text-zinc-400")}>
                     {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
                   </span>
                 </div>
-                <div className={cn("h-2 w-full", "bg-zinc-800")}>
+                <div className={cn("h-2 w-full", "rounded-lg bg-zinc-800")}>
                   <div
                     className={cn(
-                      "h-full transition-all",
+                      "h-full rounded-lg transition-all",
                       storagePercentage > 90
                         ? "bg-red-500"
                         : storagePercentage > 70
@@ -1170,78 +1179,31 @@ const FilesPage = (): JSX.Element | null => {
           {/* Toolbar */}
           <div
             className={cn(
-              "relative mb-6 border p-4",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
             )}
           >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <TextureButton
+                  variant="minimal"
                   disabled={currentPath === "/"}
                   onClick={navigateUp}
-                  className={cn(
-                    "gap-2 transition-all",
-                    true
-                      ? "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-30"
-                      : "border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-30"
-                  )}
                 >
                   <BsArrowLeft className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewFolder}
-                  className={cn(
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                >
+                </TextureButton>
+                <TextureButton variant="minimal" onClick={handleNewFolder}>
                   <BsPlus className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New Folder
                   </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewFile}
-                  className={cn(
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                >
+                </TextureButton>
+                <TextureButton variant="minimal" onClick={handleNewFile}>
                   <BsFileText className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase sm:inline">
                     New File
                   </span>
-                </Button>
+                </TextureButton>
                 {selectedCount > 0 && (
                   <span className={cn("ml-2 text-xs", "text-zinc-500")}>
                     {selectedCount} selected
@@ -1249,312 +1211,63 @@ const FilesPage = (): JSX.Element | null => {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {/* Search Input */}
-                <div className="relative">
-                  <BsSearch
-                    className={cn(
-                      "absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 transition-colors",
-                      "text-zinc-500"
-                    )}
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className={cn(
-                      "h-9 w-32 border pr-8 pl-9 text-xs transition-colors outline-none sm:w-48",
-                      true
-                        ? "border-zinc-700 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-                        : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
-                    )}
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className={cn(
-                        "absolute top-1/2 right-2 -translate-y-1/2 transition-colors",
-                        "text-zinc-500 hover:text-zinc-300"
-                      )}
-                    >
-                      <BsX className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
+                {/*TODO: TO ADD BACK THE SEARCH*/}
+                {/*<Input*/}
+                {/*    type="text"*/}
+                {/*    value={searchQuery}*/}
+                {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
+                {/*    placeholder="Search..."*/}
+                {/*    className="pt-0 mt-0 w-1/4"*/}
+                {/*/>*/}
+                <TextureButton
+                  variant="minimal"
                   onClick={() => setSftpModalOpen(true)}
-                  className={cn(
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                   title="SFTP Connection"
                 >
                   <BsTerminal className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUploadClick}
-                  className={cn(
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                  title="Upload Files"
-                >
+                </TextureButton>
+                <TextureButton variant="minimal" onClick={handleUploadClick} title="Upload Files">
                   <BsUpload className="h-4 w-4" />
                   <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </TextureButton>
+                <TextureButton
+                  variant="minimal"
                   onClick={handleToggleHiddenFiles}
-                  className={cn(
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
                   title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
                 >
-                  {showHiddenFiles ? (
-                    <BsEye className="h-4 w-4" />
-                  ) : (
-                    <BsEyeSlash className="h-4 w-4" />
-                  )}
-                  <span className="text-xs tracking-wider uppercase">
+                  <div>
+                    {showHiddenFiles ? (
+                      <BsEye className="h-4 w-4" />
+                    ) : (
+                      <BsEyeSlash className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="text-xs tracking-wider uppercase">
                     {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                  </div>
+                </TextureButton>
+                <TextureButton
+                  variant="destructive"
                   disabled={selectedCount === 0}
                   onClick={handleBulkDelete}
-                  className={cn(
-                    "gap-2 transition-all",
-                    true
-                      ? "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300 disabled:opacity-30"
-                      : "border-red-300 text-red-600 hover:border-red-400 hover:text-red-700 disabled:opacity-30"
-                  )}
                 >
                   <BsTrash className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Delete</span>
-                </Button>
+                </TextureButton>
               </div>
             </div>
           </div>
 
           {/* Data Table */}
-          <div
-            className={cn(
-              "relative border",
-              true
-                ? "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                : "border-zinc-300 bg-gradient-to-b from-white via-zinc-50 to-zinc-100"
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 z-10 h-3 w-3 border-t border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 z-10 h-3 w-3 border-t border-r",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 z-10 h-3 w-3 border-b border-l",
-                "border-zinc-500"
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 z-10 h-3 w-3 border-r border-b",
-                "border-zinc-500"
-              )}
-            />
-
-            <div>
-              <Table>
-                <TableHeader className="sticky top-0 z-20">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow
-                      key={headerGroup.id}
-                      className={cn(
-                        "border-b",
-                        true
-                          ? "border-zinc-700/50 bg-[#0a0a0a] hover:bg-transparent"
-                          : "border-zinc-200 bg-white hover:bg-transparent"
-                      )}
-                    >
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          className={cn(
-                            "px-4 text-[10px] font-medium tracking-wider uppercase",
-                            "text-zinc-500"
-                          )}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className={cn(
-                          "h-24 text-center text-sm",
-                          "text-zinc-500"
-                        )}
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          <Spinner className="h-4 w-4" />
-                          Loading files...
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <AnimatePresence mode="popLayout">
-                      {table.getRowModel().rows?.length ? (
-                        table.getRowModel().rows.map((row) => {
-                          const file = row.original;
-                          return (
-                            <ContextMenu key={row.original.id}>
-                              <ContextMenuTrigger asChild>
-                                <motion.tr
-                                  layout
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                                  transition={{ duration: 0.2, ease: "easeOut" }}
-                                  data-state={row.getIsSelected() && "selected"}
-                                  className={cn(
-                                    "cursor-pointer border-b transition-colors",
-                                    true
-                                      ? "border-zinc-800/50 hover:bg-zinc-800/30 data-[state=selected]:bg-zinc-800/50"
-                                      : "border-zinc-100 hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-200/50"
-                                  )}
-                                >
-                                  {row.getVisibleCells().map((cell) => (
-                                    <TableCell key={cell.id} className="px-4 py-3">
-                                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                    </TableCell>
-                                  ))}
-                                </motion.tr>
-                              </ContextMenuTrigger>
-                              <ContextMenuContent
-                                className={cn(
-                                  "min-w-[160px]",
-                                  true
-                                    ? "border-zinc-700 bg-zinc-900"
-                                    : "border-zinc-200 bg-white"
-                                )}
-                              >
-                                <ContextMenuItem
-                                  onClick={() => handleRename(file)}
-                                  className={cn(
-                                    "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                  )}
-                                >
-                                  <BsPencil className="h-3 w-3" />
-                                  Rename
-                                </ContextMenuItem>
-                                <ContextMenuItem
-                                  onClick={() => handleEditPermissions(file)}
-                                  className={cn(
-                                    "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                  )}
-                                >
-                                  <BsTerminal className="h-3 w-3" />
-                                  Permissions
-                                </ContextMenuItem>
-                                {file.type === "file" && isEditable(file.name) && (
-                                  <ContextMenuItem
-                                    onClick={() => handleEdit(file)}
-                                    className={cn(
-                                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                      true
-                                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                        : "text-zinc-700 focus:bg-zinc-100"
-                                    )}
-                                  >
-                                    <BsFileText className="h-3 w-3" />
-                                    Edit
-                                  </ContextMenuItem>
-                                )}
-                                {file.type === "file" && (
-                                  <ContextMenuItem
-                                    onClick={async () => {
-                                      try {
-                                        const { downloadUrl } =
-                                          await servers.files.getDownloadToken(serverId, file.path);
-                                        window.open(
-                                          `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
-                                          "_blank"
-                                        );
-                                      } catch (error) {
-                                        toast.error("Failed to generate download link");
-                                      }
-                                    }}
-                                    className={cn(
-                                      "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                      true
-                                        ? "text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
-                                        : "text-zinc-700 focus:bg-zinc-100"
-                                    )}
-                                  >
-                                    <BsDownload className="h-3 w-3" />
-                                    Download
-                                  </ContextMenuItem>
-                                )}
-                                <ContextMenuSeparator
-                                  className="bg-zinc-700"
-                                />
-                                <ContextMenuItem
-                                  onClick={() => handleDelete(file)}
-                                  className={cn(
-                                    "cursor-pointer gap-2 text-xs tracking-wider uppercase",
-                                    true
-                                      ? "text-red-400 focus:bg-red-950/50 focus:text-red-300"
-                                      : "text-red-600 focus:bg-red-50"
-                                  )}
-                                >
-                                  <BsTrash className="h-3 w-3" />
-                                  Delete
-                                </ContextMenuItem>
-                              </ContextMenuContent>
-                            </ContextMenu>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={columns.length}
-                            className={cn(
-                              "h-24 text-center text-sm",
-                              "text-zinc-500"
-                            )}
-                          >
-                            {searchQuery
-                              ? `No files matching "${searchQuery}" found.`
-                              : "No files found."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </AnimatePresence>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <DataTable
+            table={table}
+            columns={columns}
+            isLoading={isLoading}
+            emptyMessage={
+              searchQuery ? `No files matching "${searchQuery}" found.` : "No files found."
+            }
+          />
 
           {/* Footer */}
           <div className={cn("mt-4 text-xs", "text-zinc-600")}>
@@ -1563,7 +1276,6 @@ const FilesPage = (): JSX.Element | null => {
         </div>
       </div>
 
-      {/* Drag and Drop Overlay */}
       <AnimatePresence>
         {isDraggingOver && (
           <motion.div
@@ -1591,19 +1303,9 @@ const FilesPage = (): JSX.Element | null => {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               >
-                <BsCloudUpload
-                  className={cn(
-                    "mx-auto mb-4 h-16 w-16",
-                    "text-zinc-400"
-                  )}
-                />
+                <BsCloudUpload className={cn("mx-auto mb-4 h-16 w-16", "text-zinc-400")} />
               </motion.div>
-              <p
-                className={cn(
-                  "text-xl font-light tracking-wider",
-                  "text-zinc-200"
-                )}
-              >
+              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>
                 DROP FILES TO UPLOAD
               </p>
               <p className={cn("mt-2 text-sm", "text-zinc-500")}>
@@ -1614,14 +1316,12 @@ const FilesPage = (): JSX.Element | null => {
         )}
       </AnimatePresence>
 
-      {/* Delete Single File Modal */}
       <ConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
         title="Delete File"
         description={`Are you sure you want to delete "${fileToDelete?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
-        variant="danger"
         onConfirm={confirmDelete}
       />
 
@@ -1632,7 +1332,6 @@ const FilesPage = (): JSX.Element | null => {
         title="Delete Files"
         description={`Are you sure you want to delete ${selectedCount} selected file(s)? This action cannot be undone.`}
         confirmLabel="Delete All"
-        variant="danger"
         onConfirm={confirmBulkDelete}
       />
 
@@ -1646,7 +1345,7 @@ const FilesPage = (): JSX.Element | null => {
         onSubmit={confirmRename}
         isValid={newFileName.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFileName}
           onChange={(e) => setNewFileName(e.target.value)}
@@ -1667,7 +1366,7 @@ const FilesPage = (): JSX.Element | null => {
         onSubmit={confirmNewFolder}
         isValid={newFolderName.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFolderName}
           onChange={(e) => setNewFolderName(e.target.value)}
@@ -1688,37 +1387,25 @@ const FilesPage = (): JSX.Element | null => {
         onSubmit={confirmNewFile}
         isValid={newFileNameInput.trim().length > 0}
       >
-        <input
+        <Input
           type="text"
           value={newFileNameInput}
           onChange={(e) => setNewFileNameInput(e.target.value)}
           placeholder="File name (e.g., config.yml)"
           className={cn(
-            "w-full border px-3 py-2 text-sm transition-colors outline-none",
-            true
-              ? "border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500"
-              : "border-zinc-300 bg-white text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400"
+            "w-full border border-zinc-700/50 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200 transition-colors outline-none placeholder:text-zinc-600 focus:border-zinc-500"
           )}
         />
       </FormModal>
 
       {/* SFTP Connection Modal */}
       <Dialog open={sftpModalOpen} onOpenChange={setSftpModalOpen}>
-        <DialogContent
-          className={cn(
-            "max-w-2xl",
-            "border-zinc-800 bg-zinc-900"
-          )}
-        >
+        <DialogContent className={cn("max-w-2xl", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
-            <DialogTitle
-              className={cn("text-lg font-semibold", "text-zinc-100")}
-            >
+            <DialogTitle className={cn("text-lg font-semibold", "text-zinc-100")}>
               SFTP Connection Details
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-400")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-400")}>
               Use these credentials to connect to your server via SFTP
             </DialogDescription>
           </DialogHeader>
@@ -1728,138 +1415,80 @@ const FilesPage = (): JSX.Element | null => {
               <div className="space-y-3">
                 {/* Host */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Host
-                  </label>
+                  <Label>Host</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        true
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
                       )}
                     >
                       {server.node.host}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(server.node!.host);
                         toast.success("Host copied to clipboard");
                       }}
-                      className={cn(
-                        true
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
                 {/* Port */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Port
-                  </label>
+                  <Label>Port</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        true
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
                       )}
                     >
                       {server.node.sftpPort}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(server.node!.sftpPort.toString());
                         toast.success("Port copied to clipboard");
                       }}
-                      className={cn(
-                        true
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
                 {/* Username */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Username
-                  </label>
+                  <Label>Username</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm",
-                        true
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-200"
                       )}
                     >
                       {server.id}.{user.email}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         navigator.clipboard.writeText(`${server.id}.${user.email}`);
                         toast.success("Username copied to clipboard");
                       }}
-                      className={cn(
-                        true
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
-                  >
-                    Password
-                  </label>
+                  <Label>Password</Label>
                   <div className="mt-1">
                     <div
                       className={cn(
-                        "rounded border px-3 py-2 text-sm",
-                        true
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-400"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-600"
+                        "rounded border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-400"
                       )}
                     >
                       Your account password
@@ -1869,28 +1498,21 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Connection String */}
                 <div>
-                  <label
-                    className={cn(
-                      "text-xs font-medium tracking-wider uppercase",
-                      "text-zinc-500"
-                    )}
+                  <Label
+                    className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-500")}
                   >
                     Connection String
-                  </label>
+                  </Label>
                   <div className="mt-1 flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 rounded border px-3 py-2 font-mono text-sm break-all whitespace-normal",
-                        true
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-200"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-800"
+                        "flex-1 rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm break-all whitespace-normal text-zinc-200"
                       )}
                     >
                       sftp://{server.id}.{user.email}@{server.node.host}:{server.node.sftpPort}
                     </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => {
                         if (server.node) {
                           navigator.clipboard.writeText(
@@ -1899,39 +1521,19 @@ const FilesPage = (): JSX.Element | null => {
                           toast.success("Connection string copied to clipboard");
                         }
                       }}
-                      className={cn(
-                        true
-                          ? "border-zinc-700 hover:bg-zinc-800"
-                          : "border-zinc-300 hover:bg-zinc-100"
-                      )}
                     >
                       <BsClipboard className="h-3.5 w-3.5" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 </div>
               </div>
 
               {/* Instructions */}
-              <div
-                className={cn(
-                  "mt-6 rounded border p-4",
-                  "border-zinc-800 bg-zinc-950/50"
-                )}
-              >
-                <h4
-                  className={cn(
-                    "mb-2 text-sm font-semibold",
-                    "text-zinc-300"
-                  )}
-                >
+              <div className={cn("mt-6 rounded border p-4", "border-zinc-800 bg-zinc-950/50")}>
+                <h4 className={cn("mb-2 text-sm font-semibold", "text-zinc-300")}>
                   Popular SFTP Clients:
                 </h4>
-                <ul
-                  className={cn(
-                    "list-inside list-disc space-y-1 text-sm",
-                    "text-zinc-400"
-                  )}
-                >
+                <ul className={cn("list-inside list-disc space-y-1 text-sm", "text-zinc-400")}>
                   <li>FileZilla (Windows, macOS, Linux)</li>
                   <li>WinSCP (Windows)</li>
                   <li>Cyberduck (Windows, macOS)</li>
@@ -1945,21 +1547,12 @@ const FilesPage = (): JSX.Element | null => {
 
       {/* Permissions Editor Modal */}
       <Dialog open={permissionsModalOpen} onOpenChange={setPermissionsModalOpen}>
-        <DialogContent
-          className={cn(
-            "max-w-md",
-            "border-zinc-800 bg-zinc-900"
-          )}
-        >
+        <DialogContent className={cn("max-w-md", "border-zinc-800 bg-zinc-900")}>
           <DialogHeader>
-            <DialogTitle
-              className={cn("text-lg font-semibold", "text-zinc-100")}
-            >
+            <DialogTitle className={cn("text-lg font-semibold", "text-zinc-100")}>
               Edit Permissions
             </DialogTitle>
-            <DialogDescription
-              className={cn("text-sm", "text-zinc-400")}
-            >
+            <DialogDescription className={cn("text-sm", "text-zinc-400")}>
               {fileToEditPermissions
                 ? `Change permissions for "${fileToEditPermissions.name}"`
                 : ""}
@@ -1968,19 +1561,11 @@ const FilesPage = (): JSX.Element | null => {
           {fileToEditPermissions && (
             <div className="mt-4 space-y-4">
               {/* Permission Grid */}
-              <div
-                className={cn(
-                  "overflow-hidden rounded border",
-                  "border-zinc-800"
-                )}
-              >
+              <div className={cn("overflow-hidden rounded border", "border-zinc-800")}>
                 {/* Header Row */}
                 <div
                   className={cn(
-                    "grid grid-cols-4 border-b text-xs font-semibold tracking-wider uppercase",
-                    true
-                      ? "border-zinc-800 bg-zinc-950 text-zinc-400"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-600"
+                    "grid grid-cols-4 border-b border-zinc-800 bg-zinc-950 text-xs font-semibold tracking-wider text-zinc-400 uppercase"
                   )}
                 >
                   <div className="p-3"></div>
@@ -1990,20 +1575,8 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
 
                 {/* Owner Row */}
-                <div
-                  className={cn(
-                    "grid grid-cols-4 border-b",
-                    "border-zinc-800"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Owner
-                  </div>
+                <div className={cn("grid grid-cols-4 border-b", "border-zinc-800")}>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Owner</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.owner.read}
@@ -2043,20 +1616,8 @@ const FilesPage = (): JSX.Element | null => {
                 </div>
 
                 {/* Group Row */}
-                <div
-                  className={cn(
-                    "grid grid-cols-4 border-b",
-                    "border-zinc-800"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Group
-                  </div>
+                <div className={cn("grid grid-cols-4 border-b", "border-zinc-800")}>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Group</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.group.read}
@@ -2097,14 +1658,7 @@ const FilesPage = (): JSX.Element | null => {
 
                 {/* Others Row */}
                 <div className="grid grid-cols-4">
-                  <div
-                    className={cn(
-                      "p-3 text-sm font-medium",
-                      "text-zinc-300"
-                    )}
-                  >
-                    Others
-                  </div>
+                  <div className={cn("p-3 text-sm font-medium", "text-zinc-300")}>Others</div>
                   <div className="flex justify-center p-3">
                     <Checkbox
                       checked={permissions.others.read}
@@ -2145,12 +1699,7 @@ const FilesPage = (): JSX.Element | null => {
               </div>
 
               {/* Octal Preview */}
-              <div
-                className={cn(
-                  "rounded border p-4",
-                  "border-zinc-800 bg-zinc-950/50"
-                )}
-              >
+              <div className={cn("rounded border p-4", "border-zinc-800 bg-zinc-950/50")}>
                 <div
                   className={cn(
                     "mb-2 text-xs font-medium tracking-wider uppercase",
@@ -2159,9 +1708,7 @@ const FilesPage = (): JSX.Element | null => {
                 >
                   Octal Representation
                 </div>
-                <code
-                  className={cn("font-mono text-lg", "text-zinc-200")}
-                >
+                <code className={cn("font-mono text-lg", "text-zinc-200")}>
                   {(permissions.owner.read ? 4 : 0) +
                     (permissions.owner.write ? 2 : 0) +
                     (permissions.owner.execute ? 1 : 0)}
@@ -2176,23 +1723,10 @@ const FilesPage = (): JSX.Element | null => {
 
               {/* Actions */}
               <div className="mt-6 flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setPermissionsModalOpen(false)}
-                  className={cn(
-                    "border-zinc-700 hover:bg-zinc-800"
-                  )}
-                >
+                <TextureButton variant="minimal" onClick={() => setPermissionsModalOpen(false)}>
                   Cancel
-                </Button>
-                <Button
-                  onClick={confirmPermissions}
-                  className={cn(
-                    "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                  )}
-                >
-                  Apply
-                </Button>
+                </TextureButton>
+                <TextureButton onClick={confirmPermissions}>Apply</TextureButton>
               </div>
             </div>
           )}
@@ -2215,26 +1749,20 @@ const FilesPage = (): JSX.Element | null => {
         isValid={uploadFiles.length > 0 && !isUploading}
       >
         <div className="space-y-4">
-          {/* Drop zone */}
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             className={cn(
-              "relative border-2 border-dashed p-8 text-center transition-colors",
-              true
-                ? "border-zinc-700 bg-zinc-900/30 hover:border-zinc-500"
-                : "border-zinc-300 bg-zinc-50 hover:border-zinc-400"
+              "relative rounded-lg border-2 border-dashed border-zinc-700/50 bg-zinc-900/30 p-8 text-center transition-colors hover:border-zinc-500"
             )}
           >
-            <input
+            <Input
               type="file"
               multiple
               onChange={handleFileSelect}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              className="absolute inset-0 h-full w-full cursor-pointer rounded-lg opacity-0"
             />
-            <BsCloudUpload
-              className={cn("mx-auto mb-3 h-10 w-10", "text-zinc-600")}
-            />
+            <BsCloudUpload className={cn("mx-auto mb-3 h-10 w-10", "text-zinc-600")} />
             <p className={cn("text-sm", "text-zinc-400")}>
               Drag and drop files here, or click to browse
             </p>
@@ -2246,66 +1774,32 @@ const FilesPage = (): JSX.Element | null => {
           {/* File list */}
           {uploadFiles.length > 0 && (
             <div className="space-y-2">
-              <p
-                className={cn(
-                  "text-xs tracking-wider uppercase",
-                  "text-zinc-500"
-                )}
-              >
+              <p className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                 {uploadFiles.length} file(s) selected
               </p>
-              <div
-                className={cn(
-                  "max-h-40 overflow-y-auto border",
-                  "border-zinc-800"
-                )}
-              >
+              <div className={cn("max-h-40 overflow-y-auto border", "border-zinc-800")}>
                 {uploadFiles.map((file, index) => (
                   <div
                     key={index}
                     className={cn(
                       "flex items-center justify-between px-3 py-2",
-                      index !== uploadFiles.length - 1 &&
-                        ("border-b border-zinc-800")
+                      index !== uploadFiles.length - 1 && "border-b border-zinc-800"
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <BsFileEarmark
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          "text-zinc-500"
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "truncate text-sm",
-                          "text-zinc-300"
-                        )}
-                      >
-                        {file.name}
-                      </span>
-                      <span
-                        className={cn(
-                          "shrink-0 text-xs",
-                          "text-zinc-600"
-                        )}
-                      >
+                      <BsFileEarmark className={cn("h-4 w-4 shrink-0", "text-zinc-500")} />
+                      <span className={cn("truncate text-sm", "text-zinc-300")}>{file.name}</span>
+                      <span className={cn("shrink-0 text-xs", "text-zinc-600")}>
                         {formatFileSize(file.size)}
                       </span>
                     </div>
-                    <button
-                      type="button"
+                    <TextureButton
+                      variant="minimal"
                       onClick={() => removeUploadFile(index)}
                       disabled={isUploading}
-                      className={cn(
-                        "p-1 transition-colors",
-                        true
-                          ? "text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
-                          : "text-zinc-400 hover:text-zinc-600 disabled:opacity-30"
-                      )}
                     >
                       <BsX className="h-4 w-4" />
-                    </button>
+                    </TextureButton>
                   </div>
                 ))}
               </div>
@@ -2316,13 +1810,26 @@ const FilesPage = (): JSX.Element | null => {
           {isUploading && (
             <div className="flex items-center justify-center gap-3 py-2">
               <Spinner className={cn("h-4 w-4", "text-zinc-400")} />
-              <span className={cn("text-sm", "text-zinc-400")}>
-                Uploading files...
-              </span>
+              <span className={cn("text-sm", "text-zinc-400")}>Uploading files...</span>
             </div>
           )}
         </div>
       </FormModal>
+
+      {/* Media Preview Modal */}
+      {mediaPreviewFile && (
+        <MediaPreviewModal
+          isOpen={mediaPreviewOpen}
+          fileName={mediaPreviewFile.name}
+          filePath={mediaPreviewFile.path}
+          serverId={serverId}
+          onClose={() => {
+            setMediaPreviewOpen(false);
+            setMediaPreviewFile(null);
+          }}
+          fetchFile={(serverId, path) => servers.files.read(serverId, path)}
+        />
+      )}
     </div>
   );
 };

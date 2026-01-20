@@ -1,35 +1,37 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef, type JSX } from "react";
+import { type JSX, useCallback, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Input } from "@workspace/ui/components/input";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import {
-  BsPlus,
-  BsTrash,
+  BsClock,
+  BsEnvelope,
   BsPencil,
   BsPersonFill,
+  BsPlus,
   BsShieldFill,
-  BsEnvelope,
-  BsClock,
+  BsTrash,
 } from "react-icons/bs";
 import { toast } from "sonner";
-import { useServer } from "@/components/server-provider";
-import { useAuth } from "@/components/auth-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import {
-  useServerMembers,
-  useServerInvitations,
   usePermissionDefinitions,
+  useServerInvitations,
   useServerMemberMutations,
+  useServerMembers,
 } from "@/hooks/queries";
-import type { ServerMember, ServerInvitation, PermissionCategory } from "@/lib/api";
+import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
+import { Label } from "@workspace/ui/components/label";
+import { Checkbox } from "@workspace/ui/components";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();
@@ -171,13 +173,13 @@ const UsersPage = (): JSX.Element | null => {
     }
   };
 
-  const togglePermission = (permissionKey: string) => {
+  const togglePermission = useCallback((permissionKey: string) => {
     setSelectedPermissions((prev) =>
       prev.includes(permissionKey)
         ? prev.filter((p) => p !== permissionKey)
         : [...prev, permissionKey]
     );
-  };
+  }, []);
 
   const isEmailValid = formEmail.includes("@") && formEmail.includes(".");
 
@@ -195,146 +197,110 @@ const UsersPage = (): JSX.Element | null => {
     !isCategoryFullySelected(category);
 
   // Toggle all permissions in a category
-  const toggleCategory = (category: PermissionCategory) => {
-    const categoryKeys = category.permissions.map((p) => p.key);
-    if (isCategoryFullySelected(category)) {
-      // Deselect all in category
-      setSelectedPermissions((prev) => prev.filter((p) => !categoryKeys.includes(p)));
-    } else {
-      // Select all in category
-      setSelectedPermissions((prev) => [...new Set([...prev, ...categoryKeys])]);
-    }
-  };
+  const toggleCategory = useCallback(
+    (category: PermissionCategory) => {
+      const categoryKeys = category.permissions.map((p) => p.key);
+      if (isCategoryFullySelected(category)) {
+        // Deselect all in category
+        setSelectedPermissions((prev) => prev.filter((p) => !categoryKeys.includes(p)));
+      } else {
+        // Select all in category
+        setSelectedPermissions((prev) => [...new Set([...prev, ...categoryKeys])]);
+      }
+    },
+    [isCategoryFullySelected]
+  );
 
   // Toggle all permissions
-  const toggleAllPermissions = () => {
+  const toggleAllPermissions = useCallback(() => {
     if (selectedPermissions.length === allPermissions.length) {
       setSelectedPermissions([]);
     } else {
       setSelectedPermissions(allPermissions.map((p) => p.key));
     }
-  };
+  }, [selectedPermissions.length, allPermissions]);
 
-  const PermissionSelector = ({ categories }: { categories: PermissionCategory[] }) => (
-    <div className="space-y-4">
-      {/* Global Select All */}
-      <div className="flex items-center justify-between border-b pb-3">
-        <span
-          className={cn(
-            "text-xs font-medium tracking-wider uppercase",
-            "text-zinc-400"
-          )}
-        >
-          {selectedPermissions.length} of {allPermissions.length} selected
-        </span>
-        <button
-          type="button"
-          onClick={toggleAllPermissions}
-          className={cn(
-            "text-xs tracking-wider uppercase transition-colors",
-            "text-zinc-400 hover:text-zinc-100"
-          )}
-        >
-          {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
-        </button>
-      </div>
+  const PermissionSelector = useMemo(() => {
+    return ({ categories }: { categories: PermissionCategory[] }) => (
+      <div className="space-y-4">
+        {/* Global Select All */}
+        <div className="flex items-center justify-between border-b pb-3">
+          <span className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-400")}>
+            {selectedPermissions.length} of {allPermissions.length} selected
+          </span>
+          <TextureButton variant="minimal" type="button" onClick={toggleAllPermissions}>
+            {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
+          </TextureButton>
+        </div>
 
-      {/* Scrollable categories */}
-      <div className="max-h-80 space-y-4 overflow-y-auto pr-2">
-        {categories.map((category) => (
-          <div
-            key={category.id}
-            className={cn(
-              "border p-3",
-              "border-zinc-800 bg-zinc-900/30"
-            )}
-          >
-            {/* Category header with select all */}
-            <div className="mb-3 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => toggleCategory(category)}
-                className="flex items-center gap-2"
-              >
-                <div
-                  className={cn(
-                    "flex h-4 w-4 items-center justify-center border",
-                    isCategoryFullySelected(category)
-                      ? "border-zinc-400 bg-zinc-600"
-                      : isCategoryPartiallySelected(category)
-                        ? "border-zinc-500 bg-zinc-700"
-                        : "border-zinc-600"
-                  )}
-                >
-                  {isCategoryFullySelected(category) && (
-                    <div className={cn("h-2 w-2", "bg-zinc-100")} />
-                  )}
-                  {isCategoryPartiallySelected(category) && (
-                    <div className={cn("h-0.5 w-2", "bg-zinc-400")} />
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-xs font-medium tracking-wider uppercase",
-                    "text-zinc-300"
-                  )}
-                >
-                  {category.name}
-                </span>
-              </button>
-              <span
-                className={cn(
-                  "text-[10px] tracking-wider",
-                  "text-zinc-600"
-                )}
-              >
-                {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
-                {category.permissions.length}
-              </span>
-            </div>
-
-            {/* Category permissions - 2 column grid */}
-            <div className="grid grid-cols-2 gap-2">
-              {category.permissions.map((perm) => (
-                <button
-                  key={perm.key}
+        {/* Scrollable categories */}
+        <div className="max-h-80 space-y-4 overflow-y-auto pr-4">
+          {categories.map((category) => (
+            <div
+              key={category.id}
+              className={cn("rounded-lg border p-3", "border-zinc-800 bg-zinc-900/30")}
+            >
+              {/* Category header with select all */}
+              <div className="mb-3 flex items-center justify-between">
+                <TextureButton
+                  variant="ghost"
                   type="button"
-                  onClick={() => togglePermission(perm.key)}
-                  className={cn(
-                    "flex items-center gap-2 border p-2 text-left transition-all",
-                    selectedPermissions.includes(perm.key)
-                      ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600"
-                  )}
+                  onClick={() => toggleCategory(category)}
+                  className="flex-1"
                 >
-                  <div
-                    className={cn(
-                      "flex h-3 w-3 shrink-0 items-center justify-center border",
-                      selectedPermissions.includes(perm.key)
-                        ? "border-zinc-400 bg-zinc-600"
-                        : "border-zinc-600"
-                    )}
+                  <Checkbox
+                    checked={
+                      isCategoryFullySelected(category)
+                        ? true
+                        : isCategoryPartiallySelected(category)
+                          ? "indeterminate"
+                          : false
+                    }
+                    className="mr-2"
+                  />
+                  <span
+                    className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-300")}
                   >
-                    {selectedPermissions.includes(perm.key) && (
-                      <div className={cn("h-1.5 w-1.5", "bg-zinc-100")} />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium">{perm.name}</div>
-                  </div>
-                </button>
-              ))}
+                    {category.name}
+                  </span>
+                </TextureButton>
+                <span className={cn("text-[10px] tracking-wider", "text-zinc-600")}>
+                  {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
+                  {category.permissions.length}
+                </span>
+              </div>
+
+              {/* Category permissions - 2 column grid */}
+              <div className="grid grid-cols-2 gap-2 px-2">
+                {category.permissions.map((perm) => (
+                  <label key={perm.key} className="flex cursor-pointer items-center gap-2">
+                    <Checkbox
+                      checked={selectedPermissions.includes(perm.key)}
+                      onCheckedChange={() => togglePermission(perm.key)}
+                    />
+                    <span className="truncate text-xs font-medium">{perm.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }, [
+    selectedPermissions,
+    allPermissions,
+    isCategoryFullySelected,
+    isCategoryPartiallySelected,
+    toggleCategory,
+    togglePermission,
+    toggleAllPermissions,
+  ]);
 
   return (
     <div className="relative min-h-svh transition-colors">
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -345,45 +311,16 @@ const UsersPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
-                  USERS
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  {server?.name || `Server ${serverId}`} • {members.length} member
-                  {members.length !== 1 ? "s" : ""}
-                  {invitations.length > 0 && ` • ${invitations.length} pending`}
-                </p>
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>USERS</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {isOwner && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openInviteModal}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                >
+                <TextureButton variant="secondary" onClick={openInviteModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Invite User</span>
-                </Button>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "p-2 transition-all hover:scale-110 active:scale-95",
-                  "hidden"
-                )}
-              >
-              </Button>
             </div>
           </div>
 
@@ -420,27 +357,14 @@ const UsersPage = (): JSX.Element | null => {
                               "border-amber-700/50 bg-amber-900/30"
                             )}
                           >
-                            <BsEnvelope
-                              className={cn(
-                                "h-5 w-5",
-                                "text-amber-400"
-                              )}
-                            />
+                            <BsEnvelope className={cn("h-5 w-5", "text-amber-400")} />
                           </div>
                           <div>
-                            <div
-                              className={cn(
-                                "text-sm font-medium",
-                                "text-amber-200"
-                              )}
-                            >
+                            <div className={cn("text-sm font-medium", "text-amber-200")}>
                               {invitation.email}
                             </div>
                             <div
-                              className={cn(
-                                "flex items-center gap-3 text-xs",
-                                "text-amber-200/60"
-                              )}
+                              className={cn("flex items-center gap-3 text-xs", "text-amber-200/60")}
                             >
                               <span>{getPermissionCount(invitation.permissions)}</span>
                               <span>•</span>
@@ -452,17 +376,13 @@ const UsersPage = (): JSX.Element | null => {
                           </div>
                         </div>
                         {isOwner && (
-                          <Button
-                            variant="outline"
+                          <TextureButton
+                            variant="secondary"
                             size="sm"
                             onClick={() => openCancelInviteModal(invitation)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-amber-700/50 text-amber-400/80 hover:border-amber-600 hover:text-amber-300"
-                            )}
                           >
                             <BsTrash className="h-4 w-4" />
-                          </Button>
+                          </TextureButton>
                         )}
                       </div>
                     ))}
@@ -480,32 +400,6 @@ const UsersPage = (): JSX.Element | null => {
                       "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                     )}
                   >
-                    {/* Corner decorations */}
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        "border-zinc-500"
-                      )}
-                    />
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div
@@ -514,9 +408,7 @@ const UsersPage = (): JSX.Element | null => {
                             "border-amber-700/50 bg-amber-900/30"
                           )}
                         >
-                          <BsShieldFill
-                            className={cn("h-5 w-5", "text-amber-400")}
-                          />
+                          <BsShieldFill className={cn("h-5 w-5", "text-amber-400")} />
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
@@ -537,22 +429,12 @@ const UsersPage = (): JSX.Element | null => {
                               Owner
                             </span>
                             {server.owner.id === currentUser?.id && (
-                              <span
-                                className={cn(
-                                  "text-[10px] tracking-wider",
-                                  "text-zinc-500"
-                                )}
-                              >
+                              <span className={cn("text-[10px] tracking-wider", "text-zinc-500")}>
                                 (You)
                               </span>
                             )}
                           </div>
-                          <div
-                            className={cn(
-                              "mt-1 text-xs",
-                              "text-zinc-500"
-                            )}
-                          >
+                          <div className={cn("mt-1 text-xs", "text-zinc-500")}>
                             {server.owner.email}
                           </div>
                         </div>
@@ -570,32 +452,6 @@ const UsersPage = (): JSX.Element | null => {
                       "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                     )}
                   >
-                    {/* Corner decorations */}
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                        "border-zinc-500"
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                        "border-zinc-500"
-                      )}
-                    />
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div
@@ -604,9 +460,7 @@ const UsersPage = (): JSX.Element | null => {
                             "border-zinc-700 bg-zinc-800/50"
                           )}
                         >
-                          <BsPersonFill
-                            className={cn("h-5 w-5", "text-zinc-400")}
-                          />
+                          <BsPersonFill className={cn("h-5 w-5", "text-zinc-400")} />
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
@@ -627,21 +481,13 @@ const UsersPage = (): JSX.Element | null => {
                               {getPermissionCount(member.permissions)}
                             </span>
                             {member.user.id === currentUser?.id && (
-                              <span
-                                className={cn(
-                                  "text-[10px] tracking-wider",
-                                  "text-zinc-500"
-                                )}
-                              >
+                              <span className={cn("text-[10px] tracking-wider", "text-zinc-500")}>
                                 (You)
                               </span>
                             )}
                           </div>
                           <div
-                            className={cn(
-                              "mt-1 flex items-center gap-4 text-xs",
-                              "text-zinc-500"
-                            )}
+                            className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
                           >
                             <span>{member.user.email}</span>
                             <span>•</span>
@@ -651,28 +497,20 @@ const UsersPage = (): JSX.Element | null => {
                       </div>
                       {isOwner && (
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
+                          <TextureButton
+                            variant="secondary"
                             size="sm"
                             onClick={() => openEditModal(member)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                            )}
                           >
                             <BsPencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
+                          </TextureButton>
+                          <TextureButton
+                            variant="secondary"
                             size="sm"
                             onClick={() => openDeleteModal(member)}
-                            className={cn(
-                              "p-2 transition-all",
-                              "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                            )}
                           >
                             <BsTrash className="h-4 w-4" />
-                          </Button>
+                          </TextureButton>
                         </div>
                       )}
                     </div>
@@ -680,12 +518,7 @@ const UsersPage = (): JSX.Element | null => {
                 ))}
 
                 {members.length === 0 && (
-                  <div
-                    className={cn(
-                      "py-12 text-center text-sm",
-                      "text-zinc-500"
-                    )}
-                  >
+                  <div className={cn("py-12 text-center text-sm", "text-zinc-500")}>
                     No members yet. Invite users to collaborate on this server.
                   </div>
                 )}
@@ -709,14 +542,7 @@ const UsersPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Email Address
-            </label>
+            <Label>Email Address</Label>
             <Input
               type="email"
               value={formEmail}
@@ -729,14 +555,7 @@ const UsersPage = (): JSX.Element | null => {
             />
           </div>
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Permissions
-            </label>
+            <Label>Permissions</Label>
             {stablePermissionDefs?.categories ? (
               <PermissionSelector categories={stablePermissionDefs.categories} />
             ) : (
@@ -779,7 +598,6 @@ const UsersPage = (): JSX.Element | null => {
         description={`Are you sure you want to remove ${selectedMember?.user.name} from this server? They will lose all access.`}
         onConfirm={handleRemoveMember}
         confirmLabel="Remove"
-        variant="danger"
         isLoading={removeMember.isPending}
       />
 
@@ -791,7 +609,6 @@ const UsersPage = (): JSX.Element | null => {
         description={`Are you sure you want to cancel the invitation for ${selectedInvitation?.email}?`}
         onConfirm={handleCancelInvitation}
         confirmLabel="Cancel Invitation"
-        variant="danger"
         isLoading={cancelInvitation.isPending}
       />
     </div>

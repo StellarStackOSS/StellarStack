@@ -14,6 +14,7 @@ use stellar_daemon::server::Manager;
 use stellar_daemon::router::{self, AppState};
 use stellar_daemon::stats_buffer::StatsBuffer;
 use stellar_daemon::events::Event;
+use stellar_daemon::system::SystemMonitor;
 
 /// Run the main daemon
 pub async fn run(config_path: &str) -> Result<()> {
@@ -115,6 +116,28 @@ pub async fn run(config_path: &str) -> Result<()> {
         }
     });
     info!("Started periodic status sync (every 30s)");
+
+    // Start system resource monitoring (logs CPU, RAM, DISK, IOPS every 30s - enabled via RUST_LOG)
+    let monitor = SystemMonitor::new();
+    monitor.enable(); // Always enable, filtering is handled by tracing level
+    info!("System resource monitoring enabled (logs visible with RUST_LOG=stellar_daemon=debug)");
+    let monitor_token = shutdown_token.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        interval.tick().await; // Skip first immediate tick
+
+        loop {
+            tokio::select! {
+                _ = monitor_token.cancelled() => {
+                    debug!("System resource monitoring stopped");
+                    return;
+                }
+                _ = interval.tick() => {
+                    monitor.log_resources();
+                }
+            }
+        }
+    });
 
     // Start the SFTP server if enabled
     if config.sftp.enabled {

@@ -1,29 +1,37 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
-  PackageIcon, PlusIcon, TrashIcon, EditIcon, EyeIcon, EyeOffIcon,
-  UploadIcon, DownloadIcon, UserIcon, ArrowLeftIcon, VariableIcon,
-  ImageIcon, TerminalIcon, SearchIcon
+  DownloadIcon,
+  EditIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ImageIcon,
+  PackageIcon,
+  PlusIcon,
+  TerminalIcon,
+  TrashIcon,
+  UploadIcon,
+  UserIcon,
+  VariableIcon,
+  GitBranch,
 } from "lucide-react";
-import { useBlueprints, useBlueprintMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
+import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+import { useBlueprintMutations, useBlueprints } from "@/hooks/queries";
 import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
 import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { Input } from "@workspace/ui/components";
 
 export default function BlueprintsPage() {
-  const router = useRouter();
-  const { mounted, inputClasses, labelClasses } = useAdminTheme();
-
   // React Query hooks
   const { data: blueprintsList = [], isLoading } = useBlueprints();
   const { create, update, remove, importEgg, exportEgg } = useBlueprintMutations();
@@ -42,9 +50,15 @@ export default function BlueprintsPage() {
     name: "",
     description: "",
     category: "",
-    imageName: "",
-    imageTag: "latest",
+    author: "",
+    dockerImages: {},
+    startup: "",
     config: {},
+    scripts: {},
+    variables: [],
+    features: [],
+    fileDenylist: [],
+    dockerConfig: {},
     isPublic: true,
   });
   const [configJson, setConfigJson] = useState("{}");
@@ -54,9 +68,15 @@ export default function BlueprintsPage() {
       name: "",
       description: "",
       category: "",
-      imageName: "",
-      imageTag: "latest",
+      author: "",
+      dockerImages: {},
+      startup: "",
       config: {},
+      scripts: {},
+      variables: [],
+      features: [],
+      fileDenylist: [],
+      dockerConfig: {},
       isPublic: true,
     });
     setConfigJson("{}");
@@ -96,9 +116,15 @@ export default function BlueprintsPage() {
       name: blueprint.name,
       description: blueprint.description || "",
       category: blueprint.category || "",
-      imageName: blueprint.imageName,
-      imageTag: blueprint.imageTag || "latest",
-      config: blueprint.config,
+      author: blueprint.author || "",
+      dockerImages: blueprint.dockerImages || {},
+      startup: blueprint.startup || "",
+      config: blueprint.config || {},
+      scripts: blueprint.scripts || {},
+      variables: blueprint.variables || [],
+      features: blueprint.features || [],
+      fileDenylist: blueprint.fileDenylist || [],
+      dockerConfig: blueprint.dockerConfig || {},
       isPublic: blueprint.isPublic,
     });
     setConfigJson(JSON.stringify(blueprint.config, null, 2));
@@ -116,10 +142,10 @@ export default function BlueprintsPage() {
     }
   };
 
-  const handleImportEgg = async () => {
+  const handleImportCore = async () => {
     try {
-      const egg = JSON.parse(importJson) as PterodactylEgg;
-      const result = await importEgg.mutateAsync(egg);
+      const core = JSON.parse(importJson) as PterodactylEgg;
+      const result = await importEgg.mutateAsync(core);
       toast.success(result.message);
       setIsImportModalOpen(false);
       setImportJson("");
@@ -127,24 +153,24 @@ export default function BlueprintsPage() {
       if (error instanceof SyntaxError) {
         toast.error("Invalid JSON format");
       } else {
-        toast.error("Failed to import egg");
+        toast.error("Failed to import core");
       }
     }
   };
 
-  const handleExportEgg = async (blueprint: Blueprint) => {
+  const handleExportCore = async (blueprint: Blueprint) => {
     try {
-      const egg = await exportEgg.mutateAsync(blueprint.id);
-      const blob = new Blob([JSON.stringify(egg, null, 2)], { type: "application/json" });
+      const core = await exportEgg.mutateAsync(blueprint.id);
+      const blob = new Blob([JSON.stringify(core, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${blueprint.name.toLowerCase().replace(/\s+/g, "-")}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Egg exported successfully");
+      toast.success("Core exported successfully");
     } catch {
-      toast.error("Failed to export egg");
+      toast.error("Failed to export core");
     }
   };
 
@@ -162,163 +188,153 @@ export default function BlueprintsPage() {
   const filteredBlueprints = useMemo(() => {
     if (!searchQuery) return blueprintsList;
     const query = searchQuery.toLowerCase();
-    return blueprintsList.filter((blueprint) =>
-      blueprint.name.toLowerCase().includes(query) ||
-      blueprint.imageName.toLowerCase().includes(query) ||
-      blueprint.category?.toLowerCase().includes(query) ||
-      blueprint.description?.toLowerCase().includes(query) ||
-      blueprint.author?.toLowerCase().includes(query)
-    );
+    return blueprintsList.filter((blueprint) => {
+      const dockerImageMatch = Object.values(blueprint.dockerImages || {}).some((img) =>
+        img.toLowerCase().includes(query)
+      );
+      return (
+        blueprint.name.toLowerCase().includes(query) ||
+        dockerImageMatch ||
+        blueprint.category?.toLowerCase().includes(query) ||
+        blueprint.description?.toLowerCase().includes(query) ||
+        blueprint.author?.toLowerCase().includes(query)
+      );
+    });
   }, [blueprintsList, searchQuery]);
 
-  if (!mounted) return null;
-
   return (
-    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <div className="relative p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="w-full">
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                  )}
-                >
-                  <ArrowLeftIcon className="w-4 h-4" />
-                </Button>
-                <div>
-                  <h1 className={cn(
-                    "text-2xl font-light tracking-wider text-zinc-100",
-                  )}>
-                    BLUEPRINTS
-                  </h1>
-                  <p className={cn("text-sm mt-1 text-zinc-500")}>
-                    Docker container templates
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsImportModalOpen(true)}
-                  variant="outline"
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                  )}
-                >
-                  <UploadIcon className="w-4 h-4" />
-                  Import Egg
-                </Button>
-                <Button
-                  onClick={() => { resetForm(); setIsModalOpen(true); }}
-                  className={cn(
-                    "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                  )}
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Add Blueprint
-                </Button>
-              </div>
+            <AdminPageHeader
+              title="BLUEPRINTS"
+              description="Docker container templates"
+              action={{
+                label: "Add Blueprint",
+                icon: <PlusIcon className="h-4 w-4" />,
+                onClick: () => {
+                  resetForm();
+                  setIsModalOpen(true);
+                },
+              }}
+            />
+
+            <div className="mb-6 flex gap-2">
+              <Link href="/admin/blueprints/builder">
+                <TextureButton variant="minimal">
+                  <GitBranch className="h-4 w-4" />
+                  Open Builder
+                </TextureButton>
+              </Link>
+              <TextureButton onClick={() => setIsImportModalOpen(true)} variant="minimal">
+                <UploadIcon className="h-4 w-4" />
+                Import Core
+              </TextureButton>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <SearchIcon className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500",
-              )} />
-              <input
-                type="text"
-                placeholder="Search blueprints..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
-                )}
-              />
-            </div>
+            <AdminSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search blueprints..."
+            />
           </FadeIn>
 
           {/* Blueprints Grid */}
           <FadeIn delay={0.1}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {isLoading ? (
                 <div className="col-span-full flex justify-center py-12">
-                  <Spinner className="w-6 h-6" />
+                  <Spinner className="h-6 w-6" />
                 </div>
               ) : filteredBlueprints.length === 0 ? (
-                <div className={cn(
-                  "col-span-full text-center py-12 border border-zinc-800 text-zinc-500",
-                )}>
-                  {searchQuery ? "No blueprints match your search." : "No blueprints configured. Add your first blueprint."}
-                </div>
+                <AdminEmptyState
+                  message={
+                    searchQuery
+                      ? "No blueprints match your search."
+                      : "No blueprints configured. Add your first blueprint."
+                  }
+                />
               ) : (
                 filteredBlueprints.map((blueprint) => (
                   <div
                     key={blueprint.id}
                     className={cn(
-                      "relative p-4 border transition-colors bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 hover:border-zinc-700",
+                      "relative rounded-lg border border-zinc-700 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-600"
                     )}
                   >
-                    <CornerAccents size="sm" />
-
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <PackageIcon className={cn("w-6 h-6 mt-0.5 text-zinc-400")} />
+                        <PackageIcon className={cn("mt-0.5 h-6 w-6 text-zinc-400")} />
                         <div>
-                          <div className={cn("font-medium flex items-center gap-2 text-zinc-100")}>
+                          <div className={cn("flex items-center gap-2 font-medium text-zinc-100")}>
                             {blueprint.name}
                             {blueprint.isPublic ? (
-                              <EyeIcon className={cn("w-3 h-3 text-zinc-500")} />
+                              <EyeIcon className={cn("h-3 w-3 text-zinc-500")} />
                             ) : (
-                              <EyeOffIcon className={cn("w-3 h-3 text-zinc-600")} />
+                              <EyeOffIcon className={cn("h-3 w-3 text-zinc-600")} />
                             )}
                           </div>
-                          <div className={cn("text-xs mt-1 font-mono text-zinc-500")}>
-                            {blueprint.imageName}:{blueprint.imageTag || "latest"}
+                          <div className={cn("mt-1 font-mono text-xs text-zinc-500")}>
+                            {Object.values(blueprint.dockerImages || {})[0] || "No docker images"}
                           </div>
                           {blueprint.category && (
-                            <div className={cn(
-                              "text-[10px] mt-2 inline-block px-1.5 py-0.5 uppercase tracking-wider border border-zinc-700 text-zinc-400",
-                            )}>
+                            <div
+                              className={cn(
+                                "mt-2 inline-block border border-zinc-700 px-1.5 py-0.5 text-[10px] tracking-wider text-zinc-400 uppercase"
+                              )}
+                            >
                               {blueprint.category}
                             </div>
                           )}
                           {blueprint.author && (
-                            <div className={cn("text-xs mt-1 flex items-center gap-1 text-zinc-500")}>
-                              <UserIcon className="w-3 h-3" />
+                            <div
+                              className={cn("mt-1 flex items-center gap-1 text-xs text-zinc-500")}
+                            >
+                              <UserIcon className="h-3 w-3" />
                               {blueprint.author}
                             </div>
                           )}
                           {blueprint.description && (
-                            <div className={cn("text-xs mt-2 line-clamp-2 text-zinc-600")}>
+                            <div className={cn("mt-2 line-clamp-2 text-xs text-zinc-600")}>
                               {blueprint.description}
                             </div>
                           )}
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {blueprint.dockerImages && Object.keys(blueprint.dockerImages).length > 1 && (
-                              <span className={cn("text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-500")}>
-                                {Object.keys(blueprint.dockerImages).length} images
-                              </span>
-                            )}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {blueprint.dockerImages &&
+                              Object.keys(blueprint.dockerImages).length > 1 && (
+                                <span
+                                  className={cn(
+                                    "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                  )}
+                                >
+                                  {Object.keys(blueprint.dockerImages).length} images
+                                </span>
+                              )}
                             {blueprint.variables && blueprint.variables.length > 0 && (
-                              <span className={cn("text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-500")}>
+                              <span
+                                className={cn(
+                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                )}
+                              >
                                 {blueprint.variables.length} variables
                               </span>
                             )}
                             {blueprint.startup && (
-                              <span className={cn("text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-500")}>
+                              <span
+                                className={cn(
+                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                )}
+                              >
                                 startup
                               </span>
                             )}
-                            {blueprint.installScript && (
-                              <span className={cn("text-[10px] px-1.5 py-0.5 border border-zinc-700 text-zinc-500")}>
+                            {(blueprint.scripts as any)?.installation?.script && (
+                              <span
+                                className={cn(
+                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                )}
+                              >
                                 install script
                               </span>
                             )}
@@ -326,38 +342,35 @@ export default function BlueprintsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
+                        <TextureButton
+                          variant="minimal"
                           size="sm"
-                          onClick={() => handleExportEgg(blueprint)}
+                          onClick={() => handleExportCore(blueprint)}
                           disabled={exportEgg.isPending}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
-                          title="Export as Pterodactyl Egg"
+                          title="Export as Core"
                         >
-                          <DownloadIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
+                          <DownloadIcon className="h-3 w-3" />
+                        </TextureButton>
+                        <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
+                          <TextureButton variant="minimal" size="sm" title="Edit in Builder">
+                            <GitBranch className="h-3 w-3" />
+                          </TextureButton>
+                        </Link>
+                        <TextureButton
+                          variant="minimal"
                           size="sm"
                           onClick={() => handleEdit(blueprint)}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
+                          title="Edit Form"
                         >
-                          <EditIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
+                          <EditIcon className="h-3 w-3" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="minimal"
                           size="sm"
                           onClick={() => setDeleteConfirmBlueprint(blueprint)}
-                          className={cn(
-                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                          )}
                         >
-                          <TrashIcon className="w-3 h-3" />
-                        </Button>
+                          <TrashIcon className="h-3 w-3" />
+                        </TextureButton>
                       </div>
                     </div>
                   </div>
@@ -379,145 +392,153 @@ export default function BlueprintsPage() {
         submitLabel={editingBlueprint ? "Update" : "Create"}
         onSubmit={handleSubmit}
         isLoading={create.isPending || update.isPending}
-        isValid={formData.name.length > 0 && formData.imageName.length > 0}
+        isValid={formData.name.length > 0 && Object.keys(formData.dockerImages || {}).length > 0}
         size="lg"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>Name</label>
-              <input
+              <Label>Name</Label>
+              <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Minecraft Vanilla"
-                className={inputClasses}
                 required
               />
             </div>
             <div>
-              <label className={labelClasses}>Category</label>
-              <input
+              <Label>Category</Label>
+              <Input
                 type="text"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="gaming"
-                className={inputClasses}
               />
             </div>
+          </div>
+
+          <div>
+            <Label>Docker Image (e.g., itzg/minecraft-server:latest)</Label>
+            <Input
+              type="text"
+              value={Object.values(formData.dockerImages || {})[0] || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  dockerImages: e.target.value ? { Default: e.target.value } : {},
+                })
+              }
+              placeholder="ghcr.io/ptero-eggs/yolks:java_21"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>Image Name</label>
-              <input
+              <Label>Author</Label>
+              <Input
                 type="text"
-                value={formData.imageName}
-                onChange={(e) => setFormData({ ...formData, imageName: e.target.value })}
-                placeholder="itzg/minecraft-server"
-                className={inputClasses}
-                required
+                value={formData.author || ""}
+                onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                placeholder="Author name"
               />
             </div>
             <div>
-              <label className={labelClasses}>Image Tag</label>
-              <input
+              <Label>Startup Command</Label>
+              <Input
                 type="text"
-                value={formData.imageTag}
-                onChange={(e) => setFormData({ ...formData, imageTag: e.target.value })}
-                placeholder="latest"
-                className={inputClasses}
+                value={formData.startup || ""}
+                onChange={(e) => setFormData({ ...formData, startup: e.target.value })}
+                placeholder="java -jar server.jar"
               />
             </div>
           </div>
 
           <div>
-            <label className={labelClasses}>Description</label>
-            <textarea
+            <Label>Description</Label>
+            <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description..."
               rows={2}
-              className={cn(inputClasses, "resize-none")}
+              className={cn("resize-none")}
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="checkbox"
               id="isPublic"
               checked={formData.isPublic}
               onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-              className="w-4 h-4"
+              className="h-4 w-4"
             />
-            <label htmlFor="isPublic" className={cn("text-sm text-zinc-300")}>
-              Public (visible to all users)
-            </label>
+            <Label htmlFor="isPublic">Public (visible to all users)</Label>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className={labelClasses}>Docker Config (JSON)</label>
-              <button
+            <div className="mb-1 flex items-center justify-between">
+              <Label>Docker Config (JSON)</Label>
+              <TextureButton
+                variant="minimal"
                 type="button"
                 onClick={() => setShowJsonEditor(!showJsonEditor)}
-                className={cn("text-xs text-zinc-500 hover:text-zinc-300")}
               >
                 {showJsonEditor ? "Hide" : "Show"} Editor
-              </button>
+              </TextureButton>
             </div>
             {showJsonEditor && (
-              <textarea
+              <Textarea
                 value={configJson}
                 onChange={(e) => setConfigJson(e.target.value)}
                 placeholder='{"environment": {"EULA": "TRUE"}, "ports": [...]}'
                 rows={10}
-                className={cn(inputClasses, "font-mono text-xs resize-none")}
+                className={cn("resize-none font-mono text-xs")}
               />
             )}
             {!showJsonEditor && (
-              <div className={cn(
-                "p-3 text-xs font-mono max-h-32 overflow-auto border bg-zinc-900 border-zinc-700 text-zinc-400",
-              )}>
+              <div
+                className={cn(
+                  "max-h-32 overflow-auto border border-zinc-700 bg-zinc-900 p-3 font-mono text-xs text-zinc-400"
+                )}
+              >
                 <pre>{configJson}</pre>
               </div>
             )}
           </div>
 
           {/* Docker Images (from Pterodactyl egg) */}
-          {editingBlueprint?.dockerImages && Object.keys(editingBlueprint.dockerImages).length > 0 && (
-            <div>
-              <label className={cn(labelClasses, "flex items-center gap-2")}>
-                <ImageIcon className="w-3 h-3" />
-                Docker Images
-              </label>
-              <div className={cn(
-                "p-3 border space-y-2 bg-zinc-900/50 border-zinc-700",
-              )}>
-                {Object.entries(editingBlueprint.dockerImages).map(([label, image]) => (
-                  <div key={label} className="flex items-center justify-between gap-2">
-                    <span className={cn("text-xs font-medium text-zinc-300")}>
-                      {label}
-                    </span>
-                    <span className={cn("text-xs font-mono text-zinc-500")}>
-                      {image}
-                    </span>
-                  </div>
-                ))}
+          {editingBlueprint?.dockerImages &&
+            Object.keys(editingBlueprint.dockerImages).length > 0 && (
+              <div>
+                <Label>
+                  <ImageIcon className="h-3 w-3" />
+                  Docker Images
+                </Label>
+                <div className={cn("space-y-2 border border-zinc-700 bg-zinc-900/50 p-3")}>
+                  {Object.entries(editingBlueprint.dockerImages).map(([label, image]) => (
+                    <div key={label} className="flex items-center justify-between gap-2">
+                      <span className={cn("text-xs font-medium text-zinc-300")}>{label}</span>
+                      <span className={cn("font-mono text-xs text-zinc-500")}>{image}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Startup Command (from Pterodactyl egg) */}
           {editingBlueprint?.startup && (
             <div>
-              <label className={cn(labelClasses, "flex items-center gap-2")}>
-                <TerminalIcon className="w-3 h-3" />
+              <Label>
+                <TerminalIcon className="h-3 w-3" />
                 Startup Command
-              </label>
-              <div className={cn(
-                "p-3 border font-mono text-xs overflow-x-auto bg-zinc-900/50 border-zinc-700 text-zinc-400",
-              )}>
+              </Label>
+              <div
+                className={cn(
+                  "overflow-x-auto border border-zinc-700 bg-zinc-900/50 p-3 font-mono text-xs text-zinc-400"
+                )}
+              >
                 {editingBlueprint.startup}
               </div>
             </div>
@@ -526,45 +547,48 @@ export default function BlueprintsPage() {
           {/* Variables (from Pterodactyl egg) */}
           {editingBlueprint?.variables && editingBlueprint.variables.length > 0 && (
             <div>
-              <label className={cn(labelClasses, "flex items-center gap-2")}>
-                <VariableIcon className="w-3 h-3" />
+              <Label>
+                <VariableIcon className="h-3 w-3" />
                 Variables ({editingBlueprint.variables.length})
-              </label>
-              <div className={cn(
-                "border divide-y max-h-64 overflow-y-auto bg-zinc-900/50 border-zinc-700 divide-zinc-700/50",
-              )}>
+              </Label>
+              <div
+                className={cn(
+                  "max-h-64 divide-y divide-zinc-700/50 overflow-y-auto border border-zinc-700 bg-zinc-900/50"
+                )}
+              >
                 {editingBlueprint.variables.map((variable) => (
                   <div key={variable.env_variable} className="p-3">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="mb-1 flex items-center justify-between gap-2">
                       <span className={cn("text-xs font-medium text-zinc-200")}>
                         {variable.name}
                       </span>
-                      <span className={cn("text-[10px] font-mono px-1.5 py-0.5 border rounded border-zinc-700 text-zinc-500")}>
+                      <span
+                        className={cn(
+                          "rounded border border-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500"
+                        )}
+                      >
                         {variable.env_variable}
                       </span>
                     </div>
                     {variable.description && (
-                      <p className={cn("text-[11px] mb-2 text-zinc-500")}>
-                        {variable.description}
-                      </p>
+                      <p className={cn("mb-2 text-[11px] text-zinc-500")}>{variable.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-[10px]">
                       <span className={"text-zinc-600"}>
-                        Default: <span className="font-mono">{variable.default_value || "(empty)"}</span>
+                        Default:{" "}
+                        <span className="font-mono">{variable.default_value || "(empty)"}</span>
                       </span>
                       {variable.rules && (
-                        <span className={"text-zinc-600"}>
-                          Rules: {variable.rules}
-                        </span>
+                        <span className={"text-zinc-600"}>Rules: {variable.rules}</span>
                       )}
                       <div className="flex gap-2">
                         {variable.user_viewable && (
-                          <span className={cn("px-1 py-0.5 rounded bg-zinc-800 text-zinc-500")}>
+                          <span className={cn("rounded bg-zinc-800 px-1 py-0.5 text-zinc-500")}>
                             viewable
                           </span>
                         )}
                         {variable.user_editable && (
-                          <span className={cn("px-1 py-0.5 rounded bg-zinc-800 text-zinc-500")}>
+                          <span className={cn("rounded bg-zinc-800 px-1 py-0.5 text-zinc-500")}>
                             editable
                           </span>
                         )}
@@ -573,7 +597,7 @@ export default function BlueprintsPage() {
                   </div>
                 ))}
               </div>
-              <p className={cn("text-[10px] mt-1 text-zinc-600")}>
+              <p className={cn("mt-1 text-[10px] text-zinc-600")}>
                 Variables are imported from Pterodactyl eggs and can be overridden per-server.
               </p>
             </div>
@@ -581,42 +605,42 @@ export default function BlueprintsPage() {
         </div>
       </FormModal>
 
-      {/* Import Egg Modal */}
+      {/* Import Core Modal */}
       <FormModal
         open={isImportModalOpen}
         onOpenChange={(open) => {
           setIsImportModalOpen(open);
           if (!open) setImportJson("");
         }}
-        title="Import Pterodactyl Egg"
-        description="Paste the contents of a Pterodactyl egg JSON file or upload a file."
+        title="Import Core"
+        description="Paste the contents of a core JSON file or upload a file."
         submitLabel="Import"
-        onSubmit={handleImportEgg}
+        onSubmit={handleImportCore}
         isLoading={importEgg.isPending}
         isValid={importJson.length > 0}
         size="lg"
       >
         <div className="space-y-4">
           <div>
-            <label className={labelClasses}>Upload File</label>
-            <input
+            <Label>Upload File</Label>
+            <Input
               type="file"
               accept=".json"
               onChange={handleFileImport}
               className={cn(
-                "w-full text-sm file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-zinc-800 file:text-zinc-300 text-zinc-400",
+                "w-full text-sm text-zinc-400 file:mr-4 file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-medium file:text-zinc-300"
               )}
             />
           </div>
 
           <div>
-            <label className={labelClasses}>Or Paste JSON</label>
-            <textarea
+            <Label>Or Paste JSON</Label>
+            <Textarea
               value={importJson}
               onChange={(e) => setImportJson(e.target.value)}
               placeholder='{"name": "Paper", "docker_images": {...}, ...}'
               rows={15}
-              className={cn(inputClasses, "font-mono text-xs resize-none")}
+              className={cn("resize-none font-mono text-xs")}
               required
             />
           </div>
@@ -631,7 +655,6 @@ export default function BlueprintsPage() {
         description={`Are you sure you want to delete "${deleteConfirmBlueprint?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

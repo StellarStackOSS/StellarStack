@@ -200,41 +200,38 @@ model Blueprint {
   category    String?
   author      String?
 
-  // Docker image info (primary image)
-  imageName String
-  imageTag  String  @default("latest")
-  registry  String?
+  // Pterodactyl metadata
+  metaVersion String @default("PTDL_v2")
+  updateUrl   String?
 
-  // Multiple docker images with labels (Pterodactyl compatibility)
+  // Native Pterodactyl structures (stored as-is)
+  fileDenylist String[]
+
+  // Docker images as key-value pairs (label -> image)
   // Format: { "Java 8": "ghcr.io/image:java_8", "Java 11": "ghcr.io/image:java_11" }
-  dockerImages Json?
+  dockerImages Json
 
-  // Startup configuration
-  startup     String? // Startup command template (e.g., "java -Xmx{{SERVER_MEMORY}}M -jar server.jar")
-  stopCommand String? // Command to stop server (e.g., "stop")
+  // Startup command template
+  // Format: "java -Xmx{{SERVER_MEMORY}}M -jar server.jar"
+  startup String
 
-  // File configuration parsers (Pterodactyl format)
-  // Format: { "server.properties": { "parser": "properties", "find": {...} } }
-  configFiles Json?
-
-  // Startup detection (when server is "done" starting)
-  // Format: { "done": "For help, type" }
-  startupDetection Json?
-
-  // Installation script
-  installScript     String? @db.Text
-  installContainer  String? // Container for installation (e.g., "alpine")
-  installEntrypoint String? // Entrypoint for install (e.g., "ash")
-
-  // Server variables (user-configurable)
-  // Format: [{ "name": "...", "env_variable": "...", "default_value": "...", "user_viewable": true, ... }]
-  variables Json?
-
-  // Features (e.g., ["eula", "java_version", "pid_limit"])
-  features Json?
-
-  // Default container configuration (JSON)
+  // Complete Pterodactyl config structure
+  // Format: { files?: string (JSON), startup?: string (JSON), logs?: string (JSON), stop?: string }
   config Json
+
+  // Complete Pterodactyl scripts structure
+  // Format: { installation?: { script: string, container?: string, entrypoint?: string } }
+  scripts Json
+
+  // Server variables (preserves all Pterodactyl properties)
+  // Format: [{ name, description, env_variable, default_value, user_viewable, user_editable, rules, field_type, ... }]
+  variables Json
+
+  // Features array
+  features String[]
+
+  // Default container configuration (Docker Compose compatible)
+  dockerConfig Json
 
   // Visibility
   isPublic Boolean @default(true)
@@ -399,6 +396,9 @@ model Schedule {
   // When schedule processing started (null if never run)
   isProcessing Boolean @default(false)
 
+  // Which task index is currently executing (-1 or null if not running)
+  executingTaskIndex Int?
+
   // Last run timestamp
   lastRunAt DateTime?
 
@@ -431,6 +431,9 @@ model ScheduleTask {
 
   // Sequence order (tasks execute in order)
   sequence Int @default(0)
+
+  // How this task should be triggered: "TIME_DELAY" or "ON_COMPLETION"
+  triggerMode String @default("TIME_DELAY")
 
   // Relations
   scheduleId String

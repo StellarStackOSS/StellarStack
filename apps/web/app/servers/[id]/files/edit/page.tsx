@@ -1,27 +1,30 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2, File } from "lucide-react";
+import { ArrowLeft, File, Loader2, Save } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { CodeEditor, detectLanguage } from "@/components/code-editor";
+import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
-import { useServer } from "@/components/server-provider";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
+import { MediaViewer } from "@/components/MediaViewer/MediaViewer";
+import { getMediaType } from "@/lib/media-utils";
+import { servers } from "@/lib/api";
 
 export default function FileEditPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme } = useTheme();
 
   const serverId = params.id as string;
   const filePath = searchParams.get("path") || "";
   const fileName = filePath.split("/").pop() || "file";
-
-  const { server } = useServer();
 
   // Fetch file content
   const { data: originalContent, isLoading, error } = useFileContent(serverId, filePath);
@@ -32,10 +35,7 @@ export default function FileEditPage() {
   // Local state for editing
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [blobUrl, setBlobUrl] = useState("");
 
   // Set initial content when loaded
   useEffect(() => {
@@ -78,6 +78,46 @@ export default function FileEditPage() {
     router.push(`/servers/${serverId}/files${parentPath ? `/${parentPath}` : ""}`);
   };
 
+  // Load blob URL for media files
+  useEffect(() => {
+    const loadBlobUrl = async () => {
+      try {
+        const mediaType = getMediaType(fileName);
+        if (mediaType !== "unknown" && !fileName.endsWith(".svg")) {
+          // For binary media files, use the download endpoint
+          try {
+            const apiUrl =
+              typeof window !== "undefined" &&
+              window.location.hostname !== "localhost" &&
+              window.location.hostname !== "127.0.0.1"
+                ? window.location.origin
+                : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+            const downloadUrl = `${apiUrl}/download/file?server=${encodeURIComponent(serverId)}&file=${encodeURIComponent(filePath)}`;
+            const response = await fetch(downloadUrl);
+            if (response.ok) {
+              const blob = await response.blob();
+              const url = URL.createObjectURL(blob);
+              setBlobUrl(url);
+            }
+          } catch (err) {
+            console.debug("Could not load blob URL, will use data URL:", err);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load blob URL for media:", err);
+      }
+    };
+
+    if (fileName && serverId && filePath) {
+      loadBlobUrl();
+    }
+
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [fileName, serverId, filePath]);
+
   // Warn on page unload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -93,21 +133,8 @@ export default function FileEditPage() {
 
   const language = detectLanguage(fileName);
 
-  const fileExtension = fileName.split(".").pop()?.toLowerCase() || "";
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico"].includes(
-    fileExtension
-  );
-  const isVideo = ["mp4", "webm", "mov", "avi", "mkv", "flv", "wmv", "m4v", "3gp", "ogv"].includes(
-    fileExtension
-  );
-  const isAudio = ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus", "aiff", "au"].includes(
-    fileExtension
-  );
-  const isMedia = isImage || isVideo || isAudio;
-
-  if (!mounted) {
-    return null;
-  }
+  const mediaType = getMediaType(fileName);
+  const isMedia = mediaType !== "unknown";
 
   return (
     <div className={cn("relative min-h-screen", "bg-black")}>
@@ -123,15 +150,11 @@ export default function FileEditPage() {
             )}
           >
             <div className="flex items-center gap-4">
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "p-2 transition-colors",
-                  "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                )}
               >
                 <ArrowLeft className="h-5 w-5" />
-              </button>
+              </TextureButton>
 
               <div className="flex items-center gap-3">
                 <div
@@ -167,24 +190,14 @@ export default function FileEditPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "border px-2 py-1 text-xs tracking-wider uppercase",
-                  "border-zinc-700 text-zinc-400"
-                )}
-              >
+              <TextureBadge variant="accent" className="uppercase">
                 {language}
-              </span>
+              </TextureBadge>
 
-              <button
+              <TextureButton
+                variant="minimal"
                 onClick={handleSave}
                 disabled={!hasChanges || write.isPending}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors",
-                  hasChanges && !write.isPending
-                    ? "bg-white text-black hover:bg-zinc-200"
-                    : "cursor-not-allowed bg-zinc-800 text-zinc-500"
-                )}
               >
                 {write.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -192,7 +205,7 @@ export default function FileEditPage() {
                   <Save className="h-4 w-4" />
                 )}
                 Save
-              </button>
+              </TextureButton>
             </div>
           </header>
         </FadeIn>
@@ -208,62 +221,24 @@ export default function FileEditPage() {
               <p className={cn("text-lg", "text-red-400")}>
                 Failed to load file
               </p>
-              <button
+              <TextureButton variant="minimal"
                 onClick={handleBack}
-                className={cn(
-                  "px-4 py-2 text-sm",
-                  "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                )}
               >
                 Go Back
-              </button>
+              </TextureButton>
             </div>
           ) : isMedia ? (
-            <div className="flex h-full items-center justify-center p-8">
-              <div className="flex flex-col items-center gap-6">
-                {isImage && (
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="relative max-h-[70vh] max-w-full overflow-auto rounded-lg border-2 border-zinc-700/30">
-                      <img
-                        src={`data:${fileExtension === "svg" ? "image/svg+xml" : `image/${fileExtension}`};base64,${btoa(originalContent || "")}`}
-                        alt={fileName}
-                        className="h-auto max-w-full"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {isVideo && (
-                  <div className="flex w-full max-w-4xl flex-col items-center gap-4">
-                    <div className="w-full overflow-hidden rounded-lg border-2 border-zinc-700/30">
-                      <video controls className="w-full" preload="metadata">
-                        <source
-                          src={`data:video/${fileExtension};base64,${originalContent || ""}`}
-                          type={`video/${fileExtension}`}
-                        />
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
-                  </div>
-                )}
-
-                {isAudio && (
-                  <div className="flex w-full max-w-2xl flex-col items-center gap-6">
-                    <div className="w-full rounded-xl border-2 border-zinc-700/30 p-12">
-                      <audio controls className="w-full" preload="metadata">
-                        <source
-                          src={`data:audio/${fileExtension};base64,${originalContent || ""}`}
-                          type={`audio/${fileExtension}`}
-                        />
-                        Your browser does not support the audio tag.
-                      </audio>
-                    </div>
-                  </div>
-                )}
+            <div className="flex h-full overflow-auto p-8">
+              <div className="mx-auto w-full">
+                <MediaViewer
+                  fileName={fileName}
+                  content={originalContent || ""}
+                  blobUrl={blobUrl}
+                />
               </div>
             </div>
           ) : (
-            <CodeEditor
+            <FileEditor
               value={content}
               onChange={handleContentChange}
               filename={fileName}

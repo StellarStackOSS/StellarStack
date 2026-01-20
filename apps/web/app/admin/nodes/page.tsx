@@ -1,21 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@workspace/ui/components/dialog";
 import {
   ContextMenu,
@@ -25,24 +23,30 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import {
-  CpuIcon,
-  PlusIcon,
-  TrashIcon,
-  EditIcon,
-  CopyIcon,
   CheckIcon,
+  CopyIcon,
+  CpuIcon,
+  EditIcon,
+  PlusIcon,
   SettingsIcon,
-  ArrowLeftIcon,
-  SearchIcon,
+  TrashIcon,
 } from "lucide-react";
-import { useNodes, useNodeMutations, useLocations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Node, CreateNodeData } from "@/lib/api";
+import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
+import type { CreateNodeData, Node } from "@/lib/api";
 import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function NodesPage() {
   const router = useRouter();
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
 
   // React Query hooks
   const { data: nodesList = [], isLoading } = useNodes();
@@ -145,77 +149,29 @@ export default function NodesPage() {
 
   const isFormValid = formData.displayName.length > 0 && formData.host.length > 0;
 
-  if (!mounted) return null;
-
   return (
-    <div
-      className={cn(
-        "relative min-h-svh transition-colors bg-[#0b0b0a]",
-      )}
-    >
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                  )}
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                </Button>
-                <div>
-                  <h1
-                    className={cn(
-                      "text-2xl font-light tracking-wider text-zinc-100",
-                    )}
-                  >
-                    NODES
-                  </h1>
-                  <p className={cn("mt-1 text-sm text-zinc-500")}>
-                    Manage daemon nodes
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => {
+            <AdminPageHeader
+              title="NODES"
+              description="Manage daemon nodes"
+              action={{
+                label: "Add Node",
+                icon: <PlusIcon className="h-4 w-4" />,
+                onClick: () => {
                   resetForm();
                   setIsModalOpen(true);
-                }}
-                className={cn(
-                  "flex items-center gap-2 text-xs tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                )}
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add Node
-              </Button>
-            </div>
+                },
+              }}
+            />
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <SearchIcon
-                className={cn(
-                  "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500",
-                )}
-              />
-              <input
-                type="text"
-                placeholder="Search nodes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full border py-2.5 pr-4 pl-10 text-sm transition-colors focus:outline-none border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
-                )}
-              />
-            </div>
+            <AdminSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search nodes..."
+            />
           </FadeIn>
 
           {/* Nodes List */}
@@ -226,15 +182,13 @@ export default function NodesPage() {
                   <Spinner className="h-6 w-6" />
                 </div>
               ) : filteredNodes.length === 0 ? (
-                <div
-                  className={cn(
-                    "border py-12 text-center border-zinc-800 text-zinc-500",
-                  )}
-                >
-                  {searchQuery
-                    ? "No nodes match your search."
-                    : "No nodes configured. Add your first node to get started."}
-                </div>
+                <AdminEmptyState
+                  message={
+                    searchQuery
+                      ? "No nodes match your search."
+                      : "No nodes configured. Add your first node to get started."
+                  }
+                />
               ) : (
                 filteredNodes.map((node, index) => (
                   <FadeIn key={node.id} delay={0.1 + index * 0.05}>
@@ -242,25 +196,21 @@ export default function NodesPage() {
                       <ContextMenuTrigger asChild>
                         <div
                           className={cn(
-                            "group relative cursor-context-menu border p-5 transition-all hover:scale-[1.005] border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20 hover:border-zinc-700",
+                            "group relative cursor-context-menu border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-5 shadow-lg shadow-black/20 transition-all hover:scale-[1.005] hover:border-zinc-700"
                           )}
                         >
-                          <CornerAccents size="sm" />
-
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <CpuIcon
                                 className={cn(
                                   "h-8 w-8",
-                                  node.isOnline
-                                    ? "text-zinc-300"
-                                    : "text-zinc-600"                                      
+                                  node.isOnline ? "text-zinc-300" : "text-zinc-600"
                                 )}
                               />
                               <div>
                                 <div
                                   className={cn(
-                                    "flex items-center gap-2 font-medium text-zinc-100",
+                                    "flex items-center gap-2 font-medium text-zinc-100"
                                   )}
                                 >
                                   {node.displayName}
@@ -275,25 +225,15 @@ export default function NodesPage() {
                                     {node.isOnline ? "Online" : "Offline"}
                                   </span>
                                 </div>
-                                <div
-                                  className={cn(
-                                    "mt-1 text-xs text-zinc-500",
-                                  )}
-                                >
+                                <div className={cn("mt-1 text-xs text-zinc-500")}>
                                   {node.protocol.toLowerCase()}://{node.host}:{node.port}
                                 </div>
-                                <div
-                                  className={cn(
-                                    "mt-1 flex gap-4 text-xs text-zinc-600",
-                                  )}
-                                >
+                                <div className={cn("mt-1 flex gap-4 text-xs text-zinc-600")}>
                                   <span>CPU: {node.cpuLimit} cores</span>
                                   <span>RAM: {formatBytes(node.memoryLimit)}</span>
                                   <span>Disk: {formatBytes(node.diskLimit)}</span>
                                   {node.heartbeatLatency && (
-                                    <span
-                                      className={cn("text-zinc-400")}
-                                    >
+                                    <span className={cn("text-zinc-400")}>
                                       {node.heartbeatLatency}ms
                                     </span>
                                   )}
@@ -301,44 +241,30 @@ export default function NodesPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              <TextureButton
+                                variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}`)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <SettingsIcon className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              </TextureButton>
+                              <TextureButton
+                                variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                                )}
                               >
                                 <EditIcon className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              </TextureButton>
+                              <TextureButton
+                                variant="destructive"
                                 onClick={() => setDeleteConfirmNode(node)}
-                                className={cn(
-                                  "p-2 text-xs transition-all hover:scale-110 active:scale-95 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                                )}
                               >
                                 <TrashIcon className="h-3.5 w-3.5" />
-                              </Button>
+                              </TextureButton>
                             </div>
                           </div>
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent
-                        className={cn(
-                          "min-w-[160px] border-zinc-700 bg-zinc-900",
-                        )}
+                        className={cn("min-w-[160px] border-zinc-700 bg-zinc-900")}
                       >
                         <ContextMenuItem
                           onClick={() => router.push(`/admin/nodes/${node.id}`)}
@@ -388,38 +314,35 @@ export default function NodesPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className={labelClasses}>Display Name</label>
-            <input
+            <Label>Display Name</Label>
+            <Input
               type="text"
               value={formData.displayName}
               onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
               placeholder="US West Node 1"
-              className={inputClasses}
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>Host</label>
-              <input
+              <Label>Host</Label>
+              <Input
                 type="text"
                 value={formData.host}
                 onChange={(e) => setFormData({ ...formData, host: e.target.value })}
                 placeholder="192.168.1.100"
-                className={inputClasses}
                 required
               />
             </div>
             <div>
-              <label className={labelClasses}>Port</label>
-              <input
+              <Label>Port</Label>
+              <Input
                 type="number"
                 value={formData.port}
                 onChange={(e) =>
                   setFormData({ ...formData, port: parseInt(e.target.value) || 3001 })
                 }
-                className={inputClasses}
                 required
               />
             </div>
@@ -427,57 +350,64 @@ export default function NodesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>Protocol</label>
-              <select
+              <Label>Protocol</Label>
+              <Select
                 value={formData.protocol}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    protocol: e.target.value as "HTTP" | "HTTPS" | "HTTPS_PROXY",
+                    protocol: value as "HTTP" | "HTTPS" | "HTTPS_PROXY",
                   })
                 }
-                className={selectClasses}
               >
-                <option value="HTTP">HTTP</option>
-                <option value="HTTPS">HTTPS</option>
-                <option value="HTTPS_PROXY">HTTPS Proxy</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HTTP">HTTP</SelectItem>
+                  <SelectItem value="HTTPS">HTTPS</SelectItem>
+                  <SelectItem value="HTTPS_PROXY">HTTPS Proxy</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <label className={labelClasses}>Location</label>
-              <select
+              <Label>Location</Label>
+              <Select
                 value={formData.locationId || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, locationId: e.target.value || undefined })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, locationId: value || undefined })
                 }
-                className={selectClasses}
               >
-                <option value="">No Location</option>
-                {locationsList.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Location</SelectItem>
+                  {locationsList.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className={labelClasses}>CPU Cores</label>
-              <input
+              <Label>CPU Cores</Label>
+              <Input
                 type="number"
                 value={formData.cpuLimit}
                 onChange={(e) =>
                   setFormData({ ...formData, cpuLimit: parseInt(e.target.value) || 1 })
                 }
-                className={inputClasses}
                 required
               />
             </div>
             <div>
-              <label className={labelClasses}>Memory (GB)</label>
-              <input
+              <Label>Memory (GB)</Label>
+              <Input
                 type="number"
                 value={formData.memoryLimit / 1073741824}
                 onChange={(e) =>
@@ -486,13 +416,12 @@ export default function NodesPage() {
                     memoryLimit: (parseFloat(e.target.value) || 1) * 1073741824,
                   })
                 }
-                className={inputClasses}
                 required
               />
             </div>
             <div>
-              <label className={labelClasses}>Disk (GB)</label>
-              <input
+              <Label>Disk (GB)</Label>
+              <Input
                 type="number"
                 value={formData.diskLimit / 1073741824}
                 onChange={(e) =>
@@ -501,7 +430,6 @@ export default function NodesPage() {
                     diskLimit: (parseFloat(e.target.value) || 1) * 1073741824,
                   })
                 }
-                className={inputClasses}
                 required
               />
             </div>
@@ -509,19 +437,18 @@ export default function NodesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>SFTP Port</label>
-              <input
+              <Label>SFTP Port</Label>
+              <Input
                 type="number"
                 value={formData.sftpPort}
                 onChange={(e) =>
                   setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })
                 }
-                className={inputClasses}
               />
             </div>
             <div>
-              <label className={labelClasses}>Upload Limit (MB)</label>
-              <input
+              <Label>Upload Limit (MB)</Label>
+              <Input
                 type="number"
                 value={(formData.uploadLimit ?? 104857600) / 1048576}
                 onChange={(e) =>
@@ -530,7 +457,6 @@ export default function NodesPage() {
                     uploadLimit: (parseFloat(e.target.value) || 100) * 1048576,
                   })
                 }
-                className={inputClasses}
               />
             </div>
           </div>
@@ -539,15 +465,9 @@ export default function NodesPage() {
 
       {/* Token Modal */}
       <Dialog open={!!showToken} onOpenChange={(open) => !open && setShowToken(null)}>
-        <DialogContent
-          className={cn(
-            "sm:max-w-lg border-zinc-700 bg-zinc-900",
-          )}
-        >
+        <DialogContent className={cn("border-zinc-700 bg-zinc-900 sm:max-w-lg")}>
           <DialogHeader>
-            <DialogTitle className={cn("text-zinc-100")}>
-              Node Credentials
-            </DialogTitle>
+            <DialogTitle className={cn("text-zinc-100")}>Node Credentials</DialogTitle>
             <DialogDescription className={cn("text-zinc-400")}>
               Copy these credentials and use them to configure the daemon. They will only be shown
               once.
@@ -555,75 +475,44 @@ export default function NodesPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label
-                className={cn(
-                  "mb-1 block text-xs tracking-wider uppercase text-zinc-400",
-                )}
-              >
-                Token ID
-              </label>
+              <Label>Token ID</Label>
               <div
                 className={cn(
-                  "flex items-center justify-between gap-2 border p-3 font-mono text-xs break-all border-zinc-700 bg-zinc-950 text-zinc-300",
+                  "flex items-center justify-between gap-2 border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300"
                 )}
               >
                 <span className="flex-1">{showToken?.token_id}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyTokenId}
-                  className={cn("shrink-0 border-zinc-700")}
-                >
+                <TextureButton variant="minimal" onClick={copyTokenId}>
                   {copiedTokenId ? (
-                    <CheckIcon
-                      className={cn("h-4 w-4 text-zinc-300")}
-                    />
+                    <CheckIcon className={cn("h-4 w-4 text-zinc-300")} />
                   ) : (
                     <CopyIcon className="h-4 w-4" />
                   )}
-                </Button>
+                </TextureButton>
               </div>
             </div>
             <div>
-              <label
-                className={cn(
-                  "mb-1 block text-xs tracking-wider uppercase text-zinc-400",
-                )}
-              >
-                Token
-              </label>
+              <Label>Token</Label>
               <div
                 className={cn(
-                  "flex items-center justify-between gap-2 border p-3 font-mono text-xs break-all border-zinc-700 bg-zinc-950 text-zinc-300",
+                  "flex items-center justify-between gap-2 border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300"
                 )}
               >
                 <span className="flex-1">{showToken?.token}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyToken}
-                  className={cn("shrink-0 border-zinc-700")}
-                >
+                <TextureButton variant="minimal" onClick={copyToken}>
                   {copiedToken ? (
-                    <CheckIcon
-                      className={cn("h-4 w-4 text-zinc-300")}
-                    />
+                    <CheckIcon className={cn("h-4 w-4 text-zinc-300")} />
                   ) : (
                     <CopyIcon className="h-4 w-4" />
                   )}
-                </Button>
+                </TextureButton>
               </div>
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <Button
-              onClick={() => setShowToken(null)}
-              className={cn(
-                "text-xs tracking-wider uppercase bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-              )}
-            >
+            <TextureButton variant="minimal" onClick={() => setShowToken(null)}>
               Close
-            </Button>
+            </TextureButton>
           </div>
         </DialogContent>
       </Dialog>
@@ -636,7 +525,6 @@ export default function NodesPage() {
         description={`Are you sure you want to delete "${deleteConfirmNode?.displayName}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

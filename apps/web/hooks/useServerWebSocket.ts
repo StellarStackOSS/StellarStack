@@ -2,15 +2,12 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ConsoleInfo, ServerStats } from "@/lib/api";
-
-// Strip ANSI escape codes from text
-const stripAnsi = (text: string): string => {
-  // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07|\x1b\(B|\x1b\[\?.*?[hl]|\r/g, "");
-};
-
-const MAX_HISTORY_LENGTH = 60;
-const MAX_CONSOLE_LINES = 500;
+import { stripAnsi } from "@/lib/ansi-utils";
+import { WEBSOCKET_CONSTANTS } from "@/lib/websocket-constants";
+import {
+  processStatsUpdate,
+  type StatsWithHistory as ProcessedStatsWithHistory,
+} from "@/lib/stats-processor";
 
 export interface ConsoleLine {
   text: string;
@@ -18,18 +15,8 @@ export interface ConsoleLine {
   timestamp: Date;
 }
 
-export interface StatsWithHistory {
-  current: ServerStats | null;
-  cpuHistory: number[];
-  memoryHistory: number[];
-  memoryPercentHistory: number[];
-  networkRxHistory: number[];
-  networkTxHistory: number[];
-  networkRxRate: number;
-  networkTxRate: number;
-  diskHistory: number[];
-  diskPercentHistory: number[];
-}
+// Re-export from stats-processor for convenience
+export type StatsWithHistory = ProcessedStatsWithHistory;
 
 interface UseServerWebSocketOptions {
   consoleInfo: ConsoleInfo | null;
@@ -89,13 +76,12 @@ export const useServerWebSocket = ({
   const connectingRef = useRef(false);
   const lastConnectionUrlRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
-  const maxReconnectAttempts = 5;
 
   const addLine = useCallback((line: ConsoleLine) => {
     setLines((prev) => {
       const newLines = [...prev, line];
-      if (newLines.length > MAX_CONSOLE_LINES) {
-        return newLines.slice(-MAX_CONSOLE_LINES);
+      if (newLines.length > WEBSOCKET_CONSTANTS.MAX_CONSOLE_LINES) {
+        return newLines.slice(-WEBSOCKET_CONSTANTS.MAX_CONSOLE_LINES);
       }
       return newLines;
     });
@@ -171,13 +157,14 @@ export const useServerWebSocket = ({
                 break;
 
               case "console history":
-                // Handle bulk log history (array of lines)
+                // Handle bulk log history (array of lines with timestamps)
                 if (Array.isArray(data.lines)) {
                   const historyLines: ConsoleLine[] = data.lines
-                    .map((line: string) => {
-                      const text = stripAnsi(line).replace(/\r?\n$/, "");
+                    .map((entry: { line: string; timestamp: number }) => {
+                      const text = stripAnsi(entry.line).replace(/\r?\n$/, "");
+                      const timestamp = entry.timestamp ? new Date(entry.timestamp) : new Date();
                       return text.trim()
-                        ? { text, type: "stdout" as const, timestamp: new Date() }
+                        ? { text, type: "stdout" as const, timestamp }
                         : null;
                     })
                     .filter((line: ConsoleLine | null): line is ConsoleLine => line !== null);
@@ -186,7 +173,7 @@ export const useServerWebSocket = ({
                     setLines((prev) => {
                       // Prepend history, keeping total under max
                       const combined = [...historyLines, ...prev];
-                      return combined.slice(-MAX_CONSOLE_LINES);
+                      return combined.slice(-WEBSOCKET_CONSTANTS.MAX_CONSOLE_LINES);
                     });
                   }
                 }
@@ -268,58 +255,33 @@ export const useServerWebSocket = ({
                   disk_limit_bytes: data.disk_limit_bytes ?? 0,
                 };
 
-                setStats((prev) => {
-                  const cpuPercent = newStats.cpu_absolute;
-                  const memoryBytes = newStats.memory_bytes;
-                  const memoryLimitBytes = newStats.memory_limit_bytes;
-                  const memoryPercent =
-                    memoryLimitBytes > 0 ? (memoryBytes / memoryLimitBytes) * 100 : 0;
-
-                  const networkRxTotal = newStats.network.rx_bytes;
-                  const networkTxTotal = newStats.network.tx_bytes;
-
-                  // Disk usage
-                  const diskBytes = newStats.disk_bytes;
-                  const diskLimitBytes = newStats.disk_limit_bytes;
-                  const diskPercent = diskLimitBytes > 0 ? (diskBytes / diskLimitBytes) * 100 : 0;
-
-                  let rxRate = 0;
-                  let txRate = 0;
-
-                  if (prevNetworkRef.current) {
-                    const timeDelta = (now - prevNetworkRef.current.timestamp) / 1000;
-                    if (timeDelta > 0) {
-                      const rxDelta = networkRxTotal - prevNetworkRef.current.rx;
-                      const txDelta = networkTxTotal - prevNetworkRef.current.tx;
-                      if (rxDelta >= 0 && txDelta >= 0) {
-                        rxRate = rxDelta / timeDelta;
-                        txRate = txDelta / timeDelta;
-                      }
-                    }
-                  }
-
+                // Initialize prevNetworkRef on first stats message if not already set
+                if (!prevNetworkRef.current) {
                   prevNetworkRef.current = {
-                    rx: networkRxTotal,
-                    tx: networkTxTotal,
+                    rx: newStats.network.rx_bytes,
+                    tx: newStats.network.tx_bytes,
+                    timestamp: now,
+                  };
+                }
+
+                setStats((prev) => {
+                  const now = Date.now();
+                  const updatedStats = processStatsUpdate({
+                    newStats,
+                    prevStats: prev,
+                    prevNetworkRef: prevNetworkRef.current,
+                    now,
+                    maxHistoryLength: WEBSOCKET_CONSTANTS.MAX_HISTORY_LENGTH,
+                  });
+
+                  // Update prevNetworkRef for next calculation
+                  prevNetworkRef.current = {
+                    rx: newStats.network.rx_bytes,
+                    tx: newStats.network.tx_bytes,
                     timestamp: now,
                   };
 
-                  return {
-                    current: newStats,
-                    cpuHistory: [...prev.cpuHistory, cpuPercent].slice(-MAX_HISTORY_LENGTH),
-                    memoryHistory: [...prev.memoryHistory, memoryBytes].slice(-MAX_HISTORY_LENGTH),
-                    memoryPercentHistory: [...prev.memoryPercentHistory, memoryPercent].slice(
-                      -MAX_HISTORY_LENGTH
-                    ),
-                    networkRxHistory: [...prev.networkRxHistory, rxRate].slice(-MAX_HISTORY_LENGTH),
-                    networkTxHistory: [...prev.networkTxHistory, txRate].slice(-MAX_HISTORY_LENGTH),
-                    networkRxRate: rxRate,
-                    networkTxRate: txRate,
-                    diskHistory: [...prev.diskHistory, diskBytes].slice(-MAX_HISTORY_LENGTH),
-                    diskPercentHistory: [...prev.diskPercentHistory, diskPercent].slice(
-                      -MAX_HISTORY_LENGTH
-                    ),
-                  };
+                  return updatedStats;
                 });
                 break;
               }
@@ -347,7 +309,11 @@ export const useServerWebSocket = ({
         onDisconnect?.();
 
         // Attempt reconnection only if still mounted and enabled
-        if (mountedRef.current && enabled && reconnectAttemptsRef.current < maxReconnectAttempts) {
+        if (
+          mountedRef.current &&
+          enabled &&
+          reconnectAttemptsRef.current < WEBSOCKET_CONSTANTS.MAX_RECONNECT_ATTEMPTS
+        ) {
           reconnectAttemptsRef.current++;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -378,7 +344,7 @@ export const useServerWebSocket = ({
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    reconnectAttemptsRef.current = maxReconnectAttempts;
+    reconnectAttemptsRef.current = WEBSOCKET_CONSTANTS.MAX_RECONNECT_ATTEMPTS;
     connectingRef.current = false;
     lastConnectionUrlRef.current = null;
     if (wsRef.current) {
@@ -446,7 +412,7 @@ export const useServerWebSocket = ({
       // Reset connection state
       connectingRef.current = false;
       lastConnectionUrlRef.current = null;
-      reconnectAttemptsRef.current = maxReconnectAttempts; // Prevent reconnection attempts
+      reconnectAttemptsRef.current = WEBSOCKET_CONSTANTS.MAX_RECONNECT_ATTEMPTS; // Prevent reconnection attempts
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- connect is stable via refs, we only want to reconnect on URL/token/enabled changes
   }, [consoleInfo?.websocketUrl, consoleInfo?.token, enabled]);
