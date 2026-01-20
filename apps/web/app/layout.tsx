@@ -1,9 +1,9 @@
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 
 import "@workspace/ui/globals.css";
-import { Providers } from "@/components/Providers/Providers";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { PublicEnv } from "@/lib/public-env";
+import { Providers } from "@/components/Providers/providers";
 
 const fontSans = Space_Grotesk({
   subsets: ["latin"],
