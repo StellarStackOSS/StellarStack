@@ -41,23 +41,55 @@ pub async fn start_container(
     env.set_state(ProcessState::Starting);
 
     // Attach BEFORE starting (critical for capturing early output)
-    attach_container(env, ctx.clone()).await?;
+    // Use a context with timeout similar to Pterodactyl
+    let attach_ctx = tokio::time::timeout(
+        Duration::from_secs(30),
+        attach_container(env, ctx.clone())
+    ).await;
 
-    // Start the container
+    match attach_ctx {
+        Ok(Ok(())) => {
+            debug!("Successfully attached to container {}", container_name);
+        }
+        Ok(Err(e)) => {
+            error!("Failed to attach before starting: {}", e);
+            env.set_state(ProcessState::Offline);
+            return Err(e);
+        }
+        Err(_) => {
+            error!("Timeout attaching to container {} before start", container_name);
+            env.set_state(ProcessState::Offline);
+            return Err(EnvironmentError::AttachFailed("timeout attaching before start".to_string()));
+        }
+    }
+
+    // Start the container with timeout
     let options = StartContainerOptions::<String> {
         ..Default::default()
     };
 
-    env.docker()
-        .start_container(container_name, Some(options))
-        .await
-        .map_err(|e| {
+    let start_result = tokio::time::timeout(
+        Duration::from_secs(30),
+        env.docker().start_container(container_name, Some(options))
+    ).await;
+
+    match start_result {
+        Ok(Ok(())) => {
+            info!("Started container {}", container_name);
+        }
+        Ok(Err(e)) => {
+            error!("Failed to start container: {}", e);
             env.set_state(ProcessState::Offline);
-            EnvironmentError::Docker(e)
-        })?;
+            return Err(EnvironmentError::Docker(e));
+        }
+        Err(_) => {
+            error!("Timeout starting container {} after 30 seconds", container_name);
+            env.set_state(ProcessState::Offline);
+            return Err(EnvironmentError::Other("start operation timed out after 30 seconds".to_string()));
+        }
+    }
 
     // Keep state as Starting - the server will set it to Running when startup is detected
-    info!("Started container {}", container_name);
 
     // Start stats polling
     start_stats_poller(env);
@@ -276,9 +308,12 @@ pub async fn stop_container(
             }
         }
         StopConfig::Native => {
-            // Use Docker's native stop
-            debug!("Using native Docker stop for {}", container_name);
-            let options = StopContainerOptions { t: 30 };
+            // Use Docker's native stop with indefinite timeout (like Pterodactyl)
+            // This allows the container to stop gracefully without being force-killed after 30 seconds
+            // Docker interprets timeout: 0 as indefinite (wait forever for graceful shutdown)
+            // Using i64::MAX seconds to represent indefinite timeout
+            debug!("Using native Docker stop for {} with indefinite timeout", container_name);
+            let options = StopContainerOptions { t: 0 };  // 0 means indefinite
 
             if let Err(e) = env.docker().stop_container(container_name, Some(options)).await {
                 warn!("Docker stop failed: {}", e);
@@ -344,29 +379,37 @@ pub async fn wait_for_stop(
     Ok(())
 }
 
-/// Wait for container to exit
+/// Wait for container to exit using polling
 pub async fn wait_for_container_exit(env: &DockerEnvironment, _ctx: CancellationToken) -> EnvironmentResult<()> {
     let container_name = env.container_name();
+    let poll_interval = Duration::from_millis(100); // Poll every 100ms
+    let max_polls = 600; // 60 seconds total (100ms * 600)
 
-    let options = WaitContainerOptions {
-        condition: "not-running",
-    };
-
-    let mut stream = env.docker().wait_container(container_name, Some(options));
-
-    while let Some(result) = stream.next().await {
-        match result {
-            Ok(response) => {
-                debug!("Container {} exited with code {}", container_name, response.status_code);
+    for _ in 0..max_polls {
+        match env.is_running().await {
+            Ok(running) => {
+                if !running {
+                    debug!("Container {} has exited", container_name);
+                    return Ok(());
+                }
+            }
+            Err(EnvironmentError::ContainerNotFound(_)) => {
+                // Container doesn't exist anymore - it's definitely stopped
+                debug!("Container {} not found - already removed", container_name);
                 return Ok(());
             }
             Err(e) => {
-                return Err(EnvironmentError::Docker(e));
+                warn!("Error checking container status: {}", e);
+                // Continue polling on transient errors
             }
         }
+
+        tokio::time::sleep(poll_interval).await;
     }
 
-    Ok(())
+    // Timeout reached
+    warn!("Timeout waiting for container {} to exit after 60 seconds", container_name);
+    Err(EnvironmentError::Timeout)
 }
 
 /// Terminate the container with a signal
@@ -418,14 +461,24 @@ pub async fn attach_container(
         ..Default::default()
     };
 
-    let AttachContainerResults { mut output, mut input } = env
-        .docker()
-        .attach_container(container_name, Some(options))
-        .await
-        .map_err(|e| {
+    // Use a timeout for the attach operation - if Docker daemon hangs, we don't want to block forever
+    // Mirroring Pterodactyl's approach: 30-second timeout for attach
+    let attach_result = tokio::time::timeout(
+        Duration::from_secs(30),
+        env.docker().attach_container(container_name, Some(options))
+    ).await;
+
+    let AttachContainerResults { mut output, mut input } = match attach_result {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
             error!("Failed to attach to container {}: {}", container_name, e);
-            EnvironmentError::AttachFailed(e.to_string())
-        })?;
+            return Err(EnvironmentError::AttachFailed(e.to_string()));
+        }
+        Err(_) => {
+            error!("Timeout attaching to container {} after 30 seconds", container_name);
+            return Err(EnvironmentError::AttachFailed("timeout after 30 seconds".to_string()));
+        }
+    };
 
     env.set_attached(true);
 

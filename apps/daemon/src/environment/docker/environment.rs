@@ -1,7 +1,7 @@
 //! Docker environment implementation
 
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use bollard::Docker;
@@ -22,6 +22,12 @@ use super::super::traits::{
 pub struct AttachStream {
     pub output: Box<dyn AsyncRead + Send + Unpin>,
     pub input: Option<Box<dyn AsyncWrite + Send + Unpin>>,
+}
+
+/// Cached container inspect result with timestamp
+struct CachedInspect {
+    data: bollard::models::ContainerInspectResponse,
+    timestamp: Instant,
 }
 
 /// Docker implementation of ProcessEnvironment
@@ -52,6 +58,9 @@ pub struct DockerEnvironment {
 
     /// Whether currently attached
     attached: RwLock<bool>,
+
+    /// Cached inspect results (with 100ms TTL for performance)
+    inspect_cache: RwLock<Option<CachedInspect>>,
 }
 
 impl DockerEnvironment {
@@ -71,6 +80,7 @@ impl DockerEnvironment {
             log_callback: RwLock::new(None),
             command_tx: RwLock::new(None),
             attached: RwLock::new(false),
+            inspect_cache: RwLock::new(None),
         })
     }
 
@@ -126,6 +136,7 @@ impl DockerEnvironment {
             log_callback: RwLock::new(None),
             command_tx: RwLock::new(None),
             attached: RwLock::new(false),
+            inspect_cache: RwLock::new(None),
         }
     }
 
@@ -137,6 +148,43 @@ impl DockerEnvironment {
     /// Get the container name
     pub fn container_name(&self) -> &str {
         &self.container_name
+    }
+
+    /// Get cached container inspect with 100ms TTL (performance optimization)
+    ///
+    /// Reduces redundant Docker API calls during stats polling and other frequent operations.
+    /// Matches Pterodactyl's pattern of lightweight caching for frequently-accessed metadata.
+    pub async fn cached_inspect(&self) -> EnvironmentResult<bollard::models::ContainerInspectResponse> {
+        // Check if cache is still valid (100ms TTL)
+        {
+            let cache = self.inspect_cache.read();
+            if let Some(cached) = cache.as_ref() {
+                if cached.timestamp.elapsed() < Duration::from_millis(100) {
+                    debug!("Using cached inspect for container {}", self.container_name);
+                    return Ok(cached.data.clone());
+                }
+            }
+        }
+
+        // Cache miss or expired - fetch fresh data
+        let data = self.client.inspect_container(&self.container_name, None).await
+            .map_err(|e| {
+                if let bollard::errors::Error::DockerResponseServerError { status_code: 404, .. } = e {
+                    return EnvironmentError::ContainerNotFound(self.container_name.clone());
+                }
+                EnvironmentError::Docker(e)
+            })?;
+
+        // Update cache
+        {
+            let mut cache = self.inspect_cache.write();
+            *cache = Some(CachedInspect {
+                data: data.clone(),
+                timestamp: Instant::now(),
+            });
+        }
+
+        Ok(data)
     }
 
     /// Convert u8 to ProcessState
@@ -241,23 +289,17 @@ impl ProcessEnvironment for DockerEnvironment {
     }
 
     async fn exists(&self) -> EnvironmentResult<bool> {
-        match self.client.inspect_container(&self.container_name, None).await {
+        match self.cached_inspect().await {
             Ok(_) => Ok(true),
-            Err(bollard::errors::Error::DockerResponseServerError { status_code: 404, .. }) => {
+            Err(EnvironmentError::ContainerNotFound(_)) => {
                 Ok(false)
             }
-            Err(e) => Err(EnvironmentError::Docker(e)),
+            Err(e) => Err(e),
         }
     }
 
     async fn is_running(&self) -> EnvironmentResult<bool> {
-        let info = self.client.inspect_container(&self.container_name, None).await
-            .map_err(|e| {
-                if let bollard::errors::Error::DockerResponseServerError { status_code: 404, .. } = e {
-                    return EnvironmentError::ContainerNotFound(self.container_name.clone());
-                }
-                EnvironmentError::Docker(e)
-            })?;
+        let info = self.cached_inspect().await?;
 
         Ok(info.state
             .and_then(|s| s.running)
@@ -265,8 +307,7 @@ impl ProcessEnvironment for DockerEnvironment {
     }
 
     async fn exit_state(&self) -> EnvironmentResult<ExitState> {
-        let info = self.client.inspect_container(&self.container_name, None).await
-            .map_err(EnvironmentError::Docker)?;
+        let info = self.cached_inspect().await?;
 
         let state = info.state.unwrap_or_default();
 
@@ -278,8 +319,7 @@ impl ProcessEnvironment for DockerEnvironment {
     }
 
     async fn uptime(&self) -> EnvironmentResult<i64> {
-        let info = self.client.inspect_container(&self.container_name, None).await
-            .map_err(EnvironmentError::Docker)?;
+        let info = self.cached_inspect().await?;
 
         let started_at = info.state
             .and_then(|s| s.started_at)
@@ -332,6 +372,10 @@ impl ProcessEnvironment for DockerEnvironment {
     }
 
     async fn on_before_start(&self, _ctx: CancellationToken) -> EnvironmentResult<()> {
+        // Clean up any existing streams/command senders before recreating
+        // This ensures proper resource cleanup following Pterodactyl's pattern
+        self.cleanup_attached();
+
         // Recreate container before starting to apply any config changes
         self.recreate().await
     }
@@ -439,5 +483,23 @@ impl DockerEnvironment {
     /// Check if attached
     pub(crate) fn is_attached(&self) -> bool {
         *self.attached.read()
+    }
+
+    /// Clear the inspect cache (should be called on power state changes)
+    pub(crate) fn clear_inspect_cache(&self) {
+        *self.inspect_cache.write() = None;
+    }
+
+    /// Clean up resources associated with the container
+    /// This should be called before destroying the container or on power state changes
+    /// to ensure proper cleanup of streams and command channels
+    pub(crate) fn cleanup_attached(&self) {
+        debug!("Cleaning up attached resources for container {}", self.container_name);
+        // Clear the command sender first
+        self.clear_command_sender();
+        // Mark as not attached
+        self.set_attached(false);
+        // Clear the inspect cache to ensure fresh data after power state changes
+        self.clear_inspect_cache();
     }
 }

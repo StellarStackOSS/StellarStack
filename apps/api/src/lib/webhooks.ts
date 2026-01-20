@@ -311,7 +311,9 @@ const scheduleRetry = async (deliveryId: string, attemptNumber: number): Promise
     }
 
     // Format payload as Discord embed (same as initial dispatch)
-    const formattedBody = JSON.stringify(formatDiscordPayload(delivery.payload as unknown as WebhookPayload));
+    const formattedBody = JSON.stringify(
+      formatDiscordPayload(delivery.payload as unknown as WebhookPayload)
+    );
 
     try {
       await db.webhookDelivery.update({
@@ -368,15 +370,19 @@ export const getAvailableEvents = (): string[] => {
 /**
  * Send a test webhook to verify the URL is working
  */
-export const sendTestWebhook = async (webhookUrl: string): Promise<{ success: boolean; statusCode?: number; error?: string }> => {
+export const sendTestWebhook = async (
+  webhookUrl: string
+): Promise<{ success: boolean; statusCode?: number; error?: string }> => {
   const testEmbed = {
-    embeds: [{
-      title: "🔔 Test",
-      description: "Webhook connected",
-      color: 0x0099ff, // Blue
-      timestamp: new Date().toISOString(),
-      footer: { text: "StellarStack" },
-    }]
+    embeds: [
+      {
+        title: "🔔 Test",
+        description: "Webhook connected",
+        color: 0x0099ff, // Blue
+        timestamp: new Date().toISOString(),
+        footer: { text: "StellarStack" },
+      },
+    ],
   };
 
   const formattedBody = JSON.stringify(testEmbed);

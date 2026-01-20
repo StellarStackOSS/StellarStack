@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import {ReactNode} from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
+import {TextureButton} from "@workspace/ui/components/texture-button";
 
 export interface ConfirmationModalProps {
   open: boolean;
@@ -22,7 +21,6 @@ export interface ConfirmationModalProps {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel?: () => void;
-  variant?: "default" | "danger";
   isLoading?: boolean;
 }
 
@@ -36,7 +34,6 @@ export const ConfirmationModal = ({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
-  variant = "default",
   isLoading = false,
 }: ConfirmationModalProps) => {
   const handleCancel = () => {
@@ -54,33 +51,26 @@ export const ConfirmationModal = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         {children}
         <DialogFooter>
-          <Button
-            variant="outline"
+          <TextureButton
+            className="w-full"
+            variant="secondary"
             onClick={handleCancel}
             disabled={isLoading}
-            className="transition-all text-xs uppercase tracking-wider border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
           >
             {cancelLabel}
-          </Button>
-          <Button
-            variant="outline"
+          </TextureButton>
+          <TextureButton
+            className="w-full"
+            variant="destructive"
             onClick={handleConfirm}
             disabled={isLoading}
-            className={cn(
-              "transition-all text-xs uppercase tracking-wider",
-              variant === "danger"
-                ? "border-red-900/60 text-red-400/80 hover:text-red-300 hover:border-red-700 hover:bg-red-950/30"
-                : "border-zinc-600 text-zinc-200 hover:text-zinc-100 hover:border-zinc-400 hover:bg-zinc-800"
-            )}
           >
             {isLoading ? "Loading..." : confirmLabel}
-          </Button>
+          </TextureButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

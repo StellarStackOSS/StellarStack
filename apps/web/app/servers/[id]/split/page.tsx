@@ -1,27 +1,28 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import {
-  BsPlus,
-  BsTrash,
-  BsServer,
-  BsExclamationTriangle,
   BsArrowRight,
-  BsMemory,
-  BsHdd,
   BsCpu,
+  BsExclamationTriangle,
+  BsHdd,
+  BsMemory,
+  BsPlus,
+  BsServer,
+  BsTrash,
 } from "react-icons/bs";
-import { useServer } from "@/components/server-provider";
-import { ServerInstallingPlaceholder } from "@/components/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "@/components/server-suspended-placeholder";
-import { servers, type ChildServer } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
@@ -177,7 +178,7 @@ const SplitPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -188,12 +189,7 @@ const SplitPage = (): JSX.Element | null => {
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider",
-                    "text-zinc-100"
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
                   SERVER SPLITTING
                 </h1>
                 <p className={cn("mt-1 text-sm", "text-zinc-500")}>
@@ -203,20 +199,11 @@ const SplitPage = (): JSX.Element | null => {
             </div>
             <div className="flex items-center gap-2">
               {!isChildServer && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openSplitModal}
-                  className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                  )}
-                >
+                <TextureButton variant="minimal" onClick={openSplitModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Split Server</span>
-                </Button>
+                </TextureButton>
               )}
-
             </div>
           </div>
 
@@ -231,9 +218,7 @@ const SplitPage = (): JSX.Element | null => {
               <BsExclamationTriangle className="h-5 w-5 shrink-0" />
               <div>
                 <p className="text-sm font-medium">This is a Child Server</p>
-                <p
-                  className={cn("mt-0.5 text-xs", "text-amber-200/60")}
-                >
+                <p className={cn("mt-0.5 text-xs", "text-amber-200/60")}>
                   Child servers cannot be split further. Only parent servers can create child
                   servers.
                 </p>
@@ -249,37 +234,8 @@ const SplitPage = (): JSX.Element | null => {
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  "border-zinc-500"
-                )}
-              />
-
               <h3
-                className={cn(
-                  "mb-4 text-xs font-medium tracking-wider uppercase",
-                  "text-zinc-400"
-                )}
+                className={cn("mb-4 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
               >
                 Current Resources
               </h3>
@@ -292,25 +248,13 @@ const SplitPage = (): JSX.Element | null => {
                       "border-zinc-700 bg-zinc-800/50"
                     )}
                   >
-                    <BsMemory
-                      className={cn("h-5 w-5", "text-blue-400")}
-                    />
+                    <BsMemory className={cn("h-5 w-5", "text-blue-400")} />
                   </div>
                   <div>
-                    <div
-                      className={cn(
-                        "text-xs tracking-wider uppercase",
-                        "text-zinc-500"
-                      )}
-                    >
+                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       Memory
                     </div>
-                    <div
-                      className={cn(
-                        "text-lg font-light",
-                        "text-zinc-100"
-                      )}
-                    >
+                    <div className={cn("text-lg font-light", "text-zinc-100")}>
                       {formatMiB(parentMemory)}
                     </div>
                   </div>
@@ -323,25 +267,13 @@ const SplitPage = (): JSX.Element | null => {
                       "border-zinc-700 bg-zinc-800/50"
                     )}
                   >
-                    <BsHdd
-                      className={cn("h-5 w-5", "text-green-400")}
-                    />
+                    <BsHdd className={cn("h-5 w-5", "text-green-400")} />
                   </div>
                   <div>
-                    <div
-                      className={cn(
-                        "text-xs tracking-wider uppercase",
-                        "text-zinc-500"
-                      )}
-                    >
+                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       Disk
                     </div>
-                    <div
-                      className={cn(
-                        "text-lg font-light",
-                        "text-zinc-100"
-                      )}
-                    >
+                    <div className={cn("text-lg font-light", "text-zinc-100")}>
                       {formatMiB(parentDisk)}
                     </div>
                   </div>
@@ -354,27 +286,13 @@ const SplitPage = (): JSX.Element | null => {
                       "border-zinc-700 bg-zinc-800/50"
                     )}
                   >
-                    <BsCpu
-                      className={cn("h-5 w-5", "text-amber-400")}
-                    />
+                    <BsCpu className={cn("h-5 w-5", "text-amber-400")} />
                   </div>
                   <div>
-                    <div
-                      className={cn(
-                        "text-xs tracking-wider uppercase",
-                        "text-zinc-500"
-                      )}
-                    >
+                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       CPU
                     </div>
-                    <div
-                      className={cn(
-                        "text-lg font-light",
-                        "text-zinc-100"
-                      )}
-                    >
-                      {parentCpu}%
-                    </div>
+                    <div className={cn("text-lg font-light", "text-zinc-100")}>{parentCpu}%</div>
                   </div>
                 </div>
               </div>
@@ -383,9 +301,7 @@ const SplitPage = (): JSX.Element | null => {
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center", "text-zinc-500")}>
-              Loading child servers...
-            </div>
+            <div className={cn("py-12 text-center", "text-zinc-500")}>Loading child servers...</div>
           ) : children.length === 0 ? (
             <div
               className={cn(
@@ -393,72 +309,24 @@ const SplitPage = (): JSX.Element | null => {
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              {/* Corner decorations */}
-              <div
-                className={cn(
-                  "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                  "border-zinc-500"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                  "border-zinc-500"
-                )}
-              />
-
-              <BsServer
-                className={cn("mx-auto mb-4 h-12 w-12", "text-zinc-600")}
-              />
-              <h3
-                className={cn(
-                  "mb-2 text-lg font-medium",
-                  "text-zinc-300"
-                )}
-              >
-                No Child Servers
-              </h3>
+              <BsServer className={cn("mx-auto mb-4 h-12 w-12", "text-zinc-600")} />
+              <h3 className={cn("mb-2 text-lg font-medium", "text-zinc-300")}>No Child Servers</h3>
               <p className={cn("mb-4 text-sm", "text-zinc-500")}>
                 {isChildServer
                   ? "Child servers cannot have their own children."
                   : "Split this server to create child servers with dedicated resources."}
               </p>
               {!isChildServer && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openSplitModal}
-                  className={cn(
-                    "gap-2",
-                    "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-                  )}
-                >
+                <TextureButton variant="minimal" onClick={openSplitModal}>
                   <BsPlus className="h-4 w-4" />
                   Split Server
-                </Button>
+                </TextureButton>
               )}
             </div>
           ) : (
             /* Child Servers List */
             <div className="space-y-4">
-              <h3
-                className={cn(
-                  "text-xs font-medium tracking-wider uppercase",
-                  "text-zinc-400"
-                )}
-              >
+              <h3 className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-400")}>
                 Child Servers
               </h3>
               {children.map((child) => (
@@ -469,32 +337,6 @@ const SplitPage = (): JSX.Element | null => {
                     "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
                   )}
                 >
-                  {/* Corner decorations */}
-                  <div
-                    className={cn(
-                      "absolute top-0 left-0 h-2 w-2 border-t border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute top-0 right-0 h-2 w-2 border-t border-r",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-                      "border-zinc-500"
-                    )}
-                  />
-                  <div
-                    className={cn(
-                      "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-                      "border-zinc-500"
-                    )}
-                  />
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div
@@ -503,9 +345,7 @@ const SplitPage = (): JSX.Element | null => {
                           "border-zinc-700 bg-zinc-800/50"
                         )}
                       >
-                        <BsServer
-                          className={cn("h-5 w-5", "text-zinc-400")}
-                        />
+                        <BsServer className={cn("h-5 w-5", "text-zinc-400")} />
                       </div>
                       <div>
                         <div className="flex items-center gap-3">
@@ -531,10 +371,7 @@ const SplitPage = (): JSX.Element | null => {
                           </span>
                         </div>
                         <div
-                          className={cn(
-                            "mt-1 flex items-center gap-4 text-xs",
-                            "text-zinc-500"
-                          )}
+                          className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
                         >
                           <span>{formatMiB(child.memory)} RAM</span>
                           <span>•</span>
@@ -545,29 +382,16 @@ const SplitPage = (): JSX.Element | null => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <TextureButton
+                        variant="minimal"
                         onClick={() => router.push(`/servers/${child.id}/overview`)}
-                        className={cn(
-                          "gap-2 transition-all",
-                          "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-                        )}
                       >
                         <span className="text-xs tracking-wider uppercase">Manage</span>
                         <BsArrowRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openDeleteModal(child)}
-                        className={cn(
-                          "p-2 transition-all",
-                          "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                        )}
-                      >
+                      </TextureButton>
+                      <TextureButton variant="destructive" onClick={() => openDeleteModal(child)}>
                         <BsTrash className="h-4 w-4" />
-                      </Button>
+                      </TextureButton>
                     </div>
                   </div>
                 </div>
@@ -589,22 +413,11 @@ const SplitPage = (): JSX.Element | null => {
       >
         <div className="space-y-6">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase",
-                "text-zinc-400"
-              )}
-            >
-              Child Server Name
-            </label>
+            <Label>Child Server Name</Label>
             <Input
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               placeholder="Enter server name"
-              className={cn(
-                "transition-all",
-                "border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600"
-              )}
             />
           </div>
 
@@ -613,122 +426,78 @@ const SplitPage = (): JSX.Element | null => {
             {/* Memory */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-xs tracking-wider uppercase",
-                    "text-zinc-400"
-                  )}
-                >
-                  Memory ({formMemoryPercent}%)
-                </label>
+                <Label>Memory ({formMemoryPercent}%)</Label>
                 <span className={cn("text-xs", "text-zinc-500")}>
                   {formatMiB(childMemory)} / {formatMiB(parentMemory)}
                 </span>
               </div>
-              <input
+              <Input
                 type="range"
                 min="10"
                 max="90"
                 value={formMemoryPercent}
                 onChange={(e) => setFormMemoryPercent(parseInt(e.target.value))}
-                className="w-full"
               />
             </div>
 
             {/* Disk */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-xs tracking-wider uppercase",
-                    "text-zinc-400"
-                  )}
-                >
-                  Disk ({formDiskPercent}%)
-                </label>
+                <Label>Disk ({formDiskPercent}%)</Label>
                 <span className={cn("text-xs", "text-zinc-500")}>
                   {formatMiB(childDisk)} / {formatMiB(parentDisk)}
                 </span>
               </div>
-              <input
+              <Input
                 type="range"
                 min="10"
                 max="90"
                 value={formDiskPercent}
                 onChange={(e) => setFormDiskPercent(parseInt(e.target.value))}
-                className="w-full"
               />
             </div>
 
             {/* CPU */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label
-                  className={cn(
-                    "text-xs tracking-wider uppercase",
-                    "text-zinc-400"
-                  )}
-                >
-                  CPU ({formCpuPercent}%)
-                </label>
+                <Label>CPU ({formCpuPercent}%)</Label>
                 <span className={cn("text-xs", "text-zinc-500")}>
                   {childCpu}% / {parentCpu}%
                 </span>
               </div>
-              <input
+              <Input
                 type="range"
                 min="10"
                 max="90"
                 value={formCpuPercent}
                 onChange={(e) => setFormCpuPercent(parseInt(e.target.value))}
-                className="w-full"
               />
             </div>
           </div>
 
           {/* Preview */}
-          <div
-            className={cn(
-              "border p-4",
-              "border-zinc-700 bg-zinc-900/50"
-            )}
-          >
+          <div className={cn("border p-4", "border-zinc-700 bg-zinc-900/50")}>
             <div
-              className={cn(
-                "mb-3 text-xs font-medium tracking-wider uppercase",
-                "text-zinc-400"
-              )}
+              className={cn("mb-3 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
             >
               After Split
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className={cn("mb-1 text-xs", "text-zinc-500")}>
-                  Parent Server
-                </div>
+                <div className={cn("mb-1 text-xs", "text-zinc-500")}>Parent Server</div>
                 <div className={cn("text-sm", "text-zinc-300")}>
                   {formatMiB(remainingMemory)} RAM
                 </div>
                 <div className={cn("text-sm", "text-zinc-300")}>
                   {formatMiB(remainingDisk)} Disk
                 </div>
-                <div className={cn("text-sm", "text-zinc-300")}>
-                  {remainingCpu}% CPU
-                </div>
+                <div className={cn("text-sm", "text-zinc-300")}>{remainingCpu}% CPU</div>
               </div>
               <div>
-                <div className={cn("mb-1 text-xs", "text-zinc-500")}>
-                  Child Server
-                </div>
-                <div className={cn("text-sm", "text-zinc-300")}>
-                  {formatMiB(childMemory)} RAM
-                </div>
-                <div className={cn("text-sm", "text-zinc-300")}>
-                  {formatMiB(childDisk)} Disk
-                </div>
-                <div className={cn("text-sm", "text-zinc-300")}>
-                  {childCpu}% CPU
-                </div>
+                <div className={cn("mb-1 text-xs", "text-zinc-500")}>Child Server</div>
+                <div className={cn("text-sm", "text-zinc-300")}>{formatMiB(childMemory)} RAM</div>
+                <div className={cn("text-sm", "text-zinc-300")}>{formatMiB(childDisk)} Disk</div>
+                <div className={cn("text-sm", "text-zinc-300")}>{childCpu}% CPU</div>
               </div>
             </div>
           </div>
@@ -757,7 +526,6 @@ const SplitPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedChild?.name}"? This will permanently delete the server and all its data. Resources will be returned to the parent server.`}
         onConfirm={handleDeleteChild}
         confirmLabel="Delete Server"
-        variant="danger"
       />
     </div>
   );

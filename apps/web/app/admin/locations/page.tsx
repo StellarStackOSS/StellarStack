@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { MapPinIcon, PlusIcon, TrashIcon, EditIcon, ArrowLeftIcon, SearchIcon } from "lucide-react";
-import { useLocations, useLocationMutations } from "@/hooks/queries";
-import { useAdminTheme, CornerAccents } from "@/hooks/use-admin-theme";
-import type { Location, CreateLocationData } from "@/lib/api";
+import { EditIcon, MapPinIcon, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  AdminSearchBar,
+} from "components/AdminPageComponents";
+import { useLocationMutations, useLocations } from "@/hooks/queries";
+import type { CreateLocationData, Location } from "@/lib/api";
 import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
 
 export default function LocationsPage() {
-  const router = useRouter();
-  const { mounted, inputClasses, labelClasses } = useAdminTheme();
-
   // React Query hooks
   const { data: locationsList = [], isLoading } = useLocations();
   const { create, update, remove } = useLocationMutations();
@@ -90,149 +92,96 @@ export default function LocationsPage() {
   const filteredLocations = useMemo(() => {
     if (!searchQuery) return locationsList;
     const query = searchQuery.toLowerCase();
-    return locationsList.filter((location) =>
-      location.name.toLowerCase().includes(query) ||
-      location.country?.toLowerCase().includes(query) ||
-      location.city?.toLowerCase().includes(query) ||
-      location.description?.toLowerCase().includes(query)
+    return locationsList.filter(
+      (location) =>
+        location.name.toLowerCase().includes(query) ||
+        location.country?.toLowerCase().includes(query) ||
+        location.city?.toLowerCase().includes(query) ||
+        location.description?.toLowerCase().includes(query)
     );
   }, [locationsList, searchQuery]);
 
-  if (!mounted) return null;
-
   return (
-    <div className={cn("min-h-svh transition-colors relative bg-[#0b0b0a]")}>
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <div className="relative p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto">
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                  )}
-                >
-                  <ArrowLeftIcon className="w-4 h-4" />
-                </Button>
-                <div>
-                  <h1 className={cn(
-                    "text-2xl font-light tracking-wider text-zinc-100",
-                  )}>
-                    LOCATIONS
-                  </h1>
-                  <p className={cn(
-                    "text-sm mt-1 text-zinc-500",
-                  )}>
-                    Manage geographic locations for nodes
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => { resetForm(); setIsModalOpen(true); }}
-                className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-95 bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-                )}
-              >
-                <PlusIcon className="w-4 h-4" />
-                Add Location
-              </Button>
-            </div>
+            <AdminPageHeader
+              title="LOCATIONS"
+              description="Manage geographic locations for nodes"
+              action={{
+                label: "Add Location",
+                icon: <PlusIcon className="h-4 w-4" />,
+                onClick: () => {
+                  resetForm();
+                  setIsModalOpen(true);
+                },
+              }}
+            />
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <SearchIcon className={cn(
-                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500",
-              )} />
-              <input
-                type="text"
-                placeholder="Search locations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full pl-10 pr-4 py-2.5 border text-sm transition-colors focus:outline-none bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
-                )}
-              />
-            </div>
+            <AdminSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search locations..."
+            />
           </FadeIn>
 
           {/* Locations Grid */}
           <FadeIn delay={0.1}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {isLoading ? (
                 <div className="col-span-full flex justify-center py-12">
-                  <Spinner className="w-6 h-6" />
+                  <Spinner className="h-6 w-6" />
                 </div>
               ) : filteredLocations.length === 0 ? (
-                <div className={cn(
-                  "col-span-full text-center py-12 border border-zinc-800 text-zinc-500",
-                )}>
-                  {searchQuery ? "No locations match your search." : "No locations configured. Add your first location."}
-                </div>
+                <AdminEmptyState
+                  message={
+                    searchQuery
+                      ? "No locations match your search."
+                      : "No locations configured. Add your first location."
+                  }
+                />
               ) : (
                 filteredLocations.map((location) => (
-                  <div
+                  <AdminCard
                     key={location.id}
-                    className={cn(
-                      "relative p-4 border transition-colors bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] border-zinc-200/10 hover:border-zinc-700",
-                    )}
-                  >
-                    <CornerAccents size="sm" />
-
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <MapPinIcon className={cn("w-6 h-6 mt-0.5 text-zinc-400")} />
-                        <div>
-                          <div className={cn("font-medium text-zinc-100")}>
-                            {location.name}
-                          </div>
-                          {(location.city || location.country) && (
-                            <div className={cn("text-xs mt-1 text-zinc-500")}>
-                              {[location.city, location.country].filter(Boolean).join(", ")}
-                            </div>
-                          )}
-                          {location.description && (
-                            <div className={cn("text-xs mt-2 text-zinc-600")}>
-                              {location.description}
-                            </div>
-                          )}
-                          {location.nodes && location.nodes.length > 0 && (
-                            <div className={cn("text-xs mt-2 text-zinc-500")}>
-                              {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    icon={<MapPinIcon className={cn("h-6 w-6", "text-zinc-400")} />}
+                    title={location.name}
+                    actions={
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
+                        <TextureButton
+                          variant="secondary"
                           size="sm"
                           onClick={() => handleEdit(location)}
-                          className={cn(
-                            "text-xs p-1.5 border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                          )}
                         >
-                          <EditIcon className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
+                          <EditIcon className="h-3 w-3" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="secondary"
                           size="sm"
                           onClick={() => setDeleteConfirmLocation(location)}
-                          className={cn(
-                            "text-xs p-1.5 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                          )}
                         >
-                          <TrashIcon className="w-3 h-3" />
-                        </Button>
+                          <TrashIcon className="h-3 w-3" />
+                        </TextureButton>
                       </div>
-                    </div>
-                  </div>
+                    }
+                  >
+                    {(location.city || location.country) && (
+                      <div className={cn("mt-1 text-xs", "text-zinc-500")}>
+                        {[location.city, location.country].filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                    {location.description && (
+                      <div className={cn("mt-2 text-xs", "text-zinc-600")}>
+                        {location.description}
+                      </div>
+                    )}
+                    {location.nodes && location.nodes.length > 0 && (
+                      <div className={cn("mt-2 text-xs", "text-zinc-500")}>
+                        {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </AdminCard>
                 ))
               )}
             </div>
@@ -255,48 +204,44 @@ export default function LocationsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className={labelClasses}>Name</label>
-            <input
+            <Label>Name</Label>
+            <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="US West"
-              className={inputClasses}
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClasses}>Country</label>
-              <input
+              <Label>Country</Label>
+              <Input
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 placeholder="US"
-                className={inputClasses}
               />
             </div>
             <div>
-              <label className={labelClasses}>City</label>
-              <input
+              <Label>City</Label>
+              <Input
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="Los Angeles"
-                className={inputClasses}
               />
             </div>
           </div>
 
           <div>
-            <label className={labelClasses}>Description</label>
-            <textarea
+            <Label>Description</Label>
+            <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description..."
               rows={3}
-              className={cn(inputClasses, "resize-none")}
             />
           </div>
         </div>
@@ -310,7 +255,6 @@ export default function LocationsPage() {
         description={`Are you sure you want to delete "${deleteConfirmLocation?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

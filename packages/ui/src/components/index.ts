@@ -19,12 +19,9 @@ export * from "./sonner";
 export * from "./spinner";
 export * from "./switch";
 export * from "./table";
+export * from "./data-table";
 export * from "./tabs";
 export * from "./tooltip";
-
-// Background Components
-export * from "./animated-background";
-export * from "./ascii-wave-background";
 
 // Modal Components
 export * from "./confirmation-modal";
@@ -37,7 +34,6 @@ export * from "./pulsing-dot";
 export * from "./progress-ring";
 export * from "./glow-card";
 export * from "./noise-overlay";
-export * from "./floating-particles";
 export * from "./gradient-text";
 export * from "./drop-zone";
 
@@ -59,7 +55,6 @@ export * from "./container-controls-card";
 export * from "./container-uptime-card";
 export * from "./players-online-card";
 export * from "./recent-logs-card";
-export * from "./card-preview";
 
 // Utility Components
 export * from "./info-tooltip";

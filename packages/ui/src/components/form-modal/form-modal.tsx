@@ -9,8 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 export interface FormModalProps {
   open: boolean;
@@ -66,34 +65,26 @@ export const FormModal = ({
       <DialogContent className={sizeClasses[size]}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="py-2">{children}</div>
+        <div className="max-h-[60vh] overflow-y-auto py-2 pr-4">{children}</div>
         <DialogFooter>
-          <Button
-            variant="outline"
+          <TextureButton
+            className="w-full"
+            variant="secondary"
             onClick={handleCancel}
             disabled={isLoading}
-            className={cn(
-              "transition-all text-xs uppercase tracking-wider",
-              "border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500"
-            )}
           >
             {cancelLabel}
-          </Button>
-          <Button
-            variant="outline"
+          </TextureButton>
+          <TextureButton
+            className="w-full"
+            variant="success"
             onClick={handleSubmit}
             disabled={isLoading || !isValid}
-            className={cn(
-              "transition-all text-xs uppercase tracking-wider",
-              "border-zinc-600 text-zinc-200 hover:text-zinc-100 hover:border-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
-            )}
           >
             {isLoading ? "Saving..." : submitLabel}
-          </Button>
+          </TextureButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

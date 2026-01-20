@@ -13,12 +13,13 @@ use crate::api::HttpClient;
 use crate::config::{DockerConfiguration, RedisConfiguration, SystemConfiguration};
 use crate::environment::{DockerEnvironment, EnvironmentConfiguration, ProcessEnvironment};
 use crate::events::{Event, EventBus, ProcessState, RedisPublisher};
-use crate::system::{Locker, SinkPool};
+use crate::system::{Locker, SinkPool, ConsoleThrottle};
 
 use super::configuration::ServerConfig;
 use super::crash::CrashHandler;
 use super::install::{InstallationProcess, InstallError};
 use super::power::{PowerAction, PowerError};
+use super::schedule_status::ScheduleStatusTracker;
 use super::state::ServerState;
 
 /// A managed game server
@@ -44,8 +45,14 @@ pub struct Server {
     /// Console output sink
     console_sink: SinkPool,
 
+    /// Console output rate limiter (prevents I/O saturation)
+    console_throttle: ConsoleThrottle,
+
     /// Installation output sink
     install_sink: SinkPool,
+
+    /// Schedule status tracker (for websocket sync)
+    schedule_status: ScheduleStatusTracker,
 
     /// Cancellation token for server operations
     ctx: CancellationToken,
@@ -113,7 +120,9 @@ impl Server {
             crash_handler: CrashHandler::new(),
             event_bus,
             console_sink: SinkPool::new(),
+            console_throttle: ConsoleThrottle::new(),
             install_sink: SinkPool::new(),
+            schedule_status: ScheduleStatusTracker::new(),
             ctx: CancellationToken::new(),
             watcher_ctx: RwLock::new(CancellationToken::new()),
             data_dir,
@@ -230,9 +239,19 @@ impl Server {
         &self.console_sink
     }
 
+    /// Get console throttle for rate limiting output
+    pub fn console_throttle(&self) -> &ConsoleThrottle {
+        &self.console_throttle
+    }
+
     /// Get install sink for subscribing to install output
     pub fn install_sink(&self) -> &SinkPool {
         &self.install_sink
+    }
+
+    /// Get schedule status tracker
+    pub fn schedule_status(&self) -> &ScheduleStatusTracker {
+        &self.schedule_status
     }
 
     /// Get current process state
@@ -421,15 +440,24 @@ impl Server {
     /// Start watching console output for startup completion
     fn start_startup_detector(&self, cancel_token: CancellationToken) {
         // Sanitize patterns - remove Windows line endings (\r\n -> \n, remove stray \r)
+        // AND filter out empty strings that might result from cleaning
         let done_patterns: Vec<String> = self.config.read().process.startup.done
             .iter()
-            .map(|p| p.replace("\r\n", "\n").replace('\r', ""))
+            .map(|p| {
+                p.replace("\r\n", "\n")
+                    .replace('\r', "")
+                    .trim()
+                    .to_string()
+            })
+            .filter(|p| !p.is_empty())
             .collect();
         let strip_ansi = self.config.read().process.startup.strip_ansi;
 
         // If no patterns, immediately mark as running
         if done_patterns.is_empty() {
-            info!("No startup patterns configured, marking as running immediately");
+            error!("⚠️  WARNING: No startup patterns configured for server {}! This will mark the server as RUNNING immediately when it starts.", self.uuid());
+            error!("⚠️  Make sure your blueprint has a valid 'startup.done' pattern configured.");
+            info!("Marking server as running immediately due to missing startup patterns");
             self.environment.set_state(crate::events::ProcessState::Running);
             let api_client = self.api_client.clone();
             let uuid = self.uuid();
@@ -476,6 +504,7 @@ impl Server {
         let mut events_rx = self.event_bus.subscribe();
         let environment = self.environment.clone();
         let api_client = self.api_client.clone();
+        let console_sink = self.console_sink.clone();
         let uuid = self.uuid();
 
         tokio::spawn(async move {
@@ -499,10 +528,10 @@ impl Server {
                                     line = strip_ansi_codes(&line);
                                 }
 
-                                // Log first few lines and then periodically
-                                if line_count <= 5 || line_count % 20 == 0 {
-                                    let preview: String = line.chars().take(100).collect();
-                                    debug!("Startup detector [{}] checking line {}: {:?}", uuid, line_count, preview);
+                                // Log first few lines and then periodically for debugging
+                                if line_count <= 10 || line_count % 50 == 0 {
+                                    let preview: String = line.chars().take(150).collect();
+                                    debug!("Startup detector [{}] Line {}: {:?}", uuid, line_count, preview);
                                 }
 
                                 // Check if any "done" pattern matches
@@ -515,9 +544,19 @@ impl Server {
                                     };
 
                                     if matched {
-                                        info!("Startup detection MATCHED pattern {:?} for server {} on line {}", pattern_str, uuid, line_count);
-                                        info!("Matched line content: {:?}", line);
+                                        // First: forward console line to users
+                                        console_sink.push(data.clone());
+
+                                        // Log the detection
+                                        info!("✅ STARTUP DETECTION MATCHED!");
+                                        info!("  Server: {}", uuid);
+                                        info!("  Pattern: {:?}", pattern_str);
+                                        info!("  Line {}: {:?}", line_count, line.chars().take(200).collect::<String>());
+
+                                        // Then: update server state
                                         environment.set_state(crate::events::ProcessState::Running);
+
+                                        // Finally: notify API
                                         let _ = api_client.set_server_status(&uuid, "running").await;
                                         return;
                                     }
@@ -850,11 +889,26 @@ impl Server {
 
         let result = process.run().await;
 
-        // Report to panel
-        let _ = self.api_client.set_installation_status(
-            &config.uuid,
-            result.is_ok(),
-        ).await;
+        // Only mark as installed when the container is destroyed (after_execute completes)
+        // This happens inside process.run() after the installation completes
+        if result.is_ok() {
+            info!("Installation completed successfully, install container has been destroyed for {}", config.uuid);
+
+            // Report to panel that installation was successful
+            let _ = self.api_client.set_installation_status(
+                &config.uuid,
+                true,
+            ).await;
+
+            // Sync the server status to the panel so it knows installation is done
+            let _ = self.sync_status_to_panel().await;
+        } else {
+            // Report to panel that installation failed
+            let _ = self.api_client.set_installation_status(
+                &config.uuid,
+                false,
+            ).await;
+        }
 
         result
     }
@@ -898,13 +952,13 @@ impl Server {
                 error!("Failed to attach to running container {}: {}", uuid, e);
             }
 
-            // Restore cached console logs from Redis
+            // Restore cached console logs from Redis (with original timestamps)
             if let Some(ref store) = self.state_store {
                 let cached_logs = store.get_console_logs(&uuid).await;
                 if !cached_logs.is_empty() {
                     info!("Restoring {} cached console lines for server {}", cached_logs.len(), uuid);
-                    for line in cached_logs {
-                        self.console_sink.push(line.into_bytes());
+                    for entry in cached_logs {
+                        self.console_sink.push_with_timestamp(entry.line.into_bytes(), entry.timestamp);
                     }
                 }
             }

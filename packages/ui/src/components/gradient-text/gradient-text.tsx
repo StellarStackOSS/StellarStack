@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@workspace/ui/lib/utils";
-import type { GradientTextProps, ShimmerTextProps } from "../animations-types";
+import {cn} from "@workspace/ui/lib/utils";
+import type {GradientTextProps, ShimmerTextProps} from "../animations-types";
 
 export type { GradientTextProps, ShimmerTextProps };
 
@@ -22,7 +22,7 @@ export const GradientText = ({
     >
       {children}
       {animated && (
-        <style jsx>{`
+        <style>{`
           @keyframes gradient {
             0% {
               background-position: 0% center;
@@ -62,7 +62,7 @@ export const ShimmerText = ({
           backgroundClip: "text",
         }}
       />
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% {
             background-position: -200% center;

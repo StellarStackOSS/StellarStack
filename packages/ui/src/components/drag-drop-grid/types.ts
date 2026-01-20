@@ -1,8 +1,8 @@
-import type { ReactNode, ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type { Layout, Layouts } from "react-grid-layout";
 
 // Grid size configuration
-export type GridSize = "xxs" | "xxs-wide" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
+export type GridSize = "xxs" | "xxs-wide" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl" | "xxl-wide";
 
 export interface GridSizeConfig {
   w: number;
@@ -32,7 +32,6 @@ export interface DragDropGridContextValue {
   getItemMinSize: (itemId: string) => GridSize | undefined;
   getItemMaxSize: (itemId: string) => GridSize | undefined;
   canResize: (itemId: string) => boolean;
-  removeItem: (itemId: string) => void;
   isEditing: boolean;
   removeConfirmLabels?: RemoveConfirmLabels;
 }

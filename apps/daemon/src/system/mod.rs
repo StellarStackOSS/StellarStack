@@ -5,9 +5,15 @@
 
 mod locker;
 mod sink;
+mod rate_limiter;
+mod buffer_pool;
+mod system_monitor;
 
 pub use locker::{Locker, LockerGuard};
 pub use sink::SinkPool;
+pub use rate_limiter::{ConsoleThrottle, TokenBucket};
+pub use buffer_pool::{BufferPool, PooledBuffer};
+pub use system_monitor::SystemMonitor;
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

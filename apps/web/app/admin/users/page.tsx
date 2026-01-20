@@ -1,34 +1,39 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { DataTable } from "@workspace/ui/components/data-table";
 import {
-  UsersIcon,
-  TrashIcon,
-  EditIcon,
-  ShieldIcon,
-  UserIcon,
   ArrowLeftIcon,
-  SearchIcon,
+  EditIcon,
   PlusIcon,
+  SearchIcon,
+  ShieldIcon,
+  TrashIcon,
+  UserIcon,
 } from "lucide-react";
-import { useUsers, useUserMutations } from "@/hooks/queries";
-import { useAdminTheme } from "@/hooks/use-admin-theme";
-import { useAuth } from "@/components/auth-provider";
+import { useUserMutations, useUsers } from "@/hooks/queries";
+import { useAuth } from "hooks/auth-provider";
 import type { User } from "@/lib/api";
 import { toast } from "sonner";
+import { ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function UsersPage() {
   const router = useRouter();
-  const { mounted, inputClasses, labelClasses, selectClasses } = useAdminTheme();
   const { user: currentUser } = useAuth();
 
   // React Query hooks
@@ -41,6 +46,114 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Define table columns
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "User",
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-zinc-400"
+                )}
+              >
+                {user.role === "admin" ? (
+                  <ShieldIcon className="h-4 w-4" />
+                ) : (
+                  <UserIcon className="h-4 w-4" />
+                )}
+              </div>
+              <div>
+                <div className="font-medium">{user.name}</div>
+                {user.id === currentUser?.id && (
+                  <div className={cn("text-xs text-zinc-500")}>(You)</div>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "email",
+        header: "Email",
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className={cn("text-sm text-zinc-400")}>
+              {user.email}
+              {user.emailVerified && (
+                <span
+                  className={cn("ml-2 border border-zinc-600 px-1 py-0.5 text-xs text-zinc-400")}
+                >
+                  Verified
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "role",
+        header: "Role",
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <TextureButton
+              variant="minimal"
+              onClick={() => toggleRole(user)}
+              disabled={user.id === currentUser?.id || update.isPending}
+            >
+              {user.role === "admin" ? (
+                <ShieldIcon className="h-3 w-3" />
+              ) : (
+                <UserIcon className="h-3 w-3" />
+              )}
+              {user.role}
+            </TextureButton>
+          );
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created",
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => {
+          const user = row.original;
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <TextureButton variant="minimal" size="sm" onClick={() => handleEdit(user)}>
+                <EditIcon className="h-3 w-3" />
+              </TextureButton>
+              <TextureButton
+                variant="minimal"
+                size="sm"
+                onClick={() => {
+                  if (user.id === currentUser?.id) {
+                    toast.error("You cannot delete yourself");
+                    return;
+                  }
+                  setDeleteConfirmUser(user);
+                }}
+                disabled={user.id === currentUser?.id}
+              >
+                <TrashIcon className="h-3 w-3" />
+              </TextureButton>
+            </div>
+          );
+        },
+      },
+    ],
+    [currentUser?.id, update.isPending]
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -156,226 +269,59 @@ export default function UsersPage() {
     );
   }, [usersList, searchQuery]);
 
-  if (!mounted) return null;
+  // Create table instance
+  const table = useReactTable({
+    data: filteredUsers,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
-    <div
-      className={cn(
-        "relative min-h-svh transition-colors bg-[#0b0b0a]",
-      )}
-    >
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className={cn(
-                    "p-2 transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
-                  )}
-                >
+                <TextureButton variant="ghost" size="sm" onClick={() => router.push("/admin")}>
                   <ArrowLeftIcon className="h-4 w-4" />
-                </Button>
+                </TextureButton>
                 <div>
-                  <h1
-                    className={cn(
-                      "text-2xl font-light tracking-wider text-zinc-100",
-                    )}
-                  >
-                    USERS
-                  </h1>
+                  <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>USERS</h1>
                   <p className={cn("mt-1 text-sm text-zinc-500")}>
                     Manage user accounts and permissions
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCreate}
-                className={cn(
-                  "gap-2 text-xs tracking-wider uppercase border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
-              >
+              <TextureButton variant="secondary" size="sm" onClick={handleCreate}>
                 <PlusIcon className="h-4 w-4" />
                 Create User
-              </Button>
+              </TextureButton>
             </div>
 
             {/* Search Bar */}
             <div className="relative mb-6">
               <SearchIcon
-                className={cn(
-                  "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500",
-                )}
+                className={cn("absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500")}
               />
-              <input
+              <Input
                 type="text"
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn(
-                  "w-full border py-2.5 pr-4 pl-10 text-sm transition-colors focus:outline-none border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500",
-                )}
               />
             </div>
           </FadeIn>
 
           {/* Users Table */}
           <FadeIn delay={0.1}>
-            <div
-              className={cn(
-                "overflow-hidden border border-zinc-700/50",
-              )}
-            >
-              <table className="w-full">
-                <thead>
-                  <tr
-                    className={cn(
-                      "text-xs tracking-wider uppercase bg-zinc-900/50 text-zinc-400",
-                    )}
-                  >
-                    <th className="p-3 text-left">User</th>
-                    <th className="p-3 text-left">Email</th>
-                    <th className="p-3 text-left">Role</th>
-                    <th className="p-3 text-left">Created</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center">
-                        <Spinner className="mx-auto h-6 w-6" />
-                      </td>
-                    </tr>
-                  ) : filteredUsers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className={cn(
-                          "py-12 text-center text-sm text-zinc-500",
-                        )}
-                      >
-                        {searchQuery ? "No users match your search." : "No users found."}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className={cn(
-                          "border-t transition-colors border-zinc-700/50 hover:bg-zinc-900/30",
-                        )}
-                      >
-                        <td className={cn("p-3 text-zinc-100")}>
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-zinc-400",
-                              )}
-                            >
-                              {user.role === "admin" ? (
-                                <ShieldIcon className="h-4 w-4" />
-                              ) : (
-                                <UserIcon className="h-4 w-4" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-medium">{user.name}</div>
-                              {user.id === currentUser?.id && (
-                                <div
-                                  className={cn(
-                                    "text-xs text-zinc-500",
-                                  )}
-                                >
-                                  (You)
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td
-                          className={cn("p-3 text-sm text-zinc-400")}
-                        >
-                          {user.email}
-                          {user.emailVerified && (
-                            <span
-                              className={cn(
-                                "ml-2 border px-1 py-0.5 text-xs border-zinc-600 text-zinc-400",
-                              )}
-                            >
-                              Verified
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <button
-                            onClick={() => toggleRole(user)}
-                            disabled={user.id === currentUser?.id || update.isPending}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 border px-2 py-1 text-xs font-medium tracking-wider uppercase transition-colors border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700",
-                              user.id === currentUser?.id && "cursor-not-allowed opacity-50"
-                            )}
-                          >
-                            {user.role === "admin" ? (
-                              <ShieldIcon className="h-3 w-3" />
-                            ) : (
-                              <UserIcon className="h-3 w-3" />
-                            )}
-                            {user.role}
-                          </button>
-                        </td>
-                        <td
-                          className={cn("p-3 text-sm text-zinc-500")}
-                        >
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                              className={cn(
-                                "p-1.5 text-xs border-zinc-700 text-zinc-400 hover:text-zinc-100",
-                              )}
-                            >
-                              <EditIcon className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (user.id === currentUser?.id) {
-                                  toast.error("You cannot delete yourself");
-                                  return;
-                                }
-                                setDeleteConfirmUser(user);
-                              }}
-                              disabled={user.id === currentUser?.id}
-                              className={cn(
-                                "p-1.5 text-xs cursor-not-allowed opacity-50 border-red-900/50 text-red-400 hover:bg-red-900/20",
-                                user.id === currentUser?.id
-                              )}
-                            >
-                              <TrashIcon className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              table={table}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage={searchQuery ? "No users match your search." : "No users found."}
+            />
           </FadeIn>
         </div>
       </div>
@@ -399,44 +345,39 @@ export default function UsersPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className={labelClasses}>Name</label>
-            <input
+            <Label>Name</Label>
+            <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="User name"
-              className={inputClasses}
               required
             />
           </div>
 
           <div>
-            <label className={labelClasses}>Email</label>
-            <input
+            <Label>Email</Label>
+            <Input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="user@example.com"
-              className={cn(inputClasses, !isCreateMode && "cursor-not-allowed opacity-50")}
               disabled={!isCreateMode}
               required
             />
             {!isCreateMode && (
-              <p className={cn("mt-1 text-xs text-zinc-600")}>
-                Email cannot be changed
-              </p>
+              <p className={cn("mt-1 text-xs text-zinc-600")}>Email cannot be changed</p>
             )}
           </div>
 
           {isCreateMode && (
             <div>
-              <label className={labelClasses}>Password</label>
-              <input
+              <Label>Password</Label>
+              <Input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="Minimum 8 characters"
-                className={inputClasses}
                 required
                 minLength={8}
               />
@@ -449,22 +390,24 @@ export default function UsersPage() {
           )}
 
           <div>
-            <label className={labelClasses}>Role</label>
-            <select
+            <Label>Role</Label>
+            <Select
               value={formData.role}
-              onChange={(e) =>
-                setFormData({ ...formData, role: e.target.value as "user" | "admin" })
+              onValueChange={(value) =>
+                setFormData({ ...formData, role: value as "user" | "admin" })
               }
-              className={selectClasses}
               disabled={!isCreateMode && editingUser?.id === currentUser?.id}
             >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
             {!isCreateMode && editingUser?.id === currentUser?.id && (
-              <p className={cn("mt-1 text-xs text-zinc-500")}>
-                You cannot change your own role
-              </p>
+              <p className={cn("mt-1 text-xs text-zinc-500")}>You cannot change your own role</p>
             )}
           </div>
         </div>
@@ -478,7 +421,6 @@ export default function UsersPage() {
         description={`Are you sure you want to delete "${deleteConfirmUser?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        variant="danger"
         isLoading={remove.isPending}
       />
     </div>

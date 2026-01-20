@@ -1,29 +1,29 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { Switch } from "@workspace/ui/components/switch";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import {
+  BsCheckCircle,
+  BsDiscord,
+  BsGithub,
+  BsGoogle,
   BsKey,
+  BsPlus,
   BsShieldCheck,
   BsTrash,
-  BsPlus,
-  BsCheckCircle,
-  BsGoogle,
-  BsGithub,
-  BsDiscord,
 } from "react-icons/bs";
 import { authClient, useSession } from "@/lib/auth-client";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import { Card } from "@workspace/ui/components";
+import { SectionTitle } from "@/components/AccountPageComponents/SectionTitle";
 
 interface Passkey {
   id: string;
@@ -33,7 +33,6 @@ interface Passkey {
 }
 
 const AccountPage = (): JSX.Element | null => {
-  const [mounted, setMounted] = useState(false);
   const queryClient = useQueryClient();
   const { data: session, isPending: sessionLoading } = useSession();
 
@@ -87,7 +86,7 @@ const AccountPage = (): JSX.Element | null => {
     }
   }, [passkeyData]);
 
-  if (!mounted || sessionLoading) return null;
+  if (sessionLoading) return null;
 
   const hasProfileChanges = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
@@ -215,125 +214,52 @@ const AccountPage = (): JSX.Element | null => {
   };
 
   return (
-    <div
-      className={cn(
-        "relative min-h-svh transition-colors bg-[#0b0b0a]",
-      )}
-    >
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+    <Card className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
+      <Card className="relative p-8">
+        <Card className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SidebarTrigger
                 className={cn(
-                  "transition-all hover:scale-110 active:scale-95 text-zinc-400 hover:text-zinc-100",
+                  "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                 )}
               />
               <div>
-                <h1
-                  className={cn(
-                    "text-2xl font-light tracking-wider text-zinc-100",
-                  )}
-                >
+                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
                   ACCOUNT SETTINGS
                 </h1>
-                <p className={cn("mt-1 text-sm text-zinc-500")}>
-                  Manage your account and security
-                </p>
+                <p className={cn("mt-1 text-sm text-zinc-500")}>Manage your account and security</p>
               </div>
             </div>
           </div>
 
           {/* Profile Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-500",
-              )}
-            />
-
-            <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase text-zinc-300",
-              )}
-            >
-              Profile
-            </h2>
+          <Card>
+            <SectionTitle>Profile</SectionTitle>
 
             <div className="space-y-4">
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase text-zinc-500",
-                  )}
-                >
-                  Full Name
-                </label>
-                <input
+                <Label>Full Name</Label>
+                <Input
                   type="text"
                   value={profile.name}
                   onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
-                  className={cn(
-                    "mt-2 w-full border px-3 py-2 text-sm transition-colors outline-none border-zinc-700/50 bg-zinc-900/50 text-zinc-200 focus:border-zinc-500",
-                  )}
                 />
               </div>
               <div>
-                <label
-                  className={cn(
-                    "text-[10px] font-medium tracking-wider uppercase text-zinc-500",
-                  )}
-                >
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={profile.email}
-                  disabled
-                  className={cn(
-                    "mt-2 w-full border px-3 py-2 text-sm opacity-50 transition-colors outline-none border-zinc-700/50 bg-zinc-900/50 text-zinc-200",
-                  )}
-                />
+                <Label>Email Address</Label>
+                <Input type="email" value={profile.email} disabled />
                 <p className={cn("mt-1 text-xs text-zinc-500")}>
                   Email changes are not yet supported
                 </p>
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
+            <TextureButton
+              variant="minimal"
               onClick={handleSaveProfile}
               disabled={!hasProfileChanges}
-              className={cn(
-                "mt-6 gap-2 transition-all",
-                saved
-                  ? "border-green-500/50 text-green-400"
-                  : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-              )}
             >
               {saved ? (
                 <>
@@ -343,134 +269,44 @@ const AccountPage = (): JSX.Element | null => {
               ) : (
                 <span className="text-xs tracking-wider uppercase">Update Profile</span>
               )}
-            </Button>
-          </div>
+            </TextureButton>
+          </Card>
 
           {/* Connected Accounts Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-500",
-              )}
-            />
-
-            <h2
-              className={cn(
-                "mb-6 text-sm font-medium tracking-wider uppercase text-zinc-300",
-              )}
-            >
-              Connected Accounts
-            </h2>
+          <Card>
+            <SectionTitle>Connected Accounts</SectionTitle>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
               Connect your social accounts for quick sign-in.
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSocialSignIn("google")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
-              >
+              <TextureButton variant="minimal" onClick={() => handleSocialSignIn("google")}>
                 <BsGoogle className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Google</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSocialSignIn("github")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
-              >
+              </TextureButton>
+              <TextureButton variant="minimal" onClick={() => handleSocialSignIn("github")}>
                 <BsGithub className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">GitHub</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSocialSignIn("discord")}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
-              >
+              </TextureButton>
+              <TextureButton variant="minimal" onClick={() => handleSocialSignIn("discord")}>
                 <BsDiscord className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Discord</span>
-              </Button>
+              </TextureButton>
             </div>
-          </div>
+          </Card>
 
           {/* Passkeys Section */}
-          <div
-            className={cn(
-              "relative mb-6 border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-500",
-              )}
-            />
-
+          <Card>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BsKey className={cn("h-4 w-4 text-zinc-400")} />
-                <h2
-                  className={cn(
-                    "text-sm font-medium tracking-wider uppercase text-zinc-300",
-                  )}
-                >
-                  Passkeys
-                </h2>
+                <SectionTitle className="mb-0">Passkeys</SectionTitle>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAddPasskeyModalOpen(true)}
-                className={cn(
-                  "gap-2 transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                )}
-              >
+              <TextureButton variant="minimal" onClick={() => setAddPasskeyModalOpen(true)}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">Add Passkey</span>
-              </Button>
+              </TextureButton>
             </div>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
@@ -479,85 +315,40 @@ const AccountPage = (): JSX.Element | null => {
 
             <div className="space-y-3">
               {passkeys.length === 0 ? (
-                <p className={cn("text-sm text-zinc-500")}>
-                  No passkeys registered yet.
-                </p>
+                <p className={cn("text-sm text-zinc-500")}>No passkeys registered yet.</p>
               ) : (
                 passkeys.map((passkey) => (
                   <div
                     key={passkey.id}
                     className={cn(
-                      "flex items-center justify-between border p-4 border-zinc-700/50 bg-zinc-900/30",
+                      "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
                     )}
                   >
                     <div>
-                      <div
-                        className={cn(
-                          "text-sm font-medium text-zinc-200",
-                        )}
-                      >
+                      <div className={cn("text-sm font-medium text-zinc-200")}>
                         {passkey.name || "Unnamed Passkey"}
                       </div>
-                      <div
-                        className={cn("mt-1 text-xs text-zinc-500")}
-                      >
+                      <div className={cn("mt-1 text-xs text-zinc-500")}>
                         Added {new Date(passkey.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="destructive"
                       onClick={() => openDeletePasskeyModal(passkey)}
-                      className={cn(
-                        "p-2 transition-all border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300",
-                      )}
                     >
                       <BsTrash className="h-4 w-4" />
-                    </Button>
+                    </TextureButton>
                   </div>
                 ))
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Two-Factor Authentication Section */}
-          <div
-            className={cn(
-              "relative border p-6 border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
-            )}
-          >
-            <div
-              className={cn(
-                "absolute top-0 left-0 h-2 w-2 border-t border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute top-0 right-0 h-2 w-2 border-t border-r border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-2 w-2 border-b border-l border-zinc-500",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute right-0 bottom-0 h-2 w-2 border-r border-b border-zinc-500",
-              )}
-            />
-
+          <Card>
             <div className="mb-6 flex items-center gap-2">
-              <BsShieldCheck
-                className={cn("h-4 w-4 text-zinc-400")}
-              />
-              <h2
-                className={cn(
-                  "text-sm font-medium tracking-wider uppercase text-zinc-300",
-                )}
-              >
-                Two-Factor Authentication
-              </h2>
+              <BsShieldCheck className={cn("h-4 w-4 text-zinc-400")} />
+              <SectionTitle className="mb-0">Two-Factor Authentication</SectionTitle>
             </div>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
@@ -568,17 +359,11 @@ const AccountPage = (): JSX.Element | null => {
             {!showTotpSetup ? (
               <div
                 className={cn(
-                  "flex items-center justify-between border p-4 border-zinc-700/50 bg-zinc-900/30",
+                  "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
                 )}
               >
                 <div>
-                  <div
-                    className={cn(
-                      "text-sm font-medium text-zinc-200",
-                    )}
-                  >
-                    Authenticator App
-                  </div>
+                  <div className={cn("text-sm font-medium text-zinc-200")}>Authenticator App</div>
                   <div className={cn("mt-1 text-xs text-zinc-500")}>
                     {twoFactorEnabled
                       ? "Two-factor authentication is enabled"
@@ -586,16 +371,12 @@ const AccountPage = (): JSX.Element | null => {
                   </div>
                 </div>
                 {twoFactorEnabled ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <TextureButton
+                    variant="destructive"
                     onClick={() => setDisableTwoFactorModalOpen(true)}
-                    className={cn(
-                      "transition-all border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Disable</span>
-                  </Button>
+                  </TextureButton>
                 ) : (
                   <div className="flex items-center gap-2">
                     <Input
@@ -603,31 +384,20 @@ const AccountPage = (): JSX.Element | null => {
                       placeholder="Password"
                       value={passwordForAction}
                       onChange={(e) => setPasswordForAction(e.target.value)}
-                      className={cn(
-                        "h-8 w-40 text-sm border-zinc-700 bg-zinc-900 text-zinc-100",
-                      )}
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <TextureButton
+                      variant="minimal"
                       onClick={handleEnableTwoFactor}
                       disabled={!passwordForAction}
-                      className={cn(
-                        "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                      )}
                     >
                       <span className="text-xs tracking-wider uppercase">Enable</span>
-                    </Button>
+                    </TextureButton>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                <div
-                  className={cn(
-                    "border p-4 border-zinc-700/50 bg-zinc-900/30",
-                  )}
-                >
+                <div className={cn("border border-zinc-700/50 bg-zinc-900/30 p-4")}>
                   <p className={cn("mb-4 text-sm text-zinc-300")}>
                     Scan this QR code with your authenticator app:
                   </p>
@@ -636,14 +406,8 @@ const AccountPage = (): JSX.Element | null => {
                       <img src={totpQrCode} alt="TOTP QR Code" className="h-48 w-48" />
                     </div>
                   )}
-                  <p className={cn("mb-2 text-xs text-zinc-500")}>
-                    Or enter this code manually:
-                  </p>
-                  <code
-                    className={cn(
-                      "block p-2 text-xs break-all bg-zinc-800 text-zinc-300",
-                    )}
-                  >
+                  <p className={cn("mb-2 text-xs text-zinc-500")}>Or enter this code manually:</p>
+                  <code className={cn("block bg-zinc-800 p-2 text-xs break-all text-zinc-300")}>
                     {totpUri?.split("secret=")[1]?.split("&")[0] || ""}
                   </code>
                 </div>
@@ -654,24 +418,16 @@ const AccountPage = (): JSX.Element | null => {
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value)}
                     maxLength={6}
-                    className={cn(
-                      "h-8 w-40 text-sm border-zinc-700 bg-zinc-900 text-zinc-100",
-                    )}
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <TextureButton
+                    variant="minimal"
                     onClick={handleVerifyTotp}
                     disabled={verifyCode.length !== 6}
-                    className={cn(
-                      "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Verify</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  </TextureButton>
+                  <TextureButton
+                    variant="minimal"
                     onClick={() => {
                       setShowTotpSetup(false);
                       setTotpUri(null);
@@ -679,18 +435,15 @@ const AccountPage = (): JSX.Element | null => {
                       setVerifyCode("");
                       setPasswordForAction("");
                     }}
-                    className={cn(
-                      "transition-all border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
-                    )}
                   >
                     <span className="text-xs tracking-wider uppercase">Cancel</span>
-                  </Button>
+                  </TextureButton>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+          </Card>
+        </Card>
+      </Card>
 
       {/* Backup Codes Modal */}
       <FormModal
@@ -709,9 +462,7 @@ const AccountPage = (): JSX.Element | null => {
           {backupCodes.map((code, index) => (
             <div
               key={index}
-              className={cn(
-                "p-2 text-center font-mono text-sm bg-zinc-800 text-zinc-300",
-              )}
+              className={cn("bg-zinc-800 p-2 text-center font-mono text-sm text-zinc-300")}
             >
               {code}
             </div>
@@ -731,20 +482,11 @@ const AccountPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase text-zinc-400",
-              )}
-            >
-              Passkey Name
-            </label>
+            <Label>Passkey Name</Label>
             <Input
               value={newPasskeyName}
               onChange={(e) => setNewPasskeyName(e.target.value)}
               placeholder="e.g., MacBook Pro - Touch ID"
-              className={cn(
-                "transition-all border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600",
-              )}
             />
             <p className={cn("mt-1 text-xs text-zinc-500")}>
               Enter a name to identify this passkey
@@ -761,7 +503,6 @@ const AccountPage = (): JSX.Element | null => {
         description={`Are you sure you want to delete "${selectedPasskey?.name || "this passkey"}"? You will no longer be able to sign in using this passkey.`}
         onConfirm={handleDeletePasskey}
         confirmLabel="Delete"
-        variant="danger"
       />
 
       {/* Disable 2FA Modal */}
@@ -776,26 +517,17 @@ const AccountPage = (): JSX.Element | null => {
       >
         <div className="space-y-4">
           <div>
-            <label
-              className={cn(
-                "mb-2 block text-xs tracking-wider uppercase text-zinc-400",
-              )}
-            >
-              Password
-            </label>
+            <Label>Password</Label>
             <Input
               type="password"
               value={passwordForAction}
               onChange={(e) => setPasswordForAction(e.target.value)}
               placeholder="Enter your password"
-              className={cn(
-                "transition-all border-zinc-700 bg-zinc-900 text-zinc-100 placeholder:text-zinc-600",
-              )}
             />
           </div>
         </div>
       </FormModal>
-    </div>
+    </Card>
   );
 };
 

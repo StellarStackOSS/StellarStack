@@ -1,17 +1,24 @@
 "use client";
 
-import { Area, AreaChart, Line, LineChart, ResponsiveContainer, ComposedChart, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  ComposedChart,
+  YAxis,
+} from "recharts";
 import { useId } from "react";
+import type { SparklineProps, DualSparklineProps } from "./types";
 
-interface SparklineProps {
-  data: number[];
-  color?: string;
-  height?: number;
-  minDomain?: number;
-  maxDomain?: number;
-}
-
-export const Sparkline = ({ data, color = "#22c55e", height = 32, minDomain = 0, maxDomain = 100 }: SparklineProps) => {
+export const Sparkline = ({
+  data,
+  color = "#22c55e",
+  height = 32,
+  minDomain = 0,
+  maxDomain = 100,
+}: SparklineProps) => {
   const uniqueId = useId();
   // Add baseline point at start to ensure chart anchors at 0
   const chartData = data.map((value, index) => ({ value, index }));
@@ -22,9 +29,9 @@ export const Sparkline = ({ data, color = "#22c55e", height = 32, minDomain = 0,
   const dotColor = "rgba(255, 255, 255, 0.15)";
 
   return (
-    <div style={{ height }} className="w-full relative">
+    <div style={{ height }} className="relative w-full">
       {/* Dotted background pattern */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ zIndex: 0 }}>
         <defs>
           <pattern id={patternId} x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
             <circle cx="1" cy="1" r="0.5" fill={dotColor} />
@@ -58,16 +65,6 @@ export const Sparkline = ({ data, color = "#22c55e", height = 32, minDomain = 0,
   );
 };
 
-interface DualSparklineProps {
-  data1: number[];
-  data2: number[];
-  color1?: string;
-  color2?: string;
-  height?: number;
-  minDomain?: number;
-  maxDomain?: number;
-}
-
 export const DualSparkline = ({
   data1,
   data2,
@@ -75,13 +72,13 @@ export const DualSparkline = ({
   color2 = "#a855f7",
   height = 32,
   minDomain = 0,
-  maxDomain = 100
+  maxDomain = 100,
 }: DualSparklineProps) => {
   const uniqueId = useId();
   const chartData = data1.map((value, index) => ({
     value1: value,
     value2: data2[index] || 0,
-    index
+    index,
   }));
 
   const gradientId1 = `dual-sparkline-gradient-1-${uniqueId}`;
@@ -90,9 +87,9 @@ export const DualSparkline = ({
   const dotColor = "rgba(255, 255, 255, 0.15)";
 
   return (
-    <div style={{ height }} className="w-full relative">
+    <div style={{ height }} className="relative w-full">
       {/* Dotted background pattern */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ zIndex: 0 }}>
         <defs>
           <pattern id={patternId} x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
             <circle cx="1" cy="1" r="0.5" fill={dotColor} />

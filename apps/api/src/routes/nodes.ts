@@ -427,9 +427,7 @@ nodes.post("/handshake", requireDaemon, async (c) => {
       blueprint: {
         id: server.blueprint.id,
         name: server.blueprint.name,
-        imageName: server.blueprint.imageName,
-        imageTag: server.blueprint.imageTag,
-        registry: server.blueprint.registry,
+        dockerImages: (server.blueprint.dockerImages as Record<string, string>) || {},
         config: server.blueprint.config,
       },
       allocations: server.allocations.map((a) => ({

@@ -7,4 +7,8 @@ module.exports = {
   parserOptions: {
     project: true,
   },
-}
+  rules: {
+    "object-curly-spacing": ["error", "always"],
+    "no-multi-spaces": "error",
+  },
+};

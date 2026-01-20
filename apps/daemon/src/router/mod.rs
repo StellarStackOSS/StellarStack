@@ -77,7 +77,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/download/backup", get(handlers::download::download_backup))
         .route("/download/file", get(handlers::download::download_file))
 
-        // Upload route
+        // Public upload route (legacy token-based)
         .route("/upload/file", post(handlers::upload::upload_file))
 
         // Apply global middleware
@@ -143,6 +143,8 @@ fn file_routes() -> Router<AppState> {
         .route("/list", get(handlers::files::list_files))
         .route("/contents", get(handlers::files::read_file))
         .route("/write", post(handlers::files::write_file))
+        .route("/create", post(handlers::files::create_file))
+        .route("/upload", post(handlers::upload::authenticated_upload_file))
         .route("/create-directory", post(handlers::files::create_directory))
         .route("/rename", post(handlers::files::rename_file))
         .route("/copy", post(handlers::files::copy_file))
@@ -166,8 +168,8 @@ fn backup_routes() -> Router<AppState> {
 fn schedule_routes() -> Router<AppState> {
     Router::new()
         .route("/sync", post(handlers::schedules::sync_schedules))
+        .route("/:scheduleId/run", post(handlers::schedules::execute_schedule))
         .route("/", post(handlers::schedules::create_schedule))
         .route("/", axum::routing::patch(handlers::schedules::update_schedule))
         .route("/", delete(handlers::schedules::delete_schedule))
-        .route("/execute", post(handlers::schedules::execute_schedule))
 }

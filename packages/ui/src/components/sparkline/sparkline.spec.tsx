@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('Sparkline', () => {
-  it.todo('should render correctly');
+describe("Sparkline", () => {
+  it.todo("should render correctly");
 });

@@ -470,11 +470,8 @@ export const permissions = {
 export const webhooks = {
   list: () => request<Webhook[]>(`/api/webhooks`),
   get: (webhookId: string) => request<Webhook>(`/api/webhooks/${webhookId}`),
-  create: (data: {
-    serverId?: string;
-    url: string;
-    events: WebhookEvent[];
-  }) => request<Webhook>(`/api/webhooks`, { method: "POST", body: data }),
+  create: (data: { serverId?: string; url: string; events: WebhookEvent[] }) =>
+    request<Webhook>(`/api/webhooks`, { method: "POST", body: data }),
   update: (
     webhookId: string,
     data: {

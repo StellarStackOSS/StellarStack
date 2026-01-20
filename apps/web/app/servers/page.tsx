@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsServer, BsChevronRight, BsBoxArrowRight } from "react-icons/bs";
-import { servers as serversApi } from "@/lib/api";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsChevronRight } from "react-icons/bs";
 import type { Server } from "@/lib/api";
-import { useAuth } from "@/components/auth-provider";
+import { servers as serversApi } from "@/lib/api";
+import { useAuth } from "hooks/auth-provider";
 import { toast } from "sonner";
+import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
+import { Spinner } from "@workspace/ui/components";
+import { renderVersion } from "@/components/UnifiedSidebar/UnifiedSidebar";
+import { cn } from "@workspace/ui/lib/utils";
 
 type ServerStatus =
   | "INSTALLING"
@@ -53,28 +54,6 @@ const ServersPage = (): JSX.Element | null => {
     router.push("/");
   };
 
-  const getStatusColor = (status: ServerStatus) => {
-    switch (status) {
-      case "RUNNING":
-        return "text-green-500 border-green-500";
-      case "STOPPED":
-        return "text-zinc-500 border-zinc-500";
-      case "STARTING":
-      case "STOPPING":
-      case "MAINTENANCE":
-        return "text-amber-500 border-amber-500";
-      case "INSTALLING":
-      case "RESTORING":
-        return "text-blue-500 border-blue-500";
-      case "SUSPENDED":
-        return "text-red-400 border-red-400";
-      case "ERROR":
-        return "text-red-500 border-red-500";
-      default:
-        return "text-zinc-500 border-zinc-500";
-    }
-  };
-
   const getLocationString = (server: Server) => {
     if (server.node?.location) {
       const loc = server.node.location;
@@ -84,126 +63,80 @@ const ServersPage = (): JSX.Element | null => {
     return server.node?.displayName || "Unknown";
   };
 
-  const getGameType = (server: Server) => {
+  const getCore = (server: Server) => {
     return server.blueprint?.name || "Unknown";
   };
 
   return (
-    <div
-      className="relative min-h-svh transition-colors bg-[#0b0b0a]"
-    >
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
+    <div className="relative min-h-svh w-full bg-[#0b0b0a] transition-colors">
       {/* Header */}
-      <div className="relative p-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-8 flex items-center justify-between">
+      <div className="relative flex flex-col items-center p-5 md:p-8">
+        <div className="w-full max-w-7xl">
+          <div className="mb-8 flex w-full items-center justify-between">
             <div>
-              <h1 className="text-2xl font-light tracking-wider text-zinc-100">
-                YOUR SERVERS
-              </h1>
-              <p className="mt-1 text-sm text-zinc-500">
-                Select a server to manage
-              </p>
+              <h1 className="text-xl font-light tracking-wider text-zinc-100">YOUR SERVERS</h1>
+              <p className="mt-1 text-xs text-zinc-500">Select a server to manage</p>
             </div>
             <div className="flex items-center gap-2">
               {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push("/admin")}
-                  className="gap-2 transition-all hover:scale-[1.02] active:scale-95 border-amber-700 text-amber-400 hover:border-amber-500 hover:text-amber-300"
-                >
-                  <span className="text-xs tracking-wider uppercase">Admin</span>
-                </Button>
+                <TextureButton onClick={() => router.push("/admin")} variant="accent">
+                  <span className="uppercase">Admin</span>
+                </TextureButton>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="gap-2 transition-all hover:scale-[1.02] active:scale-95 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
-              >
-                <BsBoxArrowRight className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">Sign Out</span>
-              </Button>
+              <TextureButton variant="minimal" onClick={handleSignOut}>
+                <span className="uppercase">Sign Out</span>
+              </TextureButton>
             </div>
           </div>
 
           {/* Server List */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {isLoading ? (
               <div className="py-12 text-center text-sm text-zinc-500">
-                Loading servers...
+                <Spinner />
               </div>
             ) : servers.length === 0 ? (
-              <div className="border py-12 text-center border-zinc-800 text-zinc-500">
-                No servers found. Contact an administrator to create one.
-              </div>
+              <div className={"text-primary py-12 text-center text-xs"}>No servers found.</div>
             ) : (
               servers.map((server) => (
-                <button
+                //TODO: FIGURE OUT WHAT TF DO WE WANT TO DO HERE??
+                <div
+                  className="relative flex cursor-pointer flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-101"
                   key={server.id}
                   onClick={() => handleServerSelect(server.id)}
-                  className="group relative w-full cursor-pointer border p-6 text-left transition-all hover:scale-[1.01] border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20 hover:border-zinc-700"
                 >
-                  {/* Corner decorations */}
-                  <div className="absolute top-0 left-0 h-3 w-3 border-t border-l border-zinc-500" />
-                  <div className="absolute top-0 right-0 h-3 w-3 border-t border-r border-zinc-500" />
-                  <div className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-zinc-500" />
-                  <div className="absolute right-0 bottom-0 h-3 w-3 border-r border-b border-zinc-500" />
-
-                  <div className="flex items-center justify-between">
+                  <div className="flex w-full items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="border p-3 border-zinc-700 bg-zinc-800/50">
-                        <BsServer className="h-6 w-6 text-zinc-400" />
-                      </div>
                       <div>
                         <div className="flex items-center gap-3">
-                          <h2 className="text-sm font-medium tracking-wider uppercase text-zinc-100">
+                          <h2 className="text-sm font-medium tracking-wider text-white uppercase">
                             {server.name}
                           </h2>
-                          <span
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                              getStatusColor(server.status)
-                            )}
-                          >
-                            {server.status}
-                          </span>
+                          <ServerStatusBadge server={server} />
                         </div>
                         <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
-                          <span>{getGameType(server)}</span>
+                          <span>{getCore(server)}</span>
                           <span>-</span>
                           <span>{server.memory}MB RAM</span>
                           <span>-</span>
                           <span>{getLocationString(server)}</span>
                         </div>
                         {server.description && (
-                          <div className="mt-2 text-xs text-zinc-600">
-                            {server.description}
-                          </div>
+                          <div className="mt-2 text-xs text-zinc-600">{server.description}</div>
                         )}
                       </div>
                     </div>
-                    <BsChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 text-zinc-600 group-hover:text-zinc-400" />
+                    <BsChevronRight className="h-5 w-5 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400" />
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
-
-          {/* Admin-only: Add Server Button */}
-          {isAdmin && (
-            <button
-              onClick={() => router.push("/admin/servers")}
-              className="relative mt-4 w-full cursor-pointer border border-dashed p-6 text-center transition-all hover:scale-[1.01] border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
-            >
-              <span className="text-sm font-medium tracking-wider uppercase">
-                + Create New Server
-              </span>
-            </button>
-          )}
+          <div
+            className={cn("mt-6 text-center text-[10px] tracking-wider text-zinc-600 uppercase")}
+          >
+            {renderVersion()}
+          </div>
         </div>
       </div>
     </div>

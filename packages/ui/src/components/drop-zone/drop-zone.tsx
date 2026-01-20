@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback, type DragEvent } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { BsCloudUpload } from "react-icons/bs";
-import type { DropZoneProps, UploadButtonProps } from "../animations-types";
+import {type DragEvent, useCallback, useState} from "react";
+import {cn} from "@workspace/ui/lib/utils";
+import {BsCloudUpload} from "react-icons/bs";
+import type {DropZoneProps, UploadButtonProps} from "../animations-types";
+import {Input} from "@workspace/ui/components";
+import {Label} from "@workspace/ui/components/label";
 
 export type { DropZoneProps, UploadButtonProps };
 
@@ -17,7 +19,6 @@ export const DropZone = ({
   disabled = false,
 }: DropZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragCounter, setDragCounter] = useState(0);
 
   const handleDragEnter = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -25,7 +26,6 @@ export const DropZone = ({
       e.stopPropagation();
       if (disabled) return;
 
-      setDragCounter((prev) => prev + 1);
       if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
         setIsDragging(true);
         onDragEnter?.();
@@ -39,26 +39,14 @@ export const DropZone = ({
       e.preventDefault();
       e.stopPropagation();
       if (disabled) return;
-
-      setDragCounter((prev) => {
-        const newCount = prev - 1;
-        if (newCount === 0) {
-          setIsDragging(false);
-          onDragLeave?.();
-        }
-        return newCount;
-      });
     },
-    [disabled, onDragLeave]
+    [disabled]
   );
 
-  const handleDragOver = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    []
-  );
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleDrop = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -67,7 +55,6 @@ export const DropZone = ({
       if (disabled) return;
 
       setIsDragging(false);
-      setDragCounter(0);
 
       const files = e.dataTransfer.files;
       if (files && files.length > 0) {
@@ -75,9 +62,7 @@ export const DropZone = ({
         if (acceptedTypes && acceptedTypes.length > 0) {
           const validFiles = Array.from(files).filter((file) =>
             acceptedTypes.some(
-              (type) =>
-                file.type === type ||
-                file.name.endsWith(type.replace("*", ""))
+              (type) => file.type === type || file.name.endsWith(type.replace("*", ""))
             )
           );
           if (validFiles.length > 0) {
@@ -106,47 +91,23 @@ export const DropZone = ({
       {/* Drag overlay */}
       <div
         className={cn(
-          "absolute inset-0 z-50 flex items-center justify-center transition-all duration-200 pointer-events-none",
+          "pointer-events-none absolute inset-0 z-50 flex items-center justify-center transition-all duration-200",
           isDragging ? "opacity-100" : "opacity-0"
         )}
       >
+        <div className={cn("absolute inset-0", "bg-zinc-900/90")} />
         <div
           className={cn(
-            "absolute inset-0",
-            "bg-zinc-900/90"
-          )}
-        />
-        <div
-          className={cn(
-            "absolute inset-4 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-4",
+            "absolute inset-4 flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed",
             "border-blue-500/50 bg-blue-500/5"
           )}
         >
-          <div
-            className={cn(
-              "p-4 rounded-full",
-              "bg-blue-500/20"
-            )}
-          >
-            <BsCloudUpload className="w-12 h-12 text-blue-500 animate-bounce" />
+          <div className={cn("rounded-full p-4", "bg-blue-500/20")}>
+            <BsCloudUpload className="h-12 w-12 animate-bounce text-blue-500" />
           </div>
           <div className="text-center">
-            <p
-              className={cn(
-                "text-lg font-medium",
-                "text-zinc-100"
-              )}
-            >
-              Drop files to upload
-            </p>
-            <p
-              className={cn(
-                "text-sm mt-1",
-                "text-zinc-400"
-              )}
-            >
-              Release to start uploading
-            </p>
+            <p className={cn("text-lg font-medium", "text-zinc-100")}>Drop files to upload</p>
+            <p className={cn("mt-1 text-sm", "text-zinc-400")}>Release to start uploading</p>
           </div>
         </div>
       </div>
@@ -172,10 +133,10 @@ export const UploadButton = ({
   };
 
   return (
-    <label
+    <Label
       className={cn(
-        "relative inline-flex items-center gap-2 px-4 py-2 cursor-pointer transition-all overflow-hidden",
-        "bg-zinc-800 hover:bg-zinc-700 text-zinc-200",
+        "relative inline-flex cursor-pointer items-center gap-2 overflow-hidden px-4 py-2 transition-all",
+        "bg-zinc-800 text-zinc-200 hover:bg-zinc-700",
         isUploading && "cursor-wait",
         className
       )}
@@ -187,7 +148,7 @@ export const UploadButton = ({
           style={{ width: `${progress}%` }}
         />
       )}
-      <input
+      <Input
         type="file"
         className="sr-only"
         accept={accept}
@@ -198,13 +159,13 @@ export const UploadButton = ({
       <span className="relative z-10 flex items-center gap-2">
         {children || (
           <>
-            <BsCloudUpload className="w-4 h-4" />
+            <BsCloudUpload className="h-4 w-4" />
             <span className="text-sm font-medium">
               {isUploading ? `${Math.round(progress)}%` : "Upload"}
             </span>
           </>
         )}
       </span>
-    </label>
+    </Label>
   );
 };

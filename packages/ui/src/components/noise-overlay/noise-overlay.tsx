@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@workspace/ui/lib/utils";
-import type { NoiseOverlayProps, ScanlineOverlayProps } from "../animations-types";
+import {cn} from "@workspace/ui/lib/utils";
+import type {NoiseOverlayProps, ScanlineOverlayProps} from "../animations-types";
 
 export type { NoiseOverlayProps, ScanlineOverlayProps };
 
@@ -47,7 +47,7 @@ export const ScanlineOverlay = ({
           animation: `scanlines ${speed}s linear infinite`,
         }}
       />
-      <style jsx>{`
+      <style>{`
         @keyframes scanlines {
           0% {
             transform: translateY(0);

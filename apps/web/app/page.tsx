@@ -1,71 +1,39 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
-import { AnimatedBackground } from "@workspace/ui/components/animated-background";
-import { FloatingDots } from "@workspace/ui/components/floating-particles";
-import { BsSun, BsMoon } from "react-icons/bs";
 import { signIn } from "@/lib/auth-client";
-import { useAuth } from "@/components/auth-provider";
-import { setup } from "@/lib/api";
+import { useAuth } from "hooks/auth-provider";
 import { toast } from "sonner";
+import LoginForm from "@/components/LoginForm/LoginForm";
 
 const LoginPage = (): JSX.Element | null => {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [mounted, setMounted] = useState(false);
-  const [checkingSetup, setCheckingSetup] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Check if system needs setup
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const status = await setup.status();
-        if (!status.initialized) {
-          // No users exist, redirect to setup
-          router.push("/setup");
-          return;
-        }
-      } catch {
-        // If check fails, continue to login
-      } finally {
-        setCheckingSetup(false);
-      }
-    };
-    checkStatus();
-  }, [router]);
-
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push("/servers");
     }
   }, [isAuthenticated, authLoading, router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (values: { email: string; password: string; captchaToken: string }) => {
     setIsLoading(true);
     setError("");
 
     try {
       const result = await signIn.email({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
       });
 
       if (result.error) {
-        setError(result.error.message || "Invalid email or password");
-        toast.error(result.error.message || "Invalid email or password");
+        const message = result.error.message || "Invalid email or password";
+        setError(message);
+        toast.error(message);
       } else {
         toast.success("Signed in successfully");
         router.push("/servers");
@@ -79,151 +47,13 @@ const LoginPage = (): JSX.Element | null => {
     }
   };
 
-  if (!mounted || checkingSetup) {
-    return (
-      <div
-        className={cn(
-          "relative flex min-h-svh items-center justify-center transition-colors bg-[#0b0b0a]",
-        )}
-      >
-        <AnimatedBackground />
-        <FloatingDots count={15} />
-        <div
-          className={cn(
-            "text-sm tracking-wider uppercase text-zinc-500",
-          )}
-        >
-          Loading...
-        </div>
-      </div>
-    );
-  }
-
-  const inputClasses = cn(
-    "w-full px-4 py-3 border bg-transparent text-sm transition-colors focus:outline-none border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:border-zinc-500",
-  );
-
-  const labelClasses = cn(
-    "block text-xs font-medium uppercase tracking-wider mb-2 text-zinc-400",
-  );
-
   return (
     <div
       className={cn(
-        "relative flex min-h-svh items-center justify-center transition-colors bg-[#0b0b0a]",
+        "relative flex min-h-svh items-center justify-center bg-[#0b0b0a] transition-colors"
       )}
     >
-      <AnimatedBackground />
-      <FloatingDots count={15} />
-
-      {/* Login Card */}
-      <div
-        className={cn(
-          "relative mx-4 w-full max-w-md border p-8 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
-        )}
-      >
-        {/* Corner decorations */}
-        <div
-          className={cn(
-            "absolute top-0 left-0 h-3 w-3 border-t border-l border-zinc-500",
-          )}
-        />
-        <div
-          className={cn(
-            "absolute top-0 right-0 h-3 w-3 border-t border-r border-zinc-500",
-          )}
-        />
-        <div
-          className={cn(
-            "absolute bottom-0 left-0 h-3 w-3 border-b border-l border-zinc-500",
-          )}
-        />
-        <div
-          className={cn(
-            "absolute right-0 bottom-0 h-3 w-3 border-r border-b border-zinc-500",
-          )}
-        />
-
-        {/* Logo/Title */}
-        <div className="mb-8 text-center">
-          <h1
-            className={cn(
-              "text-2xl font-light tracking-wider text-zinc-100",
-            )}
-          >
-            STELLARSTACK
-          </h1>
-          <p className={cn("mt-2 text-sm text-zinc-500")}>
-            Sign in to your account
-          </p>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="email" className={labelClasses}>
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className={inputClasses}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className={labelClasses}>
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className={inputClasses}
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="rounded border border-red-800 bg-red-900/20 p-3 text-xs text-red-400">
-              {error}
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className={cn(
-              "w-full py-3 text-xs font-medium tracking-wider uppercase transition-all bg-zinc-100 text-zinc-900 hover:bg-zinc-200 disabled:bg-zinc-700 disabled:text-zinc-500",
-            )}
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-
-        {/* Footer */}
-        <div
-          className={cn(
-            "mt-6 border-t pt-6 text-center text-xs border-zinc-800 text-zinc-600",
-          )}
-        >
-          Don&apos;t have an account?{" "}
-          <button
-            type="button"
-            className={cn(
-              "underline transition-colors text-zinc-400 hover:text-zinc-200",
-            )}
-          >
-            Sign up
-          </button>
-        </div>
-      </div>
+      <LoginForm handleLogin={handleLogin} isLoading={isLoading} error={error} />
     </div>
   );
 };
