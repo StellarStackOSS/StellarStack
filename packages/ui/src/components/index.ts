@@ -23,9 +23,6 @@ export * from "./data-table";
 export * from "./tabs";
 export * from "./tooltip";
 
-// Background Components
-export * from "./animated-background";
-
 // Modal Components
 export * from "./confirmation-modal";
 export * from "./form-modal";

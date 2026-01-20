@@ -1,19 +1,24 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {ArrowLeftIcon, KeyIcon, NetworkIcon, PlusIcon, SaveIcon, TrashIcon} from "lucide-react";
-import {useNode, useNodeMutations} from "@/hooks/queries";
-import {toast} from "sonner";
-import {Input} from "@workspace/ui/components";
-import {Label} from "@workspace/ui/components/label";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { ArrowLeftIcon, KeyIcon, NetworkIcon, PlusIcon, SaveIcon, TrashIcon } from "lucide-react";
+import { useNode, useNodeMutations } from "@/hooks/queries";
+import { toast } from "sonner";
+import { Input } from "@workspace/ui/components";
+import { Label } from "@workspace/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function EditNodePage() {
   const router = useRouter();
@@ -153,7 +158,6 @@ export default function EditNodePage() {
   if (isLoading) {
     return (
       <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <AnimatedBackground />
         <Spinner className="h-6 w-6" />
       </div>
     );
@@ -162,7 +166,6 @@ export default function EditNodePage() {
   if (!node) {
     return (
       <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <AnimatedBackground />
         <p className={"text-zinc-400"}>Node not found</p>
       </div>
     );
@@ -170,10 +173,8 @@ export default function EditNodePage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">

@@ -1,21 +1,29 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Input} from "@workspace/ui/components/input";
-import {Label} from "@workspace/ui/components/label";
-import {BsCheckCircle, BsDiscord, BsGithub, BsGoogle, BsKey, BsPlus, BsShieldCheck, BsTrash,} from "react-icons/bs";
-import {authClient, useSession} from "@/lib/auth-client";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
-import {toast} from "sonner";
+import { type JSX, useEffect, useState } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import {
+  BsCheckCircle,
+  BsDiscord,
+  BsGithub,
+  BsGoogle,
+  BsKey,
+  BsPlus,
+  BsShieldCheck,
+  BsTrash,
+} from "react-icons/bs";
+import { authClient, useSession } from "@/lib/auth-client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import QRCode from "qrcode";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {Card} from "@workspace/ui/components";
-import {SectionTitle} from "@/components/AccountPageComponents/SectionTitle";
+import { Card } from "@workspace/ui/components";
+import { SectionTitle } from "@/components/AccountPageComponents/SectionTitle";
 
 interface Passkey {
   id: string;
@@ -207,10 +215,8 @@ const AccountPage = (): JSX.Element | null => {
 
   return (
     <Card className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <Card className="relative p-8">
-        <Card className="mx-auto max-w-6xl">
+        <Card className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">

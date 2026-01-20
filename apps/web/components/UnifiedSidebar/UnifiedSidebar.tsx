@@ -1,7 +1,7 @@
 "use client";
 
-import {useState} from "react";
-import {useParams, usePathname} from "next/navigation";
+import { useState } from "react";
+import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -29,14 +29,14 @@ import {
   UserIcon,
   UsersIcon,
 } from "lucide-react";
-import {cn} from "@workspace/ui/lib/utils";
-import {useAuth} from "hooks/auth-provider";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {BsArrowLeft} from "react-icons/bs";
-import {AnimatePresence, motion} from "framer-motion";
-import {WaveText} from "@/components/wave-text";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {useServerWebSocket} from "@/hooks/useServerWebSocket";
+import { cn } from "@workspace/ui/lib/utils";
+import { useAuth } from "hooks/auth-provider";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { BsArrowLeft } from "react-icons/bs";
+import { AnimatePresence, motion } from "framer-motion";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServerWebSocket } from "@/hooks/useServerWebSocket";
+import { WaveText } from "@/components/WaveText/WaveText";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -78,6 +78,14 @@ const appNavItems = [
   { title: "Settings", icon: <img alt="icon" src="/icons/24-gear.svg" />, href: "/settings" },
 ];
 
+export const renderVersion = () => {
+  const version = `StellarStack V${process.env.NEXT_PUBLIC_GIT_COMMIT_HASH?.slice(0, 7) || "dev"}-alpha`;
+
+  return (
+    <WaveText text={version} baseClassName={"text-zinc-600"} highlightClassName={"text-zinc-100"} />
+  );
+};
+
 const ServerStatsContent = () => {
   const { consoleInfo } = useServer();
   const { stats: statsData } = useServerWebSocket({
@@ -91,14 +99,14 @@ const ServerStatsContent = () => {
   return (
     <>
       {statsData.current && (
-        <div className={cn("space-y-2 text-xs font-mono px-3 py-2")}>
+        <div className={cn("space-y-2 px-3 py-2 font-mono text-xs")}>
           <div className="flex items-center justify-between text-xs">
             <span className={"text-zinc-500"}>CPU</span>
-            <span className={"text-zinc-300 font-bold"}>{cpuPercent.toFixed(1)}%</span>
+            <span className={"font-bold text-zinc-300"}>{cpuPercent.toFixed(1)}%</span>
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className={"text-zinc-500"}>RAM</span>
-            <span className={"text-zinc-300 font-bold"}>{memPercent.toFixed(1)}%</span>
+            <span className={"font-bold text-zinc-300"}>{memPercent.toFixed(1)}%</span>
           </div>
         </div>
       )}
@@ -297,22 +305,6 @@ export const UnifiedSidebar = () => {
     return baseItems;
   };
 
-  const renderVersion = () => {
-    const version = `StellarStack v${process.env.NEXT_PUBLIC_GIT_COMMIT_HASH?.slice(0, 7) || "dev"}-alpha`;
-
-    if (variant === "app") {
-      return (
-        <WaveText
-          text={version}
-          baseClassName={"text-zinc-600"}
-          highlightClassName={"text-zinc-100"}
-        />
-      );
-    }
-
-    return version;
-  };
-
   const userMenuItems = renderUserMenuItems();
 
   return (
@@ -331,19 +323,20 @@ export const UnifiedSidebar = () => {
         {variant === "app" && <ServerStatsContent />}
 
         <div className="relative">
-          <TextureButton variant="secondary" className="flex flex-row justify-between text-start w-full" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+          <TextureButton
+            variant="secondary"
+            className="flex w-full flex-row justify-between text-start"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+          >
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center text-xs font-medium uppercase border border-zinc-700 bg-zinc-800 text-zinc-300")}
+                "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 uppercase"
+              )}
             >
               {user.initials}
             </div>
             <div className="min-w-0 flex-1">
-              <div
-                className={cn("truncate text-xs font-medium text-zinc-200")}
-              >
-                {user.name}
-              </div>
+              <div className={cn("truncate text-xs font-medium text-zinc-200")}>{user.name}</div>
               <div className={cn("truncate text-[10px] text-zinc-500")}>{user.email}</div>
             </div>
             <ChevronUpIcon
@@ -362,7 +355,7 @@ export const UnifiedSidebar = () => {
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.15, ease: "easeInOut" }}
                 className={cn(
-                  "absolute rounded-lg right-0 bottom-[120%] left-0 z-50 mb-1 border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
+                  "absolute right-0 bottom-[120%] left-0 z-50 mb-1 rounded-lg border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
                 )}
               >
                 <div>

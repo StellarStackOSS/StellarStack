@@ -1,14 +1,13 @@
 "use client";
 
-import {useCallback, useMemo, useState} from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   DownloadIcon,
   EditIcon,
@@ -24,13 +23,13 @@ import {
   VariableIcon,
   GitBranch,
 } from "lucide-react";
-import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
-import {useBlueprintMutations, useBlueprints} from "@/hooks/queries";
-import type {Blueprint, CreateBlueprintData, PterodactylEgg} from "@/lib/api";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {Input} from "@workspace/ui/components";
+import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+import { useBlueprintMutations, useBlueprints } from "@/hooks/queries";
+import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { Input } from "@workspace/ui/components";
 
 export default function BlueprintsPage() {
   // React Query hooks
@@ -143,10 +142,10 @@ export default function BlueprintsPage() {
     }
   };
 
-  const handleImportEgg = async () => {
+  const handleImportCore = async () => {
     try {
-      const egg = JSON.parse(importJson) as PterodactylEgg;
-      const result = await importEgg.mutateAsync(egg);
+      const core = JSON.parse(importJson) as PterodactylEgg;
+      const result = await importEgg.mutateAsync(core);
       toast.success(result.message);
       setIsImportModalOpen(false);
       setImportJson("");
@@ -154,24 +153,24 @@ export default function BlueprintsPage() {
       if (error instanceof SyntaxError) {
         toast.error("Invalid JSON format");
       } else {
-        toast.error("Failed to import egg");
+        toast.error("Failed to import core");
       }
     }
   };
 
-  const handleExportEgg = async (blueprint: Blueprint) => {
+  const handleExportCore = async (blueprint: Blueprint) => {
     try {
-      const egg = await exportEgg.mutateAsync(blueprint.id);
-      const blob = new Blob([JSON.stringify(egg, null, 2)], { type: "application/json" });
+      const core = await exportEgg.mutateAsync(blueprint.id);
+      const blob = new Blob([JSON.stringify(core, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${blueprint.name.toLowerCase().replace(/\s+/g, "-")}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Egg exported successfully");
+      toast.success("Core exported successfully");
     } catch {
-      toast.error("Failed to export egg");
+      toast.error("Failed to export core");
     }
   };
 
@@ -205,9 +204,8 @@ export default function BlueprintsPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full">
           <FadeIn delay={0}>
             <AdminPageHeader
               title="BLUEPRINTS"
@@ -231,7 +229,7 @@ export default function BlueprintsPage() {
               </Link>
               <TextureButton onClick={() => setIsImportModalOpen(true)} variant="minimal">
                 <UploadIcon className="h-4 w-4" />
-                Import Egg
+                Import Core
               </TextureButton>
             </div>
 
@@ -262,7 +260,7 @@ export default function BlueprintsPage() {
                   <div
                     key={blueprint.id}
                     className={cn(
-                      "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 transition-colors hover:border-zinc-700"
+                      "relative rounded-lg border border-zinc-700 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-600"
                     )}
                   >
                     <div className="flex items-start justify-between">
@@ -347,18 +345,14 @@ export default function BlueprintsPage() {
                         <TextureButton
                           variant="minimal"
                           size="sm"
-                          onClick={() => handleExportEgg(blueprint)}
+                          onClick={() => handleExportCore(blueprint)}
                           disabled={exportEgg.isPending}
-                          title="Export as Pterodactyl Egg"
+                          title="Export as Core"
                         >
                           <DownloadIcon className="h-3 w-3" />
                         </TextureButton>
                         <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
-                          <TextureButton
-                            variant="minimal"
-                            size="sm"
-                            title="Edit in Builder"
-                          >
+                          <TextureButton variant="minimal" size="sm" title="Edit in Builder">
                             <GitBranch className="h-3 w-3" />
                           </TextureButton>
                         </Link>
@@ -611,17 +605,17 @@ export default function BlueprintsPage() {
         </div>
       </FormModal>
 
-      {/* Import Egg Modal */}
+      {/* Import Core Modal */}
       <FormModal
         open={isImportModalOpen}
         onOpenChange={(open) => {
           setIsImportModalOpen(open);
           if (!open) setImportJson("");
         }}
-        title="Import Pterodactyl Egg"
-        description="Paste the contents of a Pterodactyl egg JSON file or upload a file."
+        title="Import Core"
+        description="Paste the contents of a core JSON file or upload a file."
         submitLabel="Import"
-        onSubmit={handleImportEgg}
+        onSubmit={handleImportCore}
         isLoading={importEgg.isPending}
         isValid={importJson.length > 0}
         size="lg"

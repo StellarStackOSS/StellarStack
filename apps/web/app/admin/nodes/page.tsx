@@ -1,15 +1,20 @@
 "use client";
 
-import {useMemo, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -17,14 +22,28 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
-import {CheckIcon, CopyIcon, CpuIcon, EditIcon, PlusIcon, SettingsIcon, TrashIcon,} from "lucide-react";
-import {AdminEmptyState, AdminPageHeader, AdminSearchBar} from "components/AdminPageComponents";
-import {useLocations, useNodeMutations, useNodes} from "@/hooks/queries";
-import type {CreateNodeData, Node} from "@/lib/api";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import {
+  CheckIcon,
+  CopyIcon,
+  CpuIcon,
+  EditIcon,
+  PlusIcon,
+  SettingsIcon,
+  TrashIcon,
+} from "lucide-react";
+import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
+import type { CreateNodeData, Node } from "@/lib/api";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 export default function NodesPage() {
   const router = useRouter();
@@ -132,10 +151,8 @@ export default function NodesPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             <AdminPageHeader
               title="NODES"

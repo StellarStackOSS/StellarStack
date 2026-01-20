@@ -1,28 +1,37 @@
 "use client";
 
-import {type JSX, useMemo, useRef, useState} from "react";
-import {useParams} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {BsClock, BsEnvelope, BsPencil, BsPersonFill, BsPlus, BsShieldFill, BsTrash,} from "react-icons/bs";
-import {toast} from "sonner";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {useAuth} from "hooks/auth-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
+import { type JSX, useCallback, useMemo, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import {
+  BsClock,
+  BsEnvelope,
+  BsPencil,
+  BsPersonFill,
+  BsPlus,
+  BsShieldFill,
+  BsTrash,
+} from "react-icons/bs";
+import { toast } from "sonner";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import {
   usePermissionDefinitions,
   useServerInvitations,
   useServerMemberMutations,
   useServerMembers,
 } from "@/hooks/queries";
-import type {PermissionCategory, ServerInvitation, ServerMember} from "@/lib/api";
-import {Label} from "@workspace/ui/components/label";
+import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
+import { Label } from "@workspace/ui/components/label";
+import { Checkbox } from "@workspace/ui/components";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();
@@ -164,13 +173,13 @@ const UsersPage = (): JSX.Element | null => {
     }
   };
 
-  const togglePermission = (permissionKey: string) => {
+  const togglePermission = useCallback((permissionKey: string) => {
     setSelectedPermissions((prev) =>
       prev.includes(permissionKey)
         ? prev.filter((p) => p !== permissionKey)
         : [...prev, permissionKey]
     );
-  };
+  }, []);
 
   const isEmailValid = formEmail.includes("@") && formEmail.includes(".");
 
@@ -188,115 +197,110 @@ const UsersPage = (): JSX.Element | null => {
     !isCategoryFullySelected(category);
 
   // Toggle all permissions in a category
-  const toggleCategory = (category: PermissionCategory) => {
-    const categoryKeys = category.permissions.map((p) => p.key);
-    if (isCategoryFullySelected(category)) {
-      // Deselect all in category
-      setSelectedPermissions((prev) => prev.filter((p) => !categoryKeys.includes(p)));
-    } else {
-      // Select all in category
-      setSelectedPermissions((prev) => [...new Set([...prev, ...categoryKeys])]);
-    }
-  };
+  const toggleCategory = useCallback(
+    (category: PermissionCategory) => {
+      const categoryKeys = category.permissions.map((p) => p.key);
+      if (isCategoryFullySelected(category)) {
+        // Deselect all in category
+        setSelectedPermissions((prev) => prev.filter((p) => !categoryKeys.includes(p)));
+      } else {
+        // Select all in category
+        setSelectedPermissions((prev) => [...new Set([...prev, ...categoryKeys])]);
+      }
+    },
+    [isCategoryFullySelected]
+  );
 
   // Toggle all permissions
-  const toggleAllPermissions = () => {
+  const toggleAllPermissions = useCallback(() => {
     if (selectedPermissions.length === allPermissions.length) {
       setSelectedPermissions([]);
     } else {
       setSelectedPermissions(allPermissions.map((p) => p.key));
     }
-  };
+  }, [selectedPermissions.length, allPermissions]);
 
-  const PermissionSelector = ({ categories }: { categories: PermissionCategory[] }) => (
-    <div className="space-y-4">
-      {/* Global Select All */}
-      <div className="flex items-center justify-between border-b pb-3">
-        <span className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-400")}>
-          {selectedPermissions.length} of {allPermissions.length} selected
-        </span>
-        <TextureButton variant="minimal" type="button" onClick={toggleAllPermissions}>
-          {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
-        </TextureButton>
-      </div>
+  const PermissionSelector = useMemo(() => {
+    return ({ categories }: { categories: PermissionCategory[] }) => (
+      <div className="space-y-4">
+        {/* Global Select All */}
+        <div className="flex items-center justify-between border-b pb-3">
+          <span className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-400")}>
+            {selectedPermissions.length} of {allPermissions.length} selected
+          </span>
+          <TextureButton variant="minimal" type="button" onClick={toggleAllPermissions}>
+            {selectedPermissions.length === allPermissions.length ? "Deselect All" : "Select All"}
+          </TextureButton>
+        </div>
 
-      {/* Scrollable categories */}
-      <div className="max-h-80 space-y-4 overflow-y-auto pr-2">
-        {categories.map((category) => (
-          <div key={category.id} className={cn("border p-3", "border-zinc-800 bg-zinc-900/30")}>
-            {/* Category header with select all */}
-            <div className="mb-3 flex items-center justify-between">
-              <TextureButton
-                variant="minimal"
-                type="button"
-                onClick={() => toggleCategory(category)}
-              >
-                <div
-                  className={cn(
-                    "flex h-4 w-4 items-center justify-center border",
-                    isCategoryFullySelected(category)
-                      ? "border-zinc-400 bg-zinc-600"
-                      : isCategoryPartiallySelected(category)
-                        ? "border-zinc-500 bg-zinc-700"
-                        : "border-zinc-600"
-                  )}
-                >
-                  {isCategoryFullySelected(category) && (
-                    <div className={cn("h-2 w-2", "bg-zinc-100")} />
-                  )}
-                  {isCategoryPartiallySelected(category) && (
-                    <div className={cn("h-0.5 w-2", "bg-zinc-400")} />
-                  )}
-                </div>
-                <span
-                  className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-300")}
-                >
-                  {category.name}
-                </span>
-              </TextureButton>
-              <span className={cn("text-[10px] tracking-wider", "text-zinc-600")}>
-                {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
-                {category.permissions.length}
-              </span>
-            </div>
-
-            {/* Category permissions - 2 column grid */}
-            <div className="grid grid-cols-2 gap-2">
-              {category.permissions.map((perm) => (
+        {/* Scrollable categories */}
+        <div className="max-h-80 space-y-4 overflow-y-auto pr-4">
+          {categories.map((category) => (
+            <div
+              key={category.id}
+              className={cn("rounded-lg border p-3", "border-zinc-800 bg-zinc-900/30")}
+            >
+              {/* Category header with select all */}
+              <div className="mb-3 flex items-center justify-between">
                 <TextureButton
-                  variant="minimal"
-                  key={perm.key}
+                  variant="ghost"
                   type="button"
-                  onClick={() => togglePermission(perm.key)}
+                  onClick={() => toggleCategory(category)}
+                  className="flex-1"
                 >
-                  <div
-                    className={cn(
-                      "flex h-3 w-3 shrink-0 items-center justify-center border",
-                      selectedPermissions.includes(perm.key)
-                        ? "border-zinc-400 bg-zinc-600"
-                        : "border-zinc-600"
-                    )}
+                  <Checkbox
+                    checked={
+                      isCategoryFullySelected(category)
+                        ? true
+                        : isCategoryPartiallySelected(category)
+                          ? "indeterminate"
+                          : false
+                    }
+                    className="mr-2"
+                  />
+                  <span
+                    className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-300")}
                   >
-                    {selectedPermissions.includes(perm.key) && (
-                      <div className={cn("h-1.5 w-1.5", "bg-zinc-100")} />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium">{perm.name}</div>
-                  </div>
+                    {category.name}
+                  </span>
                 </TextureButton>
-              ))}
+                <span className={cn("text-[10px] tracking-wider", "text-zinc-600")}>
+                  {category.permissions.filter((p) => selectedPermissions.includes(p.key)).length}/
+                  {category.permissions.length}
+                </span>
+              </div>
+
+              {/* Category permissions - 2 column grid */}
+              <div className="grid grid-cols-2 gap-2 px-2">
+                {category.permissions.map((perm) => (
+                  <label key={perm.key} className="flex cursor-pointer items-center gap-2">
+                    <Checkbox
+                      checked={selectedPermissions.includes(perm.key)}
+                      onCheckedChange={() => togglePermission(perm.key)}
+                    />
+                    <span className="truncate text-xs font-medium">{perm.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }, [
+    selectedPermissions,
+    allPermissions,
+    isCategoryFullySelected,
+    isCategoryPartiallySelected,
+    toggleCategory,
+    togglePermission,
+    toggleAllPermissions,
+  ]);
 
   return (
     <div className="relative min-h-svh transition-colors">
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -308,21 +312,15 @@ const UsersPage = (): JSX.Element | null => {
               />
               <div>
                 <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>USERS</h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  {server?.name || `Server ${serverId}`} • {members.length} member
-                  {members.length !== 1 ? "s" : ""}
-                  {invitations.length > 0 && ` • ${invitations.length} pending`}
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {isOwner && (
-                <TextureButton variant="secondary" size="sm" onClick={openInviteModal}>
+                <TextureButton variant="secondary" onClick={openInviteModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Invite User</span>
                 </TextureButton>
               )}
-              <TextureButton variant="secondary" size="sm"></TextureButton>
             </div>
           </div>
 

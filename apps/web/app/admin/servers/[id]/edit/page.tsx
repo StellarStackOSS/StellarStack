@@ -1,12 +1,11 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   ArrowLeftIcon,
   ExternalLinkIcon,
@@ -17,15 +16,21 @@ import {
   SplitIcon,
   TrashIcon,
 } from "lucide-react";
-import {useServer, useServerMutations} from "@/hooks/queries";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
-import {toast} from "sonner";
-import type {Node} from "@/lib/api";
-import {Allocation, Blueprint, blueprints, nodes, servers} from "@/lib/api";
+import { useServer, useServerMutations } from "@/hooks/queries";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { toast } from "sonner";
+import type { Node } from "@/lib/api";
+import { Allocation, Blueprint, blueprints, nodes, servers } from "@/lib/api";
 
 export default function EditServerPage() {
   const router = useRouter();
@@ -319,7 +324,6 @@ export default function EditServerPage() {
   if (isLoading) {
     return (
       <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <AnimatedBackground />
         <Spinner className="h-6 w-6" />
       </div>
     );
@@ -327,10 +331,8 @@ export default function EditServerPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-2xl">
+        <div className="w-full">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">
@@ -354,11 +356,7 @@ export default function EditServerPage() {
 
           <FadeIn delay={0.1}>
             <form onSubmit={handleSubmit}>
-              <div
-                className={cn(
-                  "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg shadow-black/20"
-                )}
-              >
+              <div className={cn("relative rounded-lg border border-zinc-700 bg-zinc-900/50 p-6")}>
                 <div className="space-y-4">
                   {/* Basic Info */}
                   <div>
@@ -550,10 +548,10 @@ export default function EditServerPage() {
                             "text-sm font-medium tracking-wider text-zinc-300 uppercase"
                           )}
                         >
-                          Game Type
+                          Core
                         </h3>
                         <p className={cn("mt-1 text-xs text-zinc-500")}>
-                          {server?.blueprint?.name || "No blueprint selected"}
+                          {server?.blueprint?.name || "No core selected"}
                         </p>
                       </div>
                       <TextureButton
@@ -562,7 +560,7 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => setShowBlueprintModal(true)}
                       >
-                        Change Blueprint
+                        Change Core
                       </TextureButton>
                     </div>
                   </div>
@@ -888,11 +886,13 @@ export default function EditServerPage() {
       {/* Blueprint Change Modal */}
       {showBlueprintModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className={cn("w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}>
-            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Change Game Type</h2>
+          <div
+            className={cn("w-full rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}
+          >
+            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Change Core</h2>
             <p className={cn("mb-4 text-sm text-zinc-400")}>
-              Select a new blueprint for this server. Changing the blueprint will update the
-              server's game type and configuration.
+              Select a new core for this server. Changing the core will update the server's
+              configuration and runtime environment.
             </p>
 
             {isLoadingBlueprints ? (
@@ -902,10 +902,10 @@ export default function EditServerPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <Label>Blueprint</Label>
+                  <Label>Core</Label>
                   <Select value={selectedBlueprintId} onValueChange={setSelectedBlueprintId}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select blueprint..." />
+                      <SelectValue placeholder="Select core..." />
                     </SelectTrigger>
                     <SelectContent>
                       {blueprintList.map((blueprint) => (
@@ -926,12 +926,12 @@ export default function EditServerPage() {
                     className="h-4 w-4"
                   />
                   <Label htmlFor="reinstallOnBlueprintChange">
-                    Reinstall server after changing blueprint
+                    Reinstall server after changing core
                   </Label>
                 </div>
                 <p className={cn("text-xs text-zinc-500")}>
                   Warning: Reinstalling will wipe all server files. Uncheck if you only want to
-                  change the blueprint configuration.
+                  change the core configuration.
                 </p>
               </div>
             )}
@@ -954,7 +954,7 @@ export default function EditServerPage() {
                 disabled={!selectedBlueprintId || isChangingBlueprint}
                 onClick={handleChangeBlueprint}
               >
-                {isChangingBlueprint ? "Changing..." : "Change Blueprint"}
+                {isChangingBlueprint ? "Changing..." : "Change Core"}
               </TextureButton>
             </div>
           </div>
@@ -964,7 +964,9 @@ export default function EditServerPage() {
       {/* Transfer Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className={cn("w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}>
+          <div
+            className={cn("w-full rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}
+          >
             <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Transfer Server</h2>
             <p className={cn("mb-6 text-sm text-zinc-400")}>
               Select a target node to transfer this server to. The server will be archived and moved

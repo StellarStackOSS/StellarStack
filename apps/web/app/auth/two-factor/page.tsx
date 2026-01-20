@@ -1,15 +1,14 @@
 "use client";
 
-import {type JSX, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {BsArrowLeft, BsShieldCheck} from "react-icons/bs";
-import {authClient} from "@/lib/auth-client";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
+import { type JSX, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { BsArrowLeft, BsShieldCheck } from "react-icons/bs";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
 
 const TwoFactorPage = (): JSX.Element | null => {
   const router = useRouter();
@@ -60,9 +59,7 @@ const TwoFactorPage = (): JSX.Element | null => {
         "relative flex min-h-svh items-center justify-center bg-[#0b0b0a] transition-colors"
       )}
     >
-      <AnimatedBackground />
-
-      <div className="relative w-full max-w-md p-8">
+      <div className="relative w-full p-8">
         <div
           className={cn(
             "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8"

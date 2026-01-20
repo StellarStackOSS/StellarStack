@@ -1,12 +1,11 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {signIn} from "@/lib/auth-client";
-import {useAuth} from "hooks/auth-provider";
-import {toast} from "sonner";
+import { type JSX, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { signIn } from "@/lib/auth-client";
+import { useAuth } from "hooks/auth-provider";
+import { toast } from "sonner";
 import LoginForm from "@/components/LoginForm/LoginForm";
 
 const LoginPage = (): JSX.Element | null => {
@@ -54,8 +53,6 @@ const LoginPage = (): JSX.Element | null => {
         "relative flex min-h-svh items-center justify-center bg-[#0b0b0a] transition-colors"
       )}
     >
-      <AnimatedBackground />
-
       <LoginForm handleLogin={handleLogin} isLoading={isLoading} error={error} />
     </div>
   );

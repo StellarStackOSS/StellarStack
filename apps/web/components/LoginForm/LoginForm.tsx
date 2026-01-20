@@ -27,7 +27,7 @@ import {
 import { FunctionComponent, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { LiquidMetal } from "@paper-design/shaders-react";
-import { Turnstile } from "@/components/turnstile/turnstile";
+import { Turnstile } from "@/components/Turnstile/Turnstile";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),

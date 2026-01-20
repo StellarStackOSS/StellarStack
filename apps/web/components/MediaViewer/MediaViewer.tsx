@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
+import { useEffect, useRef } from "react";
 import { createMediaDataUrl } from "@/lib/media-utils";
 
 interface MediaViewerProps {
@@ -11,12 +10,8 @@ interface MediaViewerProps {
   onClose?: () => void;
 }
 
-export function MediaViewer({
-  fileName,
-  content = "",
-  blobUrl,
-  onClose,
-}: MediaViewerProps) {
+// TODO: REPLACE THIS WITH SOMETHING BETTER?
+export function MediaViewer({ fileName, content = "", blobUrl, onClose }: MediaViewerProps) {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
   const isVideo = ["mp4", "webm", "mov", "avi"].includes(ext);
@@ -65,8 +60,8 @@ export function MediaViewer({
   if (isImage) {
     const src = blobUrl || (content ? createMediaDataUrl(fileName, content) : "");
     return (
-      <div className="flex items-center justify-center h-full w-full">
-        <img src={src} alt={fileName} className="max-w-full max-h-full object-contain" />
+      <div className="flex h-full w-full items-center justify-center">
+        <img src={src} alt={fileName} className="max-h-full max-w-full object-contain" />
       </div>
     );
   }
@@ -74,15 +69,15 @@ export function MediaViewer({
   if (isVideo) {
     const src = blobUrl;
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full gap-4">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4">
         <video
           ref={videoRef}
           src={src}
           controls
-          className="max-w-full max-h-[80%] object-contain"
+          className="max-h-[80%] max-w-full object-contain"
           autoPlay
         />
-        <div className="text-xs text-zinc-400 text-center">
+        <div className="text-center text-xs text-zinc-400">
           Space: Play/Pause | F: Fullscreen | M: Mute | ←→: ±5s
         </div>
       </div>
@@ -91,24 +86,16 @@ export function MediaViewer({
 
   if (isAudio) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full gap-6">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-6">
         <div className="text-6xl">🎵</div>
-        <audio
-          ref={audioRef}
-          src={blobUrl}
-          controls
-          className="w-full max-w-md"
-          autoPlay
-        />
-        <div className="text-xs text-zinc-400">
-          Space: Play/Pause | M: Mute | ←→: ±5s
-        </div>
+        <audio ref={audioRef} src={blobUrl} controls className="w-full max-w-md" autoPlay />
+        <div className="text-xs text-zinc-400">Space: Play/Pause | M: Mute | ←→: ±5s</div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center h-full w-full text-zinc-400">
+    <div className="flex h-full w-full items-center justify-center text-zinc-400">
       Unsupported media type
     </div>
   );

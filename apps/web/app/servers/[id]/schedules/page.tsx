@@ -1,15 +1,15 @@
 "use client";
 
-import {type JSX, useCallback, useEffect, useMemo, useState} from "react";
-import {useParams} from "next/navigation";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Input} from "@workspace/ui/components/input";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {Switch} from "@workspace/ui/components/switch";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
+import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Input } from "@workspace/ui/components/input";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Switch } from "@workspace/ui/components/switch";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
 import {
   BsArrowRepeat,
   BsArrowRight,
@@ -24,14 +24,14 @@ import {
   BsTrash,
   BsX,
 } from "react-icons/bs";
-import type {CreateScheduleData, Schedule} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {useServerWebSocket} from "@/hooks/useWebSocket";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
+import type { CreateScheduleData, Schedule } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { useServerWebSocket } from "@/hooks/useWebSocket";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
 
@@ -103,7 +103,10 @@ const parseCronToCronState = (cronExpr: string): CronState => {
 
     // Check if it's a weekly schedule (specific days)
     if (dayOfWeek !== "*" && dayOfMonth === "*") {
-      const days = dayOfWeek!.split(",").map((d) => parseInt(d)).filter((d) => !isNaN(d));
+      const days = dayOfWeek!
+        .split(",")
+        .map((d) => parseInt(d))
+        .filter((d) => !isNaN(d));
       if (days.length > 0) {
         return {
           frequency: "weekly",
@@ -209,7 +212,12 @@ const SchedulesPage = (): JSX.Element | null => {
       setSchedules((prev) => {
         const updated = prev.map((schedule) => {
           if (schedule.id === data.schedule_id) {
-            console.log("[Schedule WebSocket] Updating schedule", schedule.id, "with taskIndex:", data.task_index);
+            console.log(
+              "[Schedule WebSocket] Updating schedule",
+              schedule.id,
+              "with taskIndex:",
+              data.task_index
+            );
             return { ...schedule, executingTaskIndex: data.task_index ?? null };
           }
           return schedule;
@@ -251,9 +259,12 @@ const SchedulesPage = (): JSX.Element | null => {
     setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, timeOffset: offset } : t)));
   }, []);
 
-  const updateTaskTriggerMode = useCallback((taskId: string, mode: "TIME_DELAY" | "ON_COMPLETION") => {
-    setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, triggerMode: mode } : t)));
-  }, []);
+  const updateTaskTriggerMode = useCallback(
+    (taskId: string, mode: "TIME_DELAY" | "ON_COMPLETION") => {
+      setFormTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, triggerMode: mode } : t)));
+    },
+    []
+  );
 
   const moveTask = useCallback((fromIndex: number, toIndex: number) => {
     setFormTasks((prev) => {
@@ -312,11 +323,11 @@ const SchedulesPage = (): JSX.Element | null => {
 
   const ScheduleForm = useMemo(
     () => (
-      <div className="space-y-6">
+      <div>
         {/* Schedule Info Section */}
         <div className="space-y-4 border-b border-zinc-700 pb-6">
           <div>
-            <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <Label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Schedule Name
             </Label>
             <Input
@@ -333,14 +344,14 @@ const SchedulesPage = (): JSX.Element | null => {
           </div>
 
           <div>
-            <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 block">
+            <Label className="mb-3 block text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Schedule
             </Label>
 
             {/* Frequency Selector */}
-            <div className="space-y-3 mb-4">
+            <div className="mb-4 space-y-3">
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="radio"
                     checked={cronState.frequency === "daily"}
@@ -352,7 +363,7 @@ const SchedulesPage = (): JSX.Element | null => {
                   />
                   <span className="text-sm text-zinc-200">Daily</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="radio"
                     checked={cronState.frequency === "weekly"}
@@ -367,14 +378,14 @@ const SchedulesPage = (): JSX.Element | null => {
 
             {/* Days of Week (Weekly Only) */}
             {cronState.frequency === "weekly" && (
-              <div className="mb-4 p-3 rounded-lg bg-zinc-800/30 border border-zinc-700">
-                <p className="text-xs text-zinc-400 mb-2">Select Days:</p>
+              <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-800/30 p-3">
+                <p className="mb-2 text-xs text-zinc-400">Select Days:</p>
                 <div className="grid grid-cols-7 gap-1">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
                     <label
                       key={day}
                       className={cn(
-                        "flex items-center justify-center h-8 rounded cursor-pointer text-xs font-medium transition-all",
+                        "flex h-8 cursor-pointer items-center justify-center rounded text-xs font-medium transition-all",
                         cronState.daysOfWeek.includes(index)
                           ? "bg-blue-500 text-white"
                           : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
@@ -405,16 +416,18 @@ const SchedulesPage = (): JSX.Element | null => {
             )}
 
             {/* Time (Hour & Minute) */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="mb-3 grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-zinc-500 mb-2 block">Hour (0-23)</Label>
+                <Label className="mb-2 block text-xs text-zinc-500">Hour (0-23)</Label>
                 <Input
                   type="number"
                   min={0}
                   max={23}
                   value={cronState.hour}
                   onChange={(e) =>
-                    updateCronState({ hour: Math.max(0, Math.min(23, parseInt(e.target.value) || 0)) })
+                    updateCronState({
+                      hour: Math.max(0, Math.min(23, parseInt(e.target.value) || 0)),
+                    })
                   }
                   disabled={isSaving}
                   className={cn(
@@ -424,14 +437,16 @@ const SchedulesPage = (): JSX.Element | null => {
                 />
               </div>
               <div>
-                <Label className="text-xs text-zinc-500 mb-2 block">Minute (0-59)</Label>
+                <Label className="mb-2 block text-xs text-zinc-500">Minute (0-59)</Label>
                 <Input
                   type="number"
                   min={0}
                   max={59}
                   value={cronState.minute}
                   onChange={(e) =>
-                    updateCronState({ minute: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)) })
+                    updateCronState({
+                      minute: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)),
+                    })
                   }
                   disabled={isSaving}
                   className={cn(
@@ -444,7 +459,7 @@ const SchedulesPage = (): JSX.Element | null => {
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <Label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Enable Schedule
             </Label>
             <Switch checked={formEnabled} onCheckedChange={setFormEnabled} disabled={isSaving} />
@@ -454,7 +469,7 @@ const SchedulesPage = (): JSX.Element | null => {
         {/* Tasks Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <Label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Task Sequence ({formTasks.length}/{MAX_TASKS})
             </Label>
             {formTasks.length >= MAX_TASKS && (
@@ -465,7 +480,7 @@ const SchedulesPage = (): JSX.Element | null => {
           </div>
 
           {/* Task Cards */}
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
             {formTasks.length === 0 ? (
               <div
                 className={cn(
@@ -517,7 +532,7 @@ const SchedulesPage = (): JSX.Element | null => {
                             setDraggedTaskId(task.id);
                           }}
                           onDragEnd={() => setDraggedTaskId(null)}
-                          className="flex items-center gap-2 shrink-0 cursor-grab active:cursor-grabbing"
+                          className="flex shrink-0 cursor-grab items-center gap-2 active:cursor-grabbing"
                         >
                           <div
                             className={cn(
@@ -531,14 +546,14 @@ const SchedulesPage = (): JSX.Element | null => {
                         </div>
 
                         {/* Action Icon & Label */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                           <div className="shrink-0">{getActionIcon(task.action)}</div>
                           <div className="min-w-0">
                             <p className={cn("font-medium", "text-zinc-100")}>
                               {getActionLabel(task.action)}
                             </p>
                             {task.action === "command" && task.payload && (
-                              <p className={cn("text-xs truncate", "text-zinc-400")}>
+                              <p className={cn("truncate text-xs", "text-zinc-400")}>
                                 {task.payload}
                               </p>
                             )}
@@ -596,11 +611,7 @@ const SchedulesPage = (): JSX.Element | null => {
 
                     {/* Expanded Details */}
                     {expandedTaskIds.includes(task.id) && (
-                      <div
-                        className={cn(
-                          "border-t border-zinc-700 bg-zinc-900/50 p-4 space-y-4"
-                        )}
-                      >
+                      <div className={cn("space-y-4 border-t border-zinc-700 bg-zinc-900/50 p-4")}>
                         {/* Command Payload */}
                         {task.action === "command" && (
                           <div>
@@ -611,7 +622,7 @@ const SchedulesPage = (): JSX.Element | null => {
                               placeholder="Enter command to execute..."
                               disabled={isSaving}
                               className={cn(
-                                "mt-2 text-sm font-mono",
+                                "mt-2 font-mono text-sm",
                                 "border-zinc-600 bg-zinc-800 text-zinc-100"
                               )}
                             />
@@ -620,17 +631,17 @@ const SchedulesPage = (): JSX.Element | null => {
 
                         {/* Trigger Mode Selection */}
                         <div>
-                          <Label className="text-xs font-semibold text-zinc-400 mb-3 block">
+                          <Label className="mb-3 block text-xs font-semibold text-zinc-400">
                             Execution Trigger
                           </Label>
                           <div className="space-y-3">
                             {/* Time Delay Option */}
                             <div
                               className={cn(
-                                "rounded-lg border-2 p-3 cursor-pointer transition-all",
+                                "cursor-pointer rounded-lg border-2 p-3 transition-all",
                                 task.triggerMode === "TIME_DELAY"
-                                  ? "border-blue-500 bg-blue-500/10"
-                                  : "border-zinc-700 hover:border-zinc-600 bg-zinc-800/30"
+                                  ? "border-primary/50 bg-primary/10"
+                                  : "border-zinc-700 bg-zinc-800/30 hover:border-zinc-600"
                               )}
                               onClick={() => updateTaskTriggerMode(task.id, "TIME_DELAY")}
                             >
@@ -643,10 +654,8 @@ const SchedulesPage = (): JSX.Element | null => {
                                   disabled={isSaving}
                                 />
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-zinc-100">
-                                    Time Delay
-                                  </p>
-                                  <p className="text-xs text-zinc-400 mt-1">
+                                  <p className="text-sm font-medium text-zinc-100">Time Delay</p>
+                                  <p className="mt-1 text-xs text-zinc-400">
                                     Wait a fixed number of seconds before executing this task
                                   </p>
                                   {task.triggerMode === "TIME_DELAY" && (
@@ -656,10 +665,7 @@ const SchedulesPage = (): JSX.Element | null => {
                                         type="number"
                                         value={task.timeOffset}
                                         onChange={(e) =>
-                                          updateTaskOffset(
-                                            task.id,
-                                            parseInt(e.target.value) || 0
-                                          )
+                                          updateTaskOffset(task.id, parseInt(e.target.value) || 0)
                                         }
                                         min={0}
                                         disabled={isSaving}
@@ -679,12 +685,12 @@ const SchedulesPage = (): JSX.Element | null => {
                             {/* Completion Wait Option */}
                             <div
                               className={cn(
-                                "rounded-lg border-2 p-3 cursor-pointer transition-all",
+                                "cursor-pointer rounded-lg border-2 p-3 transition-all",
                                 task.triggerMode === "ON_COMPLETION"
-                                  ? "border-purple-500 bg-purple-500/10"
+                                  ? "border-primary/50 bg-primary/10"
                                   : index === 0
-                                    ? "border-zinc-700 bg-zinc-800/30 opacity-50 cursor-not-allowed"
-                                    : "border-zinc-700 hover:border-zinc-600 bg-zinc-800/30"
+                                    ? "cursor-not-allowed border-zinc-700 bg-zinc-800/30 opacity-50"
+                                    : "border-zinc-700 bg-zinc-800/30 hover:border-zinc-600"
                               )}
                               onClick={() => {
                                 if (index > 0) updateTaskTriggerMode(task.id, "ON_COMPLETION");
@@ -702,7 +708,7 @@ const SchedulesPage = (): JSX.Element | null => {
                                   <p className="text-sm font-medium text-zinc-100">
                                     Wait for Completion
                                   </p>
-                                  <p className="text-xs text-zinc-400 mt-1">
+                                  <p className="mt-1 text-xs text-zinc-400">
                                     {index === 0
                                       ? "Not available for the first task"
                                       : "Wait for the previous task to complete before starting"}
@@ -735,11 +741,11 @@ const SchedulesPage = (): JSX.Element | null => {
           </div>
 
           {/* Add Task Buttons */}
-          <div className="pt-4 border-t border-zinc-700">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+          <div className="border-t border-zinc-700 pt-4">
+            <p className="mb-3 text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Add Task
             </p>
-            <div className="flex flex-row gap-2 flex-wrap">
+            <div className="flex flex-row flex-wrap gap-2">
               {actionOptions.map((opt) => (
                 <TextureButton
                   key={opt.value}
@@ -959,8 +965,8 @@ const SchedulesPage = (): JSX.Element | null => {
     <div className="relative min-h-full transition-colors">
       {/* Background is now rendered in the layout for persistence */}
 
-      <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="relative p-5 md:p-8">
+        <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -992,7 +998,7 @@ const SchedulesPage = (): JSX.Element | null => {
                 Loading schedules...
               </div>
             ) : schedules.length === 0 ? (
-              <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
+              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
                 No schedules found. Create your first schedule.
               </div>
             ) : (
@@ -1000,12 +1006,12 @@ const SchedulesPage = (): JSX.Element | null => {
                 <div
                   key={schedule.id}
                   className={cn(
-                    "relative border rounded-lg hover:scale-101 p-6 transition-all",
+                    "relative rounded-lg border p-6 transition-all hover:scale-101",
                     "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
                     !schedule.isActive && "opacity-50"
                   )}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
                       <div className="mb-3 flex items-center gap-3">
                         <h3
@@ -1018,7 +1024,7 @@ const SchedulesPage = (): JSX.Element | null => {
                         </h3>
                         <span
                           className={cn(
-                            "border px-2 py-0.5 text-[10px] rounded bg-white/10 font-medium tracking-wider uppercase",
+                            "rounded border bg-white/10 px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
                             "border-zinc-600 text-zinc-400"
                           )}
                         >
@@ -1027,43 +1033,46 @@ const SchedulesPage = (): JSX.Element | null => {
                       </div>
 
                       {/* Task list preview */}
-                      <div className="mb-3 flex flex-wrap items-center h-full gap-2">
+                      <div className="mb-3 flex h-full flex-wrap items-center gap-2">
                         {schedule.tasks.map((task, index) => {
-                            const isExecuting = schedule.executingTaskIndex === index;
-                            return (
-                            <div className="flex flex-row item-center justify-center h-full gap-2" key={`task-wrapper-${task.id}`}>
-                                <div
-                                    key={task.id}
-                                    className={cn(
-                                        "flex items-center gap-1.5 border rounded-lg px-2 py-1 text-xs transition-all",
-                                        isExecuting
-                                          ? "border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/50"
-                                          : "border-zinc-700 bg-zinc-800/50"
-                                    )}
-                                >
-                                  {isExecuting && (
-                                    <Spinner className="h-3 w-3 text-blue-400" />
-                                  )}
-                                  <span className={cn("text-[10px]", "text-zinc-500")}>{index + 1}.</span>
-                                  <span className={cn("text-zinc-300")}>
-                                {getActionLabel(task.action)}
-                              </span>
-                                  {task.timeOffset > 0 && (
-                                      <span className={cn("text-[10px]", "text-zinc-500")}>
-                                  +{task.timeOffset}s
+                          const isExecuting = schedule.executingTaskIndex === index;
+                          return (
+                            <div
+                              className="item-center flex h-full flex-row justify-center gap-2"
+                              key={`task-wrapper-${task.id}`}
+                            >
+                              <div
+                                key={task.id}
+                                className={cn(
+                                  "flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-all",
+                                  isExecuting
+                                    ? "border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/50"
+                                    : "border-zinc-700 bg-zinc-800/50"
+                                )}
+                              >
+                                {isExecuting && <Spinner className="h-3 w-3 text-blue-400" />}
+                                <span className={cn("text-[10px]", "text-zinc-500")}>
+                                  {index + 1}.
                                 </span>
-                                  )}
+                                <span className={cn("text-zinc-300")}>
+                                  {getActionLabel(task.action)}
+                                </span>
+                                {task.timeOffset > 0 && (
+                                  <span className={cn("text-[10px]", "text-zinc-500")}>
+                                    +{task.timeOffset}s
+                                  </span>
+                                )}
                               </div>
                               {index < schedule.tasks.length - 1 && (
-                                  <div className="h-6 flex items-center w-3">
-                                    <BsArrowRight
-                                        key={`arrow-${task.id}`}
-                                        className={cn("text-zinc-500")}
-                                    />
-                                  </div>
+                                <div className="flex h-6 w-3 items-center">
+                                  <BsArrowRight
+                                    key={`arrow-${task.id}`}
+                                    className={cn("text-zinc-500")}
+                                  />
+                                </div>
                               )}
                             </div>
-                            );
+                          );
                         })}
                       </div>
 
@@ -1075,14 +1084,14 @@ const SchedulesPage = (): JSX.Element | null => {
                         <span>Last: {formatLastRun(schedule)}</span>
                       </div>
                     </div>
-                    <div className="ml-4 flex items-center gap-2">
+                    <div className="flex items-center gap-2 md:ml-4">
                       <Switch
-                          checked={schedule.isActive}
-                          onCheckedChange={() => toggleSchedule(schedule)}
+                        checked={schedule.isActive}
+                        onCheckedChange={() => toggleSchedule(schedule)}
                       />
                       <TextureButton
-                          variant="minimal"
-                          onClick={() => runScheduleNow(schedule)}
+                        variant="minimal"
+                        onClick={() => runScheduleNow(schedule)}
                         disabled={isSaving}
                         title="Run this schedule now"
                       >

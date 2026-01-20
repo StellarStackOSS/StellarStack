@@ -1,33 +1,33 @@
 "use client";
 
-import {type JSX, useEffect, useState} from "react";
-import {useParams} from "next/navigation";
-import {servers} from "@/lib/api";
-import {DragDropGrid, GridItem} from "@workspace/ui/components/drag-drop-grid";
-import {useGridStorage} from "@workspace/ui/hooks/useGridStorage";
-import {Console} from "@workspace/ui/components/console";
-import {cn} from "@workspace/ui/lib/utils";
-import {BsExclamationTriangle} from "react-icons/bs";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {CpuCard} from "@workspace/ui/components/cpu-card";
-import {UsageMetricCard} from "@workspace/ui/components/usage-metric-card";
-import {NetworkUsageCard} from "@workspace/ui/components/network-usage-card";
-import {SystemInformationCard} from "@workspace/ui/components/system-information-card";
-import {NetworkInfoCard} from "@workspace/ui/components/network-info-card";
-import {InstanceNameCard} from "@workspace/ui/components/instance-name-card";
-import type {ContainerStatus} from "@workspace/ui/components/dashboard-cards-types";
-import {useLabels} from "@/hooks";
-import {defaultGridItems, defaultHiddenCards} from "@/constants";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {type StatsWithHistory, useServerWebSocket} from "@/hooks/useServerWebSocket";
-import {EulaExtension} from "../extensions/eula";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {ServerMaintenancePlaceholder} from "components/ServerStatusPages/server-maintenance-placeholder";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {LightBoard} from "@workspace/ui/components/LightBoard/LightBoard";
+import { type JSX, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { servers } from "@/lib/api";
+import { DragDropGrid, GridItem } from "@workspace/ui/components/drag-drop-grid";
+import { useGridStorage } from "@workspace/ui/hooks/useGridStorage";
+import { Console } from "@workspace/ui/components/console";
+import { cn } from "@workspace/ui/lib/utils";
+import { BsExclamationTriangle } from "react-icons/bs";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { CpuCard } from "@workspace/ui/components/cpu-card";
+import { UsageMetricCard } from "@workspace/ui/components/usage-metric-card";
+import { NetworkUsageCard } from "@workspace/ui/components/network-usage-card";
+import { SystemInformationCard } from "@workspace/ui/components/system-information-card";
+import { NetworkInfoCard } from "@workspace/ui/components/network-info-card";
+import { InstanceNameCard } from "@workspace/ui/components/instance-name-card";
+import type { ContainerStatus } from "@workspace/ui/components/dashboard-cards-types";
+import { useLabels } from "@/hooks";
+import { defaultGridItems, defaultHiddenCards } from "@/constants";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
+import { EulaExtension } from "../extensions/eula";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 
 const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
@@ -300,7 +300,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
         </div>
       )}
 
-      <div className="relative h-full">
+      <div className="relative h-full p-5 md:p-8">
         <FadeIn delay={0}>
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">

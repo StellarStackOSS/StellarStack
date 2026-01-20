@@ -1,21 +1,25 @@
 "use client";
 
-import {useMemo, useState} from "react";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {EditIcon, MapPinIcon, PlusIcon, TrashIcon} from "lucide-react";
-import {AdminCard, AdminEmptyState, AdminPageHeader, AdminSearchBar,} from "components/AdminPageComponents";
-import {useLocationMutations, useLocations} from "@/hooks/queries";
-import type {CreateLocationData, Location} from "@/lib/api";
-import {toast} from "sonner";
-import {Label} from "@workspace/ui/components/label";
-import {Input} from "@workspace/ui/components/input";
-import {Textarea} from "@workspace/ui/components/textarea";
+import { useMemo, useState } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { EditIcon, MapPinIcon, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  AdminCard,
+  AdminEmptyState,
+  AdminPageHeader,
+  AdminSearchBar,
+} from "components/AdminPageComponents";
+import { useLocationMutations, useLocations } from "@/hooks/queries";
+import type { CreateLocationData, Location } from "@/lib/api";
+import { toast } from "sonner";
+import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
 
 export default function LocationsPage() {
   // React Query hooks
@@ -99,10 +103,8 @@ export default function LocationsPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             <AdminPageHeader
               title="LOCATIONS"

@@ -1,9 +1,9 @@
 "use client";
 
-import React, {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {AnimatePresence, motion} from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -14,9 +14,9 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import {cn} from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Checkbox} from "@workspace/ui/components/checkbox";
+import { cn } from "@workspace/ui/lib/utils";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +24,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import {SidebarTrigger} from "@workspace/ui/components/sidebar";
-import {ConfirmationModal} from "@workspace/ui/components/confirmation-modal";
-import {FormModal} from "@workspace/ui/components/form-modal";
-import {Spinner} from "@workspace/ui/components/spinner";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,} from "@workspace/ui/components/dialog";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { FormModal } from "@workspace/ui/components/form-modal";
+import { Spinner } from "@workspace/ui/components/spinner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
 import {
   BsArrowLeft,
   BsChevronDown,
@@ -42,30 +48,30 @@ import {
   BsFileEarmark,
   BsFileText,
   BsFolder,
+  BsImage,
   BsPencil,
+  BsPlayCircle,
   BsPlus,
   BsTerminal,
   BsThreeDotsVertical,
   BsTrash,
   BsUpload,
-  BsX,
-  BsImage,
-  BsPlayCircle,
   BsVolumeUp,
+  BsX,
 } from "react-icons/bs";
-import type {FileInfo} from "@/lib/api";
-import {servers} from "@/lib/api";
-import {useServer} from "components/ServerStatusPages/server-provider";
-import {useAuth} from "hooks/auth-provider";
-import {ServerInstallingPlaceholder} from "components/ServerStatusPages/server-installing-placeholder";
-import {ServerSuspendedPlaceholder} from "components/ServerStatusPages/server-suspended-placeholder";
-import {useSoundEffects} from "@/hooks/useSoundEffects";
-import {toast} from "sonner";
-import {useUploads} from "@/components/upload-provider";
-import {DataTable, Input} from "@workspace/ui/components";
-import {Label} from "@workspace/ui/components/label";
-import {getMediaType, isMediaFile} from "@/lib/media-utils";
-import {MediaPreviewModal} from "@/components/MediaViewer/MediaPreviewModal";
+import type { FileInfo } from "@/lib/api";
+import { servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/server-provider";
+import { useAuth } from "hooks/auth-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
+import { toast } from "sonner";
+import { useUploads } from "@/components/Providers/UploadProvider/UploadProvider";
+import { DataTable, Input } from "@workspace/ui/components";
+import { Label } from "@workspace/ui/components/label";
+import { getMediaType, isMediaFile } from "@/lib/media-utils";
+import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
 
 interface FileItem {
   id: string;
@@ -136,7 +142,7 @@ const FilesPage = (): JSX.Element | null => {
   const { server, isInstalling } = useServer();
   const { user } = useAuth();
   const { playSound } = useSoundEffects();
-  const { uploads, addUpload, updateUpload, removeUpload } = useUploads();
+  const { addUpload, updateUpload, removeUpload } = useUploads();
 
   // Derive current path from URL params
   const currentPath = pathSegments && pathSegments.length > 0 ? "/" + pathSegments.join("/") : "/";
@@ -177,6 +183,7 @@ const FilesPage = (): JSX.Element | null => {
     }
     return false;
   });
+  // TODO: ADD BACK SEARCH FUNCTIONALITY TO THE FILES PAGE
   const [searchQuery, setSearchQuery] = useState("");
   const [sftpModalOpen, setSftpModalOpen] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
@@ -644,11 +651,44 @@ const FilesPage = (): JSX.Element | null => {
 
   const isBinaryFile = (filename: string): boolean => {
     const binaryExtensions = [
-      "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico",
-      "mp4", "webm", "mov", "avi", "mkv", "flv", "wmv", "m4v",
-      "mp3", "wav", "ogg", "m4a", "flac", "aac", "wma",
-      "zip", "tar", "gz", "7z", "rar", "exe", "dll", "so",
-      "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "svg",
+      "bmp",
+      "ico",
+      "mp4",
+      "webm",
+      "mov",
+      "avi",
+      "mkv",
+      "flv",
+      "wmv",
+      "m4v",
+      "mp3",
+      "wav",
+      "ogg",
+      "m4a",
+      "flac",
+      "aac",
+      "wma",
+      "zip",
+      "tar",
+      "gz",
+      "7z",
+      "rar",
+      "exe",
+      "dll",
+      "so",
+      "pdf",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "ppt",
+      "pptx",
     ];
     const ext = filename.split(".").pop()?.toLowerCase() || "";
     return binaryExtensions.includes(ext);
@@ -1055,7 +1095,7 @@ const FilesPage = (): JSX.Element | null => {
     <div className="relative transition-colors">
       {/* Background is now rendered in the layout for persistence */}
 
-      <div className="relative h-full p-6">
+      <div className="relative h-full p-5 md:p-8">
         <div className="mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">

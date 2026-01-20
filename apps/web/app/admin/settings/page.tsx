@@ -1,9 +1,8 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {cn} from "@workspace/ui/lib/utils";
-import {AnimatedBackground} from "@workspace/ui/components/animated-background";
-import {FadeIn} from "@workspace/ui/components/fade-in";
+import { useEffect, useState } from "react";
+import { cn } from "@workspace/ui/lib/utils";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   ArrowLeftIcon,
   CheckCircle2Icon,
@@ -24,12 +23,18 @@ import {
   type EmailSettings,
   type SubdomainSettings,
 } from "@/lib/api";
-import {toast} from "sonner";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {Label} from "@workspace/ui/components/label";
-import {Input, Switch} from "@workspace/ui/components";
-import {Textarea} from "@workspace/ui/components/textarea";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@workspace/ui/components/select";
+import { toast } from "sonner";
+import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Label } from "@workspace/ui/components/label";
+import { Input, Switch } from "@workspace/ui/components";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 const SettingsSection = ({
   title,
@@ -310,10 +315,8 @@ export default function AdminSettingsPage() {
 
   return (
     <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <AnimatedBackground />
-
       <div className="relative p-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto">
           <FadeIn delay={0}>
             {/* Header */}
             <div className="mb-8">

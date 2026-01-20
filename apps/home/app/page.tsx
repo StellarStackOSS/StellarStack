@@ -1,12 +1,12 @@
 "use client";
 
-import {type JSX, useEffect, useRef, useState} from "react";
-import {useTheme as useNextTheme} from "next-themes";
-import {AnimatePresence, motion, useInView} from "framer-motion";
+import { type JSX, useEffect, useRef, useState } from "react";
+import { useTheme as useNextTheme } from "next-themes";
+import { AnimatePresence, motion, useInView } from "framer-motion";
 import "react-medium-image-zoom/dist/styles.css";
 import "swiper/css";
-import {cn} from "@workspace/ui/lib/utils";
-import type {GridItemConfig} from "@workspace/ui/components/drag-drop-grid";
+import { cn } from "@workspace/ui/lib/utils";
+import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
 import {
   BsArrowRight,
   BsCodeSlash,
@@ -40,10 +40,9 @@ import {
   SiTurborepo,
   SiTypescript,
 } from "react-icons/si";
-import {Footer} from "@/components/Footer";
-import {Navigation} from "@/components/Navigation";
-import {TextureButton} from "@workspace/ui/components/texture-button";
-import {AnimatedBackground} from "@workspace/ui/components";
+import { Footer } from "@/components/Footer";
+import { Navigation } from "@/components/Navigation";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 // Technology stack
 const technologies = [
@@ -443,13 +442,7 @@ const LandingPage = (): JSX.Element | null => {
   ];
 
   return (
-    <div
-      className={cn(
-        "relative min-h-svh scroll-smooth transition-colors",
-        "bg-[#0b0b0a]"
-      )}
-    >
-      <AnimatedBackground />
+    <div className={cn("relative min-h-svh scroll-smooth transition-colors", "bg-[#0b0b0a]")}>
       <Navigation links={homeNavLinks} />
 
       <section className="relative flex flex-row items-center justify-center px-6 pt-32 pb-20">
@@ -466,7 +459,8 @@ const LandingPage = (): JSX.Element | null => {
                 <span
                   className="bg-clip-text text-transparent"
                   style={{
-                    backgroundImage: "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)"
+                    backgroundImage:
+                      "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)",
                   }}
                 >
                   The infrastructure behind your game servers, simplified.
@@ -502,12 +496,7 @@ const LandingPage = (): JSX.Element | null => {
                 </a>
               </motion.div>
             </div>
-            <div
-              className={cn(
-                "relative overflow-hidden rounded-lg border-4",
-                "border-zinc-800"
-              )}
-            >
+            <div className={cn("relative overflow-hidden rounded-lg border-4", "border-zinc-800")}>
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentScreenshot}
