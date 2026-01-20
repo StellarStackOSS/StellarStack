@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.2.0...v1.3.0) (2026-01-20)
+
+
+### Features
+
+* STE-17 Complete UI Redesign ([#30](https://github.com/StellarStackOSS/StellarStack/issues/30)) ([a256726](https://github.com/StellarStackOSS/StellarStack/commit/a2567268b27b0583108719bf64404a199608c8a6))
+
+
+### Bug Fixes
+
+* STE-19 NGINX Upload Limit Configuration ([#23](https://github.com/StellarStackOSS/StellarStack/issues/23)) ([f5e7d44](https://github.com/StellarStackOSS/StellarStack/commit/f5e7d4495d0758317cf41754bb3a4f56d12948f6))
+
 ## [1.2.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.1.2...v1.2.0) (2026-01-14)
 
 ### Features
