@@ -16,18 +16,18 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 import {
-  BellIcon,
-  ChevronUpIcon,
-  CpuIcon,
-  LayoutDashboardIcon,
-  LogOutIcon,
-  MapPinIcon,
-  PackageIcon,
-  ServerIcon,
-  SettingsIcon,
-  ShieldIcon,
-  UserIcon,
-  UsersIcon,
+  Bell,
+  ChevronUp,
+  Cpu,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Package,
+  Server,
+  Settings,
+  Shield,
+  User,
+  Users,
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "hooks/auth-provider";
@@ -41,18 +41,18 @@ import { WaveText } from "@/components/WaveText/WaveText";
 type SidebarVariant = "account" | "admin" | "app";
 
 const accountNavItems = [
-  { title: "Account Settings", icon: UserIcon, href: "/account" },
-  { title: "Notifications", icon: BellIcon, href: "/account/notifications" },
+  { title: "Account Settings", icon: User, href: "/account" },
+  { title: "Notifications", icon: Bell, href: "/account/notifications" },
 ];
 
 const adminNavItems = [
-  { title: "Overview", icon: LayoutDashboardIcon, href: "/admin" },
-  { title: "Nodes", icon: CpuIcon, href: "/admin/nodes" },
-  { title: "Locations", icon: MapPinIcon, href: "/admin/locations" },
-  { title: "Servers", icon: ServerIcon, href: "/admin/servers" },
-  { title: "Blueprints", icon: PackageIcon, href: "/admin/blueprints" },
-  { title: "Users", icon: UsersIcon, href: "/admin/users" },
-  { title: "Settings", icon: SettingsIcon, href: "/admin/settings" },
+  { title: "Overview", icon: LayoutDashboard, href: "/admin" },
+  { title: "Nodes", icon: Cpu, href: "/admin/nodes" },
+  { title: "Locations", icon: MapPin, href: "/admin/locations" },
+  { title: "Servers", icon: Server, href: "/admin/servers" },
+  { title: "Blueprints", icon: Package, href: "/admin/blueprints" },
+  { title: "Users", icon: Users, href: "/admin/users" },
+  { title: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
 const appNavItems = [
@@ -152,7 +152,7 @@ export const UnifiedSidebar = () => {
             "group relative flex w-full items-center gap-2 border border-zinc-700/50 bg-zinc-900/50 px-3 py-2 text-left text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
           )}
         >
-          <ServerIcon className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
+          <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
           <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
         </Link>
       );
@@ -168,7 +168,7 @@ export const UnifiedSidebar = () => {
             </Link>
           </TextureButton>
           <div className={cn("mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}>
-            <ShieldIcon className={cn("h-4 w-4 shrink-0 text-amber-500")} />
+            <Shield className={cn("h-4 w-4 shrink-0 text-amber-500")} />
             <span className="text-xs font-medium tracking-wider uppercase">Admin Panel</span>
           </div>
         </>
@@ -184,7 +184,7 @@ export const UnifiedSidebar = () => {
           </Link>
         </TextureButton>
         <div className={cn("mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}>
-          <ServerIcon className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
+          <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
           <span className="truncate text-xs font-medium tracking-wider uppercase">
             Server {serverId}
           </span>
@@ -287,18 +287,18 @@ export const UnifiedSidebar = () => {
     if (variant === "admin") {
       baseItems.push({
         title: "Account Settings",
-        icon: UserIcon,
+        icon: User,
         href: "/account",
       });
     }
 
     if (variant === "app") {
       baseItems.push(
-        { title: "Account Settings", icon: UserIcon, href: "/account" },
-        { title: "Notifications", icon: BellIcon, href: "/account/notifications" }
+        { title: "Account Settings", icon: User, href: "/account" },
+        { title: "Notifications", icon: Bell, href: "/account/notifications" }
       );
       if (isAdmin) {
-        baseItems.push({ title: "Admin Panel", icon: ShieldIcon, href: "/admin" });
+        baseItems.push({ title: "Admin Panel", icon: Shield, href: "/admin" });
       }
     }
 
@@ -339,7 +339,7 @@ export const UnifiedSidebar = () => {
               <div className={cn("truncate text-xs font-medium text-zinc-200")}>{user.name}</div>
               <div className={cn("truncate text-[10px] text-zinc-500")}>{user.email}</div>
             </div>
-            <ChevronUpIcon
+            <ChevronUp
               className={cn(
                 "h-4 w-4 shrink-0 text-zinc-500 transition-transform",
                 isUserMenuOpen && "rotate-180"
@@ -386,7 +386,7 @@ export const UnifiedSidebar = () => {
                         handleSignOut();
                       }}
                     >
-                      <LogOutIcon className="h-4 w-4" />
+                      <LogOut className="h-4 w-4" />
                       <span className="tracking-wider uppercase">Sign Out</span>
                     </TextureButton>
                   </div>

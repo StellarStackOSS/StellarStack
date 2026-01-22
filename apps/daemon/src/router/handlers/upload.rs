@@ -77,9 +77,14 @@ pub async fn upload_file(
     while let Some(field) = multipart.next_field().await
         .map_err(|e| ApiError::bad_request(e.to_string()))?
     {
-        let filename = field.file_name()
-            .map(|s| s.to_string())
-            .ok_or_else(|| ApiError::bad_request("Missing filename"))?;
+        // Skip fields without filenames (non-file fields like "directory")
+        let filename = match field.file_name() {
+            Some(name) => name.to_string(),
+            None => {
+                debug!("Skipping multipart field '{}' (not a file)", field.name().unwrap_or("unknown"));
+                continue;
+            }
+        };
 
         let content_type = field.content_type()
             .map(|s| s.to_string())
@@ -107,6 +112,11 @@ pub async fn upload_file(
             "size": data.len(),
             "mime_type": content_type,
         }));
+    }
+
+    // Ensure at least one file was uploaded
+    if uploaded_files.is_empty() {
+        return Err(ApiError::bad_request("No files were uploaded. All multipart fields must be files with filenames."));
     }
 
     Ok(Json(serde_json::json!({
@@ -150,9 +160,14 @@ pub async fn authenticated_upload_file(
     while let Some(field) = multipart.next_field().await
         .map_err(|e| ApiError::bad_request(e.to_string()))?
     {
-        let filename = field.file_name()
-            .map(|s| s.to_string())
-            .ok_or_else(|| ApiError::bad_request("Missing filename"))?;
+        // Skip fields without filenames (non-file fields like "directory")
+        let filename = match field.file_name() {
+            Some(name) => name.to_string(),
+            None => {
+                debug!("Skipping multipart field '{}' (not a file)", field.name().unwrap_or("unknown"));
+                continue;
+            }
+        };
 
         let content_type = field.content_type()
             .map(|s| s.to_string())
@@ -182,6 +197,11 @@ pub async fn authenticated_upload_file(
             "size": data.len(),
             "mime_type": content_type,
         }));
+    }
+
+    // Ensure at least one file was uploaded
+    if uploaded_files.is_empty() {
+        return Err(ApiError::bad_request("No files were uploaded. All multipart fields must be files with filenames."));
     }
 
     Ok(Json(serde_json::json!({
