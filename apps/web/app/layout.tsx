@@ -1,7 +1,7 @@
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 
 import "@workspace/ui/globals.css";
-import { Providers } from "@/components/Providers/Providers";
+import { Providers } from "@/components/providers/providers";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { PublicEnv } from "@/lib/public-env";
 

@@ -72,6 +72,8 @@ import { DataTable, Input } from "@workspace/ui/components";
 import { Label } from "@workspace/ui/components/label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
 import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
+import FilledFolder from "@/components/FilledFolder/FilledFolder";
+import {File, FileImage, FileVolume, Folder } from "lucide-react";
 
 interface FileItem {
   id: string;
@@ -281,58 +283,8 @@ const FilesPage = (): JSX.Element | null => {
     return () => clearInterval(interval);
   }, [fetchDiskUsage]);
 
-  // Global drag-and-drop handlers
-  useEffect(() => {
-    const handleDragEnter = (e: DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounterRef.current++;
-      if (e.dataTransfer?.types.includes("Files")) {
-        setIsDraggingOver(true);
-      }
-    };
-
-    const handleDragLeave = (e: DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounterRef.current--;
-      if (dragCounterRef.current === 0) {
-        setIsDraggingOver(false);
-      }
-    };
-
-    const handleDragOver = (e: DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const handleDrop = (e: DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounterRef.current = 0;
-      setIsDraggingOver(false);
-
-      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-        const droppedFiles = Array.from(e.dataTransfer.files);
-        handleDroppedFiles(droppedFiles);
-      }
-    };
-
-    document.addEventListener("dragenter", handleDragEnter);
-    document.addEventListener("dragleave", handleDragLeave);
-    document.addEventListener("dragover", handleDragOver);
-    document.addEventListener("drop", handleDrop);
-
-    return () => {
-      document.removeEventListener("dragenter", handleDragEnter);
-      document.removeEventListener("dragleave", handleDragLeave);
-      document.removeEventListener("dragover", handleDragOver);
-      document.removeEventListener("drop", handleDrop);
-    };
-  }, [currentPath, serverId]);
-
   // Handle dropped files - upload directly with optimistic updates
-  const handleDroppedFiles = async (droppedFiles: File[]) => {
+  const handleDroppedFiles = useCallback(async (droppedFiles: File[]) => {
     if (droppedFiles.length === 0 || isUploading) return;
 
     setIsUploading(true);
@@ -389,7 +341,62 @@ const FilesPage = (): JSX.Element | null => {
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [currentPath, serverId, isUploading, fetchDiskUsage]);
+
+  // Global drag-and-drop handlers (disabled when modals are open)
+  useEffect(() => {
+    // Don't attach handlers if any modal is open
+    if (mediaPreviewOpen || uploadModalOpen) {
+      return;
+    }
+
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current++;
+      if (e.dataTransfer?.types.includes("Files")) {
+        setIsDraggingOver(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current--;
+      if (dragCounterRef.current === 0) {
+        setIsDraggingOver(false);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current = 0;
+      setIsDraggingOver(false);
+
+      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        handleDroppedFiles(droppedFiles);
+      }
+    };
+
+    document.addEventListener("dragenter", handleDragEnter);
+    document.addEventListener("dragleave", handleDragLeave);
+    document.addEventListener("dragover", handleDragOver);
+    document.addEventListener("drop", handleDrop);
+
+    return () => {
+      document.removeEventListener("dragenter", handleDragEnter);
+      document.removeEventListener("dragleave", handleDragLeave);
+      document.removeEventListener("dragover", handleDragOver);
+      document.removeEventListener("drop", handleDrop);
+    };
+  }, [mediaPreviewOpen, uploadModalOpen, handleDroppedFiles]);
 
   // Navigation helpers
   const navigateToFolder = (folderName: string) => {
@@ -719,21 +726,12 @@ const FilesPage = (): JSX.Element | null => {
         const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
 
         if (isBinaryFile(file.name)) {
-          // For binary files, use multipart FormData upload
-          const formData = new FormData();
-          formData.append("file", file, file.name);
-
+          // For binary files, use multipart FormData upload via the API
           const uploadDir = currentPath === "/" ? "" : currentPath;
-          const uploadUrl = `/api/servers/${serverId}/files/upload${uploadDir ? `?directory=${encodeURIComponent(uploadDir)}` : ""}`;
+          const result = await servers.files.upload(serverId, [file], uploadDir);
 
-          const response = await fetch(uploadUrl, {
-            method: "POST",
-            body: formData,
-            credentials: "include",
-          });
-
-          if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
+          if (!result.success) {
+            throw new Error("Upload failed - server returned success: false");
           }
         } else {
           // For text files, read as text and use the create endpoint
@@ -796,23 +794,27 @@ const FilesPage = (): JSX.Element | null => {
       {
         id: "select",
         header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
-          />
+            <div className="pl-4 flex w-fit">
+              <Checkbox
+                  checked={
+                      table.getIsAllPageRowsSelected() ||
+                      (table.getIsSomePageRowsSelected() && "indeterminate")
+                  }
+                  onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                  aria-label="Select all"
+                  className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
+              />
+            </div>
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
-          />
+            <div className="pl-4 flex w-fit">
+              <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+                  aria-label="Select row"
+                  className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
+              />
+            </div>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -843,15 +845,15 @@ const FilesPage = (): JSX.Element | null => {
           return (
             <div className="flex items-center gap-3">
               {file.type === "folder" ? (
-                <BsFolder className={cn("h-4 w-4", "text-amber-400")} />
+                <Folder className={cn("h-4 w-4", "text-amber-400")} />
               ) : mediaType === "image" ? (
-                <BsImage className={cn("h-4 w-4", "text-cyan-400")} />
+                <FileImage className={cn("h-4 w-4", "text-cyan-400")} />
               ) : mediaType === "video" ? (
-                <BsPlayCircle className={cn("h-4 w-4", "text-purple-400")} />
+                <FileImage className={cn("h-4 w-4", "text-purple-400")} />
               ) : mediaType === "audio" ? (
-                <BsVolumeUp className={cn("h-4 w-4", "text-orange-400")} />
+                <FileVolume className={cn("h-4 w-4", "text-orange-400")} />
               ) : (
-                <BsFileEarmark className={cn("h-4 w-4", "text-zinc-400")} />
+                <File className={cn("h-4 w-4", "text-zinc-400")} />
               )}
               <span
                 className={cn("cursor-pointer hover:underline", "text-zinc-200")}
@@ -1176,13 +1178,43 @@ const FilesPage = (): JSX.Element | null => {
             </div>
           </div>
 
+          <div className="relative mb-6 overflow-scroll h-72 flex flex-row justify-center flex-nowrap rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
+          {/* filter out and display all the folder as well as their quanity */}
+            {displayFiles.some(file => file.type === "folder") ? (
+                <div className="flex flex-wrap items-center gap-4 pb-2">
+                  {displayFiles
+                      .filter(file => file.type === "folder")
+                      .map(folder => (
+                          <div
+                              key={folder.path}
+                              onClick={() => navigateToFolder(folder.name)}
+                              className="cursor-pointer"
+                          >
+                            <FilledFolder
+                                folderName={folder.name}
+                                folderQuantity={0}
+                            />
+                          </div>
+                      ))}
+                </div>
+            ) : (
+                <div className="text-sm text-zinc-500 text-center flex flex-col w-full h-full item-center justify-center">
+                  <p>No folders found.</p>
+                </div>
+            )}
+          </div>
+
           {/* Toolbar */}
           <div
             className={cn(
-              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
+              "sticky top-0 z-10 mb-6 rounded-lg border border-zinc-200/10 overflow-hidden"
             )}
+            style={{
+              backgroundColor: '#000000',
+              background: 'linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(15, 15, 15, 1), rgba(10, 10, 10, 1))',
+            }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <TextureButton
                   variant="minimal"

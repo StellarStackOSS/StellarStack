@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { cn } from "@workspace/ui/lib/utils";
 import { getMediaType } from "@/lib/media-utils";
+import { getApiEndpoint } from "@/lib/public-env";
 import { MediaViewer } from "../../MediaViewer/MediaViewer";
 
 interface MediaPreviewModalProps {
@@ -31,23 +32,41 @@ export function MediaPreviewModal({
   const [blobUrl, setBlobUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const blobUrlRef = useRef<string>("");
+
+  // Update ref when blobUrl changes
+  useEffect(() => {
+    blobUrlRef.current = blobUrl;
+  }, [blobUrl]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      // Clean up blob URL when modal closes
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = "";
+      }
+      setBlobUrl("");
+      setContent("");
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
 
     const loadMedia = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // Clean up previous blob URL
+        if (blobUrlRef.current) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = "";
+        }
         setBlobUrl("");
 
         const mediaType = getMediaType(fileName);
-        const apiUrl =
-          typeof window !== "undefined" &&
-          window.location.hostname !== "localhost" &&
-          window.location.hostname !== "127.0.0.1"
-            ? window.location.origin
-            : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
         // For binary media (video/audio/images), use the binary download endpoint
         if (
@@ -56,15 +75,27 @@ export function MediaPreviewModal({
           (mediaType === "image" && !fileName.endsWith(".svg"))
         ) {
           try {
-            // Use the public download endpoint with server and file parameters
-            const downloadUrl = `${apiUrl}/download/file?server=${encodeURIComponent(serverId)}&file=${encodeURIComponent(filePath)}`;
-            const response = await fetch(downloadUrl);
+            // Use the API's download endpoint with token authentication
+            const { servers } = await import("@/lib/api");
+            const { token } = await servers.files.getDownloadToken(serverId, filePath);
+            
+            if (cancelled) return;
+            
+            const downloadUrl = getApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
+            
+            const response = await fetch(downloadUrl, {
+              credentials: "include", // Include cookies for auth
+            });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            if (cancelled) return;
 
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
+            blobUrlRef.current = url;
             setBlobUrl(url);
           } catch (binaryErr) {
+            if (cancelled) return;
             console.error("Failed to load binary file:", binaryErr);
             setError("Failed to load media file. Please try again.");
           }
@@ -72,26 +103,32 @@ export function MediaPreviewModal({
           // For text-based files (SVG, etc), use text API
           try {
             const data = await fetchFile(serverId, filePath);
+            if (cancelled) return;
             setContent(data);
           } catch (textErr) {
+            if (cancelled) return;
             console.error("Failed to load text file:", textErr);
             setError("Failed to load media file. Please try again.");
           }
         }
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load media file");
         console.error("Media load error:", err);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadMedia();
 
     return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      cancelled = true;
+      // Cleanup will happen in the next effect when isOpen changes
     };
-  }, [isOpen, fileName, filePath, serverId, fetchFile]);
+  }, [isOpen, fileName, filePath, serverId]); // Removed fetchFile from dependencies
 
   const mediaType = getMediaType(fileName);
   const isMedia = mediaType !== "unknown";

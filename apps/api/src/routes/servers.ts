@@ -30,6 +30,33 @@ const DOWNLOAD_SECRET = getRequiredEnv(
 // Token expiration time in seconds (5 minutes)
 const DOWNLOAD_TOKEN_EXPIRY = 300;
 
+// Get MIME type from filename
+const getMimeType = (filename: string): string => {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  const mimeMap: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    bmp: "image/bmp",
+    ico: "image/x-icon",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    m4a: "audio/mp4",
+    flac: "audio/flac",
+    aac: "audio/aac",
+  };
+  return mimeMap[ext] || "application/octet-stream";
+};
+
 // Generate a signed download token
 const generateDownloadToken = (
   userId: string,
@@ -1663,10 +1690,21 @@ servers.get("/:serverId/files/download", async (c) => {
     // Stream the response directly
     const data = await response.arrayBuffer();
 
+    // Determine MIME type and disposition based on file type
+    const mimeType = getMimeType(filename);
+    const isImage = mimeType.startsWith("image/");
+    const isVideo = mimeType.startsWith("video/");
+    const isAudio = mimeType.startsWith("audio/");
+    
+    // Use inline for media files (so they display), attachment for others
+    const disposition = isImage || isVideo || isAudio 
+      ? `inline; filename="${filename}"`
+      : `attachment; filename="${filename}"`;
+
     return new Response(data, {
       headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Type": mimeType,
+        "Content-Disposition": disposition,
       },
     });
   } catch (error: any) {
@@ -1696,6 +1734,82 @@ servers.post("/:serverId/files/write", requireServerAccess, requireNotSuspended,
       serverId: server.id,
       metadata: { path: normalizedPath },
     });
+    return c.json(result);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Upload files via multipart form data
+servers.post("/:serverId/files/upload", requireServerAccess, requireNotSuspended, async (c) => {
+  const server = c.get("server");
+
+  try {
+    const formData = await c.req.formData();
+    const directory = formData.get("directory") as string || "";
+
+    if (!formData.has("file")) {
+      return c.json({ error: "No file provided" }, 400);
+    }
+
+    const fullServer = await getServerWithNode(server.id);
+
+    // Create new FormData for daemon with the same files
+    const daemonFormData = new FormData();
+
+    // Copy all file entries from request to daemon FormData
+    // IMPORTANT: In Node.js, we need to read the file data and create a new Blob/File
+    // because simply appending the File object doesn't serialize the content properly
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        // Read the file data as an ArrayBuffer
+        const arrayBuffer = await value.arrayBuffer();
+        // Create a new Blob with the actual file data
+        const blob = new Blob([arrayBuffer], { type: value.type });
+        // Append the blob with the original filename
+        daemonFormData.append(key, blob, value.name);
+      }
+    }
+
+    // Make request to daemon with FormData
+    const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
+    const daemonUrl = new URL(`${protocol}://${fullServer.node.host}:${fullServer.node.port}/api/servers/${server.id}/files/upload`);
+
+    // Add directory as query parameter
+    if (directory) {
+      daemonUrl.searchParams.set("directory", directory);
+    }
+
+    const response = await fetch(daemonUrl.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${fullServer.node.id}.${fullServer.node.token}`,
+      },
+      body: daemonFormData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `Daemon error: ${errorText || `HTTP ${response.status} ${response.statusText}`}`;
+      // Try to parse as JSON for more detailed error
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error || errorJson.message) {
+          errorMessage = `Daemon error: ${errorJson.error || errorJson.message}`;
+        }
+      } catch {
+        // Not JSON, use text as-is
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+
+    await logActivityFromContext(c, ActivityEvents.FILE_WRITE, {
+      serverId: server.id,
+      metadata: { action: "multipart_upload", fileCount: (formData.getAll("file") || []).length },
+    });
+
     return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
