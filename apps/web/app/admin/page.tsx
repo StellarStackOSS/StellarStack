@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
-  CpuIcon,
-  MapPinIcon,
-  PackageIcon,
-  ServerIcon,
-  SettingsIcon,
-  UsersIcon,
+  Cpu,
+  MapPin,
+  Package,
+  Server,
+  Settings,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import type { Blueprint, Location, Node, Server, User } from "@/lib/api";
@@ -143,41 +143,41 @@ export default function AdminOverviewPage() {
               <StatCard
                 title="Nodes"
                 value={isLoading ? "..." : `${stats.nodesOnline}/${stats.nodes}`}
-                icon={CpuIcon}
+                icon={Cpu}
                 href="/admin/nodes"
                 color={stats.nodesOnline > 0 ? "green" : "zinc"}
               />
               <StatCard
                 title="Locations"
                 value={isLoading ? "..." : stats.locations}
-                icon={MapPinIcon}
+                icon={MapPin}
                 href="/admin/locations"
                 color="blue"
               />
               <StatCard
                 title="Servers"
                 value={isLoading ? "..." : `${stats.serversRunning}/${stats.servers}`}
-                icon={ServerIcon}
+                icon={Server}
                 href="/admin/servers"
                 color={stats.serversRunning > 0 ? "green" : "zinc"}
               />
               <StatCard
                 title="Blueprints"
                 value={isLoading ? "..." : stats.blueprints}
-                icon={PackageIcon}
+                icon={Package}
                 href="/admin/blueprints"
                 color="amber"
               />
               <StatCard
                 title="Users"
                 value={isLoading ? "..." : stats.users}
-                icon={UsersIcon}
+                icon={Users}
                 href="/admin/users"
               />
               <StatCard
                 title="Settings"
                 value="Configure"
-                icon={SettingsIcon}
+                icon={Settings}
                 href="/admin/settings"
               />
             </div>
@@ -196,7 +196,7 @@ export default function AdminOverviewPage() {
                     "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-green-500/50"
                   )}
                 >
-                  <CpuIcon className={cn("mx-auto mb-2 h-6 w-6 text-green-400")} />
+                  <Cpu className={cn("mx-auto mb-2 h-6 w-6 text-green-400")} />
                   <span className="text-xs tracking-wider uppercase">Add Node</span>
                 </Link>
                 <Link
@@ -205,7 +205,7 @@ export default function AdminOverviewPage() {
                     "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-blue-500/50"
                   )}
                 >
-                  <MapPinIcon className={cn("mx-auto mb-2 h-6 w-6 text-blue-400")} />
+                  <MapPin className={cn("mx-auto mb-2 h-6 w-6 text-blue-400")} />
                   <span className="text-xs tracking-wider uppercase">Add Location</span>
                 </Link>
                 <Link
@@ -214,7 +214,7 @@ export default function AdminOverviewPage() {
                     "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-amber-500/50"
                   )}
                 >
-                  <PackageIcon className={cn("mx-auto mb-2 h-6 w-6 text-amber-400")} />
+                  <Package className={cn("mx-auto mb-2 h-6 w-6 text-amber-400")} />
                   <span className="text-xs tracking-wider uppercase">Add Blueprint</span>
                 </Link>
                 <Link
@@ -223,7 +223,7 @@ export default function AdminOverviewPage() {
                     "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-purple-500/50"
                   )}
                 >
-                  <ServerIcon className={cn("mx-auto mb-2 h-6 w-6 text-purple-400")} />
+                  <Server className={cn("mx-auto mb-2 h-6 w-6 text-purple-400")} />
                   <span className="text-xs tracking-wider uppercase">Create Server</span>
                 </Link>
               </div>

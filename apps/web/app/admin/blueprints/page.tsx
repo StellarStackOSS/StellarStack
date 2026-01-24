@@ -9,18 +9,17 @@ import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
-  DownloadIcon,
-  EditIcon,
-  EyeIcon,
-  EyeOffIcon,
-  ImageIcon,
-  PackageIcon,
-  PlusIcon,
-  TerminalIcon,
-  TrashIcon,
-  UploadIcon,
-  UserIcon,
-  VariableIcon,
+  Download,
+  Edit,
+  Eye,
+  EyeOff,
+  Image,
+  Package,
+  Plus,
+  Terminal,
+  Trash,
+  Upload,
+  User,
   GitBranch,
 } from "lucide-react";
 import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
@@ -212,7 +211,7 @@ export default function BlueprintsPage() {
               description="Docker container templates"
               action={{
                 label: "Add Blueprint",
-                icon: <PlusIcon className="h-4 w-4" />,
+                icon: <Plus className="h-4 w-4" />,
                 onClick: () => {
                   resetForm();
                   setIsModalOpen(true);
@@ -228,7 +227,7 @@ export default function BlueprintsPage() {
                 </TextureButton>
               </Link>
               <TextureButton onClick={() => setIsImportModalOpen(true)} variant="minimal">
-                <UploadIcon className="h-4 w-4" />
+                <Upload className="h-4 w-4" />
                 Import Core
               </TextureButton>
             </div>
@@ -265,14 +264,14 @@ export default function BlueprintsPage() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <PackageIcon className={cn("mt-0.5 h-6 w-6 text-zinc-400")} />
+                        <Package className={cn("mt-0.5 h-6 w-6 text-zinc-400")} />
                         <div>
                           <div className={cn("flex items-center gap-2 font-medium text-zinc-100")}>
                             {blueprint.name}
                             {blueprint.isPublic ? (
-                              <EyeIcon className={cn("h-3 w-3 text-zinc-500")} />
+                              <Eye className={cn("h-3 w-3 text-zinc-500")} />
                             ) : (
-                              <EyeOffIcon className={cn("h-3 w-3 text-zinc-600")} />
+                              <EyeOff className={cn("h-3 w-3 text-zinc-600")} />
                             )}
                           </div>
                           <div className={cn("mt-1 font-mono text-xs text-zinc-500")}>
@@ -291,7 +290,7 @@ export default function BlueprintsPage() {
                             <div
                               className={cn("mt-1 flex items-center gap-1 text-xs text-zinc-500")}
                             >
-                              <UserIcon className="h-3 w-3" />
+                              <User className="h-3 w-3" />
                               {blueprint.author}
                             </div>
                           )}
@@ -349,7 +348,7 @@ export default function BlueprintsPage() {
                           disabled={exportEgg.isPending}
                           title="Export as Core"
                         >
-                          <DownloadIcon className="h-3 w-3" />
+                          <Download className="h-3 w-3" />
                         </TextureButton>
                         <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
                           <TextureButton variant="minimal" size="sm" title="Edit in Builder">
@@ -362,14 +361,14 @@ export default function BlueprintsPage() {
                           onClick={() => handleEdit(blueprint)}
                           title="Edit Form"
                         >
-                          <EditIcon className="h-3 w-3" />
+                          <Edit className="h-3 w-3" />
                         </TextureButton>
                         <TextureButton
                           variant="minimal"
                           size="sm"
                           onClick={() => setDeleteConfirmBlueprint(blueprint)}
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <Trash className="h-3 w-3" />
                         </TextureButton>
                       </div>
                     </div>
@@ -513,7 +512,7 @@ export default function BlueprintsPage() {
             Object.keys(editingBlueprint.dockerImages).length > 0 && (
               <div>
                 <Label>
-                  <ImageIcon className="h-3 w-3" />
+                  <Image className="h-3 w-3" />
                   Docker Images
                 </Label>
                 <div className={cn("space-y-2 border border-zinc-700 bg-zinc-900/50 p-3")}>
@@ -531,7 +530,7 @@ export default function BlueprintsPage() {
           {editingBlueprint?.startup && (
             <div>
               <Label>
-                <TerminalIcon className="h-3 w-3" />
+                <Terminal className="h-3 w-3" />
                 Startup Command
               </Label>
               <div
@@ -548,7 +547,7 @@ export default function BlueprintsPage() {
           {editingBlueprint?.variables && editingBlueprint.variables.length > 0 && (
             <div>
               <Label>
-                <VariableIcon className="h-3 w-3" />
+                {/*<Variable className="h-3 w-3" />*/}
                 Variables ({editingBlueprint.variables.length})
               </Label>
               <div

@@ -47,16 +47,12 @@ import {
   BsEyeSlash,
   BsFileEarmark,
   BsFileText,
-  BsFolder,
-  BsImage,
   BsPencil,
-  BsPlayCircle,
   BsPlus,
   BsTerminal,
   BsThreeDotsVertical,
   BsTrash,
   BsUpload,
-  BsVolumeUp,
   BsX,
 } from "react-icons/bs";
 import type { FileInfo } from "@/lib/api";
@@ -108,7 +104,7 @@ const parseDaemonError = (error: unknown): string => {
     // Try to parse JSON error from daemon
     try {
       // Check if the message contains JSON
-      const jsonMatch = message.match(/\{.*"error".*"message".*\}/);
+      const jsonMatch = message.match(/\{.*"error".*"message".*}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.error === "Conflict" && parsed.message) {
@@ -186,7 +182,7 @@ const FilesPage = (): JSX.Element | null => {
     return false;
   });
   // TODO: ADD BACK SEARCH FUNCTIONALITY TO THE FILES PAGE
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const [sftpModalOpen, setSftpModalOpen] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [fileToEditPermissions, setFileToEditPermissions] = useState<FileItem | null>(null);
@@ -205,10 +201,13 @@ const FilesPage = (): JSX.Element | null => {
   const storageTotalGB =
     diskUsage.total > 0
       ? diskUsage.total / (1024 * 1024 * 1024)
-      : server
-        ? (typeof server.disk === "string" ? parseInt(server.disk, 10) : server.disk) / 1024
+      : server?.disk
+        ? (server.disk as number) / 1024
         : 10; // fallback to server.disk (in MiB) if no limit set
   const storagePercentage = storageTotalGB > 0 ? (storageUsedGB / storageTotalGB) * 100 : 0;
+
+  // Use local path if set, otherwise fall back to URL params
+  const displayPath = currentPath;
 
   useEffect(() => {
     setMounted(true);
@@ -247,7 +246,7 @@ const FilesPage = (): JSX.Element | null => {
     try {
       const data = await servers.files.list(
         serverId,
-        currentPath === "/" ? undefined : currentPath
+        displayPath === "/" ? undefined : displayPath
       );
       const mappedFiles: FileItem[] = data.files.map((f: FileInfo) => ({
         id: f.path,
@@ -265,7 +264,7 @@ const FilesPage = (): JSX.Element | null => {
     } finally {
       setIsLoading(false);
     }
-  }, [serverId, currentPath]);
+  }, [serverId, displayPath]);
 
   useEffect(() => {
     fetchFiles();
@@ -298,7 +297,7 @@ const FilesPage = (): JSX.Element | null => {
       for (const file of droppedFiles) {
         try {
           const content = await file.text();
-          const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
+          const filePath = displayPath === "/" ? `/${file.name}` : `${displayPath}/${file.name}`;
           await servers.files.create(serverId, filePath, "file", content);
           successCount++;
 
@@ -341,7 +340,7 @@ const FilesPage = (): JSX.Element | null => {
     } finally {
       setIsUploading(false);
     }
-  }, [currentPath, serverId, isUploading, fetchDiskUsage]);
+  }, [displayPath, serverId, isUploading, fetchDiskUsage]);
 
   // Global drag-and-drop handlers (disabled when modals are open)
   useEffect(() => {
@@ -398,27 +397,27 @@ const FilesPage = (): JSX.Element | null => {
     };
   }, [mediaPreviewOpen, uploadModalOpen, handleDroppedFiles]);
 
-  // Navigation helpers
+  // Navigation helpers - updates local state to trigger row animations
   const navigateToFolder = (folderName: string) => {
-    const newPath = currentPath === "/" ? `/${folderName}` : `${currentPath}/${folderName}`;
-    router.push(`/servers/${serverId}/files${newPath}`);
+    const newPath = displayPath === "/" ? `/${folderName}` : `${displayPath}/${folderName}`;
+    router.push(`/servers/${serverId}/files${newPath}`, undefined, { shallow: true });
   };
 
   const navigateUp = () => {
-    if (currentPath === "/") return;
-    const segments = currentPath.split("/").filter(Boolean);
+    if (displayPath === "/") return;
+    const segments = displayPath.split("/").filter(Boolean);
     segments.pop();
-    const parentPath = segments.length > 0 ? `/${segments.join("/")}` : "";
-    router.push(`/servers/${serverId}/files${parentPath}`);
+    const parentPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
+    router.push(`/servers/${serverId}/files${parentPath}`, undefined, { shallow: true });
   };
 
   const getBasePath = () => `/servers/${serverId}/files`;
 
   // Build breadcrumb segments
   const breadcrumbSegments = useMemo(() => {
-    if (currentPath === "/") return [];
-    return currentPath.split("/").filter(Boolean);
-  }, [currentPath]);
+    if (displayPath === "/") return [];
+    return displayPath.split("/").filter(Boolean);
+  }, [displayPath]);
 
   const isEditable = (fileName: string) => {
     return EDITABLE_EXTENSIONS.some((ext) => fileName.toLowerCase().endsWith(ext));
@@ -544,7 +543,7 @@ const FilesPage = (): JSX.Element | null => {
   const confirmNewFolder = async () => {
     if (!newFolderName.trim()) return;
     const folderPath =
-      currentPath === "/" ? `/${newFolderName.trim()}` : `${currentPath}/${newFolderName.trim()}`;
+      displayPath === "/" ? `/${newFolderName.trim()}` : `${displayPath}/${newFolderName.trim()}`;
     const folderName = newFolderName.trim();
     try {
       await servers.files.create(serverId, folderPath, "directory");
@@ -588,9 +587,9 @@ const FilesPage = (): JSX.Element | null => {
   const confirmNewFile = async () => {
     if (!newFileNameInput.trim()) return;
     const filePath =
-      currentPath === "/"
+      displayPath === "/"
         ? `/${newFileNameInput.trim()}`
-        : `${currentPath}/${newFileNameInput.trim()}`;
+        : `${displayPath}/${newFileNameInput.trim()}`;
     const fileName = newFileNameInput.trim();
     try {
       await servers.files.create(serverId, filePath, "file", "");
@@ -708,7 +707,6 @@ const FilesPage = (): JSX.Element | null => {
     setUploadModalOpen(false);
 
     const startTime = Date.now();
-    const totalSize = uploadFiles.reduce((sum, file) => sum + file.size, 0);
 
     for (const file of uploadFiles) {
       const fileId = `upload-${Date.now()}-${Math.random()}`;
@@ -723,14 +721,15 @@ const FilesPage = (): JSX.Element | null => {
       });
 
       try {
-        const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
+        const filePath = displayPath === "/" ? `/${file.name}` : `${displayPath}/${file.name}`;
 
         if (isBinaryFile(file.name)) {
           // For binary files, use multipart FormData upload via the API
-          const uploadDir = currentPath === "/" ? "" : currentPath;
+          const uploadDir = displayPath === "/" ? "" : displayPath;
           const result = await servers.files.upload(serverId, [file], uploadDir);
 
           if (!result.success) {
+            // @ts-expect-error - intentionally throwing to be caught and handled
             throw new Error("Upload failed - server returned success: false");
           }
         } else {
@@ -756,7 +755,7 @@ const FilesPage = (): JSX.Element | null => {
         removeUpload(fileId);
       } catch (error) {
         removeUpload(fileId);
-        throw error;
+        console.error(`Upload failed for file ${file.name}:`, error);
       }
     }
 
@@ -1025,7 +1024,7 @@ const FilesPage = (): JSX.Element | null => {
         },
       },
     ],
-    [currentPath, serverId]
+    [displayPath, serverId]
   );
 
   // Toggle hidden files visibility
@@ -1094,216 +1093,218 @@ const FilesPage = (): JSX.Element | null => {
   }
 
   return (
-    <div className="relative transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
+    <>
+      <div className="relative transition-colors">
+        {/* Background is now rendered in the layout for persistence */}
 
-      <div className="relative h-full p-5 md:p-8">
-        <div className="mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-              <div>
-                <div className="flex flex-wrap items-center gap-1">
-                  <Link
-                    href={getBasePath()}
-                    className={cn(
-                      "text-sm transition-colors hover:underline",
-                      "text-zinc-500 hover:text-zinc-300"
-                    )}
+        <div className="relative h-full p-5 md:p-8">
+          <div className="mx-auto">
+            {/* Header */}
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "transition-all hover:scale-110 active:scale-95",
+                    "text-zinc-400 hover:text-zinc-100"
+                  )}
+                />
+                <div>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Link
+                      href={getBasePath()}
+                      className={cn(
+                        "text-sm transition-colors hover:underline",
+                        "text-zinc-500 hover:text-zinc-300"
+                      )}
+                    >
+                      / home
+                    </Link>
+                    {breadcrumbSegments.map((segment, index) => {
+                      const pathUpToHere = "/" + breadcrumbSegments.slice(0, index + 1).join("/");
+                      const isLast = index === breadcrumbSegments.length - 1;
+                      return (
+                        <span key={pathUpToHere} className="flex items-center gap-1">
+                          <span className={cn("text-sm", "text-zinc-600")}>/</span>
+                          {isLast ? (
+                            <span className={cn("text-sm", "text-zinc-300")}>{segment}</span>
+                          ) : (
+                            <Link
+                              href={`${getBasePath()}${pathUpToHere}`}
+                              className={cn(
+                                "text-sm transition-colors hover:underline",
+                                "text-zinc-500 hover:text-zinc-300"
+                              )}
+                            >
+                              {segment}
+                            </Link>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              className={cn(
+                "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
+              )}
+            >
+              <div className="flex items-center gap-4">
+                <img src="/icons/24-file-download.svg" alt="storage_icon" />
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className={cn("text-xs tracking-wider uppercase", "text-zinc-400")}>
+                      Storage
+                    </span>
+                    <span className={cn("text-xs", "text-zinc-400")}>
+                      {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
+                    </span>
+                  </div>
+                  <div className={cn("h-2 w-full", "rounded-lg bg-zinc-800")}>
+                    <div
+                      className={cn(
+                        "h-full rounded-lg transition-all",
+                        storagePercentage > 90
+                          ? "bg-red-500"
+                          : storagePercentage > 70
+                            ? "bg-amber-500"
+                            : "bg-green-500"
+                      )}
+                      style={{ width: `${Math.min(100, storagePercentage)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative mb-6 overflow-scroll h-72 flex flex-row justify-center flex-nowrap rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
+            {/* filter out and display all the folder as well as their quanity */}
+              {displayFiles.some(file => file.type === "folder") ? (
+                  <div className="flex flex-wrap items-center gap-4 pb-2">
+                    {displayFiles
+                        .filter(file => file.type === "folder")
+                        .map(folder => (
+                            <div
+                                key={folder.path}
+                                onClick={() => navigateToFolder(folder.name)}
+                                className="cursor-pointer"
+                            >
+                              <FilledFolder
+                                  folderName={folder.name}
+                                  folderQuantity={0}
+                              />
+                            </div>
+                        ))}
+                  </div>
+              ) : (
+                  <div className="text-sm text-zinc-500 text-center flex flex-col w-full h-full item-center justify-center">
+                    <p>No folders found.</p>
+                  </div>
+              )}
+            </div>
+
+            {/* Toolbar */}
+            <div
+              className={cn(
+                "sticky top-0 z-40 mb-6 rounded-lg border border-zinc-200/10 overflow-hidden"
+              )}
+              style={{
+                background: 'linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(15, 15, 15, 1), rgba(10, 10, 10, 1))',
+              }}
+            >
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <TextureButton
+                    variant="minimal"
+                    disabled={displayPath === "/"}
+                    onClick={navigateUp}
                   >
-                    / home
-                  </Link>
-                  {breadcrumbSegments.map((segment, index) => {
-                    const pathUpToHere = "/" + breadcrumbSegments.slice(0, index + 1).join("/");
-                    const isLast = index === breadcrumbSegments.length - 1;
-                    return (
-                      <span key={pathUpToHere} className="flex items-center gap-1">
-                        <span className={cn("text-sm", "text-zinc-600")}>/</span>
-                        {isLast ? (
-                          <span className={cn("text-sm", "text-zinc-300")}>{segment}</span>
-                        ) : (
-                          <Link
-                            href={`${getBasePath()}${pathUpToHere}`}
-                            className={cn(
-                              "text-sm transition-colors hover:underline",
-                              "text-zinc-500 hover:text-zinc-300"
-                            )}
-                          >
-                            {segment}
-                          </Link>
-                        )}
-                      </span>
-                    );
-                  })}
+                    <BsArrowLeft className="h-4 w-4" />
+                    <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
+                  </TextureButton>
+                  <TextureButton variant="minimal" onClick={handleNewFolder}>
+                    <BsPlus className="h-4 w-4" />
+                    <span className="hidden text-xs tracking-wider uppercase sm:inline">
+                      New Folder
+                    </span>
+                  </TextureButton>
+                  <TextureButton variant="minimal" onClick={handleNewFile}>
+                    <BsFileText className="h-4 w-4" />
+                    <span className="hidden text-xs tracking-wider uppercase sm:inline">
+                      New File
+                    </span>
+                  </TextureButton>
+                  {selectedCount > 0 && (
+                    <span className={cn("ml-2 text-xs", "text-zinc-500")}>
+                      {selectedCount} selected
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/*TODO: TO ADD BACK THE SEARCH*/}
+                  {/*<Input*/}
+                  {/*    type="text"*/}
+                  {/*    value={searchQuery}*/}
+                  {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
+                  {/*    placeholder="Search..."*/}
+                  {/*    className="pt-0 mt-0 w-1/4"*/}
+                  {/*/>*/}
+                  <TextureButton
+                    variant="minimal"
+                    onClick={() => setSftpModalOpen(true)}
+                    title="SFTP Connection"
+                  >
+                    <BsTerminal className="h-4 w-4" />
+                    <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
+                  </TextureButton>
+                  <TextureButton variant="minimal" onClick={handleUploadClick} title="Upload Files">
+                    <BsUpload className="h-4 w-4" />
+                    <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
+                  </TextureButton>
+                  <TextureButton
+                    variant="minimal"
+                    onClick={handleToggleHiddenFiles}
+                    title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
+                  >
+                    <div>
+                      {showHiddenFiles ? (
+                        <BsEye className="h-4 w-4" />
+                      ) : (
+                        <BsEyeSlash className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="text-xs tracking-wider uppercase">
+                      {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
+                    </div>
+                  </TextureButton>
+                  <TextureButton
+                    variant="destructive"
+                    disabled={selectedCount === 0}
+                    onClick={handleBulkDelete}
+                  >
+                    <BsTrash className="h-4 w-4" />
+                    <span className="text-xs tracking-wider uppercase">Delete</span>
+                  </TextureButton>
                 </div>
               </div>
             </div>
-          </div>
-          <div
-            className={cn(
-              "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
-            )}
-          >
-            <div className="flex items-center gap-4">
-              <img src="/icons/24-file-download.svg" alt="storage_icon" />
-              <div className="flex-1">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className={cn("text-xs tracking-wider uppercase", "text-zinc-400")}>
-                    Storage
-                  </span>
-                  <span className={cn("text-xs", "text-zinc-400")}>
-                    {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
-                  </span>
-                </div>
-                <div className={cn("h-2 w-full", "rounded-lg bg-zinc-800")}>
-                  <div
-                    className={cn(
-                      "h-full rounded-lg transition-all",
-                      storagePercentage > 90
-                        ? "bg-red-500"
-                        : storagePercentage > 70
-                          ? "bg-amber-500"
-                          : "bg-green-500"
-                    )}
-                    style={{ width: `${Math.min(100, storagePercentage)}%` }}
-                  />
-                </div>
-              </div>
+
+            {/* Data Table */}
+            <DataTable
+              table={table}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage={
+                searchQuery ? `No files matching "${searchQuery}" found.` : "No files found."
+              }
+              animateRows={true}
+            />
+
+            {/* Footer */}
+            <div className={cn("mt-4 text-xs", "text-zinc-600")}>
+              {table.getFilteredRowModel().rows.length} file(s) - {selectedCount} selected
             </div>
-          </div>
-
-          <div className="relative mb-6 overflow-scroll h-72 flex flex-row justify-center flex-nowrap rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
-          {/* filter out and display all the folder as well as their quanity */}
-            {displayFiles.some(file => file.type === "folder") ? (
-                <div className="flex flex-wrap items-center gap-4 pb-2">
-                  {displayFiles
-                      .filter(file => file.type === "folder")
-                      .map(folder => (
-                          <div
-                              key={folder.path}
-                              onClick={() => navigateToFolder(folder.name)}
-                              className="cursor-pointer"
-                          >
-                            <FilledFolder
-                                folderName={folder.name}
-                                folderQuantity={0}
-                            />
-                          </div>
-                      ))}
-                </div>
-            ) : (
-                <div className="text-sm text-zinc-500 text-center flex flex-col w-full h-full item-center justify-center">
-                  <p>No folders found.</p>
-                </div>
-            )}
-          </div>
-
-          {/* Toolbar */}
-          <div
-            className={cn(
-              "sticky top-0 z-10 mb-6 rounded-lg border border-zinc-200/10 overflow-hidden"
-            )}
-            style={{
-              backgroundColor: '#000000',
-              background: 'linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(15, 15, 15, 1), rgba(10, 10, 10, 1))',
-            }}
-          >
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <TextureButton
-                  variant="minimal"
-                  disabled={currentPath === "/"}
-                  onClick={navigateUp}
-                >
-                  <BsArrowLeft className="h-4 w-4" />
-                  <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
-                </TextureButton>
-                <TextureButton variant="minimal" onClick={handleNewFolder}>
-                  <BsPlus className="h-4 w-4" />
-                  <span className="hidden text-xs tracking-wider uppercase sm:inline">
-                    New Folder
-                  </span>
-                </TextureButton>
-                <TextureButton variant="minimal" onClick={handleNewFile}>
-                  <BsFileText className="h-4 w-4" />
-                  <span className="hidden text-xs tracking-wider uppercase sm:inline">
-                    New File
-                  </span>
-                </TextureButton>
-                {selectedCount > 0 && (
-                  <span className={cn("ml-2 text-xs", "text-zinc-500")}>
-                    {selectedCount} selected
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {/*TODO: TO ADD BACK THE SEARCH*/}
-                {/*<Input*/}
-                {/*    type="text"*/}
-                {/*    value={searchQuery}*/}
-                {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
-                {/*    placeholder="Search..."*/}
-                {/*    className="pt-0 mt-0 w-1/4"*/}
-                {/*/>*/}
-                <TextureButton
-                  variant="minimal"
-                  onClick={() => setSftpModalOpen(true)}
-                  title="SFTP Connection"
-                >
-                  <BsTerminal className="h-4 w-4" />
-                  <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
-                </TextureButton>
-                <TextureButton variant="minimal" onClick={handleUploadClick} title="Upload Files">
-                  <BsUpload className="h-4 w-4" />
-                  <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
-                </TextureButton>
-                <TextureButton
-                  variant="minimal"
-                  onClick={handleToggleHiddenFiles}
-                  title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
-                >
-                  <div>
-                    {showHiddenFiles ? (
-                      <BsEye className="h-4 w-4" />
-                    ) : (
-                      <BsEyeSlash className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="text-xs tracking-wider uppercase">
-                    {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
-                  </div>
-                </TextureButton>
-                <TextureButton
-                  variant="destructive"
-                  disabled={selectedCount === 0}
-                  onClick={handleBulkDelete}
-                >
-                  <BsTrash className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Delete</span>
-                </TextureButton>
-              </div>
-            </div>
-          </div>
-
-          {/* Data Table */}
-          <DataTable
-            table={table}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage={
-              searchQuery ? `No files matching "${searchQuery}" found.` : "No files found."
-            }
-          />
-
-          {/* Footer */}
-          <div className={cn("mt-4 text-xs", "text-zinc-600")}>
-            {table.getFilteredRowModel().rows.length} file(s) - {selectedCount} selected
           </div>
         </div>
       </div>
@@ -1319,7 +1320,6 @@ const FilesPage = (): JSX.Element | null => {
           >
             {/* Backdrop */}
             <div className={cn("absolute inset-0", "bg-black/80")} />
-
             {/* Drop zone indicator */}
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -1337,12 +1337,8 @@ const FilesPage = (): JSX.Element | null => {
               >
                 <BsCloudUpload className={cn("mx-auto mb-4 h-16 w-16", "text-zinc-400")} />
               </motion.div>
-              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>
-                DROP FILES TO UPLOAD
-              </p>
-              <p className={cn("mt-2 text-sm", "text-zinc-500")}>
-                Files will be uploaded to: {currentPath}
-              </p>
+              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>DROP FILES TO UPLOAD</p>
+              <p className={cn("mt-2 text-sm", "text-zinc-500")}>Files will be uploaded to: {currentPath}</p>
             </motion.div>
           </motion.div>
         )}
@@ -1862,7 +1858,7 @@ const FilesPage = (): JSX.Element | null => {
           fetchFile={(serverId, path) => servers.files.read(serverId, path)}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -9,13 +9,13 @@ import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { DataTable } from "@workspace/ui/components/data-table";
 import {
-  ArrowLeftIcon,
-  EditIcon,
-  PlusIcon,
-  SearchIcon,
-  ShieldIcon,
-  TrashIcon,
-  UserIcon,
+  ArrowLeft,
+  Edit,
+  Plus,
+  Search,
+  Shield,
+  Trash,
+  User,
 } from "lucide-react";
 import { useUserMutations, useUsers } from "@/hooks/queries";
 import { useAuth } from "hooks/auth-provider";
@@ -63,9 +63,9 @@ export default function UsersPage() {
                 )}
               >
                 {user.role === "admin" ? (
-                  <ShieldIcon className="h-4 w-4" />
+                  <Shield className="h-4 w-4" />
                 ) : (
-                  <UserIcon className="h-4 w-4" />
+                  <User className="h-4 w-4" />
                 )}
               </div>
               <div>
@@ -109,9 +109,9 @@ export default function UsersPage() {
               disabled={user.id === currentUser?.id || update.isPending}
             >
               {user.role === "admin" ? (
-                <ShieldIcon className="h-3 w-3" />
+                <Shield className="h-3 w-3" />
               ) : (
-                <UserIcon className="h-3 w-3" />
+                <User className="h-3 w-3" />
               )}
               {user.role}
             </TextureButton>
@@ -131,7 +131,7 @@ export default function UsersPage() {
           return (
             <div className="flex items-center justify-end gap-1">
               <TextureButton variant="minimal" size="sm" onClick={() => handleEdit(user)}>
-                <EditIcon className="h-3 w-3" />
+                <Edit className="h-3 w-3" />
               </TextureButton>
               <TextureButton
                 variant="minimal"
@@ -145,7 +145,7 @@ export default function UsersPage() {
                 }}
                 disabled={user.id === currentUser?.id}
               >
-                <TrashIcon className="h-3 w-3" />
+                <Trash className="h-3 w-3" />
               </TextureButton>
             </div>
           );
@@ -285,7 +285,7 @@ export default function UsersPage() {
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <TextureButton variant="ghost" size="sm" onClick={() => router.push("/admin")}>
-                  <ArrowLeftIcon className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" />
                 </TextureButton>
                 <div>
                   <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>USERS</h1>
@@ -295,14 +295,14 @@ export default function UsersPage() {
                 </div>
               </div>
               <TextureButton variant="secondary" size="sm" onClick={handleCreate}>
-                <PlusIcon className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Create User
               </TextureButton>
             </div>
 
             {/* Search Bar */}
             <div className="relative mb-6">
-              <SearchIcon
+              <Search
                 className={cn("absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500")}
               />
               <Input
