@@ -5,13 +5,21 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama (local)",
       "options": {
-        "baseURL": "http://localhost:11434/v1"
+        "baseURL": "http://194.93.49.23:20025/v1"
       },
       "models": {
-        "deepseek-r1:8b": {
-          "name": "Deepseek R1"
+        "qwen3:8b-32K": {
+          "name": "qwen3:8b-32K"
         }
       }
     }
+  },
+  "permission": {
+    "bash": { "*": "allow" },
+    "read": { "*": "allow" },
+    "glob": { "*": "allow" },
+    "list": { "*": "allow" },
+    "edit": { "*": "allow" },
+    "exec": { "*": "allow" }
   }
 }

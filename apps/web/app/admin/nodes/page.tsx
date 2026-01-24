@@ -23,13 +23,13 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import {
-  CheckIcon,
-  CopyIcon,
-  CpuIcon,
-  EditIcon,
-  PlusIcon,
-  SettingsIcon,
-  TrashIcon,
+  Check,
+  Copy,
+  Cpu,
+  Edit,
+  Plus,
+  Settings,
+  Trash,
 } from "lucide-react";
 import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
 import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
@@ -159,7 +159,7 @@ export default function NodesPage() {
               description="Manage daemon nodes"
               action={{
                 label: "Add Node",
-                icon: <PlusIcon className="h-4 w-4" />,
+                icon: <Plus className="h-4 w-4" />,
                 onClick: () => {
                   resetForm();
                   setIsModalOpen(true);
@@ -201,7 +201,7 @@ export default function NodesPage() {
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <CpuIcon
+                              <Cpu
                                 className={cn(
                                   "h-8 w-8",
                                   node.isOnline ? "text-zinc-300" : "text-zinc-600"
@@ -245,19 +245,19 @@ export default function NodesPage() {
                                 variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}`)}
                               >
-                                <SettingsIcon className="h-3.5 w-3.5" />
+                                <Settings className="h-3.5 w-3.5" />
                               </TextureButton>
                               <TextureButton
                                 variant="minimal"
                                 onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
                               >
-                                <EditIcon className="h-3.5 w-3.5" />
+                                <Edit className="h-3.5 w-3.5" />
                               </TextureButton>
                               <TextureButton
                                 variant="destructive"
                                 onClick={() => setDeleteConfirmNode(node)}
                               >
-                                <TrashIcon className="h-3.5 w-3.5" />
+                                <Trash className="h-3.5 w-3.5" />
                               </TextureButton>
                             </div>
                           </div>
@@ -270,14 +270,14 @@ export default function NodesPage() {
                           onClick={() => router.push(`/admin/nodes/${node.id}`)}
                           className="cursor-pointer gap-2"
                         >
-                          <SettingsIcon className="h-4 w-4" />
+                          <Settings className="h-4 w-4" />
                           Configure
                         </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
                           className="cursor-pointer gap-2"
                         >
-                          <EditIcon className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                           Edit
                         </ContextMenuItem>
                         <ContextMenuSeparator className={"bg-zinc-700"} />
@@ -286,7 +286,7 @@ export default function NodesPage() {
                           className="cursor-pointer gap-2"
                           variant="destructive"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <Trash className="h-4 w-4" />
                           Delete
                         </ContextMenuItem>
                       </ContextMenuContent>
@@ -373,16 +373,16 @@ export default function NodesPage() {
             <div>
               <Label>Location</Label>
               <Select
-                value={formData.locationId || ""}
+                value={formData.locationId || "none"}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, locationId: value || undefined })
+                  setFormData({ ...formData, locationId: value === "none" ? undefined : value })
                 }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Location</SelectItem>
+                  <SelectItem value="none">No Location</SelectItem>
                   {locationsList.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       {loc.name}
@@ -484,9 +484,9 @@ export default function NodesPage() {
                 <span className="flex-1">{showToken?.token_id}</span>
                 <TextureButton variant="minimal" onClick={copyTokenId}>
                   {copiedTokenId ? (
-                    <CheckIcon className={cn("h-4 w-4 text-zinc-300")} />
+                    <Check className={cn("h-4 w-4 text-zinc-300")} />
                   ) : (
-                    <CopyIcon className="h-4 w-4" />
+                    <Copy className="h-4 w-4" />
                   )}
                 </TextureButton>
               </div>
@@ -501,9 +501,9 @@ export default function NodesPage() {
                 <span className="flex-1">{showToken?.token}</span>
                 <TextureButton variant="minimal" onClick={copyToken}>
                   {copiedToken ? (
-                    <CheckIcon className={cn("h-4 w-4 text-zinc-300")} />
+                    <Check className={cn("h-4 w-4 text-zinc-300")} />
                   ) : (
-                    <CopyIcon className="h-4 w-4" />
+                    <Copy className="h-4 w-4" />
                   )}
                 </TextureButton>
               </div>

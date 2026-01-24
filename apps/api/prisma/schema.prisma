@@ -165,10 +165,11 @@ model Node {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  allocations       Allocation[]
-  servers           Server[]
-  outgoingTransfers ServerTransfer[] @relation("TransferSource")
-  incomingTransfers ServerTransfer[] @relation("TransferTarget")
+  allocations           Allocation[]
+  servers               Server[]
+  outgoingTransfers     ServerTransfer[] @relation("TransferSource")
+  incomingTransfers     ServerTransfer[] @relation("TransferTarget")
+  metricsSnapshots      NodeMetricsSnapshot[]
 
   @@map("nodes")
 }
@@ -319,8 +320,9 @@ model Server {
   childServers   Server[] @relation("ServerChildren")
 
   // Server members (subusers with permissions)
-  members     ServerMember[]
-  invitations ServerInvitation[]
+  members           ServerMember[]
+  invitations       ServerInvitation[]
+  metricsSnapshots  ServerMetricsSnapshot[]
 
   @@map("servers")
 }
@@ -540,7 +542,8 @@ model Webhook {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deliveries WebhookDelivery[]
+  deliveries       WebhookDelivery[]
+  metricsSnapshots WebhookMetricsSnapshot[]
 
   @@map("webhooks")
 }
@@ -743,4 +746,160 @@ model Settings {
   value Json
 
   @@map("settings")
+}
+
+// ============================================
+// Analytics Tables
+// ============================================
+
+/**
+ * Node metrics snapshots captured at regular intervals
+ * Stores CPU, memory, and disk usage data for historical analysis
+ */
+model NodeMetricsSnapshot {
+  id String @id @default(cuid())
+
+  // Node reference
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  // Metrics
+  cpuUsage      Float   // Percentage 0-100
+  memoryUsage   BigInt  // Bytes used
+  memoryLimit   BigInt  // Bytes total
+  diskUsage     BigInt  // Bytes used
+  diskLimit     BigInt  // Bytes total
+  activeContainers Int   // Number of running containers
+  totalContainers  Int   // Total containers on node
+
+  // Timestamp
+  capturedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([nodeId])
+  @@index([capturedAt])
+  @@map("node_metrics_snapshots")
+}
+
+/**
+ * Server metrics snapshots captured at regular intervals
+ * Stores CPU, memory, disk, and game-specific metrics
+ */
+model ServerMetricsSnapshot {
+  id String @id @default(cuid())
+
+  // Server reference
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  // Metrics
+  cpuUsage      Float   // Percentage 0-100
+  memoryUsage   BigInt  // Bytes used
+  memoryLimit   BigInt  // Bytes total
+  diskUsage     BigInt  // Bytes used
+  diskLimit     BigInt  // Bytes total
+  uptime        Int     // Seconds since server start
+  status        String  // RUNNING, STOPPED, etc.
+
+  // Game metrics (optional)
+  players       Int?    // Number of connected players
+  fps           Float?  // Frames per second
+  tps           Float?  // Ticks per second (Minecraft)
+
+  // Timestamp
+  capturedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([serverId])
+  @@index([capturedAt])
+  @@map("server_metrics_snapshots")
+}
+
+/**
+ * API call metrics for monitoring API usage patterns
+ */
+model ApiMetricsSnapshot {
+  id String @id @default(cuid())
+
+  // Endpoint information
+  endpoint       String  // e.g., "/api/servers/list"
+  method         String  // GET, POST, etc.
+  statusCode     Int     // 200, 404, 500, etc.
+  latency        Int     // Response time in milliseconds
+  requestSize    Int?    // Request payload size in bytes
+  responseSize   Int?    // Response payload size in bytes
+
+  // User context
+  userId         String?
+  ipAddress      String?
+
+  // Timestamp
+  capturedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([endpoint])
+  @@index([method])
+  @@index([capturedAt])
+  @@map("api_metrics_snapshots")
+}
+
+/**
+ * Webhook delivery metrics for monitoring webhook health
+ */
+model WebhookMetricsSnapshot {
+  id String @id @default(cuid())
+
+  // Webhook reference
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  // Delivery metrics
+  eventType        String      // e.g., "server.status_changed"
+  statusCode       Int?        // HTTP response code
+  latency          Int         // Delivery time in milliseconds
+  success          Boolean     // Was delivery successful
+  errorMessage     String?     // Error message if failed
+  retryAttempt     Int @default(0) // Retry count
+
+  // Timestamp
+  capturedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([eventType])
+  @@index([success])
+  @@index([capturedAt])
+  @@map("webhook_metrics_snapshots")
+}
+
+/**
+ * Aggregated analytics data computed from snapshots
+ * Cached at intervals for faster dashboard queries
+ */
+model AnalyticsAggregate {
+  id String @id @default(cuid())
+
+  // Scope of aggregation
+  type        String  // "system", "node", "server", "api", "webhook"
+  referenceId String? // nodeId, serverId, webhookId, etc. (null for system-wide)
+
+  // Time period
+  timeRange   String  // "24h", "7d", "30d", "90d", "1y"
+  startTime   DateTime
+  endTime     DateTime
+
+  // Aggregated data (flexible JSON for different metric types)
+  data Json
+
+  // Metadata
+  dataPoints  Int     // Number of snapshots included
+  capturedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, referenceId, timeRange, endTime])
+  @@index([type])
+  @@index([referenceId])
+  @@index([endTime])
+  @@map("analytics_aggregates")
 }

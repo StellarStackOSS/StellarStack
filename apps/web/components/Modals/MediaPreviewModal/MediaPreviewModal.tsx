@@ -135,14 +135,9 @@ export function MediaPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className={cn(
-          "border-zinc-700 bg-black/80 backdrop-blur-sm",
-          mediaType === "video" ? "max-w-4xl" : mediaType === "audio" ? "max-w-2xl" : "max-h-[80vh]"
-        )}
-      >
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-zinc-200">{fileName}</DialogTitle>
+          <DialogTitle className="text-zinc-200 overflow-hidden text-clip max-w-md"></DialogTitle>
         </DialogHeader>
 
         <div
@@ -152,7 +147,7 @@ export function MediaPreviewModal({
           )}
         >
           {isLoading ? (
-            <Spinner className="h-8 w-8" />
+            <Spinner />
           ) : error ? (
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm text-red-400">Failed to load media</p>

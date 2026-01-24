@@ -107,7 +107,8 @@
       "WebFetch(domain:ui.shadcn.com)",
       "Bash(npm run build:*)",
       "WebFetch(domain:reactflow.dev)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"okay, I''ve forced it\" npx prisma migrate reset:*)"
     ],
     "deny": [],
     "ask": []
