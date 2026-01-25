@@ -210,6 +210,81 @@ pub async fn authenticated_upload_file(
     })))
 }
 
+/// Upload file query parameters for authenticated endpoint
+#[derive(Debug, Deserialize)]
+pub struct AuthenticatedUploadQuery {
+    /// Directory to upload to
+    #[serde(default)]
+    pub directory: String,
+}
+
+/// Upload file via authenticated endpoint (server extracted from middleware)
+pub async fn authenticated_upload_file(
+    Extension(server): Extension<Arc<Server>>,
+    Query(query): Query<AuthenticatedUploadQuery>,
+    mut multipart: Multipart,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    // Get filesystem
+    let config = server.config();
+    let fs = Filesystem::new(
+        server.data_dir().clone(),
+        config.disk_bytes(),
+        config.egg.file_denylist.clone(),
+    ).map_err(|e| ApiError::internal(e.to_string()))?;
+
+    // Determine upload directory
+    let directory = if query.directory.is_empty() {
+        String::new()
+    } else {
+        query.directory.clone()
+    };
+
+    let mut uploaded_files = Vec::new();
+
+    // Process multipart form
+    while let Some(field) = multipart.next_field().await
+        .map_err(|e| ApiError::bad_request(e.to_string()))?
+    {
+        let filename = field.file_name()
+            .map(|s| s.to_string())
+            .ok_or_else(|| ApiError::bad_request("Missing filename"))?;
+
+        let content_type = field.content_type()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+
+        // Build file path
+        let file_path = if directory.is_empty() {
+            filename.clone()
+        } else {
+            format!("{}/{}", directory.trim_end_matches('/'), filename)
+        };
+
+        // Read file data
+        let data = field.bytes().await
+            .map_err(|e| ApiError::bad_request(e.to_string()))?;
+
+        // Check disk space before writing
+        fs.disk_usage().has_space_for(data.len() as u64)?;
+
+        // Write file
+        fs.write_file(&file_path, &data).await?;
+
+        debug!("Uploaded file: {} ({} bytes)", file_path, data.len());
+
+        uploaded_files.push(serde_json::json!({
+            "name": filename,
+            "size": data.len(),
+            "mime_type": content_type,
+        }));
+    }
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "files": uploaded_files
+    })))
+}
+
 /// Validate an upload token
 fn validate_upload_token(token: &str, secret: &str) -> Result<UploadClaims, &'static str> {
     use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
