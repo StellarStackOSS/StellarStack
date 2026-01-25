@@ -1,0 +1,75 @@
+---
+title: 'Network Configuration'
+description: 'Configure networking for game servers'
+icon: 'network'
+---
+
+# Network Configuration
+
+Configure ports, firewall rules, and network settings for your game servers.
+
+<Info>
+  This guide is currently being expanded. Network configuration is available in the web panel server settings.
+</Info>
+
+## Port Configuration
+
+Each game server needs one or more ports:
+
+1. Navigate to your server
+2. Go to **Settings** → **Network**
+3. Configure port mappings:
+   - **Game Port**: Main server port (e.g., 25565 for Minecraft)
+   - **Query Port**: Server query port (optional)
+   - **RCON Port**: Remote console port (optional)
+
+## Port Allocation
+
+Ports are allocated per node:
+
+- Multiple servers can run on different ports
+- Port conflicts prevented automatically
+- Port ranges can be reserved for specific servers
+
+## Firewall Rules
+
+Ensure ports are open:
+
+- Configure UFW on Linux
+- Add firewall rules for game ports
+- Open query and RCON ports if needed
+
+Example (Ubuntu):
+```bash
+sudo ufw allow 25565/tcp
+sudo ufw allow 25565/udp
+```
+
+## DDoS Protection
+
+Recommended security practices:
+
+- Use UDP/TCP appropriately per game type
+- Consider DDoS protection services
+- Monitor traffic patterns
+- Block suspicious IPs if needed
+
+## Networking Issues
+
+Troubleshoot connectivity:
+
+- Verify ports are open
+- Check firewall rules
+- Test with network tools
+- Monitor server logs
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Server Management" icon="server" href="/guides/servers">
+    Server configuration
+  </Card>
+  <Card title="Schedules" icon="clock" href="/guides/schedules">
+    Scheduled tasks
+  </Card>
+</CardGroup>

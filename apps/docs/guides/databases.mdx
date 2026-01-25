@@ -1,0 +1,59 @@
+---
+title: 'Databases'
+description: 'Manage game server databases'
+icon: 'database'
+---
+
+# Databases
+
+Configure and manage databases for your game servers.
+
+<Info>
+  This guide is currently being expanded. Database configuration features are available in the web panel.
+</Info>
+
+## Supported Databases
+
+StellarStack supports various database solutions:
+
+- **SQLite** - Lightweight, file-based (default for many games)
+- **MySQL/MariaDB** - Popular for game servers
+- **PostgreSQL** - Advanced relational database
+- **MongoDB** - NoSQL option for some games
+
+## Database Configuration
+
+Configure databases in server settings:
+
+1. Navigate to your server
+2. Go to **Settings** → **Databases**
+3. Add database connection details
+4. Test connection
+5. Server will use configured database
+
+## Database Backups
+
+Databases are included in server backups:
+
+- Automatic backup of database files
+- Restoration includes all database data
+- Compression reduces backup size
+
+## Access from Game Server
+
+Game servers can connect to external databases:
+
+1. Configure database host and credentials
+2. Set environment variables if needed
+3. Server startup command uses database connection
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="File Management" icon="folder" href="/guides/files">
+    Manage server files
+  </Card>
+  <Card title="Backups" icon="database" href="/guides/backups">
+    Back up your data
+  </Card>
+</CardGroup>

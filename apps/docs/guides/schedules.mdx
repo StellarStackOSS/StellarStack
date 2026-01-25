@@ -1,0 +1,100 @@
+---
+title: 'Scheduled Tasks'
+description: 'Configure automated tasks for your servers'
+icon: 'clock'
+---
+
+# Scheduled Tasks
+
+Automate routine server maintenance with scheduled tasks.
+
+<Info>
+  This guide is currently being expanded. Scheduling features are available in the web panel.
+</Info>
+
+## Task Types
+
+Common scheduled tasks:
+
+- **Backups** - Automated backup creation
+- **Restarts** - Scheduled server restarts
+- **Commands** - Execute console commands on a schedule
+- **Maintenance** - Scheduled maintenance windows
+- **Cleanup** - Remove old files or logs
+
+## Creating a Schedule
+
+<Steps>
+  <Step title="Navigate to Schedules">
+    Go to your server settings
+  </Step>
+
+  <Step title="Add New Schedule">
+    Click **Add Schedule**
+  </Step>
+
+  <Step title="Configure Task">
+    Select task type and frequency
+  </Step>
+
+  <Step title="Set Timing">
+    Choose when and how often to run
+  </Step>
+
+  <Step title="Save">
+    Schedule is now active
+  </Step>
+</Steps>
+
+## Frequency Options
+
+- **One-time**: Run once at specified time
+- **Hourly**: Run every hour
+- **Daily**: Run once per day
+- **Weekly**: Run on specified day(s)
+- **Monthly**: Run on specified date(s)
+- **Custom**: Use cron expressions
+
+## Backup Schedules
+
+Recommended backup schedules:
+
+- **Development**: Daily backups
+- **Staging**: Twice daily backups
+- **Production**: Hourly backups during peak hours, daily off-peak
+
+## Server Restart Schedules
+
+Configure automatic restarts:
+
+- **Time**: Choose restart time
+- **Warning**: Optional warning message to players
+- **Grace Period**: Time before restart occurs
+
+## Timezone
+
+Schedules run in server timezone:
+
+- Configure in server settings
+- Affects all scheduled tasks
+- UTC recommended for consistency
+
+## Monitoring Schedules
+
+View schedule execution:
+
+1. Go to **Schedules** tab
+2. View execution history
+3. Check logs for any errors
+4. Adjust schedule as needed
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Backups" icon="database" href="/guides/backups">
+    Automated backups
+  </Card>
+  <Card title="Server Management" icon="server" href="/guides/servers">
+    Server configuration
+  </Card>
+</CardGroup>

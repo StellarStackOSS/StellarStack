@@ -69,6 +69,14 @@ jobs:
 
           echo "Updated install-script.sh to version ${VERSION} at ${TIMESTAMP}"
 
+      - name: Trigger Changelog Sync
+        if: steps.release.outputs.release_created
+        run: |
+          # Trigger the sync-changelog workflow
+          gh workflow run sync-changelog.yml --ref master
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Trigger Docker Build
         if: steps.release.outputs.release_created
         uses: peter-evans/repository-dispatch@v3

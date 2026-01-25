@@ -1,0 +1,318 @@
+---
+title: 'Development'
+description: 'Set up StellarStack for local development'
+icon: 'code'
+---
+
+# Development Setup
+
+Set up your local development environment for contributing to StellarStack.
+
+## Prerequisites
+
+- Node.js 20+ (recommended: 22 LTS)
+- pnpm 10.4.1+
+- PostgreSQL 15+ (or Docker)
+- Docker 24+ (for game server testing)
+- Git
+
+## Initial Setup
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/StellarStackOSS/StellarStack.git
+    cd StellarStack
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    # Install pnpm globally if not already installed
+    npm install -g pnpm@10.4.1
+
+    # Install project dependencies
+    pnpm install
+    ```
+  </Step>
+
+  <Step title="Set Up Environment">
+    ```bash
+    # Copy environment templates
+    cp apps/api/.env.example apps/api/.env.local
+    cp apps/web/.env.example apps/web/.env.local
+
+    # Generate a secret for BETTER_AUTH_SECRET
+    openssl rand -base64 32
+    # Copy the output and add it to apps/api/.env.local
+    ```
+  </Step>
+
+  <Step title="Start PostgreSQL">
+    Using Docker Compose (easiest):
+    ```bash
+    cd docker
+    docker-compose up -d postgres redis
+    ```
+
+    Or using a local PostgreSQL instance:
+    ```bash
+    sudo systemctl start postgresql
+    ```
+  </Step>
+
+  <Step title="Initialize Database">
+    ```bash
+    cd apps/api
+    pnpm db:push      # Create tables
+    pnpm db:generate  # Generate Prisma client
+    pnpm db:seed      # Seed initial data
+    ```
+  </Step>
+
+  <Step title="Start Development Servers">
+    ```bash
+    # From repository root
+    pnpm dev
+    ```
+
+    This will start:
+    - Web panel: http://localhost:3000
+    - API server: http://localhost:3001
+    - Home/landing page: http://localhost:3002
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage
+pnpm test:coverage
+```
+
+### Linting and Formatting
+
+```bash
+# Check for linting errors
+pnpm lint
+
+# Fix linting errors
+pnpm lint:fix
+
+# Format code with Prettier
+pnpm format
+
+# Format code and fix linting
+pnpm format:fix
+
+# Type checking
+pnpm typecheck
+```
+
+### Building
+
+```bash
+# Build all packages
+pnpm build
+
+# Build specific package
+pnpm build --filter @workspace/web
+
+# Build and start production build
+pnpm build
+pnpm start
+```
+
+## Project Structure
+
+```
+StellarStack/
+├── apps/
+│   ├── api/            # Backend API (Hono + Prisma)
+│   ├── web/            # Main panel (Next.js 15)
+│   ├── home/           # Landing page
+│   ├── docs/           # Documentation (Mintlify)
+│   └── daemon/         # Rust daemon (not in monorepo)
+├── packages/
+│   ├── ui/             # Shared UI components
+│   ├── eslint-config/  # ESLint configuration
+│   └── typescript-config/
+├── .github/            # CI/CD workflows
+├── docker/             # Docker Compose setup
+└── docs/               # Root documentation
+```
+
+## Key Development Tools
+
+### Code Editor Setup
+
+For VS Code, recommended extensions:
+- **ESLint** - Error checking
+- **Prettier** - Code formatter
+- **TypeScript Vue Plugin** - TypeScript support
+- **Tailwind CSS IntelliSense** - Tailwind CSS support
+- **Rust-analyzer** - Rust language support
+
+### Git Hooks
+
+The project uses Husky for git hooks:
+
+- **pre-commit**: Runs Prettier on staged files
+- **commit-msg**: Validates commit message format
+
+Hooks are automatically installed. To bypass them (not recommended):
+```bash
+git commit --no-verify
+```
+
+## Common Tasks
+
+### Creating a New Feature
+
+<Steps>
+  <Step title="Create Branch">
+    ```bash
+    git checkout -b feat/add-my-feature
+    ```
+
+    Or with Linear ticket:
+    ```bash
+    git checkout -b feat/STE-123-add-my-feature
+    ```
+  </Step>
+
+  <Step title="Make Changes">
+    Follow code style guidelines and add tests if needed
+  </Step>
+
+  <Step title="Commit Changes">
+    ```bash
+    git commit -m "feat: add my feature"
+    ```
+
+    Or with Linear ticket:
+    ```bash
+    git commit -m "feat: STE-123 add my feature"
+    ```
+  </Step>
+
+  <Step title="Push and Create PR">
+    ```bash
+    git push origin feat/add-my-feature
+    ```
+
+    Create a pull request on GitHub
+  </Step>
+</Steps>
+
+### Running the Daemon Locally
+
+For testing the Rust daemon locally:
+
+```bash
+# Build daemon
+cargo build --release
+
+# Run with configuration
+./target/release/daemon
+
+# Or with custom port
+PORT=8080 ./target/release/daemon
+```
+
+## Debugging
+
+### Web Application
+
+Use React Developer Tools browser extension and Next.js debugging:
+
+```bash
+# Start with debugging
+NODE_OPTIONS='--inspect' pnpm dev
+```
+
+Visit `chrome://inspect` to debug Node processes.
+
+### API Server
+
+Enable debug logs:
+```bash
+DEBUG=* pnpm dev
+```
+
+### Database
+
+Access PostgreSQL directly:
+```bash
+psql postgresql://user:password@localhost:5432/stellarstack
+```
+
+Use Prisma Studio:
+```bash
+cd apps/api
+pnpm db:studio
+```
+
+## Troubleshooting
+
+<Accordion title="Dependencies not installing">
+  Clear cache and reinstall:
+  ```bash
+  pnpm clean
+  rm -rf node_modules
+  pnpm install
+  ```
+</Accordion>
+
+<Accordion title="Database connection errors">
+  Check PostgreSQL is running:
+  ```bash
+  sudo systemctl status postgresql
+  ```
+
+  Or use Docker:
+  ```bash
+  docker-compose up -d postgres
+  ```
+</Accordion>
+
+<Accordion title="Port already in use">
+  Kill process on port:
+  ```bash
+  lsof -ti:3000 | xargs kill -9
+  ```
+
+  Or use different port:
+  ```bash
+  PORT=3010 pnpm dev
+  ```
+</Accordion>
+
+<Accordion title="Node modules version mismatch">
+  Reinstall from lock file:
+  ```bash
+  pnpm install --frozen-lockfile
+  ```
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Contributing Guide" icon="github" href="/contributing">
+    Learn how to contribute
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand the system design
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the API
+  </Card>
+</CardGroup>
