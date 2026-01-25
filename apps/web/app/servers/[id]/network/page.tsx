@@ -233,14 +233,6 @@ const NetworkPage = (): JSX.Element | null => {
                   "text-zinc-400 hover:text-zinc-100"
                 )}
               />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
-                  NETWORK
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Server {server?.shortId || serverId} • Port allocation & subdomains
-                </p>
-              </div>
             </div>
           </div>
 
@@ -261,8 +253,7 @@ const NetworkPage = (): JSX.Element | null => {
                 </span>
               </div>
               <TextureButton
-                variant="minimal"
-                size="sm"
+                variant="primary"
                 onClick={openAddAllocationModal}
                 disabled={!canAddAllocation}
                 title={canAddAllocation ? "Add a new allocation" : "Allocation limit reached"}

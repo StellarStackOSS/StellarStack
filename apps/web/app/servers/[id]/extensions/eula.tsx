@@ -147,10 +147,10 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
         </div>
 
         <DialogFooter className="pt-2">
-          <TextureButton variant="minimal" onClick={handleDecline} disabled={isAccepting}>
+          <TextureButton className="w-full" variant="minimal" onClick={handleDecline} disabled={isAccepting}>
             Decline
           </TextureButton>
-          <TextureButton variant="success" onClick={handleAcceptEula} disabled={isAccepting}>
+          <TextureButton className="w-full" variant="success" onClick={handleAcceptEula} disabled={isAccepting}>
             {isAccepting ? "Accepting..." : "Accept EULA"}
           </TextureButton>
         </DialogFooter>

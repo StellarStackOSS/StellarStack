@@ -16,6 +16,7 @@ import {
   BsClock,
 } from "react-icons/bs";
 import { Label } from "@workspace/ui/components/label";
+import { JSX } from "react";
 
 const nodeBaseClasses =
   "relative flex flex-col rounded-lg border p-4 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20";
@@ -70,7 +71,7 @@ const actionConfig: Record<
 // Schedule Start Node
 export const ScheduleStartNode = ({
   data,
-}: NodeProps<ScheduleStartNodeData>) => {
+}: NodeProps<any>) => {
   return (
     <motion.div
       data-id="start-node"
@@ -113,7 +114,7 @@ export const ScheduleStartNode = ({
 // Schedule Task Node
 export const ScheduleTaskNode = ({
   data,
-}: NodeProps<ScheduleTaskNodeData>) => {
+}: NodeProps<any>) => {
   const config = actionConfig[data.action] || actionConfig.command;
   const truncatedPayload = data.payload
     ? data.payload.length > 30
@@ -140,9 +141,9 @@ export const ScheduleTaskNode = ({
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
-          {config.icon}
+          {config?.icon}
           <Label className="text-sm font-semibold text-zinc-100">
-            {config.label}
+            {config?.label}
           </Label>
         </div>
         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-700/50 border border-zinc-600/50">
@@ -178,7 +179,7 @@ export const ScheduleTaskNode = ({
 // Schedule End Node
 export const ScheduleEndNode = ({
   data,
-}: NodeProps<ScheduleEndNodeData>) => {
+}: NodeProps<any>) => {
   // End node pulses after all tasks: delay = 3 + 3*taskCount
   const pulseDelay = 3 + 3 * data.taskCount;
 

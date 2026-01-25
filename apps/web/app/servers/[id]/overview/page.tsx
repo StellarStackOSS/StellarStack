@@ -157,8 +157,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     powerActionLoading,
   } = useServer();
 
-  console.log(server?.status);
-
   const wsEnabled = !!consoleInfo;
 
   const {

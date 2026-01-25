@@ -10,82 +10,24 @@ interface MediaViewerProps {
   onClose?: () => void;
 }
 
-// TODO: REPLACE THIS WITH SOMETHING BETTER?
-const MediaViewer = ({ fileName, content = "", blobUrl, onClose }: MediaViewerProps) => {
+export const MediaViewer = ({ fileName, content = "", blobUrl, onClose }: MediaViewerProps) => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
   const isVideo = ["mp4", "webm", "mov", "avi"].includes(ext);
   const isAudio = ["mp3", "wav", "ogg", "m4a", "flac"].includes(ext);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && isVideo) {
-      videoRef.current.load();
-    }
-  }, [isVideo]);
-
-  if (!content && !blobUrl) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-4">
-        <p className="text-center text-sm text-zinc-500">No content to display</p>
-      </div>
-    );
-  }
-
-  if (isImage) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-4">
-        <img
-          src={blobUrl || createMediaDataUrl(fileName, content || "")}
-          alt={fileName}
-          className="max-h-full max-w-full object-contain"
-          onError={(e) => {
-            // Handle image load error
-            const target = e.target as HTMLImageElement;
-            target.style.display = "none";
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (isVideo) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-4">
-        <video
-          ref={videoRef}
-          src={blobUrl || createMediaDataUrl(fileName, content || "")}
-          controls
-          className="max-h-full max-w-full object-contain"
-          onError={(e) => {
-            // Handle video load error
-            const target = e.target as HTMLVideoElement;
-            target.style.display = "none";
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (isAudio) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-4">
-        <audio
-          src={blobUrl || createMediaDataUrl(fileName, content || "")}
-          controls
-          className="w-full"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full w-full items-center justify-center p-4">
-      <p className="text-center text-sm text-zinc-500">Unsupported file type</p>
-    </div>
-  );
-};
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === " ") {
+        e.preventDefault();
+        if (videoRef.current) {
+          videoRef.current.paused ? videoRef.current.play() : videoRef.current.pause();
+        } else if (audioRef.current) {
+          audioRef.current.paused ? audioRef.current.play() : audioRef.current.pause();
+        }
       } else if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         if (videoRef.current?.requestFullscreen) {
@@ -155,4 +97,4 @@ const MediaViewer = ({ fileName, content = "", blobUrl, onClose }: MediaViewerPr
       Unsupported media type
     </div>
   );
-}
+};
