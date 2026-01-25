@@ -67,7 +67,7 @@ export const FormModal = ({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto py-2 pr-4">{children}</div>
+        <div className="max-h-[60vh] overflow-y-auto py-2">{children}</div>
         <DialogFooter>
           <TextureButton
             className="w-full"

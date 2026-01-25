@@ -7,7 +7,7 @@ export const { getPublicEnv, PublicEnv } = createPublicEnv({
 /**
  * Get the API URL at runtime
  */
-const getApiUrl = (): string => {
+export const getApiUrl = (): string => {
   const env = getPublicEnv();
   return env.API_URL;
 };
@@ -15,14 +15,14 @@ const getApiUrl = (): string => {
 /**
  * Get the base path for API requests
  */
-const getApiBasePath = (): string => {
+export const getApiBasePath = (): string => {
   return "/api";
 };
 
 /**
  * Get the full API endpoint URL
  */
-const getApiEndpoint = (path: string): string => {
+export const getApiEndpoint = (path: string): string => {
   const baseUrl = getApiUrl();
   const basePath = getApiBasePath();
 

@@ -16,7 +16,7 @@ import { WebhookUrlField } from "./WebhookUrlField";
 import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
 import { toast } from "sonner";
 import { Label } from "@workspace/ui/components/label";
-import { Card } from "@workspace/ui/components";
+import {Card, SidebarTrigger} from "@workspace/ui/components";
 import { EmptyState } from "@/components/EmptyState/EmptyState";
 import { PageHeader } from "@/components/PageHeader/PageHeader";
 
@@ -193,17 +193,19 @@ const WebhooksPage = (): JSX.Element | null => {
       {/* Background is now rendered in the layout for persistence */}
 
       <div className="relative p-8">
-        <div className="mx-auto">
-          <PageHeader
-            title="WEBHOOKS"
-            subtitle={`Server ${serverId} • ${webhookList.length} webhooks`}
-            actions={
-              <TextureButton variant="minimal" onClick={openAddModal}>
-                <BsPlus className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">Add Webhook</span>
-              </TextureButton>
-            }
-          />
+        <div className="mx-auto flex justify-between w-full flex-col">
+          <div className="flex flex-row justify-between items-center pb-4">
+            <SidebarTrigger
+                className={cn(
+                    "transition-all hover:scale-110 active:scale-95",
+                    "text-zinc-400 hover:text-zinc-100"
+                )}
+            />
+            <TextureButton variant="primary" onClick={openAddModal}>
+              <BsPlus className="h-4 w-4" />
+              <span className="text-xs tracking-wider uppercase">Add Webhook</span>
+            </TextureButton>
+          </div>
 
           {/* Loading State */}
           {loading ? (
@@ -217,7 +219,7 @@ const WebhooksPage = (): JSX.Element | null => {
             />
           ) : (
             /* Webhooks List */
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg">
               {webhookList.map((webhook) => (
                 <Card key={webhook.id}>
                   <div className="flex items-start justify-between">

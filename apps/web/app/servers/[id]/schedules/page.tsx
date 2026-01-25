@@ -210,22 +210,14 @@ const SchedulesPage = (): JSX.Element | null => {
   useEffect(() => {
     if (lastMessage?.type === "schedule:executing" && lastMessage.data) {
       const data = lastMessage.data as { schedule_id: string; task_index: number | null };
-      console.log("[Schedule WebSocket] Received schedule:executing event", data);
 
       setSchedules((prev) => {
         const updated = prev.map((schedule) => {
           if (schedule.id === data.schedule_id) {
-            console.log(
-              "[Schedule WebSocket] Updating schedule",
-              schedule.id,
-              "with taskIndex:",
-              data.task_index
-            );
             return { ...schedule, executingTaskIndex: data.task_index ?? null };
           }
           return schedule;
         });
-        console.log("[Schedule WebSocket] Updated schedules:", updated);
         return updated;
       });
     }
@@ -992,7 +984,7 @@ const SchedulesPage = (): JSX.Element | null => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <TextureButton variant="minimal" onClick={openCreateModal}>
+              <TextureButton variant="primary" onClick={openCreateModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Schedule</span>
               </TextureButton>

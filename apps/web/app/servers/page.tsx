@@ -92,7 +92,7 @@ const ServersPage = (): JSX.Element | null => {
           {/* Server List */}
           <div className="flex flex-col gap-4">
             {isLoading ? (
-              <div className="py-12 text-center text-sm text-zinc-500">
+              <div className="py-12 text-center text-sm text-zinc-500 w-full flex items-center justify-center ">
                 <Spinner />
               </div>
             ) : servers.length === 0 ? (

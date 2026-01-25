@@ -9,7 +9,7 @@ export const MEDIA_EXTENSIONS = {
 /**
  * Detect media type from file extension
  */
-const getMediaType = (fileName: string): MediaType => {
+export const getMediaType = (fileName: string): MediaType => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
 
   if (MEDIA_EXTENSIONS.image.includes(ext as any)) return "image";
@@ -22,14 +22,14 @@ const getMediaType = (fileName: string): MediaType => {
 /**
  * Check if a file is a media file
  */
-const isMediaFile = (fileName: string): boolean => {
+export const isMediaFile = (fileName: string): boolean => {
   return getMediaType(fileName) !== "unknown";
 };
 
 /**
  * Get MIME type for a file
  */
-const getMimeType = (fileName: string): string => {
+export const getMimeType = (fileName: string): string => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const mimeMap: Record<string, string> = {
     jpg: "image/jpeg",
@@ -56,7 +56,7 @@ const getMimeType = (fileName: string): string => {
 /**
  * Create a data URL from content with multiple fallbacks
  */
-const createMediaDataUrl = (fileName: string, content: string): string => {
+export const createMediaDataUrl = (fileName: string, content: string): string => {
   const mimeType = getMimeType(fileName);
   try {
     // Try to create a data URL

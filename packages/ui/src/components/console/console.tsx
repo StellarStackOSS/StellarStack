@@ -183,7 +183,7 @@ export const Console = ({
     >
       {/* Header */}
       <div
-        className={cn("flex items-center justify-between border-b px-4 py-2", "border-zinc-200/10")}
+        className={cn("flex items-center justify-end border-b px-4 py-2", "border-zinc-200/10")}
       >
         <div className="flex items-center gap-2">
           {!autoScroll && (
@@ -197,7 +197,7 @@ export const Console = ({
                   });
                 }
               }}
-              className={cn("text-xs transition-colors", "text-zinc-500 hover:text-zinc-300")}
+              className={cn("text-xs cursor-pointer transition-colors", "text-zinc-500 hover:text-zinc-300")}
             >
               Scroll to bottom
             </button>

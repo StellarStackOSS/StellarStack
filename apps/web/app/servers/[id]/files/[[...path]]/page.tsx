@@ -63,7 +63,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
-import { useUploads } from "@/components/Providers/UploadProvider/UploadProvider";
+import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
 import { DataTable, Input } from "@workspace/ui/components";
 import { Label } from "@workspace/ui/components/label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
@@ -224,13 +224,11 @@ const FilesPage = (): JSX.Element | null => {
   const fetchDiskUsage = useCallback(async () => {
     try {
       const usage = await servers.files.diskUsage(serverId);
-      console.log("[Disk Usage] Response:", usage);
 
       // Use the limit from daemon if available, otherwise fall back to server config
       const totalBytes = usage.limit_bytes || (server?.disk ? server.disk * 1024 * 1024 : 0);
       const usedBytes = usage.used_bytes || 0;
 
-      console.log("[Disk Usage] Used:", usedBytes, "Total:", totalBytes);
       setDiskUsage({ used: usedBytes, total: totalBytes });
     } catch (error) {
       console.error("[Disk Usage] Failed to fetch disk usage:", error);
@@ -400,7 +398,7 @@ const FilesPage = (): JSX.Element | null => {
   // Navigation helpers - updates local state to trigger row animations
   const navigateToFolder = (folderName: string) => {
     const newPath = displayPath === "/" ? `/${folderName}` : `${displayPath}/${folderName}`;
-    router.push(`/servers/${serverId}/files${newPath}`, undefined, { shallow: true });
+    router.push(`/servers/${serverId}/files${newPath}`, undefined);
   };
 
   const navigateUp = () => {
@@ -408,7 +406,7 @@ const FilesPage = (): JSX.Element | null => {
     const segments = displayPath.split("/").filter(Boolean);
     segments.pop();
     const parentPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
-    router.push(`/servers/${serverId}/files${parentPath}`, undefined, { shallow: true });
+    router.push(`/servers/${serverId}/files${parentPath}`, undefined);
   };
 
   const getBasePath = () => `/servers/${serverId}/files`;
@@ -729,7 +727,6 @@ const FilesPage = (): JSX.Element | null => {
           const result = await servers.files.upload(serverId, [file], uploadDir);
 
           if (!result.success) {
-            // @ts-expect-error - intentionally throwing to be caught and handled
             throw new Error("Upload failed - server returned success: false");
           }
         } else {

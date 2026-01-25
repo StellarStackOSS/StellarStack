@@ -310,13 +310,10 @@ const UsersPage = (): JSX.Element | null => {
                   "text-zinc-400 hover:text-zinc-100"
                 )}
               />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>USERS</h1>
-              </div>
             </div>
             <div className="flex items-center gap-2">
               {isOwner && (
-                <TextureButton variant="secondary" onClick={openInviteModal}>
+                <TextureButton variant="primary" onClick={openInviteModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Invite User</span>
                 </TextureButton>

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AuthProvider } from "@/hooks/auth-provider/auth-provider";
-import { QueryProvider } from "@/components/Providers/QueryProvider/QueryProvider";
-import { WebSocketProvider } from "@/components/Providers/WebSocketProvider/WebSocketProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider/QueryProvider";
+import { WebSocketProvider } from "@/components/providers/WebSocketProvider/WebSocketProvider";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   return (

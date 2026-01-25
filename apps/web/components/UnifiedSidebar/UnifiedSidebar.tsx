@@ -146,15 +146,16 @@ export const UnifiedSidebar = () => {
   const renderHeader = () => {
     if (variant === "account") {
       return (
-        <Link
-          href="/servers"
-          className={cn(
-            "group relative flex w-full items-center gap-2 border border-zinc-700/50 bg-zinc-900/50 px-3 py-2 text-left text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
-          )}
-        >
-          <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
-          <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
-        </Link>
+          <TextureButton variant="minimal" className="w-full">
+            <Link
+                href="/servers"
+                className="flex flex-row gap-2"
+            >
+              <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
+              <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
+            </Link>
+          </TextureButton>
+
       );
     }
 
@@ -324,7 +325,7 @@ export const UnifiedSidebar = () => {
 
         <div className="relative">
           <TextureButton
-            variant="secondary"
+            variant="ghost"
             className="flex w-full flex-row justify-between text-start"
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
           >
@@ -380,7 +381,7 @@ export const UnifiedSidebar = () => {
                   <div className="p-2">
                     <TextureButton
                       size="sm"
-                      variant="secondary"
+                      variant="primary"
                       onClick={() => {
                         setIsUserMenuOpen(false);
                         handleSignOut();

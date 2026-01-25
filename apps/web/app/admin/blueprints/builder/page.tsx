@@ -1196,13 +1196,6 @@ const BlueprintBuilderPage = () => {
     }
   }, []);
 
-  // Log current blueprint (for debugging)
-  const handleLogBlueprint = useCallback(() => {
-    const blueprint = nodesToBlueprint(nodes, edges);
-    console.log("Current Blueprint:", blueprint);
-    console.log("Pterodactyl Egg:", nodesToPterodactylEgg(nodes, edges));
-  }, [nodes, edges]);
-
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
