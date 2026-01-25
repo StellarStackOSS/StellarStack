@@ -1,0 +1,67 @@
+name: Sync Changelog to Docs
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+jobs:
+  sync-changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Convert Changelog to Mintlify Format
+        run: |
+          # Create changelog directory if it doesn't exist
+          mkdir -p apps/docs/changelog
+
+          # Copy CHANGELOG.md and convert to MDX format
+          cat > apps/docs/changelog/releases.mdx << 'EOF'
+          ---
+          title: 'Changelog'
+          description: 'Release history and version updates for StellarStack'
+          icon: 'clock'
+          ---
+
+          # Changelog
+
+          All notable changes to StellarStack are documented here. We follow [Semantic Versioning](https://semver.org/).
+
+          EOF
+
+          # Append the changelog content (skip the first line "# Changelog" if present)
+          tail -n +2 CHANGELOG.md >> apps/docs/changelog/releases.mdx
+
+      - name: Check if changes exist
+        id: verify
+        run: |
+          if git diff --quiet apps/docs/changelog/releases.mdx; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.verify.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'docs: sync changelog to docs'
+          title: 'docs: Update changelog in documentation'
+          body: |
+            Automated changelog sync from root CHANGELOG.md to docs.
+
+            This PR is auto-generated when CHANGELOG.md is updated by release-please.
+          branch: docs/sync-changelog
+          delete-branch: true
+          labels: documentation

@@ -1,0 +1,201 @@
+---
+title: 'Installation'
+description: 'Install StellarStack on your server'
+icon: 'download'
+---
+
+# Installation
+
+StellarStack can be installed in several ways. Choose the method that best fits your needs.
+
+## Prerequisites
+
+Before installing, ensure you have:
+
+<Check>Node.js 20+ (recommended: 22 LTS)</Check>
+<Check>pnpm 10.4.1+</Check>
+<Check>PostgreSQL 15+</Check>
+<Check>Docker 24+ (for running game servers)</Check>
+<Check>Ubuntu 22.04+ or similar Linux distribution</Check>
+
+## Quick Install (Recommended)
+
+The fastest way to get started is using our one-command installer:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/StellarStackOSS/StellarStack/master/install-script.sh | sudo bash
+```
+
+This script will:
+1. Install all dependencies (Node.js, pnpm, Docker)
+2. Set up PostgreSQL database
+3. Configure environment variables
+4. Build and start all services
+5. Create an admin user account
+
+<Note>
+  The installer supports Ubuntu 22.04+ and Debian 11+. For other distributions, use manual installation.
+</Note>
+
+## Docker Compose Installation
+
+For containerized deployment:
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/StellarStackOSS/StellarStack.git
+    cd StellarStack/docker
+    ```
+  </Step>
+
+  <Step title="Configure Environment">
+    ```bash
+    cp .env.example .env
+    # Edit .env with your configuration
+    ```
+  </Step>
+
+  <Step title="Start Services">
+    ```bash
+    docker-compose up -d
+    ```
+  </Step>
+</Steps>
+
+Services will be available at:
+- **Web Panel**: `http://localhost:3000`
+- **API Server**: `http://localhost:3001`
+- **PostgreSQL**: `localhost:5432`
+- **Redis**: `localhost:6379`
+
+## Manual Installation
+
+For development or custom setups:
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/StellarStackOSS/StellarStack.git
+    cd StellarStack
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    # Install pnpm globally
+    npm install -g pnpm@10.4.1
+
+    # Install project dependencies
+    pnpm install
+    ```
+  </Step>
+
+  <Step title="Configure Environment">
+    ```bash
+    # Copy environment templates
+    cp apps/api/.env.example apps/api/.env
+    cp apps/web/.env.example apps/web/.env
+
+    # Edit configuration files
+    nano apps/api/.env
+    ```
+
+    Required environment variables:
+    - `DATABASE_URL`: PostgreSQL connection string
+    - `BETTER_AUTH_SECRET`: Random secret key (generate with `openssl rand -base64 32`)
+    - `BETTER_AUTH_URL`: Your panel URL (e.g., `http://localhost:3000`)
+  </Step>
+
+  <Step title="Initialize Database">
+    ```bash
+    cd apps/api
+    pnpm db:push      # Create tables
+    pnpm db:generate  # Generate Prisma client
+    pnpm db:seed      # Seed initial data (optional)
+    ```
+  </Step>
+
+  <Step title="Start Services">
+    ```bash
+    # From repo root
+    pnpm dev
+    ```
+
+    This starts:
+    - Web panel on port 3000
+    - API server on port 3001
+    - Home/landing page on port 3002
+  </Step>
+</Steps>
+
+## Post-Installation
+
+After installation, you should:
+
+<Steps>
+  <Step title="Create Admin Account">
+    If using the install script, follow the prompts to create an admin account.
+
+    For manual installation:
+    ```bash
+    cd apps/api
+    pnpm seed:admin
+    ```
+  </Step>
+
+  <Step title="Configure Nodes">
+    Set up daemon nodes where game servers will run. See the Guides section.
+  </Step>
+
+  <Step title="Create Blueprint">
+    Define server templates (blueprints) for different game types.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="Port Already in Use">
+  If ports 3000 or 3001 are already in use, you can change them:
+
+  ```bash
+  # In apps/web
+  pnpm dev -p 3010
+
+  # In apps/api
+  PORT=3011 pnpm dev
+  ```
+</Accordion>
+
+<Accordion title="Database Connection Failed">
+  Verify PostgreSQL is running:
+  ```bash
+  sudo systemctl status postgresql
+  ```
+
+  Check your `DATABASE_URL` format:
+  ```
+  postgresql://username:password@localhost:5432/database_name
+  ```
+</Accordion>
+
+<Accordion title="Build Errors">
+  Clear cache and reinstall:
+  ```bash
+  pnpm clean
+  rm -rf node_modules
+  pnpm install
+  pnpm build
+  ```
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/guides/quickstart">
+    Deploy your first game server
+  </Card>
+  <Card title="Development Setup" icon="code" href="/guides/development">
+    Set up for local development
+  </Card>
+</CardGroup>

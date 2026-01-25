@@ -1,0 +1,96 @@
+---
+title: Introduction
+description: 'Welcome to StellarStack documentation'
+---
+
+# Welcome to StellarStack
+
+StellarStack is a modern, self-hosted game server management panel built with Next.js 15, designed to make managing multiple game servers effortless.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/guides/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/guides/installation">
+    Install StellarStack on your server
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore our REST API
+  </Card>
+  <Card title="Contributing" icon="github" href="/contributing">
+    Help build StellarStack
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion icon="server" title="Multi-Server Management">
+    Manage multiple game servers from a unified dashboard with real-time WebSocket updates
+  </Accordion>
+
+  <Accordion icon="docker" title="Docker-Based Isolation">
+    Each game server runs in its own isolated Docker container for security and resource control
+  </Accordion>
+
+  <Accordion icon="shield" title="Granular Permissions">
+    45+ permission nodes for fine-grained access control across users and servers
+  </Accordion>
+
+  <Accordion icon="database" title="Built-in Backup System">
+    Automated backups with scheduling, compression, and remote storage support
+  </Accordion>
+
+  <Accordion icon="terminal" title="SFTP File Access">
+    Direct file access via SFTP for advanced users and automation
+  </Accordion>
+
+  <Accordion icon="plug" title="WebSocket Real-Time">
+    Live console output, statistics, and server status updates
+  </Accordion>
+</AccordionGroup>
+
+## Tech Stack
+
+StellarStack is built with modern technologies:
+
+- **Frontend**: Next.js 15 with App Router, React 19
+- **Styling**: Tailwind CSS v4 with OKLCH colors
+- **Backend**: Hono API, PostgreSQL with Prisma ORM
+- **Auth**: Better Auth with OAuth, 2FA, and Passkeys
+- **Daemon**: Rust-based daemon using Axum and Bollard (Docker API)
+- **Real-time**: WebSocket connections for live updates
+
+## Getting Started
+
+<Steps>
+  <Step title="Install StellarStack">
+    Use our one-command installer or Docker Compose
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/StellarStackOSS/StellarStack/master/install-script.sh | sudo bash
+    ```
+  </Step>
+
+  <Step title="Create Your First Server">
+    Deploy a game server using our blueprint system
+  </Step>
+
+  <Step title="Configure & Manage">
+    Use the web panel to configure settings, manage files, and monitor performance
+  </Step>
+</Steps>
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://discord.gg/stellarstack">
+    Join our Discord community
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/StellarStackOSS/StellarStack">
+    Contribute on GitHub
+  </Card>
+</CardGroup>
+
+<Note>
+  StellarStack is currently in **alpha** and not recommended for production use. We're actively developing new features and improving stability.
+</Note>

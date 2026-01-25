@@ -3,23 +3,15 @@
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (local)",
+      "name": "Ollama",
       "options": {
-        "baseURL": "http://194.93.49.23:20025/v1"
+        "baseURL": "http://194.93.49.24:20004/v1"
       },
       "models": {
-        "qwen3:8b-32K": {
-          "name": "qwen3:8b-32K"
+        "deepseek-v3.1:671b": {
+          "name": "deepseek-v3.1:671b"
         }
       }
     }
-  },
-  "permission": {
-    "bash": { "*": "allow" },
-    "read": { "*": "allow" },
-    "glob": { "*": "allow" },
-    "list": { "*": "allow" },
-    "edit": { "*": "allow" },
-    "exec": { "*": "allow" }
   }
 }
