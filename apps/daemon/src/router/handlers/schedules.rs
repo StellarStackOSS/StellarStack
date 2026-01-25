@@ -7,42 +7,12 @@ use axum::{
     Extension,
     http::StatusCode,
 };
-use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
-use crate::server::{PowerAction, Server, BackupCompressionLevel, self};
+use crate::server::{PowerAction, Server, BackupCompressionLevel, Schedule, ScheduleTask, self};
 use crate::events::{Event, ProcessState};
 use super::super::AppState;
-
-/// Schedule data from API
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Schedule {
-    pub id: String,
-    pub name: String,
-    #[serde(rename = "cronExpression")]
-    pub cron_expression: String,
-    #[serde(default)]
-    pub enabled: bool,
-    pub tasks: Vec<ScheduleTask>,
-}
-
-/// Task within a schedule
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ScheduleTask {
-    pub id: String,
-    pub action: String,
-    pub payload: Option<String>,
-    #[serde(rename = "timeOffset")]
-    pub time_offset: i32,
-    pub sequence: i32,
-    #[serde(rename = "triggerMode", default = "default_trigger_mode")]
-    pub trigger_mode: String,
-}
-
-fn default_trigger_mode() -> String {
-    "TIME_DELAY".to_string()
-}
 
 /// Sync schedules from API
 pub async fn sync_schedules(
@@ -52,12 +22,33 @@ pub async fn sync_schedules(
 ) -> Result<StatusCode, StatusCode> {
     info!("Syncing {} schedules for server {}", schedules.len(), server.uuid());
 
-    // TODO: Store schedules in server and register with cron scheduler
-    // For now, just log and accept
-    for schedule in schedules {
-        debug!("Schedule: {} - {} ({})", schedule.id, schedule.name, schedule.cron_expression);
+    // Cancel existing cron jobs first
+    let existing_ids: Vec<String> = server.get_all_schedules().iter().map(|s| s.id.clone()).collect();
+    for schedule_id in existing_ids {
+        server.unregister_cron_job(&schedule_id);
     }
 
+    // Store and register each schedule
+    for schedule in schedules {
+        // Validate cron expression
+        if let Err(e) = croner::Cron::new(&schedule.cron_expression).parse() {
+            warn!("Invalid cron expression '{}' in schedule {}: {}", schedule.cron_expression, schedule.id, e);
+            continue;
+        }
+
+        let schedule_id = schedule.id.clone();
+        let enabled = schedule.enabled;
+
+        debug!("Synced schedule: {} - {} ({})", schedule_id, schedule.name, schedule.cron_expression);
+        server.store_schedule(schedule);
+
+        // Register cron job if enabled
+        if enabled {
+            crate::server::Server::register_cron_job_with_server(server.clone(), schedule_id);
+        }
+    }
+
+    info!("Successfully synced {} schedules for server {}", server.get_all_schedules().len(), server.uuid());
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -75,9 +66,18 @@ pub async fn create_schedule(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // TODO: Store schedule and register with cron
-    debug!("Schedule {} created successfully", schedule.id);
+    // Store the schedule in the server
+    let schedule_id = schedule.id.clone();
+    let enabled = schedule.enabled;
+    server.store_schedule(schedule);
 
+    // Register cron job if enabled
+    if enabled {
+        crate::server::Server::register_cron_job_with_server(server.clone(), schedule_id.clone());
+        info!("Registered cron job for schedule {}", schedule_id);
+    }
+
+    info!("Schedule {} created successfully for server {}", schedule_id, server.uuid());
     Ok(StatusCode::CREATED)
 }
 
@@ -95,9 +95,28 @@ pub async fn update_schedule(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // TODO: Update schedule in server
-    debug!("Schedule {} updated successfully", schedule.id);
+    // Check if schedule exists
+    if server.get_schedule(&schedule.id).is_none() {
+        warn!("Schedule {} not found for server {}", schedule.id, server.uuid());
+        return Err(StatusCode::NOT_FOUND);
+    }
 
+    let schedule_id = schedule.id.clone();
+    let enabled = schedule.enabled;
+
+    // First, unregister the existing cron job
+    server.unregister_cron_job(&schedule_id);
+
+    // Update the schedule in the server (replace existing)
+    server.store_schedule(schedule);
+
+    // Re-register cron job if enabled
+    if enabled {
+        crate::server::Server::register_cron_job_with_server(server.clone(), schedule_id.clone());
+        info!("Re-registered cron job for schedule {}", schedule_id);
+    }
+
+    info!("Schedule {} updated successfully for server {}", schedule_id, server.uuid());
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -109,10 +128,20 @@ pub async fn delete_schedule(
 ) -> Result<StatusCode, StatusCode> {
     info!("Deleting schedule {} for server {}", schedule_id, server.uuid());
 
-    // TODO: Remove schedule from server
-    debug!("Schedule {} deleted successfully", schedule_id);
+    // Unregister the cron job
+    server.unregister_cron_job(&schedule_id);
 
-    Ok(StatusCode::NO_CONTENT)
+    // Try to remove the schedule from the server
+    match server.remove_schedule(&schedule_id) {
+        Some(_) => {
+            info!("Schedule {} deleted successfully for server {}", schedule_id, server.uuid());
+            Ok(StatusCode::NO_CONTENT)
+        }
+        None => {
+            warn!("Schedule {} not found for server {}", schedule_id, server.uuid());
+            Err(StatusCode::NOT_FOUND)
+        }
+    }
 }
 
 /// Execute a schedule immediately (manual trigger)
@@ -122,6 +151,31 @@ pub async fn execute_schedule(
     Json(schedule): Json<Schedule>,
 ) -> Result<StatusCode, StatusCode> {
     info!("Manually executing schedule {} for server {}", schedule.name, server.uuid());
+
+    // Execute the schedule's tasks
+    match execute_schedule_tasks(&state, &server, &schedule).await {
+        Ok(_) => {
+            info!("Schedule {} completed successfully", schedule.name);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Err(e) => {
+            warn!("Schedule {} execution failed: {}", schedule.name, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// Execute all tasks in a schedule (used by both manual execution and cron jobs)
+pub async fn execute_schedule_tasks(
+    state: &AppState,
+    server: &Server,
+    schedule: &Schedule,
+) -> Result<(), String> {
+    // Emit event that schedule is starting
+    server.events().publish(Event::ScheduleExecuting {
+        schedule_id: schedule.id.clone(),
+        task_index: None,
+    });
 
     // Execute tasks sequentially based on their trigger mode
     for (index, task) in schedule.tasks.iter().enumerate() {
@@ -140,7 +194,7 @@ pub async fn execute_schedule(
         server.schedule_status().set_executing(&schedule.id, index);
 
         // Notify API about schedule execution status
-        notify_api_schedule_executing(&state, &server.uuid(), &schedule.id, Some(index)).await;
+        notify_api_schedule_executing(state, &server.uuid(), &schedule.id, Some(index)).await;
 
         match task.trigger_mode.as_str() {
             "TIME_DELAY" => {
@@ -155,36 +209,34 @@ pub async fn execute_schedule(
                 }
 
                 // Execute the task
-                if let Err(e) = execute_task(&state, &server, task).await {
+                if let Err(e) = execute_task(state, server, task).await {
                     // Commands failing don't stop the schedule, but other tasks do
                     if task.action == "command" {
                         warn!("Command task failed (will continue): {}", e);
                     } else {
                         warn!("Critical task {} failed: {}", task.action, e);
-                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                        return Err(format!("Task {} failed: {}", task.id, e));
                     }
                 }
             }
             "ON_COMPLETION" => {
                 // Execute task and wait for completion event
-                if let Err(e) = execute_task_and_wait_completion(&state, &server, task).await {
+                if let Err(e) = execute_task_and_wait_completion(state, server, task).await {
                     // Commands failing don't stop the schedule, but other tasks do
                     if task.action == "command" {
                         warn!("Command task failed (will continue): {}", e);
                     } else {
                         warn!("Critical task {} failed or timed out: {}", task.action, e);
-                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                        return Err(format!("Task {} failed: {}", task.id, e));
                     }
                 }
             }
             _ => {
                 warn!("Unknown trigger mode: {}", task.trigger_mode);
-                return Err(StatusCode::BAD_REQUEST);
+                return Err(format!("Unknown trigger mode: {}", task.trigger_mode));
             }
         }
     }
-
-    info!("Schedule {} completed successfully", schedule.name);
 
     // Emit event that schedule is no longer executing
     server.events().publish(Event::ScheduleExecuting {
@@ -196,9 +248,9 @@ pub async fn execute_schedule(
     server.schedule_status().set_finished(&schedule.id, true);
 
     // Notify API that schedule execution is complete
-    notify_api_schedule_executing(&state, &server.uuid(), &schedule.id, None).await;
+    notify_api_schedule_executing(state, &server.uuid(), &schedule.id, None).await;
 
-    Ok(StatusCode::NO_CONTENT)
+    Ok(())
 }
 
 /// Execute a single task
