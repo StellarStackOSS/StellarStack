@@ -1,0 +1,248 @@
+---
+title: 'Contributing'
+description: 'How to contribute to StellarStack'
+icon: 'github'
+---
+
+# Contributing to StellarStack
+
+Thank you for your interest in contributing! This guide will help you get started.
+
+## Development Workflow
+
+<Steps>
+  <Step title="Fork & Clone">
+    ```bash
+    # Fork on GitHub, then clone your fork
+    git clone https://github.com/YOUR_USERNAME/StellarStack.git
+    cd StellarStack
+    ```
+  </Step>
+
+  <Step title="Create Branch">
+    Use Linear ticket IDs when available:
+    ```bash
+    git checkout -b feat/STE-123-add-feature
+    # or without ticket
+    git checkout -b feat/add-feature
+    ```
+
+    **Branch Naming:**
+    - `feat/` - New features
+    - `fix/` - Bug fixes
+    - `docs/` - Documentation
+    - `refactor/` - Code refactoring
+    - `test/` - Adding tests
+  </Step>
+
+  <Step title="Make Changes">
+    Follow our code style and architectural patterns. See [Development Setup](/guides/development).
+  </Step>
+
+  <Step title="Commit">
+    Use Conventional Commits:
+    ```bash
+    git commit -m "feat: STE-123 add webhook retry logic"
+    ```
+
+    **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`
+  </Step>
+
+  <Step title="Submit PR">
+    1. Push to your fork
+    2. Create pull request on GitHub
+    3. Fill in the PR template
+    4. Wait for CI checks and review
+  </Step>
+</Steps>
+
+## Code Quality
+
+Before committing, ensure:
+
+```bash
+pnpm lint        # Check for linting errors
+pnpm typecheck   # Check TypeScript types
+pnpm format      # Format with Prettier
+```
+
+Git hooks will automatically:
+- Run Prettier on staged files (pre-commit)
+- Validate commit message format (commit-msg)
+
+<Warning>
+  **Important**: Do not bypass git hooks with `--no-verify` unless absolutely necessary
+</Warning>
+
+## Code Style Guidelines
+
+### TypeScript
+
+- Use strict mode
+- Prefer `type` over `interface` for simple types
+- Use `interface` for objects that will be extended
+- Always define return types for functions
+
+```typescript
+// Good
+type UserId = string;
+
+interface User {
+  id: UserId;
+  email: string;
+}
+
+function getUser(id: UserId): Promise<User> {
+  // ...
+}
+```
+
+### React Components
+
+- Use functional components with hooks
+- Extract complex logic to custom hooks
+- Use `memo` for expensive components
+
+```tsx
+// Good
+export const ServerCard = memo(({ server }: { server: Server }) => {
+  const { status } = useServerStatus(server.id);
+
+  return (
+    <Card>
+      {/* ... */}
+    </Card>
+  );
+});
+```
+
+### Styling
+
+- Use Tailwind CSS with `cn()` utility
+- Follow shadcn/ui component patterns
+- Use OKLCH color system
+
+```tsx
+import { cn } from "@workspace/ui/lib/utils";
+
+// Good
+<div className={cn(
+  "border border-zinc-200/10",
+  "bg-gradient-to-b from-[#141414]",
+  isActive && "border-zinc-500"
+)}>
+
+// Avoid inline styles
+<div style={{ border: "1px solid #ccc" }}>
+```
+
+## Project Structure
+
+```
+StellarStack/
+├── apps/
+│   ├── api/          # Backend API (Hono + Prisma)
+│   ├── web/          # Main panel (Next.js 15)
+│   ├── home/         # Landing page
+│   ├── docs/         # Documentation (Mintlify)
+│   └── daemon/       # Rust daemon for nodes
+├── packages/
+│   ├── ui/           # Shared UI components
+│   ├── eslint-config/
+│   └── typescript-config/
+├── .github/          # CI/CD workflows
+└── docker/           # Docker Compose setup
+```
+
+### Package Dependencies
+
+- **Monorepo**: Turborepo with pnpm workspaces
+- **Shared UI**: `@workspace/ui` package
+- Use `workspace:*` protocol for workspace dependencies
+
+## Testing
+
+Currently, testing is a work in progress. Please test manually:
+
+1. Development mode: `pnpm dev`
+2. Production build: `pnpm build && pnpm start`
+3. Both light and dark modes (dark is default)
+4. Multiple browsers (Chrome, Firefox, Safari, Edge)
+5. Mobile responsive design
+
+## Pull Request Process
+
+<Steps>
+  <Step title="Create PR">
+    Use our PR template and provide:
+    - Clear description of changes
+    - Screenshots for UI changes
+    - Link to Linear ticket (if applicable)
+  </Step>
+
+  <Step title="CI Checks">
+    Wait for GitHub Actions to pass:
+    - Build checks
+    - Linting
+    - Type checking
+  </Step>
+
+  <Step title="Code Review">
+    Address reviewer feedback
+  </Step>
+
+  <Step title="Merge">
+    Once approved, a maintainer will merge your PR
+  </Step>
+</Steps>
+
+## Commit Message Format
+
+We use Conventional Commits with Linear integration:
+
+```
+<type>: [STE-<number>] <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Examples:**
+
+```bash
+feat: STE-123 add webhook retry with exponential backoff
+fix: STE-456 resolve console disconnect on browser tab switch
+docs: update installation instructions
+refactor: STE-789 extract auth logic to custom hook
+```
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://discord.gg/stellarstack">
+    Ask questions in our Discord
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/StellarStackOSS/StellarStack/issues">
+    Report bugs or request features
+  </Card>
+  <Card title="Discussions" icon="comment" href="https://github.com/StellarStackOSS/StellarStack/discussions">
+    Start a discussion
+  </Card>
+</CardGroup>
+
+## Code of Conduct
+
+We expect all contributors to:
+- Be respectful and inclusive
+- Provide constructive feedback
+- Focus on what's best for the community
+- Show empathy towards others
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.
+
+<Info>
+  For major changes, please open an issue first to discuss what you would like to change.
+</Info>
