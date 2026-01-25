@@ -1,0 +1,138 @@
+---
+title: 'Quickstart'
+description: 'Get started with StellarStack in 5 minutes'
+icon: 'rocket'
+---
+
+# Quickstart Guide
+
+Get your first game server running in 5 minutes.
+
+<Note>
+  This guide assumes you've already installed StellarStack. If not, see [Installation](/guides/installation).
+</Note>
+
+## Step 1: Access the Panel
+
+Open your browser and navigate to your StellarStack installation (default: `http://localhost:3000`)
+
+Log in with your admin credentials created during installation.
+
+## Step 2: Add a Node
+
+Nodes are physical or virtual servers where game servers will run.
+
+<Steps>
+  <Step title="Navigate to Admin Panel">
+    Click **Admin Panel** in the sidebar
+  </Step>
+
+  <Step title="Go to Nodes">
+    Click **Nodes** in the admin navigation
+  </Step>
+
+  <Step title="Create Node">
+    Click **Create Node** button
+
+    Fill in the details:
+    - **Name**: `Local Node` (or your server name)
+    - **Host**: `localhost` (or server IP)
+    - **Daemon Port**: `8080` (default)
+    - **SFTP Port**: `2022` (default)
+  </Step>
+
+  <Step title="Install Daemon">
+    On your node server, install the daemon:
+    ```bash
+    # Download latest daemon
+    wget https://github.com/StellarStackOSS/StellarStack/releases/latest/download/daemon
+    chmod +x daemon
+
+    # Create config
+    ./daemon setup
+
+    # Start daemon
+    ./daemon start
+    ```
+  </Step>
+</Steps>
+
+## Step 3: Create a Blueprint
+
+Blueprints define how game servers are configured.
+
+<Steps>
+  <Step title="Go to Blueprints">
+    In Admin Panel, click **Blueprints**
+  </Step>
+
+  <Step title="Create Blueprint">
+    Click **Create Blueprint**
+
+    Example Minecraft blueprint:
+    - **Name**: `Minecraft Java`
+    - **Docker Image**: `itzg/minecraft-server:latest`
+    - **Default Memory**: `2048` MiB
+    - **Default Disk**: `5120` MiB (5 GB)
+    - **Default CPU**: `100` %
+    - **Startup Command**: `java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server.jar`
+  </Step>
+</Steps>
+
+## Step 4: Deploy Your First Server
+
+<Steps>
+  <Step title="Go to Servers">
+    Click **Servers** in the main navigation
+  </Step>
+
+  <Step title="Create Server">
+    Click **Create Server**
+
+    Fill in:
+    - **Name**: `My Minecraft Server`
+    - **Blueprint**: `Minecraft Java`
+    - **Node**: `Local Node`
+    - **Memory**: `2048` MiB
+    - **Disk**: `5120` MiB
+    - **CPU**: `100` %
+  </Step>
+
+  <Step title="Wait for Installation">
+    The server will be created and Docker will pull the image. This may take a few minutes.
+  </Step>
+
+  <Step title="Start Server">
+    Once installation completes, click the **Start** button
+  </Step>
+</Steps>
+
+## Step 5: Manage Your Server
+
+View the console, manage files, create backups, and configure settings:
+
+- **Console**: View live console output and send commands
+- **Files**: Browse and edit server files
+- **Backups**: Create manual backups or schedule automatic ones
+- **Settings**: Configure resource limits and startup options
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="File Manager" icon="folder" href="/guides/files">
+    Learn about the file manager
+  </Card>
+  <Card title="Backups" icon="database" href="/guides/backups">
+    Set up automated backups
+  </Card>
+  <Card title="API Integration" icon="code" href="/api-reference/introduction">
+    Automate with the API
+  </Card>
+  <Card title="Contributing" icon="github" href="/contributing">
+    Help improve StellarStack
+  </Card>
+</CardGroup>
+
+<Check>
+  **Congratulations!** You've deployed your first game server with StellarStack.
+</Check>

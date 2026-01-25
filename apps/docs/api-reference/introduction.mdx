@@ -1,33 +1,295 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Introduction'
+description: 'Getting started with the StellarStack API'
+icon: 'code'
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+# API Reference
 
-## Welcome
+The StellarStack API is a RESTful API that allows you to programmatically manage your game servers.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+## Base URL
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+```
+https://your-panel.com/api
+```
+
+For local development:
+```
+http://localhost:3001/api
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API requests require authentication using Bearer tokens.
+
+### Getting an API Key
+
+<Steps>
+  <Step title="Navigate to Account Settings">
+    In the web panel, go to **Account Settings** → **API Keys**
+  </Step>
+
+  <Step title="Create API Key">
+    Click **Create API Key** and give it a name
+  </Step>
+
+  <Step title="Copy Token">
+    Copy the generated token immediately (it won't be shown again)
+  </Step>
+</Steps>
+
+### Using the API Key
+
+Include the token in the `Authorization` header:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://your-panel.com/api/servers
+```
+
+```typescript
+// Using fetch
+const response = await fetch('https://your-panel.com/api/servers', {
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  }
+});
+```
+
+## Rate Limiting
+
+API requests are rate limited to prevent abuse:
+
+- **Authenticated**: 100 requests per minute
+- **Unauthenticated**: 20 requests per minute
+
+Rate limit headers included in response:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640000000
+```
+
+## Response Format
+
+All API responses are JSON:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "data": {
+    "id": "srv_123",
+    "name": "My Server",
+    "status": "running"
   }
-]
+}
 ```
+
+## Error Handling
+
+Standard HTTP status codes:
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `201` | Created |
+| `400` | Bad Request |
+| `401` | Unauthorized |
+| `403` | Forbidden |
+| `404` | Not Found |
+| `429` | Too Many Requests |
+| `500` | Server Error |
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "SERVER_NOT_FOUND",
+    "message": "The server was not found",
+    "details": {
+      "serverId": "srv_123"
+    }
+  }
+}
+```
+
+## Pagination
+
+List endpoints support pagination with query parameters:
+
+```bash
+GET /api/servers?page=1&limit=20
+```
+
+Response includes pagination metadata:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "pages": 3
+  }
+}
+```
+
+## Filtering & Sorting
+
+Many endpoints support filtering and sorting:
+
+```bash
+# Filter by status
+GET /api/servers?status=running
+
+# Sort by created date (descending)
+GET /api/servers?sort=-createdAt
+
+# Combine multiple filters
+GET /api/servers?status=running&nodeId=node_1&sort=-createdAt&limit=10
+```
+
+## API Endpoints
+
+### Server Management
+
+- `GET /api/servers` - List servers
+- `POST /api/servers` - Create server
+- `GET /api/servers/:id` - Get server details
+- `PATCH /api/servers/:id` - Update server
+- `DELETE /api/servers/:id` - Delete server
+- `POST /api/servers/:id/start` - Start server
+- `POST /api/servers/:id/stop` - Stop server
+- `POST /api/servers/:id/restart` - Restart server
+
+### File Management
+
+- `GET /api/servers/:id/files` - List files
+- `GET /api/servers/:id/files/:path` - Get file contents
+- `POST /api/servers/:id/files` - Create file
+- `PUT /api/servers/:id/files/:path` - Update file
+- `DELETE /api/servers/:id/files/:path` - Delete file
+
+### Backups
+
+- `GET /api/servers/:id/backups` - List backups
+- `POST /api/servers/:id/backups` - Create backup
+- `GET /api/servers/:id/backups/:backupId` - Get backup details
+- `DELETE /api/servers/:id/backups/:backupId` - Delete backup
+- `POST /api/servers/:id/backups/:backupId/restore` - Restore backup
+
+### Authentication
+
+Authentication endpoint for programmatic access:
+
+```bash
+POST /api/auth/login
+```
+
+Request:
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+Response:
+```json
+{
+  "data": {
+    "token": "auth_token_here",
+    "user": {
+      "id": "usr_123",
+      "email": "user@example.com"
+    }
+  }
+}
+```
+
+## Webhooks
+
+<Note>
+  Webhooks are currently in development. Check back soon for webhook documentation.
+</Note>
+
+## SDKs & Libraries
+
+Official SDKs and libraries are in development.
+
+For now, use the REST API directly or create a simple wrapper for your language.
+
+## Rate Limiting Best Practices
+
+To avoid hitting rate limits:
+
+1. **Batch Requests**: Combine multiple operations when possible
+2. **Cache Results**: Store frequently accessed data locally
+3. **Use Pagination**: Retrieve large datasets in pages
+4. **Implement Backoff**: Use exponential backoff for retries
+
+Example backoff strategy:
+
+```typescript
+async function apiCall(url: string, options = {}) {
+  let retries = 3;
+  let delay = 1000; // 1 second
+
+  while (retries > 0) {
+    const response = await fetch(url, options);
+
+    if (response.status === 429) {
+      // Too many requests
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; // Exponential backoff
+      retries--;
+      continue;
+    }
+
+    return response;
+  }
+}
+```
+
+## Testing the API
+
+Use these tools to test the API:
+
+<CardGroup cols={2}>
+  <Card title="cURL" icon="terminal" href="https://curl.se/">
+    Command-line tool
+  </Card>
+  <Card title="Postman" icon="globe" href="https://www.postman.com/">
+    API testing platform
+  </Card>
+  <Card title="Insomnia" icon="document" href="https://insomnia.rest/">
+    REST client
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Servers" icon="server" href="/api-reference/servers">
+    Server management API
+  </Card>
+  <Card title="Files" icon="folder" href="/api-reference/files">
+    File management API
+  </Card>
+  <Card title="Backups" icon="database" href="/api-reference/backups">
+    Backup API
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://discord.gg/stellarstack">
+    Ask on Discord
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/StellarStackOSS/StellarStack/issues">
+    Report issues
+  </Card>
+</CardGroup>
