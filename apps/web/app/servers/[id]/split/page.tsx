@@ -269,7 +269,7 @@ const SplitPage = (): JSX.Element | null => {
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center", "text-zinc-500")}>
+            <div className={cn("py-12 text-center flex flex-row items-center justify-center", "text-zinc-500")}>
               <Spinner/>
             </div>
           ) : children.length === 0 ? (

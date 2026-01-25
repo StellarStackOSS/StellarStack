@@ -15,6 +15,10 @@ interface MediaPreviewModalProps {
   serverId: string;
   onClose: () => void;
   fetchFile: (serverId: string, path: string) => Promise<string>;
+  fileSize?: string;
+  fileSizeBytes?: number;
+  modified?: string;
+  fileType?: "folder" | "file";
 }
 
 /**
@@ -27,6 +31,10 @@ export function MediaPreviewModal({
   serverId,
   onClose,
   fetchFile,
+  fileSize,
+  fileSizeBytes,
+  modified,
+  fileType,
 }: MediaPreviewModalProps) {
   const [content, setContent] = useState<string>("");
   const [blobUrl, setBlobUrl] = useState<string>("");
@@ -135,7 +143,7 @@ export function MediaPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="min-w-6xl w-full">
         <DialogHeader>
           <DialogTitle className="text-zinc-200 overflow-hidden text-clip max-w-md"></DialogTitle>
         </DialogHeader>
@@ -154,7 +162,15 @@ export function MediaPreviewModal({
               <p className="text-xs text-zinc-500">{error}</p>
             </div>
           ) : isMedia && (content || blobUrl) ? (
-            <MediaViewer fileName={fileName} content={content} blobUrl={blobUrl} />
+            <MediaViewer
+              fileName={fileName}
+              content={content}
+              blobUrl={blobUrl}
+              fileSize={fileSize}
+              fileSizeBytes={fileSizeBytes}
+              modified={modified}
+              fileType={fileType}
+            />
           ) : (
             <p className="text-sm text-zinc-400">Unsupported file type or empty content</p>
           )}

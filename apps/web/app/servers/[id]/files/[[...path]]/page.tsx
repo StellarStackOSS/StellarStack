@@ -1853,6 +1853,10 @@ const FilesPage = (): JSX.Element | null => {
             setMediaPreviewFile(null);
           }}
           fetchFile={(serverId, path) => servers.files.read(serverId, path)}
+          fileSize={mediaPreviewFile.size}
+          fileSizeBytes={mediaPreviewFile.sizeBytes}
+          modified={mediaPreviewFile.modified}
+          fileType={mediaPreviewFile.type}
         />
       )}
     </>
