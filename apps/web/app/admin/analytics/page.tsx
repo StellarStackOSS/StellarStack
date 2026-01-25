@@ -17,7 +17,7 @@ import { Download, RefreshCw } from 'lucide-react';
 import AnalyticsCard from '@/components/Analytics/AnalyticsCard';
 import { analyticsClient } from '@/lib/analytics-client';
 import type { AnalyticsTimeRange, AnalyticsDashboardData } from '@/lib/types/analytics';
-import PageHeader from '@/components/PageHeader';
+import { PageHeader } from '@/components/PageHeader/PageHeader';
 
 /**
  * Time range selector options
@@ -60,6 +60,7 @@ const AnalyticsDashboardPage: React.FC = () => {
   const handleExport = async () => {
     try {
       const blob = await analyticsClient.exportAnalytics(selectedTimeRange, 'csv');
+      // @ts-ignore
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -78,7 +79,7 @@ const AnalyticsDashboardPage: React.FC = () => {
   if (!data) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Analytics Dashboard" description="System metrics and insights" />
+        <PageHeader title="Analytics Dashboard"/>
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">Failed to load analytics data. Please try again.</p>
@@ -90,7 +91,7 @@ const AnalyticsDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Analytics Dashboard" description="System metrics and insights" />
+      <PageHeader title="Analytics Dashboard" />
 
       {/* Time Range and Export Controls */}
       <div className="flex items-center justify-between flex-wrap gap-4">

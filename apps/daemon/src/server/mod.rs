@@ -15,7 +15,7 @@ mod state;
 mod transfer;
 
 pub use backup::{create_backup, create_backup_with_config, restore_backup, delete_backup, list_backups, BackupResult, BackupError, BackupInfo, BackupCompressionLevel};
-pub use configuration::*;
+pub use configuration::{Schedule, ScheduleTask, *};
 pub use crash::CrashHandler;
 pub use install::InstallationProcess;
 pub use manager::Manager;
