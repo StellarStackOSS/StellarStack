@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C D:StellarStack log --oneline --all -20)",
+      "Bash(gh pr list:*)"
+    ]
+  }
+}
