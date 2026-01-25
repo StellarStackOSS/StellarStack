@@ -496,19 +496,19 @@ const LandingPage = (): JSX.Element | null => {
                 </a>
               </motion.div>
             </div>
-            <div className={cn("relative overflow-hidden rounded-lg border-4", "border-zinc-800")}>
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentScreenshot}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1 }}
-                  src={`/screenshot-${currentScreenshot}.png`}
-                  className="aspect w-full"
-                />
-              </AnimatePresence>
-            </div>
+            {/*<div className={cn("relative overflow-hidden rounded-lg border-4", "border-zinc-800")}>*/}
+            {/*  <AnimatePresence mode="wait">*/}
+            {/*    <motion.img*/}
+            {/*      key={currentScreenshot}*/}
+            {/*      initial={{ opacity: 0 }}*/}
+            {/*      animate={{ opacity: 1 }}*/}
+            {/*      exit={{ opacity: 0 }}*/}
+            {/*      transition={{ duration: 1 }}*/}
+            {/*      src={`/screenshot-${currentScreenshot}.png`}*/}
+            {/*      className="aspect w-full"*/}
+            {/*    />*/}
+            {/*  </AnimatePresence>*/}
+            {/*</div>*/}
           </div>
         </div>
       </section>
