@@ -37,6 +37,7 @@
     "dagre": "^0.8.5",
     "elkjs": "^0.11.0",
     "framer-motion": "^12.23.25",
+    "hugeicons-react": "^0.4.0",
     "lucide-react": "^0.68.0",
     "next": "^15.5.9",
     "next-public-env": "^1.1.0",
@@ -47,6 +48,7 @@
     "react-hook-form": "^7.71.0",
     "react-icons": "^5.5.0",
     "react-medium-image-zoom": "^5.4.0",
+    "recharts": "2.15.4",
     "sonner": "^2.0.7",
     "zod": "^4.3.5",
     "zustand": "^5.0.9"

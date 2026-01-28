@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import { Cpu, MapPin, Package, Server as ServerIcon, Settings, Users } from "lucide-react";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Cpu, MapPin, Package, Server, Settings, Users } from "lucide-react";
 import Link from "next/link";
-import type { Blueprint, Location, Node, Server, User } from "@/lib/api";
+import type { Blueprint, Location, Node, User } from "@/lib/api";
+import type { Server as ServerType } from "@/lib/api";
 import { account, blueprints, locations, nodes, servers } from "@/lib/api";
+import { BsCpu, BsGeoAlt, BsServer, BsBox, BsPeople, BsGear, BsPlus } from "react-icons/bs";
 
 interface StatCardProps {
   title: string;
@@ -18,57 +21,59 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon: Icon, href, color = "zinc" }: StatCardProps) => {
   const colorClasses = {
-    zinc: "border-zinc-700/50 text-zinc-400",
-    green: "border-green-700/50 text-green-400",
-    amber: "border-amber-700/50 text-amber-400",
-    blue: "border-blue-700/50 text-blue-400",
+    zinc: "text-zinc-400",
+    green: "text-green-400",
+    amber: "text-amber-400",
+    blue: "text-blue-400",
+    purple: "text-purple-400",
   };
 
   return (
     <Link
       href={href}
       className={cn(
-        "group relative border border-zinc-700/50 bg-zinc-900/50 p-6 transition-all hover:scale-[1.02] hover:border-zinc-500"
+        "group flex items-center justify-between rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 transition-all hover:border-zinc-700 hover:bg-zinc-800/20"
       )}
     >
-      {/* Corner accents */}
-      <div
-        className={cn(
-          "absolute top-0 left-0 h-2 w-2 border-t border-l",
-          colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
-        )}
-      />
-      <div
-        className={cn(
-          "absolute top-0 right-0 h-2 w-2 border-t border-r",
-          colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
-        )}
-      />
-      <div
-        className={cn(
-          "absolute bottom-0 left-0 h-2 w-2 border-b border-l",
-          colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
-        )}
-      />
-      <div
-        className={cn(
-          "absolute right-0 bottom-0 h-2 w-2 border-r border-b",
-          colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
-        )}
-      />
-
-      <div className="flex items-center justify-between">
-        <div>
-          <div className={cn("mb-1 text-xs tracking-wider text-zinc-500 uppercase")}>{title}</div>
-          <div className={cn("text-3xl font-light text-zinc-100")}>{value}</div>
-        </div>
-        <Icon
-          className={cn(
-            "h-8 w-8 opacity-50 transition-opacity group-hover:opacity-100",
-            colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
-          )}
-        />
+      <div>
+        <div className="text-[10px] tracking-wider text-zinc-500 uppercase">{title}</div>
+        <div className="mt-1 text-2xl font-light text-zinc-100">{value}</div>
       </div>
+      <Icon
+        className={cn(
+          "h-8 w-8 opacity-30 transition-opacity group-hover:opacity-60",
+          colorClasses[color as keyof typeof colorClasses] || colorClasses.zinc
+        )}
+      />
+    </Link>
+  );
+};
+
+interface QuickActionProps {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  color?: string;
+}
+
+const QuickAction = ({ title, icon: Icon, href, color = "zinc" }: QuickActionProps) => {
+  const colorClasses = {
+    zinc: "text-zinc-400 hover:text-zinc-300",
+    green: "text-green-400 hover:text-green-300",
+    amber: "text-amber-400 hover:text-amber-300",
+    blue: "text-blue-400 hover:text-blue-300",
+    purple: "text-purple-400 hover:text-purple-300",
+  };
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 transition-all hover:border-zinc-700 hover:bg-zinc-800/20"
+      )}
+    >
+      <Icon className={cn("mb-2 h-6 w-6", colorClasses[color as keyof typeof colorClasses])} />
+      <span className="text-xs tracking-wider text-zinc-400 uppercase">{title}</span>
     </Link>
   );
 };
@@ -92,7 +97,7 @@ export default function AdminOverviewPage() {
           await Promise.all([
             nodes.list().catch(() => [] as Node[]),
             locations.list().catch(() => [] as Location[]),
-            servers.list().catch(() => [] as Server[]),
+            servers.list().catch(() => [] as ServerType[]),
             blueprints.list().catch(() => [] as Blueprint[]),
             account.listUsers().catch(() => [] as User[]),
           ]);
@@ -106,8 +111,8 @@ export default function AdminOverviewPage() {
           blueprints: blueprintsList.length,
           users: usersList.length,
         });
-      } catch (err) {
-        console.error("Failed to fetch stats:", err);
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
       } finally {
         setIsLoading(false);
       }
@@ -117,108 +122,99 @@ export default function AdminOverviewPage() {
   }, []);
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-                ADMIN DASHBOARD
-              </h1>
-              <p className={cn("mt-1 text-sm text-zinc-500")}>System overview and quick stats</p>
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
             </div>
           </FadeIn>
 
           {/* Stats Grid */}
-          <FadeIn delay={0.1}>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              <StatCard
-                title="Nodes"
-                value={isLoading ? "..." : `${stats.nodesOnline}/${stats.nodes}`}
-                icon={Cpu}
-                href="/admin/nodes"
-                color={stats.nodesOnline > 0 ? "green" : "zinc"}
-              />
-              <StatCard
-                title="Locations"
-                value={isLoading ? "..." : stats.locations}
-                icon={MapPin}
-                href="/admin/locations"
-                color="blue"
-              />
-              <StatCard
-                title="Servers"
-                value={isLoading ? "..." : `${stats.serversRunning}/${stats.servers}`}
-                icon={ServerIcon}
-                href="/admin/servers"
-                color={stats.serversRunning > 0 ? "green" : "zinc"}
-              />
-              <StatCard
-                title="Blueprints"
-                value={isLoading ? "..." : stats.blueprints}
-                icon={Package}
-                href="/admin/blueprints"
-                color="amber"
-              />
-              <StatCard
-                title="Users"
-                value={isLoading ? "..." : stats.users}
-                icon={Users}
-                href="/admin/users"
-              />
-              <StatCard title="Settings" value="Configure" icon={Settings} href="/admin/settings" />
+          <FadeIn delay={0.05}>
+            <div className="mb-4 flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Overview</div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <StatCard
+                    title="Nodes"
+                    value={isLoading ? "..." : `${stats.nodesOnline}/${stats.nodes}`}
+                    icon={BsCpu}
+                    href="/admin/nodes"
+                    color={stats.nodesOnline > 0 ? "green" : "zinc"}
+                  />
+                  <StatCard
+                    title="Locations"
+                    value={isLoading ? "..." : stats.locations}
+                    icon={BsGeoAlt}
+                    href="/admin/locations"
+                    color="blue"
+                  />
+                  <StatCard
+                    title="Servers"
+                    value={isLoading ? "..." : `${stats.serversRunning}/${stats.servers}`}
+                    icon={BsServer}
+                    href="/admin/servers"
+                    color={stats.serversRunning > 0 ? "green" : "zinc"}
+                  />
+                  <StatCard
+                    title="Blueprints"
+                    value={isLoading ? "..." : stats.blueprints}
+                    icon={BsBox}
+                    href="/admin/blueprints"
+                    color="amber"
+                  />
+                  <StatCard
+                    title="Users"
+                    value={isLoading ? "..." : stats.users}
+                    icon={BsPeople}
+                    href="/admin/users"
+                    color="purple"
+                  />
+                  <StatCard
+                    title="Settings"
+                    value="Configure"
+                    icon={BsGear}
+                    href="/admin/settings"
+                  />
+                </div>
+              </div>
             </div>
           </FadeIn>
 
           {/* Quick Actions */}
-          <FadeIn delay={0.2}>
-            <div className="mt-8">
-              <h2 className={cn("mb-4 text-sm font-medium tracking-wider text-zinc-400 uppercase")}>
-                Quick Actions
-              </h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Link
-                  href="/admin/nodes"
-                  className={cn(
-                    "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-green-500/50"
-                  )}
-                >
-                  <Cpu className={cn("mx-auto mb-2 h-6 w-6 text-green-400")} />
-                  <span className="text-xs tracking-wider uppercase">Add Node</span>
-                </Link>
-                <Link
-                  href="/admin/locations"
-                  className={cn(
-                    "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-blue-500/50"
-                  )}
-                >
-                  <MapPin className={cn("mx-auto mb-2 h-6 w-6 text-blue-400")} />
-                  <span className="text-xs tracking-wider uppercase">Add Location</span>
-                </Link>
-                <Link
-                  href="/admin/blueprints"
-                  className={cn(
-                    "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-amber-500/50"
-                  )}
-                >
-                  <Package className={cn("mx-auto mb-2 h-6 w-6 text-amber-400")} />
-                  <span className="text-xs tracking-wider uppercase">Add Blueprint</span>
-                </Link>
-                <Link
-                  href="/admin/servers"
-                  className={cn(
-                    "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-purple-500/50"
-                  )}
-                >
-                  <ServerIcon className={cn("mx-auto mb-2 h-6 w-6 text-purple-400")} />
-                  <span className="text-xs tracking-wider uppercase">Create Server</span>
-                </Link>
+          <FadeIn delay={0.1}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Quick Actions</div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <QuickAction title="Add Node" icon={BsCpu} href="/admin/nodes" color="green" />
+                  <QuickAction
+                    title="Add Location"
+                    icon={BsGeoAlt}
+                    href="/admin/locations"
+                    color="blue"
+                  />
+                  <QuickAction
+                    title="Add Blueprint"
+                    icon={BsBox}
+                    href="/admin/blueprints"
+                    color="amber"
+                  />
+                  <QuickAction
+                    title="Create Server"
+                    icon={BsServer}
+                    href="/admin/servers/new"
+                    color="purple"
+                  />
+                </div>
               </div>
             </div>
           </FadeIn>
         </div>
       </div>
-    </div>
+    </FadeIn>
   );
 }

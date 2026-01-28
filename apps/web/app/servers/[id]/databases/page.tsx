@@ -8,8 +8,11 @@ import { Input } from "@workspace/ui/components/input";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { Spinner } from "@workspace/ui/components/spinner";
 import {
   BsClipboard,
+  BsDatabase,
   BsExclamationTriangle,
   BsEye,
   BsEyeSlash,
@@ -142,132 +145,165 @@ const DatabasesPage = (): JSX.Element | null => {
   const isNameValid = formName.trim().length >= 3;
 
   return (
-    <div className="relative min-h-full transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={openCreateModal}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  New Database
+                </TextureButton>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TextureButton variant="primary" onClick={openCreateModal}>
-                <BsPlus className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">New Database</span>
-              </TextureButton>
-            </div>
-          </div>
+          </FadeIn>
 
           {/* Development Notice */}
-          <div
-            className={cn(
-              "mb-6 flex items-center gap-3 border p-4",
-              "border-amber-700/30 bg-amber-950/20 text-amber-200/80"
-            )}
-          >
-            <BsExclamationTriangle className="h-5 w-5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">Under Development</p>
-              <p className={cn("mt-0.5 text-xs", "text-amber-200/60")}>
-                Database management is not yet connected to the API. The data shown below is for
-                demonstration purposes only.
-              </p>
-            </div>
-          </div>
-
-          {/* Database List */}
-          <div className="space-y-4">
-            {databases.map((db) => (
-              <div
-                key={db.id}
-                className={cn(
-                  "relative border p-6 transition-all",
-                  "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                )}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-4 flex items-center gap-3">
-                      <h3
-                        className={cn(
-                          "text-sm font-medium tracking-wider uppercase",
-                          "text-zinc-100"
-                        )}
-                      >
-                        {db.name}
-                      </h3>
-                      <span
-                        className={cn(
-                          "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                          "border-green-500/50 text-green-400"
-                        )}
-                      >
-                        {db.connections}/{db.maxConnections} connections
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Host</Label>
-                        <div className={cn("mt-1 font-mono text-sm", "text-zinc-300")}>
-                          {db.host}:{db.port}
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Size</Label>
-                        <div className={cn("mt-1 text-sm", "text-zinc-300")}>{db.size}</div>
-                      </div>
-                      <div>
-                        <Label>Username</Label>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className={cn("font-mono text-sm", "text-zinc-300")}>
-                            {db.username}
-                          </span>
-                          <TextureButton
-                            variant="minimal"
-                            onClick={() => copyToClipboard(db.username)}
-                          >
-                            <BsClipboard className="h-3 w-3" />
-                          </TextureButton>
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Password</Label>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className={cn("font-mono text-sm", "text-zinc-300")}>
-                            {visiblePasswords.includes(db.id) ? db.password : "••••••••"}
-                          </span>
-                          <TextureButton variant="minimal" onClick={() => togglePassword(db.id)}>
-                            {visiblePasswords.includes(db.id) ? (
-                              <BsEyeSlash className="h-3 w-3" />
-                            ) : (
-                              <BsEye className="h-3 w-3" />
-                            )}
-                          </TextureButton>
-                          <TextureButton
-                            variant="minimal"
-                            onClick={() => copyToClipboard(db.password)}
-                          >
-                            <BsClipboard className="h-3 w-3" />
-                          </TextureButton>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <TextureButton variant="secondary" size="sm" onClick={() => openDeleteModal(db)}>
-                    <BsTrash className="h-4 w-4" />
-                  </TextureButton>
-                </div>
+          <FadeIn delay={0.05}>
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-700/30 bg-amber-950/20 p-4 text-amber-200/80">
+              <BsExclamationTriangle className="h-5 w-5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Under Development</p>
+                <p className="mt-0.5 text-xs text-amber-200/60">
+                  Database management is not yet connected to the API. The data shown below is for
+                  demonstration purposes only.
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          </FadeIn>
+
+          {/* Databases Card */}
+          <FadeIn delay={0.1}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsDatabase className="h-3 w-3" />
+                  Databases
+                </div>
+                <span className="text-xs text-zinc-500">
+                  {databases.length} database{databases.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {databases.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsDatabase className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Databases</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      Create your first database to get started.
+                    </p>
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={openCreateModal}
+                    >
+                      <BsPlus className="h-4 w-4" />
+                      New Database
+                    </TextureButton>
+                  </div>
+                ) : (
+                  databases.map((db, index) => (
+                    <div
+                      key={db.id}
+                      className={cn(
+                        "p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== databases.length - 1 && "border-b border-zinc-800/50"
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="mb-3 flex items-center gap-3">
+                            <span className="text-sm font-medium text-zinc-100">{db.name}</span>
+                            <span className="rounded border border-green-500/50 px-2 py-0.5 text-[10px] font-medium text-green-400 uppercase">
+                              {db.connections}/{db.maxConnections} connections
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                            <div>
+                              <Label className="text-[10px] text-zinc-500 uppercase">Host</Label>
+                              <div className="mt-1 font-mono text-sm text-zinc-300">
+                                {db.host}:{db.port}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-zinc-500 uppercase">Size</Label>
+                              <div className="mt-1 text-sm text-zinc-300">{db.size}</div>
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-zinc-500 uppercase">
+                                Username
+                              </Label>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="font-mono text-sm text-zinc-300">
+                                  {db.username}
+                                </span>
+                                <TextureButton
+                                  variant="minimal"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => copyToClipboard(db.username)}
+                                >
+                                  <BsClipboard className="h-3 w-3" />
+                                </TextureButton>
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-zinc-500 uppercase">
+                                Password
+                              </Label>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="font-mono text-sm text-zinc-300">
+                                  {visiblePasswords.includes(db.id) ? db.password : "••••••••"}
+                                </span>
+                                <TextureButton
+                                  variant="minimal"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => togglePassword(db.id)}
+                                >
+                                  {visiblePasswords.includes(db.id) ? (
+                                    <BsEyeSlash className="h-3 w-3" />
+                                  ) : (
+                                    <BsEye className="h-3 w-3" />
+                                  )}
+                                </TextureButton>
+                                <TextureButton
+                                  variant="minimal"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => copyToClipboard(db.password)}
+                                >
+                                  <BsClipboard className="h-3 w-3" />
+                                </TextureButton>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <TextureButton
+                          variant="secondary"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => openDeleteModal(db)}
+                        >
+                          <BsTrash className="h-4 w-4" />
+                        </TextureButton>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -311,7 +347,7 @@ const DatabasesPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
       />
-    </div>
+    </FadeIn>
   );
 };
 

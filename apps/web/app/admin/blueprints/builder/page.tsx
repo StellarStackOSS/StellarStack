@@ -1,24 +1,25 @@
 "use client";
 import "@xyflow/react/dist/style.css";
 import {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  Background,
+  Connection,
+  ConnectionLineType,
+  Controls,
+  Edge,
+  EdgeProps,
+  getBezierPath,
+  Handle,
+  MiniMap,
+  Node,
+  Panel,
+  Position,
   ReactFlow,
   useNodeId,
   useReactFlow,
-  Handle,
-  Position,
-  getBezierPath,
-  Background,
-  MiniMap,
-  Panel,
-  Controls,
-  applyNodeChanges,
-  applyEdgeChanges,
-  addEdge,
-  ConnectionLineType,
-  type Node,
-  type Edge,
-  type EdgeProps,
-  type Connection,
+  useNodes,
 } from "@xyflow/react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -32,9 +33,9 @@ import {
 } from "@workspace/ui/components";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Download, Layout, Upload, X } from "lucide-react";
+import { Download, Layout, Upload, X, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
-import type { Blueprint, PterodactylEgg } from "@/lib/api.types";
+import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/api.types";
 
 // ============================================================================
 // Types
@@ -258,8 +259,8 @@ const useAutoLayout = () => {
       setTimeout(() => {
         fitView({ padding: 0.15, maxZoom: 1 });
       }, 0);
-    } catch (err) {
-      console.error("Layout failed:", err);
+    } catch (error) {
+      console.error("Layout failed:", error);
       setNodes(nodes.map((n) => ({ ...n, hidden: false })));
     }
 
@@ -1249,6 +1250,15 @@ const BlueprintBuilderPage = () => {
               <Button onClick={handleExport} variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
                 Export
+              </Button>
+              <Button
+                onClick={() => console.log(nodesToPterodactylEgg(nodes, edges))}
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                title="Log Blueprint JSON"
+              >
+                <FileCode className="h-4 w-4" />
               </Button>
               <input
                 ref={fileInputRef}

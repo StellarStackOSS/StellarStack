@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sidebar,
@@ -16,27 +16,61 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@workspace/ui/components/command";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import {
   Bell,
+  ChevronDown,
   ChevronUp,
   Cpu,
   LayoutDashboard,
-  LogOut,
   MapPin,
   Package,
+  Plus,
   Server,
   Settings,
   Shield,
   User,
   Users,
 } from "lucide-react";
+import {
+  GridIcon,
+  Folder01Icon,
+  FolderCloudIcon,
+  Calendar01Icon,
+  UserMultiple02Icon,
+  DatabaseIcon,
+  Wifi01Icon,
+  Notification02Icon,
+  ArrowMoveDownRightIcon,
+  ListViewIcon,
+  PowerServiceIcon,
+  Settings01Icon,
+  ArrowLeft01Icon,
+  Logout01Icon,
+  Search01Icon,
+} from "hugeicons-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "hooks/auth-provider";
 import { TextureButton } from "@workspace/ui/components/texture-button";
-import { BsArrowLeft } from "react-icons/bs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { WaveText } from "@/components/WaveText/WaveText";
+import { useServers } from "@/hooks/queries";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -56,26 +90,26 @@ const adminNavItems = [
 ];
 
 const appNavItems = [
-  { title: "Overview", icon: <img alt="icon" src="/icons/24-grid-2.svg" />, href: "/overview" },
-  { title: "Files", icon: <img alt="icon" src="/icons/24-folder.svg" />, href: "/files" },
-  { title: "Backups", icon: <img alt="icon" src="/icons/24-folders.svg" />, href: "/backups" },
-  { title: "Schedules", icon: <img alt="icon" src="/icons/24-calendar.svg" />, href: "/schedules" },
-  { title: "Users", icon: <img alt="icon" src="/icons/24-users.svg" />, href: "/users" },
-  { title: "Databases", icon: <img alt="icon" src="/icons/24-storage.svg" />, href: "/databases" },
-  { title: "Network", icon: <img alt="icon" src="/icons/24-connect.svg" />, href: "/network" },
-  { title: "Webhooks", icon: <img alt="icon" src="/icons/24-bell.svg" />, href: "/webhooks" },
-  { title: "Split", icon: <img alt="icon" src="/icons/24-move-down-right.svg" />, href: "/split" },
+  { title: "Overview", icon: GridIcon, href: "/overview" },
+  { title: "Files", icon: Folder01Icon, href: "/files" },
+  { title: "Backups", icon: FolderCloudIcon, href: "/backups" },
+  { title: "Schedules", icon: Calendar01Icon, href: "/schedules" },
+  { title: "Users", icon: UserMultiple02Icon, href: "/users" },
+  { title: "Databases", icon: DatabaseIcon, href: "/databases" },
+  { title: "Network", icon: Wifi01Icon, href: "/network" },
+  { title: "Webhooks", icon: Notification02Icon, href: "/webhooks" },
+  { title: "Split", icon: ArrowMoveDownRightIcon, href: "/split" },
   {
     title: "Activity",
-    icon: <img alt="icon" src="/icons/24-bullet-list.svg" />,
+    icon: ListViewIcon,
     href: "/activity",
   },
   {
     title: "Startup",
-    icon: <img alt="icon" src="/icons/24-circle-power-off.svg" />,
+    icon: PowerServiceIcon,
     href: "/startup",
   },
-  { title: "Settings", icon: <img alt="icon" src="/icons/24-gear.svg" />, href: "/settings" },
+  { title: "Settings", icon: Settings01Icon, href: "/settings" },
 ];
 
 export const renderVersion = () => {
@@ -114,12 +148,103 @@ const ServerStatsContent = () => {
   );
 };
 
+// Nav item component with hover highlight animation
+interface NavItemProps {
+  item: { title: string; icon: React.ComponentType<{ className: string }>; href: string };
+  fullHref: string;
+  isActive: boolean;
+  variant: SidebarVariant;
+  isHighlighted: boolean;
+  onHover: (title: string | null) => void;
+}
+
+const NavItem = ({ item, fullHref, isActive, variant, isHighlighted, onHover }: NavItemProps) => {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem
+      className={variant === "app" ? "relative" : ""}
+      onMouseEnter={() => onHover(item.title)}
+      onMouseLeave={() => onHover(null)}
+    >
+      {/* Active item highlight - animates when navigating */}
+      {variant === "app" && isActive && (
+        <motion.div
+          layoutId="sidebar-active-item"
+          className="absolute inset-0 rounded-md bg-zinc-800/80"
+          transition={{
+            type: "spring",
+            stiffness: 380,
+            damping: 30,
+          }}
+        />
+      )}
+      {/* Hover highlight - fades in/out, only shows when not active */}
+      <AnimatePresence>
+        {variant === "app" && isHighlighted && !isActive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 rounded-md bg-zinc-800/60"
+          />
+        )}
+      </AnimatePresence>
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={item.title}
+        className={cn(
+          "text-xs transition-colors",
+          variant === "app"
+            ? "relative z-10 text-zinc-400 hover:bg-transparent hover:text-zinc-100 data-[active=true]:text-zinc-100"
+            : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
+        )}
+      >
+        <Link href={fullHref}>
+          <Icon className="h-4 w-4" />
+          <span
+            className={cn(
+              variant === "app" ? "ml-2 tracking-wider uppercase" : "uppercase",
+              isActive ? "opacity-100" : "opacity-50 hover:opacity-100"
+            )}
+          >
+            {item.title}
+          </span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+};
+
 export const UnifiedSidebar = () => {
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const serverId = (params.id as string) || "";
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [commandOpen, setCommandOpen] = useState(false);
   const { user: authUser, signOut, isAdmin } = useAuth();
+
+  // Command+K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const runCommand = useCallback((command: () => void) => {
+    setCommandOpen(false);
+    command();
+  }, []);
 
   const variant: SidebarVariant = pathname.startsWith("/account")
     ? "account"
@@ -146,16 +271,12 @@ export const UnifiedSidebar = () => {
   const renderHeader = () => {
     if (variant === "account") {
       return (
-          <TextureButton variant="minimal" className="w-full">
-            <Link
-                href="/servers"
-                className="flex flex-row gap-2"
-            >
-              <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
-              <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
-            </Link>
-          </TextureButton>
-
+        <TextureButton variant="minimal" className="w-full">
+          <Link href="/servers" className="flex flex-row gap-2">
+            <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
+            <span className="text-xs font-medium tracking-wider uppercase">My Servers</span>
+          </Link>
+        </TextureButton>
       );
     }
 
@@ -164,7 +285,7 @@ export const UnifiedSidebar = () => {
         <>
           <TextureButton variant="minimal" className="w-full">
             <Link href="/servers" className="flex flex-row gap-2">
-              <BsArrowLeft className="h-4 w-4" />
+              <ArrowLeft01Icon className="h-4 w-4" />
               <span className="text-xs font-medium tracking-wider uppercase">Back to Panel</span>
             </Link>
           </TextureButton>
@@ -176,22 +297,7 @@ export const UnifiedSidebar = () => {
       );
     }
 
-    return (
-      <>
-        <TextureButton variant="minimal" className="w-full">
-          <Link href="/servers" className="flex flex-row gap-2">
-            <BsArrowLeft className="h-4 w-4" />
-            <span className="text-xs font-medium tracking-wider uppercase">All Servers</span>
-          </Link>
-        </TextureButton>
-        <div className={cn("mt-3 flex items-center gap-2 px-3 py-2 text-zinc-300")}>
-          <Server className={cn("h-4 w-4 shrink-0 text-zinc-500")} />
-          <span className="truncate text-xs font-medium tracking-wider uppercase">
-            Server {serverId}
-          </span>
-        </div>
-      </>
-    );
+    return null;
   };
 
   const renderNavItems = () => {
@@ -231,49 +337,19 @@ export const UnifiedSidebar = () => {
                     (fullHref !== "/admin" && pathname.startsWith(fullHref))
                   : pathname === fullHref || pathname.startsWith(fullHref + "/");
 
+              // Show highlight only on hovered item
+              const isHighlighted = hoveredItem === item.title;
+
               return (
-                <SidebarMenuItem key={item.title} className={variant === "app" ? "relative" : ""}>
-                  {variant === "app" && isActive && (
-                    <motion.div
-                      layoutId="sidebar-active-item"
-                      className="absolute inset-0 rounded-md bg-zinc-800/80"
-                      transition={{
-                        type: "spring",
-                        stiffness: 380,
-                        damping: 30,
-                      }}
-                    />
-                  )}
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    className={cn(
-                      "text-xs transition-colors",
-                      variant === "app"
-                        ? "relative z-10 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:text-zinc-100"
-                        : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 data-[active=true]:bg-zinc-800/80 data-[active=true]:text-zinc-100"
-                    )}
-                  >
-                    <Link href={fullHref}>
-                      {variant === "app" ? (
-                        <span className="w-5">{item.icon as any}</span>
-                      ) : (
-                        (() => {
-                          const Icon = item.icon as React.ComponentType<{ className: string }>;
-                          return <Icon className="h-4 w-4" />;
-                        })()
-                      )}
-                      <span
-                        className={cn(
-                          variant === "app" ? "ml-2 tracking-wider uppercase" : "uppercase",
-                          isActive ? "opacity-100" : "opacity-50 hover:opacity-100"
-                        )}
-                      >
-                        {item.title}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <NavItem
+                  key={item.title}
+                  item={item}
+                  fullHref={fullHref}
+                  isActive={isActive}
+                  variant={variant}
+                  isHighlighted={isHighlighted}
+                  onHover={setHoveredItem}
+                />
               );
             })}
           </SidebarMenu>
@@ -308,41 +384,133 @@ export const UnifiedSidebar = () => {
 
   const userMenuItems = renderUserMenuItems();
 
+  // Fetch all servers for the dropdown
+  const { data: serversList = [] } = useServers();
+  const { server: currentServer } = variant === "app" ? useServer() : { server: null };
+
   return (
-    <Sidebar
-      className={cn(
-        "border-r border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20"
+    <Sidebar className={cn("")}>
+      {/* Logo / Server Switcher Area */}
+      {variant === "app" ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center justify-between gap-2 border-b border-zinc-200/10 px-4 py-4 text-left transition-colors outline-none hover:bg-zinc-800/50 focus:outline-none focus-visible:outline-none">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <img src="/logo_small_white.png" alt="logo" className="h-5 w-5 min-w-5" />
+                <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
+                  <span className="truncate text-sm font-medium text-zinc-200">
+                    {currentServer?.name || "Select Server"}
+                  </span>
+                  <span className="truncate text-[10px] text-zinc-500">
+                    {currentServer?.status || ""}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-500 group-data-[collapsible=icon]:hidden" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            side="bottom"
+            sideOffset={0}
+            style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
+            className="border-zinc-700/50 bg-[#0f0f0f] shadow-xl shadow-black/50"
+          >
+            <DropdownMenuLabel className="px-3 py-2 text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+              Switch Server
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-zinc-800/50" />
+            <div className="max-h-64 overflow-y-auto py-1">
+              {serversList.map((s) => (
+                <DropdownMenuItem
+                  key={s.id}
+                  onClick={() => router.push(`/servers/${s.id}/overview`)}
+                  className={cn(
+                    "mx-1 cursor-pointer rounded-md px-2 py-2 text-sm text-zinc-300 outline-none focus:bg-zinc-800 focus:text-zinc-100 focus:outline-none",
+                    s.id === serverId && "bg-zinc-800/80 text-zinc-100"
+                  )}
+                >
+                  <Server className="mr-2 h-4 w-4 shrink-0 text-zinc-500" />
+                  <span className="truncate">{s.name}</span>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            <DropdownMenuSeparator className="bg-zinc-800/50" />
+            <DropdownMenuItem
+              onClick={() => router.push("/servers")}
+              className="mx-1 mb-1 cursor-pointer rounded-md px-2 py-2 text-sm text-zinc-400 outline-none focus:bg-zinc-800 focus:text-zinc-100 focus:outline-none"
+            >
+              <Plus className="mr-2 h-4 w-4 shrink-0" />
+              <span>All Servers</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <>
+          <div className="flex w-full flex-row items-center gap-2 px-4 py-4">
+            <div className="text-md flex flex-row items-center gap-2 text-zinc-200">
+              <img src="/logo_small_white.png" alt="logo" className="h-5 w-5 min-w-5" />
+              <span className="group-data-[collapsible=icon]:hidden">StellarStack</span>
+            </div>
+          </div>
+          <SidebarHeader className={cn("border-b border-zinc-200/10 p-4")}>
+            {renderHeader()}
+          </SidebarHeader>
+        </>
       )}
-    >
-      <SidebarHeader className={cn("border-b border-zinc-200/10 p-4")}>
-        {renderHeader()}
-      </SidebarHeader>
 
-      <SidebarContent className="px-2">{renderNavItems()}</SidebarContent>
+      {variant === "app" && (
+        <div className="w-full px-4 py-3 group-data-[collapsible=icon]:hidden">
+          <button
+            onClick={() => setCommandOpen(true)}
+            className={cn(
+              "flex h-9 w-full items-center justify-between rounded-md border border-zinc-700 bg-zinc-900 px-3 text-xs text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-400"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <Search01Icon className="h-4 w-4" />
+              <span>Search...</span>
+            </div>
+            <kbd className="pointer-events-none flex h-5 items-center gap-0.5 rounded border border-zinc-700 bg-zinc-800 px-1.5 font-mono text-[10px] font-medium text-zinc-400 select-none">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </button>
+        </div>
+      )}
 
-      <SidebarFooter className={cn("border-t border-zinc-200/10 p-4")}>
-        {variant === "app" && <ServerStatsContent />}
+      <SidebarContent>{renderNavItems()}</SidebarContent>
+
+      <SidebarFooter
+        className={cn(
+          "border-t border-zinc-200/10 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2"
+        )}
+      >
+        {variant === "app" && (
+          <div className="group-data-[collapsible=icon]:hidden">
+            <ServerStatsContent />
+          </div>
+        )}
 
         <div className="relative">
           <TextureButton
             variant="ghost"
-            className="flex w-full flex-row justify-between text-start"
+            className="flex w-full flex-row justify-between p-0 text-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center"
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
           >
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 uppercase"
+                "flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-xs font-medium text-zinc-300 uppercase"
               )}
             >
               {user.initials}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="flex-1 group-data-[collapsible=icon]:hidden">
               <div className={cn("truncate text-xs font-medium text-zinc-200")}>{user.name}</div>
               <div className={cn("truncate text-[10px] text-zinc-500")}>{user.email}</div>
             </div>
             <ChevronUp
               className={cn(
-                "h-4 w-4 shrink-0 text-zinc-500 transition-transform",
+                "h-4 w-4 shrink-0 text-zinc-500 transition-transform group-data-[collapsible=icon]:hidden",
                 isUserMenuOpen && "rotate-180"
               )}
             />
@@ -387,7 +555,7 @@ export const UnifiedSidebar = () => {
                         handleSignOut();
                       }}
                     >
-                      <LogOut className="h-4 w-4" />
+                      <Logout01Icon className="h-4 w-4" />
                       <span className="tracking-wider uppercase">Sign Out</span>
                     </TextureButton>
                   </div>
@@ -397,10 +565,86 @@ export const UnifiedSidebar = () => {
           </AnimatePresence>
         </div>
 
-        <div className={cn("mt-3 text-center text-[10px] tracking-wider text-zinc-600 uppercase")}>
+        <div
+          className={cn(
+            "mt-3 text-center text-[10px] tracking-wider text-zinc-600 uppercase group-data-[collapsible=icon]:hidden"
+          )}
+        >
           {renderVersion()}
         </div>
       </SidebarFooter>
+
+      {/* Command Palette */}
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+        <CommandInput placeholder="Type a command or search..." className="text-zinc-200" />
+        <CommandList className="border-t border-zinc-800">
+          <CommandEmpty className="text-zinc-500">No results found.</CommandEmpty>
+
+          {variant === "app" && (
+            <CommandGroup heading="Navigation" className="text-zinc-400">
+              {appNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.href}
+                    onSelect={() =>
+                      runCommand(() => router.push(`/servers/${serverId}${item.href}`))
+                    }
+                    className="text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-zinc-100"
+                  >
+                    <Icon className="h-4 w-4 text-zinc-500" />
+                    <span>{item.title}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+
+          {variant === "admin" && (
+            <CommandGroup heading="Admin" className="text-zinc-400">
+              {adminNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.href}
+                    onSelect={() => runCommand(() => router.push(item.href))}
+                    className="text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-zinc-100"
+                  >
+                    <Icon className="h-4 w-4 text-zinc-500" />
+                    <span>{item.title}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+
+          <CommandGroup heading="Quick Actions" className="text-zinc-400">
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/servers"))}
+              className="text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-zinc-100"
+            >
+              <Server className="h-4 w-4 text-zinc-500" />
+              <span>All Servers</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/account"))}
+              className="text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-zinc-100"
+            >
+              <User className="h-4 w-4 text-zinc-500" />
+              <span>Account Settings</span>
+            </CommandItem>
+            {isAdmin && (
+              <CommandItem
+                onSelect={() => runCommand(() => router.push("/admin"))}
+                className="text-zinc-300 aria-selected:bg-zinc-800 aria-selected:text-zinc-100"
+              >
+                <Shield className="h-4 w-4 text-zinc-500" />
+                <span>Admin Panel</span>
+              </CommandItem>
+            )}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </Sidebar>
   );
 };

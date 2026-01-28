@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { createMediaDataUrl } from "@/lib/media-utils";
-import Zoom from "react-medium-image-zoom";
-import "react-medium-image-zoom/dist/styles.css";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css'
+import {Card} from "@workspace/ui/components";
 
 interface MediaViewerProps {
   fileName: string;
@@ -20,11 +21,11 @@ export const MediaViewer = ({
   fileName,
   content = "",
   blobUrl,
-  onClose: _onClose,
+  onClose,
   fileSize,
   fileSizeBytes,
   modified,
-  fileType: _fileType,
+  fileType
 }: MediaViewerProps) => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
@@ -78,34 +79,23 @@ export const MediaViewer = ({
     return (
       <div className="flex h-full w-full flex-row items-center justify-center gap-4">
         <Zoom canSwipeToUnzoom={true}>
-          <img
-            src={src}
-            alt={fileName}
-            className="max-h-full max-w-full rounded-lg object-contain"
-          />
+          <img src={src} alt={fileName} className="max-h-full max-w-full object-contain rounded-lg" />
         </Zoom>
         {(fileSize || modified) && (
-          <div className="flex h-full flex-col gap-4 rounded-md border border-white/5 p-4 text-xs text-zinc-400">
-            <div>
-              <span className="text-white">Name: </span>
-              {fileName && <span>{fileName}</span>}
+            <div className="text-xs text-zinc-400 gap-4 flex h-full p-4 flex-col border border-white/5 rounded-md">
+              <div>
+                <span className="text-white">Name: </span>{fileName && <span>{fileName}</span>}
+              </div>
+              <div>
+                <span className="text-white">Type:</span> {ext && <span>{ext}</span>}
+              </div>
+              <div>
+                <span className="text-white">Size: </span>{fileSize && <span>{fileSize} ({fileSizeBytes} bytes)</span>}
+              </div>
+              <div>
+                <span className="text-white">Modified: </span>{modified && <span>{modified}</span>}
+              </div>
             </div>
-            <div>
-              <span className="text-white">Type:</span> {ext && <span>{ext}</span>}
-            </div>
-            <div>
-              <span className="text-white">Size: </span>
-              {fileSize && (
-                <span>
-                  {fileSize} ({fileSizeBytes} bytes)
-                </span>
-              )}
-            </div>
-            <div>
-              <span className="text-white">Modified: </span>
-              {modified && <span>{modified}</span>}
-            </div>
-          </div>
         )}
       </div>
     );
@@ -116,7 +106,7 @@ export const MediaViewer = ({
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-4">
         {(fileSize || modified) && (
-          <div className="flex items-center gap-4 text-xs text-zinc-400">
+          <div className="text-xs text-zinc-400 flex items-center gap-4">
             {fileName && <span>{fileName}</span>}
             {fileSize && <span>{fileSize}</span>}
             {modified && <span>{modified}</span>}
@@ -140,7 +130,7 @@ export const MediaViewer = ({
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-6">
         {(fileSize || modified) && (
-          <div className="flex items-center gap-4 text-xs text-zinc-400">
+          <div className="text-xs text-zinc-400 flex items-center gap-4">
             {fileSize && <span>{fileSize}</span>}
             {modified && <span>{modified}</span>}
           </div>

@@ -47,10 +47,7 @@ export const PlayersOnlineCard = ({
   }
 
   return (
-    <UsageCard className={cn("h-full flex flex-col", isXs && "p-4", isOffline && "opacity-60")}>
-      <UsageCardTitle className={cn("opacity-80", isCompact ? "text-xs mb-2" : "text-md")}>
-        {labels.title}
-      </UsageCardTitle>
+    <UsageCard title={labels.title} className={cn("h-full flex flex-col", isOffline && "opacity-60")}>
       <UsageCardContent className={cn("flex-1 flex flex-col", isXs ? "space-y-1" : undefined)}>
         <div className="flex items-baseline gap-1">
           <span className={cn(

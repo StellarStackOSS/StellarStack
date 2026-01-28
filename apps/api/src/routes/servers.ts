@@ -1695,11 +1695,12 @@ servers.get("/:serverId/files/download", async (c) => {
     const isImage = mimeType.startsWith("image/");
     const isVideo = mimeType.startsWith("video/");
     const isAudio = mimeType.startsWith("audio/");
-    
+
     // Use inline for media files (so they display), attachment for others
-    const disposition = isImage || isVideo || isAudio 
-      ? `inline; filename="${filename}"`
-      : `attachment; filename="${filename}"`;
+    const disposition =
+      isImage || isVideo || isAudio
+        ? `inline; filename="${filename}"`
+        : `attachment; filename="${filename}"`;
 
     return new Response(data, {
       headers: {
@@ -1746,7 +1747,7 @@ servers.post("/:serverId/files/upload", requireServerAccess, requireNotSuspended
 
   try {
     const formData = await c.req.formData();
-    const directory = formData.get("directory") as string || "";
+    const directory = (formData.get("directory") as string) || "";
 
     if (!formData.has("file")) {
       return c.json({ error: "No file provided" }, 400);
@@ -1772,8 +1773,13 @@ servers.post("/:serverId/files/upload", requireServerAccess, requireNotSuspended
     }
 
     // Make request to daemon with FormData
-    const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
-    const daemonUrl = new URL(`${protocol}://${fullServer.node.host}:${fullServer.node.port}/api/servers/${server.id}/files/upload`);
+    const protocol =
+      fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY"
+        ? "https"
+        : "http";
+    const daemonUrl = new URL(
+      `${protocol}://${fullServer.node.host}:${fullServer.node.port}/api/servers/${server.id}/files/upload`
+    );
 
     // Add directory as query parameter
     if (directory) {
@@ -2409,20 +2415,54 @@ servers.patch("/:serverId/backups/lock", requireServerAccess, async (c) => {
 
 // === Schedules ===
 
-const scheduleSchema = z.object({
+const taskSchema = z
+  .object({
+    action: z.enum(["power_start", "power_stop", "power_restart", "backup", "command"]),
+    payload: z.string().optional(),
+    timeOffset: z.number().int().min(0).default(0),
+    sequence: z.number().int().min(0).default(0),
+    triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
+  })
+  .refine(
+    (task) => {
+      // Commands require a payload
+      if (task.action === "command" && !task.payload) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Commands require a payload",
+      path: ["payload"],
+    }
+  );
+
+const scheduleBaseSchema = z.object({
   name: z.string().min(1).max(255),
-  cronExpression: z.string().min(1), // e.g., "0 0 * * *"
+  cronExpression: z
+    .string()
+    .min(1)
+    .refine(
+      (expr) => {
+        // Validate cron expression format
+        // Basic validation: should be 5 fields (minute hour day month day-of-week)
+        // or 6 fields (second minute hour day month day-of-week)
+        const parts = expr.trim().split(/\s+/);
+        if (parts.length < 5 || parts.length > 6) {
+          return false;
+        }
+        // Simple validation: check if it contains only valid cron chars
+        return /^[\d\s\-,/\*]+$/.test(expr);
+      },
+      {
+        message: "Invalid cron expression format (expected 5 or 6 space-separated fields)",
+      }
+    ),
   isActive: z.boolean().default(true),
-  tasks: z.array(
-    z.object({
-      action: z.enum(["power_start", "power_stop", "power_restart", "backup", "command"]),
-      payload: z.string().optional(),
-      timeOffset: z.number().int().min(0).default(0),
-      sequence: z.number().int().min(0).default(0),
-      triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
-    })
-  ),
+  tasks: z.array(taskSchema),
 });
+
+const scheduleSchema = scheduleBaseSchema;
 
 // List schedules
 servers.get("/:serverId/schedules", requireServerAccess, async (c) => {
@@ -2482,8 +2522,40 @@ servers.post("/:serverId/schedules", requireServerAccess, async (c) => {
 
     console.log(`[Schedule] Created schedule ${schedule.id}`);
 
-    // TODO: Sync schedule to daemon for execution
-    // await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules`, schedule);
+    // Sync schedule to daemon for execution
+    try {
+      const fullServer = await db.server.findUnique({
+        where: { id: server.id },
+        include: { node: true },
+      });
+
+      if (fullServer?.node) {
+        // Convert isActive to enabled for daemon API
+        const daemonSchedule = {
+          id: schedule.id,
+          name: schedule.name,
+          cronExpression: schedule.cronExpression,
+          enabled: schedule.isActive,
+          tasks: schedule.tasks.map((task) => ({
+            id: task.id,
+            action: task.action,
+            payload: task.payload,
+            timeOffset: task.timeOffset,
+            sequence: task.sequence,
+            triggerMode: task.triggerMode,
+          })),
+        };
+        await daemonRequest(
+          fullServer.node,
+          "POST",
+          `/api/servers/${server.id}/schedules`,
+          daemonSchedule
+        );
+      }
+    } catch (error: any) {
+      console.warn("[Schedule] Failed to sync to daemon:", error.message);
+      // Don't fail the request if daemon sync fails - schedule still works locally
+    }
 
     await logActivityFromContext(c, ActivityEvents.SCHEDULE_CREATED, {
       serverId: server.id,
@@ -2539,8 +2611,40 @@ servers.patch("/:serverId/schedules/:scheduleId", requireServerAccess, async (c)
 
     console.log(`[Schedule] Updated schedule ${scheduleId}`);
 
-    // TODO: Sync schedule to daemon
-    // await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}/schedules/${scheduleId}`, schedule);
+    // Sync schedule to daemon
+    try {
+      const fullServer = await db.server.findUnique({
+        where: { id: server.id },
+        include: { node: true },
+      });
+
+      if (fullServer?.node) {
+        // Convert isActive to enabled for daemon API
+        const daemonSchedule = {
+          id: schedule.id,
+          name: schedule.name,
+          cronExpression: schedule.cronExpression,
+          enabled: schedule.isActive,
+          tasks: schedule.tasks.map((task) => ({
+            id: task.id,
+            action: task.action,
+            payload: task.payload,
+            timeOffset: task.timeOffset,
+            sequence: task.sequence,
+            triggerMode: task.triggerMode,
+          })),
+        };
+        await daemonRequest(
+          fullServer.node,
+          "PATCH",
+          `/api/servers/${server.id}/schedules/${scheduleId}`,
+          daemonSchedule
+        );
+      }
+    } catch (error: any) {
+      console.warn("[Schedule] Failed to sync to daemon:", error.message);
+      // Don't fail the request if daemon sync fails - schedule still works locally
+    }
 
     await logActivityFromContext(c, ActivityEvents.SCHEDULE_UPDATED, {
       serverId: server.id,
@@ -2577,8 +2681,24 @@ servers.delete("/:serverId/schedules/:scheduleId", requireServerAccess, async (c
 
     console.log(`[Schedule] Deleted schedule ${scheduleId}`);
 
-    // TODO: Remove schedule from daemon
-    // await daemonRequest(fullServer.node, "DELETE", `/api/servers/${server.id}/schedules/${scheduleId}`);
+    // Remove schedule from daemon
+    try {
+      const fullServer = await db.server.findUnique({
+        where: { id: server.id },
+        include: { node: true },
+      });
+
+      if (fullServer?.node) {
+        await daemonRequest(
+          fullServer.node,
+          "DELETE",
+          `/api/servers/${server.id}/schedules/${scheduleId}`
+        );
+      }
+    } catch (error: any) {
+      console.warn("[Schedule] Failed to sync delete to daemon:", error.message);
+      // Don't fail the request if daemon sync fails - schedule is deleted locally
+    }
 
     await logActivityFromContext(c, ActivityEvents.SCHEDULE_DELETED, {
       serverId: server.id,
@@ -2782,19 +2902,25 @@ servers.post("/:serverId/allocations", requireServerAccess, async (c) => {
   if (fullServer.node.isOnline) {
     try {
       const allAllocations = [...fullServer.allocations, updated];
+      const primaryAllocation = fullServer.allocations[0] || updated;
+
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of allAllocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
-            ip: fullServer.allocations[0]?.ip || "0.0.0.0",
-            port: fullServer.allocations[0]?.port || 25565,
+            ip: primaryAllocation.ip || "0.0.0.0",
+            port: primaryAllocation.port || 25565,
           },
-          mappings: allAllocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {
@@ -2856,19 +2982,25 @@ servers.delete("/:serverId/allocations/:allocationId", requireServerAccess, asyn
   if (fullServer.node.isOnline) {
     try {
       const remainingAllocations = fullServer.allocations.filter((a) => a.id !== allocationId);
+      const primaryAllocation = remainingAllocations[0];
+
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of remainingAllocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
-            ip: remainingAllocations[0]?.ip || "0.0.0.0",
-            port: remainingAllocations[0]?.port || 25565,
+            ip: primaryAllocation?.ip || "0.0.0.0",
+            port: primaryAllocation?.port || 25565,
           },
-          mappings: remainingAllocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {
@@ -2911,19 +3043,23 @@ servers.post("/:serverId/allocations/:allocationId/primary", requireServerAccess
   // Update the daemon with the new primary allocation
   if (fullServer.node.isOnline) {
     try {
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of fullServer.allocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
             ip: allocation.ip,
             port: allocation.port,
           },
-          mappings: fullServer.allocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {

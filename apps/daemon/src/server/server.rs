@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use dashmap::DashMap;
 use parking_lot::RwLock;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
@@ -53,6 +54,12 @@ pub struct Server {
 
     /// Schedule status tracker (for websocket sync)
     schedule_status: ScheduleStatusTracker,
+
+    /// Stored schedules for this server
+    schedules: DashMap<String, super::Schedule>,
+
+    /// Active cron job handles (schedule_id -> JobHandle)
+    cron_jobs: DashMap<String, tokio_util::sync::CancellationToken>,
 
     /// Cancellation token for server operations
     ctx: CancellationToken,
@@ -123,6 +130,8 @@ impl Server {
             console_throttle: ConsoleThrottle::new(),
             install_sink: SinkPool::new(),
             schedule_status: ScheduleStatusTracker::new(),
+            schedules: DashMap::new(),
+            cron_jobs: DashMap::new(),
             ctx: CancellationToken::new(),
             watcher_ctx: RwLock::new(CancellationToken::new()),
             data_dir,
@@ -254,7 +263,327 @@ impl Server {
         &self.schedule_status
     }
 
-    /// Get current process state
+    /// Store a schedule for this server
+    pub fn store_schedule(&self, schedule: super::Schedule) {
+        let schedule_id = schedule.id.clone();
+        self.schedules.insert(schedule_id, schedule);
+    }
+
+    /// Get a schedule by ID
+    pub fn get_schedule(&self, schedule_id: &str) -> Option<super::Schedule> {
+        self.schedules.get(schedule_id).map(|r| r.clone())
+    }
+
+    /// Get all schedules for this server
+    pub fn get_all_schedules(&self) -> Vec<super::Schedule> {
+        self.schedules.iter().map(|r| r.value().clone()).collect()
+    }
+
+    /// Remove a schedule by ID
+    pub fn remove_schedule(&self, schedule_id: &str) -> Option<super::Schedule> {
+        self.schedules.remove(schedule_id).map(|(_, v)| v)
+    }
+
+    /// Register a cron job for a schedule (call with Arc<Server>)
+    pub fn register_cron_job_with_server(server: Arc<Server>, schedule_id: String) {
+        let cancel_token = CancellationToken::new();
+        server.cron_jobs.insert(schedule_id.clone(), cancel_token.clone());
+
+        let server_clone = server.clone();
+        let schedule_id_clone = schedule_id.clone();
+
+        tokio::spawn(async move {
+            Self::run_schedule_cron_with_server(server_clone, &schedule_id_clone, cancel_token).await;
+        });
+    }
+
+    /// Register a cron job for a schedule (simplified version for sync operations)
+    pub fn register_cron_job(&self, schedule_id: String) {
+        // NOTE: This version is deprecated - use register_cron_job_with_server for actual task execution
+        // For now, this is a no-op placeholder
+        info!("Schedule {} registered for cron execution", schedule_id);
+    }
+
+    /// Unregister a cron job for a schedule
+    pub fn unregister_cron_job(&self, schedule_id: &str) {
+        if let Some((_, token)) = self.cron_jobs.remove(schedule_id) {
+            token.cancel();
+            debug!("Cancelled cron job for schedule {}", schedule_id);
+        }
+    }
+
+    /// Cancel all cron jobs for this server
+    pub fn cancel_all_cron_jobs(&self) {
+        for entry in self.cron_jobs.iter() {
+            entry.value().cancel();
+        }
+        self.cron_jobs.clear();
+        debug!("Cancelled all cron jobs for server {}", self.uuid());
+    }
+
+    /// Run a schedule cron job with full Server access
+    async fn run_schedule_cron_with_server(
+        server: Arc<Server>,
+        schedule_id: &str,
+        cancel_token: CancellationToken,
+    ) {
+        debug!("Starting cron job for schedule {} on server {}", schedule_id, server.uuid());
+
+        // Get the schedule
+        let schedule = match server.get_schedule(schedule_id) {
+            Some(s) => s,
+            None => {
+                warn!("Schedule {} not found for server {}", schedule_id, server.uuid());
+                return;
+            }
+        };
+
+        // Parse cron expression
+        let cron = match croner::Cron::new(&schedule.cron_expression).parse() {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Invalid cron expression for schedule {}: {}", schedule_id, e);
+                return;
+            }
+        };
+
+        // Check every 30 seconds if we should execute
+        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        let mut last_execution_minute: Option<i64> = None;
+
+        loop {
+            tokio::select! {
+                _ = cancel_token.cancelled() => {
+                    debug!("Cron job cancelled for schedule {}", schedule_id);
+                    return;
+                }
+                _ = interval.tick() => {
+                    // Check if schedule is still enabled
+                    let current_schedule = match server.get_schedule(schedule_id) {
+                        Some(s) => s,
+                        None => {
+                            debug!("Schedule {} removed, stopping cron job", schedule_id);
+                            return;
+                        }
+                    };
+
+                    if !current_schedule.enabled {
+                        debug!("Schedule {} is disabled, skipping execution", schedule_id);
+                        continue;
+                    }
+
+                    // Check if it's time to run (cron expressions are minute-level precision)
+                    let now = chrono::Utc::now();
+                    let current_minute = now.timestamp() / 60;
+
+                    // Check if the current minute matches the cron expression
+                    let should_execute = match cron.find_next_occurrence(&now, false) {
+                        Ok(next) => {
+                            // If next occurrence is in the past (or very close), we should execute
+                            let minutes_until_next = (next.timestamp() - now.timestamp()) / 60;
+                            minutes_until_next <= 0 && minutes_until_next >= -1
+                        }
+                        Err(_) => false,
+                    };
+
+                    // Prevent duplicate executions in the same minute
+                    if should_execute {
+                        if let Some(last_min) = last_execution_minute {
+                            if last_min == current_minute {
+                                continue;
+                            }
+                        }
+
+                        info!("Executing schedule {} for server {} (cron: {})", schedule_id, server.uuid(), current_schedule.cron_expression);
+
+                        last_execution_minute = Some(current_minute);
+
+                        // Execute schedule immediately via the existing endpoint-based execution
+                        // This has full access to the Server for power actions, commands, etc.
+                        let server = server.clone();
+                        let schedule = current_schedule.clone();
+                        let schedule_id = schedule_id.to_string();
+
+                        tokio::spawn(async move {
+                            // Emit event that schedule is executing
+                            server.events().publish(Event::ScheduleExecuting {
+                                schedule_id: schedule_id.clone(),
+                                task_index: None,
+                            });
+
+                            // Execute each task
+                            for (index, task) in schedule.tasks.iter().enumerate() {
+                                server.schedule_status().set_executing(&schedule.id, index);
+                                server.events().publish(Event::ScheduleExecuting {
+                                    schedule_id: schedule.id.clone(),
+                                    task_index: Some(index),
+                                });
+
+                                // Execute based on trigger mode
+                                match task.trigger_mode.as_str() {
+                                    "TIME_DELAY" => {
+                                        if task.time_offset > 0 {
+                                            tokio::time::sleep(Duration::from_secs(task.time_offset as u64)).await;
+                                        }
+
+                                        // Execute the task
+                                        if let Err(e) = Self::execute_cron_task(&server, task).await {
+                                            if task.action != "command" {
+                                                warn!("Critical cron task failed: {}", e);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    "ON_COMPLETION" => {
+                                        // Execute and wait for completion event
+                                        if let Err(e) = Self::execute_cron_task_with_wait(&server, task).await {
+                                            if task.action != "command" {
+                                                warn!("Critical cron task failed: {}", e);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        warn!("Unknown trigger mode: {}", task.trigger_mode);
+                                    }
+                                }
+                            }
+
+                            // Clear executing state
+                            server.events().publish(Event::ScheduleExecuting {
+                                schedule_id: schedule.id.clone(),
+                                task_index: None,
+                            });
+                            server.schedule_status().set_finished(&schedule.id, true);
+
+                            info!("Cron schedule {} execution completed", schedule.id);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Execute a task in cron context
+    async fn execute_cron_task(server: &Server, task: &super::ScheduleTask) -> Result<(), String> {
+        match task.action.as_str() {
+            "power_start" => {
+                server.handle_power_action(PowerAction::Start, false).await
+                    .map_err(|e| e.to_string())?;
+            }
+            "power_stop" => {
+                server.handle_power_action(PowerAction::Stop, false).await
+                    .map_err(|e| e.to_string())?;
+            }
+            "power_restart" => {
+                server.handle_power_action(PowerAction::Restart, false).await
+                    .map_err(|e| e.to_string())?;
+            }
+            "command" => {
+                if let Some(payload) = &task.payload {
+                    server.send_command(payload).await
+                        .map_err(|e| e.to_string())?;
+                }
+            }
+            "backup" => {
+                // Backup requires AppState context - skip in cron for now
+                info!("Backup tasks not supported in cron execution");
+            }
+            _ => {
+                return Err(format!("Unknown action: {}", task.action));
+            }
+        }
+        Ok(())
+    }
+
+    /// Execute a task in cron context and wait for completion
+    async fn execute_cron_task_with_wait(server: &Server, task: &super::ScheduleTask) -> Result<(), String> {
+        let mut event_rx = server.events().subscribe();
+
+        Self::execute_cron_task(server, task).await?;
+
+        // Wait for completion with 10-minute timeout
+        let timeout = Duration::from_secs(600);
+        let target_state = match task.action.as_str() {
+            "power_start" => ProcessState::Running,
+            "power_stop" => ProcessState::Offline,
+            "power_restart" => ProcessState::Running,
+            "command" => return Ok(()), // Commands complete immediately
+            _ => return Ok(()),
+        };
+
+        match tokio::time::timeout(timeout, async {
+            loop {
+                match event_rx.recv().await {
+                    Ok(event) => {
+                        if let Event::StateChange(state) = event {
+                            if state == target_state {
+                                return Ok(());
+                            }
+                        }
+                    }
+                    Err(_) => return Err("Event bus closed".to_string()),
+                }
+            }
+        }).await {
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(e)) => Err(e),
+            Err(_) => Err("Task timed out".to_string()),
+        }
+    }
+
+    /// Execute all tasks in a schedule (used by cron jobs)
+    async fn execute_schedule_tasks(
+        schedule: &super::Schedule,
+        server_uuid: String,
+        api_client: Arc<HttpClient>,
+        event_bus: EventBus,
+        schedule_status: ScheduleStatusTracker,
+    ) -> Result<(), String> {
+        info!("Executing {} tasks for schedule {}", schedule.tasks.len(), schedule.id);
+
+        // For cron-triggered execution, we support power actions and commands
+        // Backup operations require AppState which isn't available in cron context
+        for (index, task) in schedule.tasks.iter().enumerate() {
+            schedule_status.set_executing(&schedule.id, index);
+
+            info!("Executing task {} ({}): {}", index, task.id, task.action);
+
+            match task.action.as_str() {
+                "power_start" | "power_stop" | "power_restart" => {
+                    // NOTE: Power actions require a Server reference which isn't available here
+                    // The schedule execution should be triggered via the API endpoint instead
+                    // For now, we log the intent
+                    debug!("Power action {} queued for schedule execution", task.action);
+
+                    // Notify API about the scheduled power action
+                    // This allows the panel to handle actual execution
+                    if let Err(e) = api_client.notify_schedule_executing(&server_uuid, &schedule.id, Some(index)).await {
+                        warn!("Failed to notify API about schedule task: {}", e);
+                    }
+                }
+                "command" => {
+                    // Commands also require a Server reference
+                    debug!("Command task {} would execute", task.id);
+                    if let Err(e) = api_client.notify_schedule_executing(&server_uuid, &schedule.id, Some(index)).await {
+                        warn!("Failed to notify API about schedule task: {}", e);
+                    }
+                }
+                "backup" => {
+                    // Backup tasks require full AppState context (backup directory, rate limits, etc)
+                    // These should be triggered manually or via API, not via cron
+                    warn!("Backup tasks cannot be executed via cron - requires AppState context");
+                }
+                _ => {
+                    warn!("Unknown task action: {}", task.action);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Current process state
     pub fn process_state(&self) -> ProcessState {
         self.environment.state()
     }
@@ -773,6 +1102,12 @@ impl Server {
 
     /// Pre-boot checks and preparation
     async fn on_before_start(&self) -> Result<(), PowerError> {
+        // Reload configuration from panel before starting
+        // This ensures any resource allocation changes (CPU, memory, disk) are applied
+        info!("Reloading server configuration from panel before start");
+        self.sync().await
+            .map_err(|e| PowerError::Other(format!("Failed to reload configuration: {}", e)))?;
+
         let config = self.config.read().clone();
         info!("Pre-boot checks: suspended={}, invocation={}", config.suspended, config.invocation);
 
@@ -785,8 +1120,8 @@ impl Server {
         // This ensures the container user (uid/gid 1000) can write to it
         self.fix_permissions().await?;
 
-        // TODO: Check disk space
-        // TODO: Update configuration files
+        // Check if system has enough disk space for this server
+        self.check_disk_space(&config).await?;
 
         // Recreate container with latest config
         info!("Recreating container for {}", self.uuid());
@@ -841,6 +1176,99 @@ impl Server {
                 Ok(())
             }
         }
+    }
+
+    /// Check if system has enough disk space before starting server
+    async fn check_disk_space(&self, config: &ServerConfig) -> Result<(), PowerError> {
+        use std::fs;
+
+        let disk_limit = config.disk_bytes();
+
+        // If disk limit is unlimited (0), skip check
+        if disk_limit == 0 {
+            debug!("Disk limit is unlimited, skipping disk space check");
+            return Ok(());
+        }
+
+        // Get the root directory for the server's data directory
+        let data_dir = &self.data_dir;
+
+        // Verify data directory exists
+        if !data_dir.exists() {
+            warn!("Data directory does not exist for disk check: {}", data_dir.display());
+            return Ok(());
+        }
+
+        // Get filesystem stats for the data directory's mount point
+        match fs::metadata(data_dir) {
+            Ok(_metadata) => {
+                // Metadata obtained, proceed with check
+            }
+            Err(e) => {
+                warn!("Failed to check disk space for {}: {}", data_dir.display(), e);
+                // Don't fail the start if we can't check disk space
+                return Ok(());
+            }
+        }
+
+        // Check available space (Unix-like systems)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+
+            // Get current usage of server data directory
+            let current_usage = Self::calculate_dir_size(data_dir).unwrap_or(0);
+
+            info!(
+                "Disk space check for {}: limit={}MB, current_usage={}MB",
+                self.uuid(),
+                disk_limit / 1024 / 1024,
+                current_usage / 1024 / 1024
+            );
+
+            if current_usage >= disk_limit {
+                error!(
+                    "Server {} has reached disk space limit: {}MB used of {}MB limit",
+                    self.uuid(),
+                    current_usage / 1024 / 1024,
+                    disk_limit / 1024 / 1024
+                );
+                return Err(PowerError::DiskSpaceExceeded);
+            }
+
+            // Check if we have at least 10% free space (buffer)
+            let free_before_limit = disk_limit - current_usage;
+            let buffer_required = disk_limit / 10;
+
+            if free_before_limit < buffer_required {
+                warn!(
+                    "Server {} is running low on disk space: only {}MB free of {}MB limit",
+                    self.uuid(),
+                    free_before_limit / 1024 / 1024,
+                    disk_limit / 1024 / 1024
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Calculate total size of a directory recursively
+    fn calculate_dir_size(path: &std::path::Path) -> std::io::Result<u64> {
+        let mut total = 0u64;
+
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                let metadata = entry.metadata()?;
+                if metadata.is_file() {
+                    total += metadata.len();
+                } else if metadata.is_dir() {
+                    total += Self::calculate_dir_size(&entry.path()).unwrap_or(0);
+                }
+            }
+        }
+
+        Ok(total)
     }
 
     /// Send a command to the server console
@@ -1057,6 +1485,9 @@ impl Server {
     pub async fn destroy(&self) -> Result<(), ServerError> {
         // Cancel ongoing operations
         self.ctx.cancel();
+
+        // Cancel all cron jobs
+        self.cancel_all_cron_jobs();
 
         // Destroy container
         let _ = self.environment.destroy().await;

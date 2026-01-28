@@ -9,6 +9,7 @@ import { Label } from "@workspace/ui/components/label";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import { BsArrowRight, BsExclamationTriangle, BsPlus, BsServer, BsTrash } from "react-icons/bs";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
@@ -58,8 +59,8 @@ const SplitPage = (): JSX.Element | null => {
       setLoading(true);
       const data = await servers.split.children(serverId);
       setChildren(data);
-    } catch (err) {
-      console.error("Failed to fetch child servers:", err);
+    } catch (error) {
+      console.error("Failed to fetch child servers:", error);
     } finally {
       setLoading(false);
     }
@@ -134,8 +135,8 @@ const SplitPage = (): JSX.Element | null => {
       resetForm();
       fetchChildren();
       refetch(); // Refresh parent server data
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to split server");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to split server");
     } finally {
       setSplitting(false);
     }
@@ -151,8 +152,8 @@ const SplitPage = (): JSX.Element | null => {
       setSelectedChild(null);
       fetchChildren();
       refetch(); // Refresh parent to update resources
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to delete child server");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete child server");
     }
   };
 
@@ -166,213 +167,191 @@ const SplitPage = (): JSX.Element | null => {
     formCpuPercent <= 90;
 
   return (
-    <div className="relative min-h-svh transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              {!isChildServer && (
-                <TextureButton variant="primary" onClick={openSplitModal}>
-                  <BsPlus className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Split Server</span>
-                </TextureButton>
-              )}
-            </div>
-          </div>
-
-          {/* Child Server Warning */}
-          {isChildServer && (
-            <div
-              className={cn(
-                "mb-6 flex items-center gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
-              )}
-            >
-              {/*<BsExclamationTriangle className="h-5 w-5 shrink-0" />*/}
-              <img
-                src="/icons/24-triangle-warning.svg"
-                alt="Warning"
-                className="h-5 w-5 shrink-0"
-              />
-              <div>
-                <p className="text-sm font-bold">This is a Child Server</p>
-                <p className={cn("mt-0.5 text-xs")}>
-                  Child servers cannot be split further. Only parent servers can create child
-                  servers.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Current Resources */}
-          {!isChildServer && (
-            <div
-              className={cn(
-                "relative mb-6 rounded-lg border p-6",
-                "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-              )}
-            >
-              <h3
-                className={cn("mb-4 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
-              >
-                Current Resources
-              </h3>
-
-              <div className="grid grid-cols-3 gap-6">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
-                      Memory
-                    </div>
-                    <div className={cn("text-lg font-light", "text-zinc-100")}>
-                      {formatMiB(parentMemory)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
-                      Disk
-                    </div>
-                    <div className={cn("text-lg font-light", "text-zinc-100")}>
-                      {formatMiB(parentDisk)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
-                      CPU
-                    </div>
-                    <div className={cn("text-lg font-light", "text-zinc-100")}>{parentCpu}%</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {loading ? (
-            <div
-              className={cn(
-                "flex flex-row items-center justify-center py-12 text-center",
-                "text-zinc-500"
-              )}
-            >
-              <Spinner />
-            </div>
-          ) : children.length === 0 ? (
-            <div
-              className={cn(
-                "relative rounded-lg border p-8 text-center",
-                "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-              )}
-            >
-              <img
-                src="/icons/24-storage.svg"
-                alt="No Child Servers"
-                className="mx-auto mb-4 h-18"
-              />
-              <h3 className={cn("mb-2 text-lg font-medium", "text-zinc-300")}>No Child Servers</h3>
-              <p className={cn("mb-4 text-sm", "text-zinc-500")}>
-                {isChildServer
-                  ? "Child servers cannot have their own children."
-                  : "Split this server to create child servers with dedicated resources."}
-              </p>
-              {!isChildServer && (
-                <TextureButton variant="minimal" onClick={openSplitModal}>
-                  <BsPlus className="h-4 w-4" />
-                  Split Server
-                </TextureButton>
-              )}
-            </div>
-          ) : (
-            /* Child Servers List */
-            <div className="space-y-4">
-              <h3 className={cn("text-xs font-medium tracking-wider uppercase", "text-zinc-400")}>
-                Child Servers
-              </h3>
-              {children.map((child) => (
-                <div
-                  key={child.id}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
                   className={cn(
-                    "relative border p-6 transition-all",
-                    "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                   )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={cn(
-                          "flex h-10 w-10 items-center justify-center border",
-                          "border-zinc-700 bg-zinc-800/50"
-                        )}
-                      >
-                        <BsServer className={cn("h-5 w-5", "text-zinc-400")} />
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                {!isChildServer && (
+                  <TextureButton
+                    variant="primary"
+                    size="sm"
+                    className="w-fit"
+                    onClick={openSplitModal}
+                  >
+                    <BsPlus className="h-4 w-4" />
+                    Split Server
+                  </TextureButton>
+                )}
+              </div>
+            </div>
+          </FadeIn>
+
+          <div className="space-y-4">
+            {/* Child Server Warning */}
+            {isChildServer && (
+              <FadeIn delay={0.05}>
+                <div className="flex h-full flex-col rounded-lg border border-amber-900/30 bg-[#090909] p-1 pt-2">
+                  <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
+                    <BsExclamationTriangle className="h-3 w-3 text-amber-400" />
+                    <span className="text-amber-400">Notice</span>
+                  </div>
+                  <div className="flex flex-1 items-center gap-3 rounded-lg border border-amber-900/20 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    <img
+                      src="/icons/24-triangle-warning.svg"
+                      alt="Warning"
+                      className="h-5 w-5 shrink-0"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">This is a Child Server</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        Child servers cannot be split further. Only parent servers can create child
+                        servers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            )}
+
+            {/* Current Resources */}
+            {!isChildServer && (
+              <FadeIn delay={0.05}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Current Resources</div>
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    <div className="grid grid-cols-3 gap-6">
+                      <div>
+                        <div className="text-xs tracking-wider text-zinc-500 uppercase">Memory</div>
+                        <div className="mt-2 text-2xl font-light text-zinc-100">
+                          {formatMiB(parentMemory)}
+                        </div>
                       </div>
                       <div>
-                        <div className="flex items-center gap-3">
-                          <h3
-                            className={cn(
-                              "text-sm font-medium tracking-wider uppercase",
-                              "text-zinc-100"
-                            )}
-                          >
-                            {child.name}
-                          </h3>
-                          <span
-                            className={cn(
-                              "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                              child.status === "RUNNING"
-                                ? "border-green-700/50 text-green-400"
-                                : child.status === "STOPPED"
-                                  ? "border-zinc-700 text-zinc-500"
-                                  : "border-amber-700/50 text-amber-400"
-                            )}
-                          >
-                            {child.status}
-                          </span>
-                        </div>
-                        <div
-                          className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
-                        >
-                          <span>{formatMiB(child.memory)} RAM</span>
-                          <span>•</span>
-                          <span>{formatMiB(child.disk)} Disk</span>
-                          <span>•</span>
-                          <span>{child.cpu}% CPU</span>
+                        <div className="text-xs tracking-wider text-zinc-500 uppercase">Disk</div>
+                        <div className="mt-2 text-2xl font-light text-zinc-100">
+                          {formatMiB(parentDisk)}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TextureButton
-                        variant="minimal"
-                        onClick={() => router.push(`/servers/${child.id}/overview`)}
-                      >
-                        <span className="text-xs tracking-wider uppercase">Manage</span>
-                        <BsArrowRight className="h-4 w-4" />
-                      </TextureButton>
-                      <TextureButton variant="destructive" onClick={() => openDeleteModal(child)}>
-                        <BsTrash className="h-4 w-4" />
-                      </TextureButton>
+                      <div>
+                        <div className="text-xs tracking-wider text-zinc-500 uppercase">CPU</div>
+                        <div className="mt-2 text-2xl font-light text-zinc-100">{parentCpu}%</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </FadeIn>
+            )}
+
+            {/* Child Servers */}
+            <FadeIn delay={0.1}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
+                  Child Servers {children.length > 0 && `(${children.length})`}
+                </div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Spinner />
+                    </div>
+                  ) : children.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <img
+                        src="/icons/24-storage.svg"
+                        alt="No Child Servers"
+                        className="mb-4 h-16 opacity-50"
+                      />
+                      <h3 className="mb-2 text-sm font-medium text-zinc-300">No Child Servers</h3>
+                      <p className="mb-4 text-xs text-zinc-500">
+                        {isChildServer
+                          ? "Child servers cannot have their own children."
+                          : "Split this server to create child servers with dedicated resources."}
+                      </p>
+                      {!isChildServer && (
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
+                          onClick={openSplitModal}
+                        >
+                          <BsPlus className="h-4 w-4" />
+                          Split Server
+                        </TextureButton>
+                      )}
+                    </div>
+                  ) : (
+                    children.map((child, index) => (
+                      <div
+                        key={child.id}
+                        className={cn(
+                          "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                          index !== children.length - 1 && "border-b border-zinc-800/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800/50">
+                            <BsServer className="h-5 w-5 text-zinc-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-sm font-medium text-zinc-100">{child.name}</h3>
+                              <span
+                                className={cn(
+                                  "rounded border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                                  child.status === "RUNNING"
+                                    ? "border-green-700/50 text-green-400"
+                                    : child.status === "STOPPED"
+                                      ? "border-zinc-700 text-zinc-500"
+                                      : "border-amber-700/50 text-amber-400"
+                                )}
+                              >
+                                {child.status}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
+                              <span>{formatMiB(child.memory)} RAM</span>
+                              <span>•</span>
+                              <span>{formatMiB(child.disk)} Disk</span>
+                              <span>•</span>
+                              <span>{child.cpu}% CPU</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => router.push(`/servers/${child.id}/overview`)}
+                          >
+                            Manage
+                            <BsArrowRight className="h-4 w-4" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="destructive"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => openDeleteModal(child)}
+                          >
+                            <BsTrash className="h-4 w-4" />
+                          </TextureButton>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </FadeIn>
+          </div>
         </div>
       </div>
 
@@ -502,7 +481,7 @@ const SplitPage = (): JSX.Element | null => {
         onConfirm={handleDeleteChild}
         confirmLabel="Delete Server"
       />
-    </div>
+    </FadeIn>
   );
 };
 

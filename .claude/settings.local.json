@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(git -C D:StellarStack log --oneline --all -20)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "Bash(dir:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo doc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

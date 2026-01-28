@@ -28,6 +28,7 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   Dialog,
   DialogContent,
@@ -69,7 +70,7 @@ import { Label } from "@workspace/ui/components/label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
 import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
 import FilledFolder from "@/components/FilledFolder/FilledFolder";
-import {File, FileImage, FileVolume, Folder } from "lucide-react";
+import { File, FileImage, FileVolume, Folder } from "lucide-react";
 
 interface FileItem {
   id: string;
@@ -117,7 +118,7 @@ const parseDaemonError = (error: unknown): string => {
         }
         return parsed.message || message;
       }
-    } catch (err) {
+    } catch {
       // If parsing fails, try simpler extraction
       if (message.includes("Already exists")) {
         const match = message.match(/Already exists:\s*([^"}\]]+)/);
@@ -230,8 +231,8 @@ const FilesPage = (): JSX.Element | null => {
       const usedBytes = usage.used_bytes || 0;
 
       setDiskUsage({ used: usedBytes, total: totalBytes });
-    } catch (err) {
-      console.error("[Disk Usage] Failed to fetch disk usage:", err);
+    } catch (error) {
+      console.error("[Disk Usage] Failed to fetch disk usage:", error);
       // Fall back to server config if daemon request fails
       if (server?.disk) {
         setDiskUsage({ used: 0, total: server.disk * 1024 * 1024 });
@@ -256,7 +257,7 @@ const FilesPage = (): JSX.Element | null => {
         path: f.path,
       }));
       setFiles(mappedFiles);
-    } catch (err) {
+    } catch (error) {
       toast.error("Failed to fetch files");
       setFiles([]);
     } finally {
@@ -281,64 +282,67 @@ const FilesPage = (): JSX.Element | null => {
   }, [fetchDiskUsage]);
 
   // Handle dropped files - upload directly with optimistic updates
-  const handleDroppedFiles = useCallback(async (droppedFiles: File[]) => {
-    if (droppedFiles.length === 0 || isUploading) return;
+  const handleDroppedFiles = useCallback(
+    async (droppedFiles: File[]) => {
+      if (droppedFiles.length === 0 || isUploading) return;
 
-    setIsUploading(true);
-    const toastId = toast.loading(`Uploading ${droppedFiles.length} file(s)...`);
+      setIsUploading(true);
+      const toastId = toast.loading(`Uploading ${droppedFiles.length} file(s)...`);
 
-    try {
-      let successCount = 0;
-      let failCount = 0;
-      const newFiles: FileItem[] = [];
+      try {
+        let successCount = 0;
+        let failCount = 0;
+        const newFiles: FileItem[] = [];
 
-      for (const file of droppedFiles) {
-        try {
-          const content = await file.text();
-          const filePath = displayPath === "/" ? `/${file.name}` : `${displayPath}/${file.name}`;
-          await servers.files.create(serverId, filePath, "file", content);
-          successCount++;
+        for (const file of droppedFiles) {
+          try {
+            const content = await file.text();
+            const filePath = displayPath === "/" ? `/${file.name}` : `${displayPath}/${file.name}`;
+            await servers.files.create(serverId, filePath, "file", content);
+            successCount++;
 
-          // Add to optimistic list
-          newFiles.push({
-            id: filePath,
-            name: file.name,
-            type: "file",
-            size: formatFileSize(file.size),
-            sizeBytes: file.size,
-            modified: new Date().toLocaleString(),
-            path: filePath,
-          });
-        } catch (err) {
-          failCount++;
+            // Add to optimistic list
+            newFiles.push({
+              id: filePath,
+              name: file.name,
+              type: "file",
+              size: formatFileSize(file.size),
+              sizeBytes: file.size,
+              modified: new Date().toLocaleString(),
+              path: filePath,
+            });
+          } catch {
+            failCount++;
+          }
         }
-      }
 
-      // Optimistically add new files (filter out duplicates)
-      if (newFiles.length > 0) {
-        setFiles((prev) => {
-          const existingPaths = new Set(prev.map((f) => f.path));
-          const uniqueNewFiles = newFiles.filter((f) => !existingPaths.has(f.path));
-          return [...prev, ...uniqueNewFiles];
-        });
-      }
+        // Optimistically add new files (filter out duplicates)
+        if (newFiles.length > 0) {
+          setFiles((prev) => {
+            const existingPaths = new Set(prev.map((f) => f.path));
+            const uniqueNewFiles = newFiles.filter((f) => !existingPaths.has(f.path));
+            return [...prev, ...uniqueNewFiles];
+          });
+        }
 
-      if (failCount === 0) {
-        toast.success(`Uploaded ${successCount} file(s)`, { id: toastId });
-      } else if (successCount === 0) {
-        toast.error(`Failed to upload files`, { id: toastId });
-      } else {
-        toast.warning(`Uploaded ${successCount}, failed ${failCount}`, { id: toastId });
-      }
+        if (failCount === 0) {
+          toast.success(`Uploaded ${successCount} file(s)`, { id: toastId });
+        } else if (successCount === 0) {
+          toast.error(`Failed to upload files`, { id: toastId });
+        } else {
+          toast.warning(`Uploaded ${successCount}, failed ${failCount}`, { id: toastId });
+        }
 
-      // Refresh disk usage
-      fetchDiskUsage();
-    } catch (err) {
-      toast.error(parseDaemonError(error), { id: toastId });
-    } finally {
-      setIsUploading(false);
-    }
-  }, [displayPath, serverId, isUploading, fetchDiskUsage]);
+        // Refresh disk usage
+        fetchDiskUsage();
+      } catch (error) {
+        toast.error(parseDaemonError(error), { id: toastId });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [displayPath, serverId, isUploading, fetchDiskUsage]
+  );
 
   // Global drag-and-drop handlers (disabled when modals are open)
   useEffect(() => {
@@ -435,7 +439,7 @@ const FilesPage = (): JSX.Element | null => {
       setFiles((prev) => prev.filter((f) => f.path !== deletePath));
       toast.success("File deleted");
       fetchDiskUsage();
-    } catch (err) {
+    } catch (error) {
       toast.error("Failed to delete file");
     } finally {
       setFileToDelete(null);
@@ -456,7 +460,7 @@ const FilesPage = (): JSX.Element | null => {
       toast.success(`Deleted ${selectedIds.length} file(s)`);
       setRowSelection({});
       fetchDiskUsage();
-    } catch (err) {
+    } catch (error) {
       toast.error("Failed to delete some files");
       // Refetch on error to ensure consistency
       fetchFiles();
@@ -486,7 +490,7 @@ const FilesPage = (): JSX.Element | null => {
         )
       );
       toast.success("File renamed");
-    } catch (err) {
+    } catch (error) {
       toast.error(parseDaemonError(error));
     } finally {
       setRenameModalOpen(false);
@@ -528,7 +532,7 @@ const FilesPage = (): JSX.Element | null => {
       playSound("copy");
       setPermissionsModalOpen(false);
       setFileToEditPermissions(null);
-    } catch (err) {
+    } catch (error) {
       toast.error(parseDaemonError(error));
     }
   };
@@ -569,7 +573,7 @@ const FilesPage = (): JSX.Element | null => {
       });
       playSound("copy");
       toast.success("Folder created");
-    } catch (err) {
+    } catch (error) {
       toast.error(parseDaemonError(error));
     } finally {
       setNewFolderModalOpen(false);
@@ -621,7 +625,7 @@ const FilesPage = (): JSX.Element | null => {
       if (isEditable(fileName)) {
         router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(filePath)}`);
       }
-    } catch (err) {
+    } catch (error) {
       toast.error(parseDaemonError(error));
     }
   };
@@ -750,9 +754,9 @@ const FilesPage = (): JSX.Element | null => {
           speed: calculateSpeed(startTime, file.size, Date.now()),
         });
         removeUpload(fileId);
-      } catch (err) {
+      } catch (error) {
         removeUpload(fileId);
-        console.error(`Upload failed for file ${file.name}:`, err);
+        console.error(`Upload failed for file ${file.name}:`, error);
       }
     }
 
@@ -790,27 +794,27 @@ const FilesPage = (): JSX.Element | null => {
       {
         id: "select",
         header: ({ table }) => (
-            <div className="pl-4 flex w-fit">
-              <Checkbox
-                  checked={
-                      table.getIsAllPageRowsSelected() ||
-                      (table.getIsSomePageRowsSelected() && "indeterminate")
-                  }
-                  onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                  aria-label="Select all"
-                  className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
-              />
-            </div>
+          <div className="flex w-fit pl-4">
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && "indeterminate")
+              }
+              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+              aria-label="Select all"
+              className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
+            />
+          </div>
         ),
         cell: ({ row }) => (
-            <div className="pl-4 flex w-fit">
-              <Checkbox
-                  checked={row.getIsSelected()}
-                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-                  aria-label="Select row"
-                  className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
-              />
-            </div>
+          <div className="flex w-fit pl-4">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Select row"
+              className={cn("border-zinc-600 data-[state=checked]:bg-zinc-600")}
+            />
+          </div>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -991,7 +995,7 @@ const FilesPage = (): JSX.Element | null => {
                           `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
                           "_blank"
                         );
-                      } catch (err) {
+                      } catch (error) {
                         toast.error("Failed to generate download link");
                       }
                     }}
@@ -1091,21 +1095,18 @@ const FilesPage = (): JSX.Element | null => {
 
   return (
     <>
-      <div className="relative transition-colors">
-        {/* Background is now rendered in the layout for persistence */}
-
-        <div className="relative h-full p-5 md:p-8">
-          <div className="mx-auto">
+      <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+          <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
             {/* Header */}
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "transition-all hover:scale-110 active:scale-95",
-                    "text-zinc-400 hover:text-zinc-100"
-                  )}
-                />
-                <div>
+            <FadeIn delay={0}>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger
+                    className={cn(
+                      "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                    )}
+                  />
                   <div className="flex flex-wrap items-center gap-1">
                     <Link
                       href={getBasePath()}
@@ -1140,171 +1141,212 @@ const FilesPage = (): JSX.Element | null => {
                     })}
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <TextureButton
+                    variant="primary"
+                    size="sm"
+                    className="w-fit"
+                    onClick={handleUploadClick}
+                  >
+                    <BsUpload className="h-4 w-4" />
+                    Upload
+                  </TextureButton>
+                </div>
               </div>
-            </div>
-            <div
-              className={cn(
-                "relative mb-6 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <img src="/icons/24-file-download.svg" alt="storage_icon" />
-                <div className="flex-1">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className={cn("text-xs tracking-wider uppercase", "text-zinc-400")}>
-                      Storage
-                    </span>
-                    <span className={cn("text-xs", "text-zinc-400")}>
-                      {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
-                    </span>
+            </FadeIn>
+
+            <div className="space-y-4">
+              {/* Storage Card */}
+              <FadeIn delay={0.05}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Storage</div>
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    <div className="flex items-center gap-4">
+                      <img src="/icons/24-file-download.svg" alt="storage_icon" />
+                      <div className="flex-1">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-xs text-zinc-400">
+                            {storageUsedGB.toFixed(2)} GB / {storageTotalGB.toFixed(1)} GB
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-lg bg-zinc-800">
+                          <div
+                            className={cn(
+                              "h-full rounded-lg transition-all",
+                              storagePercentage > 90
+                                ? "bg-red-500"
+                                : storagePercentage > 70
+                                  ? "bg-amber-500"
+                                  : "bg-green-500"
+                            )}
+                            style={{ width: `${Math.min(100, storagePercentage)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className={cn("h-2 w-full", "rounded-lg bg-zinc-800")}>
-                    <div
-                      className={cn(
-                        "h-full rounded-lg transition-all",
-                        storagePercentage > 90
-                          ? "bg-red-500"
-                          : storagePercentage > 70
-                            ? "bg-amber-500"
-                            : "bg-green-500"
+                </div>
+              </FadeIn>
+
+              {/* Folders Card */}
+              <FadeIn delay={0.1}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Folders</div>
+                  <div className="relative flex h-72 flex-row flex-nowrap justify-center overflow-scroll rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    {/* filter out and display all the folder as well as their quanity */}
+                    {displayFiles.some((file) => file.type === "folder") ? (
+                      <div className="flex flex-wrap items-center gap-4 pb-2">
+                        {displayFiles
+                          .filter((file) => file.type === "folder")
+                          .map((folder) => (
+                            <div
+                              key={folder.path}
+                              onClick={() => navigateToFolder(folder.name)}
+                              className="cursor-pointer"
+                            >
+                              <FilledFolder folderName={folder.name} folderQuantity={0} />
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="item-center flex h-full w-full flex-col justify-center text-center text-sm text-zinc-500">
+                        <p>No folders found.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </FadeIn>
+
+              {/* Toolbar Card */}
+              <FadeIn delay={0.15}>
+                {/* Toolbar */}
+                <div
+                  className={cn(
+                    "sticky top-0 z-40 mb-6 overflow-hidden rounded-lg border border-zinc-200/10"
+                  )}
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(15, 15, 15, 1), rgba(10, 10, 10, 1))",
+                  }}
+                >
+                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <TextureButton
+                        variant="minimal"
+                        disabled={displayPath === "/"}
+                        onClick={navigateUp}
+                      >
+                        <BsArrowLeft className="h-4 w-4" />
+                        <span className="hidden text-xs tracking-wider uppercase sm:inline">
+                          Back
+                        </span>
+                      </TextureButton>
+                      <TextureButton variant="minimal" onClick={handleNewFolder}>
+                        <BsPlus className="h-4 w-4" />
+                        <span className="hidden text-xs tracking-wider uppercase sm:inline">
+                          New Folder
+                        </span>
+                      </TextureButton>
+                      <TextureButton variant="minimal" onClick={handleNewFile}>
+                        <BsFileText className="h-4 w-4" />
+                        <span className="hidden text-xs tracking-wider uppercase sm:inline">
+                          New File
+                        </span>
+                      </TextureButton>
+                      {selectedCount > 0 && (
+                        <span className={cn("ml-2 text-xs", "text-zinc-500")}>
+                          {selectedCount} selected
+                        </span>
                       )}
-                      style={{ width: `${Math.min(100, storagePercentage)}%` }}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/*TODO: TO ADD BACK THE SEARCH*/}
+                      {/*<Input*/}
+                      {/*    type="text"*/}
+                      {/*    value={searchQuery}*/}
+                      {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
+                      {/*    placeholder="Search..."*/}
+                      {/*    className="pt-0 mt-0 w-1/4"*/}
+                      {/*/>*/}
+                      <TextureButton
+                        variant="minimal"
+                        onClick={() => setSftpModalOpen(true)}
+                        title="SFTP Connection"
+                      >
+                        <BsTerminal className="h-4 w-4" />
+                        <span className="hidden text-xs tracking-wider uppercase md:inline">
+                          SFTP
+                        </span>
+                      </TextureButton>
+                      <TextureButton
+                        variant="minimal"
+                        onClick={handleUploadClick}
+                        title="Upload Files"
+                      >
+                        <BsUpload className="h-4 w-4" />
+                        <span className="hidden text-xs tracking-wider uppercase md:inline">
+                          Upload
+                        </span>
+                      </TextureButton>
+                      <TextureButton
+                        variant="minimal"
+                        onClick={handleToggleHiddenFiles}
+                        title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
+                      >
+                        <div>
+                          {showHiddenFiles ? (
+                            <BsEye className="h-4 w-4" />
+                          ) : (
+                            <BsEyeSlash className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="text-xs tracking-wider uppercase">
+                          {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
+                        </div>
+                      </TextureButton>
+                      <TextureButton
+                        variant="destructive"
+                        disabled={selectedCount === 0}
+                        onClick={handleBulkDelete}
+                      >
+                        <BsTrash className="h-4 w-4" />
+                        <span className="text-xs tracking-wider uppercase">Delete</span>
+                      </TextureButton>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+
+              {/* Files Table Card */}
+              <FadeIn delay={0.2}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
+                    Files{" "}
+                    {table.getFilteredRowModel().rows.length > 0 &&
+                      `(${table.getFilteredRowModel().rows.length})`}
+                  </div>
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                    <DataTable
+                      table={table}
+                      columns={columns}
+                      isLoading={isLoading}
+                      emptyMessage={
+                        searchQuery
+                          ? `No files matching "${searchQuery}" found.`
+                          : "No files found."
+                      }
+                      animateRows={true}
                     />
                   </div>
                 </div>
-              </div>
-            </div>
+              </FadeIn>
 
-            <div className="relative mb-6 overflow-scroll h-72 flex flex-row justify-center flex-nowrap rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
-            {/* filter out and display all the folder as well as their quanity */}
-              {displayFiles.some(file => file.type === "folder") ? (
-                  <div className="flex flex-wrap items-center gap-4 pb-2">
-                    {displayFiles
-                        .filter(file => file.type === "folder")
-                        .map(folder => (
-                            <div
-                                key={folder.path}
-                                onClick={() => navigateToFolder(folder.name)}
-                                className="cursor-pointer"
-                            >
-                              <FilledFolder
-                                  folderName={folder.name}
-                                  folderQuantity={0}
-                              />
-                            </div>
-                        ))}
-                  </div>
-              ) : (
-                  <div className="text-sm text-zinc-500 text-center flex flex-col w-full h-full item-center justify-center">
-                    <p>No folders found.</p>
-                  </div>
-              )}
-            </div>
-
-            {/* Toolbar */}
-            <div
-              className={cn(
-                "sticky top-0 z-40 mb-6 rounded-lg border border-zinc-200/10 overflow-hidden"
-              )}
-              style={{
-                background: 'linear-gradient(to bottom, rgba(20, 20, 20, 1), rgba(15, 15, 15, 1), rgba(10, 10, 10, 1))',
-              }}
-            >
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <TextureButton
-                    variant="minimal"
-                    disabled={displayPath === "/"}
-                    onClick={navigateUp}
-                  >
-                    <BsArrowLeft className="h-4 w-4" />
-                    <span className="hidden text-xs tracking-wider uppercase sm:inline">Back</span>
-                  </TextureButton>
-                  <TextureButton variant="minimal" onClick={handleNewFolder}>
-                    <BsPlus className="h-4 w-4" />
-                    <span className="hidden text-xs tracking-wider uppercase sm:inline">
-                      New Folder
-                    </span>
-                  </TextureButton>
-                  <TextureButton variant="minimal" onClick={handleNewFile}>
-                    <BsFileText className="h-4 w-4" />
-                    <span className="hidden text-xs tracking-wider uppercase sm:inline">
-                      New File
-                    </span>
-                  </TextureButton>
-                  {selectedCount > 0 && (
-                    <span className={cn("ml-2 text-xs", "text-zinc-500")}>
-                      {selectedCount} selected
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {/*TODO: TO ADD BACK THE SEARCH*/}
-                  {/*<Input*/}
-                  {/*    type="text"*/}
-                  {/*    value={searchQuery}*/}
-                  {/*    onChange={(e) => setSearchQuery(e.target.value)}*/}
-                  {/*    placeholder="Search..."*/}
-                  {/*    className="pt-0 mt-0 w-1/4"*/}
-                  {/*/>*/}
-                  <TextureButton
-                    variant="minimal"
-                    onClick={() => setSftpModalOpen(true)}
-                    title="SFTP Connection"
-                  >
-                    <BsTerminal className="h-4 w-4" />
-                    <span className="hidden text-xs tracking-wider uppercase md:inline">SFTP</span>
-                  </TextureButton>
-                  <TextureButton variant="minimal" onClick={handleUploadClick} title="Upload Files">
-                    <BsUpload className="h-4 w-4" />
-                    <span className="hidden text-xs tracking-wider uppercase md:inline">Upload</span>
-                  </TextureButton>
-                  <TextureButton
-                    variant="minimal"
-                    onClick={handleToggleHiddenFiles}
-                    title={showHiddenFiles ? "Hide hidden files" : "Show hidden files"}
-                  >
-                    <div>
-                      {showHiddenFiles ? (
-                        <BsEye className="h-4 w-4" />
-                      ) : (
-                        <BsEyeSlash className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="text-xs tracking-wider uppercase">
-                      {showHiddenFiles ? "Showing Hidden" : "Show Hidden"}
-                    </div>
-                  </TextureButton>
-                  <TextureButton
-                    variant="destructive"
-                    disabled={selectedCount === 0}
-                    onClick={handleBulkDelete}
-                  >
-                    <BsTrash className="h-4 w-4" />
-                    <span className="text-xs tracking-wider uppercase">Delete</span>
-                  </TextureButton>
-                </div>
-              </div>
-            </div>
-
-            {/* Data Table */}
-            <DataTable
-              table={table}
-              columns={columns}
-              isLoading={isLoading}
-              emptyMessage={
-                searchQuery ? `No files matching "${searchQuery}" found.` : "No files found."
-              }
-              animateRows={true}
-            />
-
-            {/* Footer */}
-            <div className={cn("mt-4 text-xs", "text-zinc-600")}>
-              {table.getFilteredRowModel().rows.length} file(s) - {selectedCount} selected
+              {/* Footer */}
+              <div className="mt-2 text-xs text-zinc-600">{selectedCount} selected</div>
             </div>
           </div>
         </div>
-      </div>
+      </FadeIn>
 
       <AnimatePresence>
         {isDraggingOver && (
@@ -1334,8 +1376,12 @@ const FilesPage = (): JSX.Element | null => {
               >
                 <BsCloudUpload className={cn("mx-auto mb-4 h-16 w-16", "text-zinc-400")} />
               </motion.div>
-              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>DROP FILES TO UPLOAD</p>
-              <p className={cn("mt-2 text-sm", "text-zinc-500")}>Files will be uploaded to: {currentPath}</p>
+              <p className={cn("text-xl font-light tracking-wider", "text-zinc-200")}>
+                DROP FILES TO UPLOAD
+              </p>
+              <p className={cn("mt-2 text-sm", "text-zinc-500")}>
+                Files will be uploaded to: {currentPath}
+              </p>
             </motion.div>
           </motion.div>
         )}
