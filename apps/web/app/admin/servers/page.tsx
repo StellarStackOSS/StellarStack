@@ -20,7 +20,7 @@ import {
   Play,
   Plus,
   RefreshCw,
-  Server,
+  Server as ServerIcon,
   Square,
   Trash,
 } from "lucide-react";
@@ -142,7 +142,7 @@ export default function AdminServersPage() {
                                   "rounded border border-zinc-700 bg-zinc-800/50 p-2.5"
                                 )}
                               >
-                                <Server className={cn("h-5 w-5 text-zinc-400")} />
+                                <ServerIcon className={cn("h-5 w-5 text-zinc-400")} />
                               </div>
                               <div>
                                 <div className="flex items-center gap-3">

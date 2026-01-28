@@ -13,7 +13,7 @@ import {
   Plus,
   RefreshCw,
   Save,
-  Split,
+  GitFork,
   Trash,
 } from "lucide-react";
 import { useServer, useServerMutations } from "@/hooks/queries";
@@ -731,7 +731,7 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => router.push(`/servers/${serverId}/split`)}
                       >
-                        <Split className="h-4 w-4" />
+                        <GitFork className="h-4 w-4" />
                         Manage
                         <ExternalLink className="h-3 w-3" />
                       </TextureButton>

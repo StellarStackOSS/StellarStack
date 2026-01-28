@@ -8,15 +8,7 @@ import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { DataTable } from "@workspace/ui/components/data-table";
-import {
-  ArrowLeft,
-  Edit,
-  Plus,
-  Search,
-  Shield,
-  Trash,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Edit, Plus, Search, Shield, Trash, User as UserIcon } from "lucide-react";
 import { useUserMutations, useUsers } from "@/hooks/queries";
 import { useAuth } from "hooks/auth-provider";
 import type { User } from "@/lib/api";
@@ -65,7 +57,7 @@ export default function UsersPage() {
                 {user.role === "admin" ? (
                   <Shield className="h-4 w-4" />
                 ) : (
-                  <User className="h-4 w-4" />
+                  <UserIcon className="h-4 w-4" />
                 )}
               </div>
               <div>
@@ -111,7 +103,7 @@ export default function UsersPage() {
               {user.role === "admin" ? (
                 <Shield className="h-3 w-3" />
               ) : (
-                <User className="h-3 w-3" />
+                <UserIcon className="h-3 w-3" />
               )}
               {user.role}
             </TextureButton>

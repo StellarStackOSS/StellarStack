@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import {
-  Cpu,
-  MapPin,
-  Package,
-  Server,
-  Settings,
-  Users,
-} from "lucide-react";
+import { Cpu, MapPin, Package, Server as ServerIcon, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import type { Blueprint, Location, Node, Server, User } from "@/lib/api";
 import { account, blueprints, locations, nodes, servers } from "@/lib/api";
@@ -157,7 +150,7 @@ export default function AdminOverviewPage() {
               <StatCard
                 title="Servers"
                 value={isLoading ? "..." : `${stats.serversRunning}/${stats.servers}`}
-                icon={Server}
+                icon={ServerIcon}
                 href="/admin/servers"
                 color={stats.serversRunning > 0 ? "green" : "zinc"}
               />
@@ -174,12 +167,7 @@ export default function AdminOverviewPage() {
                 icon={Users}
                 href="/admin/users"
               />
-              <StatCard
-                title="Settings"
-                value="Configure"
-                icon={Settings}
-                href="/admin/settings"
-              />
+              <StatCard title="Settings" value="Configure" icon={Settings} href="/admin/settings" />
             </div>
           </FadeIn>
 
@@ -223,7 +211,7 @@ export default function AdminOverviewPage() {
                     "relative border border-zinc-700/50 bg-zinc-900/50 p-4 text-center text-zinc-300 transition-all hover:scale-[1.02] hover:border-purple-500/50"
                   )}
                 >
-                  <Server className={cn("mx-auto mb-2 h-6 w-6 text-purple-400")} />
+                  <ServerIcon className={cn("mx-auto mb-2 h-6 w-6 text-purple-400")} />
                   <span className="text-xs tracking-wider uppercase">Create Server</span>
                 </Link>
               </div>
