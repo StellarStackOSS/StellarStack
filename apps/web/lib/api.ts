@@ -82,6 +82,17 @@ const request = async <T>(endpoint: string, options: RequestOptions = {}): Promi
   return JSON.parse(text) as T;
 };
 
+// API Client wrapper for use in class-based clients
+export const getApiClient = () => ({
+  get: <T>(endpoint: string, _options?: { responseType?: string }) => request<T>(endpoint),
+  post: <T>(endpoint: string, data?: unknown) =>
+    request<T>(endpoint, { method: "POST", body: data }),
+  put: <T>(endpoint: string, data?: unknown) => request<T>(endpoint, { method: "PUT", body: data }),
+  patch: <T>(endpoint: string, data?: unknown) =>
+    request<T>(endpoint, { method: "PATCH", body: data }),
+  delete: <T>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
+});
+
 // Account endpoints
 export const account = {
   me: () => request<User>("/api/account/me"),

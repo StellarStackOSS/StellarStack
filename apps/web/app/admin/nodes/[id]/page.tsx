@@ -4,16 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { TextureButton } from "@workspace/ui/components/texture-button";
-import {
-  Activity,
-  ArrowLeft,
-  Cpu,
-  HardDrive,
-  MemoryStick,
-  Plus,
-  Server,
-  Trash,
-} from "lucide-react";
+import { Activity, ArrowLeft, Cpu, HardDrive, Database, Plus, Server, Trash } from "lucide-react";
 import type { Allocation, Node, NodeStats } from "@/lib/api";
 import { nodes } from "@/lib/api";
 import { toast } from "sonner";
@@ -193,7 +184,7 @@ export default function NodeDetailPage() {
           {/* Memory */}
           <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
             <div className="mb-2 flex items-center gap-2">
-              <MemoryStick className={cn("h-4 w-4 text-zinc-400")} />
+              <Database className={cn("h-4 w-4 text-zinc-400")} />
               <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Memory</span>
             </div>
             <div className={cn("text-2xl font-light text-zinc-100")}>
