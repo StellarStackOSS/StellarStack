@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.8](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.7...v1.3.8) (2026-01-28)
+
+
+### Bug Fixes
+
+* fix lock file ([e900aff](https://github.com/StellarStackOSS/StellarStack/commit/e900affa2545fc2fe7612a4abb9a82feaf3a186e))
+
 ## [1.3.7](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.6...v1.3.7) (2026-01-28)
 
 
