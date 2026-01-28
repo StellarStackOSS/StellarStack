@@ -2,6 +2,7 @@
 
 import { type JSX, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import {
@@ -103,129 +104,108 @@ const NotificationsPage = (): JSX.Element | null => {
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
       case "info":
-        return <BsInfoCircle className="h-4 w-4 text-blue-500" />;
+        return <BsInfoCircle className="h-4 w-4 text-blue-400" />;
       case "warning":
-        return <BsExclamationTriangle className="h-4 w-4 text-amber-500" />;
+        return <BsExclamationTriangle className="h-4 w-4 text-amber-400" />;
       case "error":
-        return <BsExclamationTriangle className="h-4 w-4 text-red-500" />;
+        return <BsExclamationTriangle className="h-4 w-4 text-red-400" />;
       case "success":
-        return <BsCheck className="h-4 w-4 text-green-500" />;
+        return <BsCheck className="h-4 w-4 text-green-400" />;
       case "server":
-        return <BsServer className="h-4 w-4 text-purple-500" />;
+        return <BsServer className="h-4 w-4 text-purple-400" />;
       case "security":
-        return <BsShieldExclamation className="h-4 w-4 text-orange-500" />;
+        return <BsShieldExclamation className="h-4 w-4 text-orange-400" />;
     }
   };
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                )}
-              />
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-                    NOTIFICATIONS
-                  </h1>
-                  {unreadCount > 0 && (
-                    <span
-                      className={cn(
-                        "border border-blue-500/50 px-2 py-0.5 text-[10px] font-medium tracking-wider text-blue-400 uppercase"
-                      )}
-                    >
-                      {unreadCount} new
-                    </span>
-                  )}
-                </div>
-                <p className={cn("mt-1 text-sm text-zinc-500")}>
-                  Stay updated on your servers and account
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <TextureButton variant="minimal" onClick={markAllAsRead}>
-                  <BsCheckAll className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Mark All Read</span>
-                </TextureButton>
-              )}
-            </div>
-          </div>
-
-          {/* Notifications List */}
-          <div
-            className={cn(
-              "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
-            {/* Corner decorations */}
-            <div
-              className={cn("absolute top-0 left-0 h-3 w-3 border-t border-l border-zinc-500")}
-            />
-            <div
-              className={cn("absolute top-0 right-0 h-3 w-3 border-t border-r border-zinc-500")}
-            />
-            <div
-              className={cn("absolute bottom-0 left-0 h-3 w-3 border-b border-l border-zinc-500")}
-            />
-            <div
-              className={cn("absolute right-0 bottom-0 h-3 w-3 border-r border-b border-zinc-500")}
-            />
-
-            {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <BsBell className={cn("mb-4 h-12 w-12 text-zinc-700")} />
-                <p className={cn("text-sm text-zinc-500")}>No notifications yet</p>
-              </div>
-            ) : (
-              notifications.map((notification, index) => (
-                <TextureButton
-                  variant="minimal"
-                  key={notification.id}
-                  onClick={() => markAsRead(notification.id)}
-                >
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border border-zinc-700 bg-zinc-800/50"
-                    )}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <TextureButton
+                    variant="minimal"
+                    size="sm"
+                    className="w-fit"
+                    onClick={markAllAsRead}
                   >
-                    {getNotificationIcon(notification.type)}
+                    <BsCheckAll className="h-4 w-4" />
+                    Mark All Read
+                  </TextureButton>
+                )}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Notifications Content */}
+          <FadeIn delay={0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsBell className="h-3 w-3" />
+                  Notifications
+                </div>
+                {unreadCount > 0 && (
+                  <span className="rounded bg-blue-900/50 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <BsBell className="mb-4 h-12 w-12 text-zinc-700" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Notifications</h3>
+                    <p className="text-xs text-zinc-500">You're all caught up!</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className={cn("text-sm font-medium text-zinc-200")}>
-                        {notification.title}
-                      </span>
-                      {!notification.read && <span className="h-2 w-2 rounded-full bg-blue-500" />}
-                    </div>
-                    <p className={cn("mt-1 text-xs text-zinc-400")}>{notification.message}</p>
-                    {notification.serverName && (
-                      <span
+                ) : (
+                  <div className="divide-y divide-zinc-800/50">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => markAsRead(notification.id)}
                         className={cn(
-                          "mt-2 inline-block border border-zinc-700 px-2 py-0.5 text-[10px] font-medium tracking-wider text-zinc-500 uppercase"
+                          "flex cursor-pointer items-start gap-4 p-4 transition-colors hover:bg-zinc-800/20",
+                          !notification.read && "bg-zinc-800/10"
                         )}
                       >
-                        {notification.serverName}
-                      </span>
-                    )}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700/50 bg-zinc-800/50">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-zinc-200">
+                              {notification.title}
+                            </span>
+                            {!notification.read && (
+                              <span className="h-2 w-2 rounded-full bg-blue-500" />
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-zinc-400">{notification.message}</p>
+                          {notification.serverName && (
+                            <span className="mt-2 inline-block rounded border border-zinc-700 px-2 py-0.5 text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                              {notification.serverName}
+                            </span>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs text-zinc-600">
+                          {notification.timestamp}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <span className={cn("shrink-0 text-xs text-zinc-600")}>
-                    {notification.timestamp}
-                  </span>
-                </TextureButton>
-              ))
-            )}
-          </div>
+                )}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
-    </div>
+    </FadeIn>
   );
 };
 

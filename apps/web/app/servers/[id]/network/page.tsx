@@ -9,12 +9,14 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Switch } from "@workspace/ui/components/switch";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { BsGlobe, BsHddNetwork, BsKey, BsPlus, BsStar, BsStarFill, BsTrash } from "react-icons/bs";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { type Allocation, features, servers, type SubdomainFeatureStatus } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "hooks/auth-provider";
 import { Label } from "@workspace/ui/components/label";
 
 interface Subdomain {
@@ -37,8 +39,8 @@ const NetworkPage = (): JSX.Element | null => {
   // Get server data for SFTP details and primary allocation
   const { server, consoleInfo, isInstalling, refetch } = useServer();
 
-  // Get user session for SFTP username
-  const { data: session } = useSession();
+  // Get user for SFTP username
+  const { user } = useAuth();
 
   // Modal states
   const [deletePortModalOpen, setDeletePortModalOpen] = useState(false);
@@ -68,8 +70,8 @@ const NetworkPage = (): JSX.Element | null => {
     try {
       const status = await features.subdomains();
       setSubdomainFeature(status);
-    } catch (err) {
-      console.error("Failed to fetch subdomain feature status:", err);
+    } catch (error) {
+      console.error("Failed to fetch subdomain feature status:", error);
       setSubdomainFeature({ enabled: false, baseDomain: null, dnsProvider: "manual" });
     }
   };
@@ -79,8 +81,8 @@ const NetworkPage = (): JSX.Element | null => {
       setLoading(true);
       const data = await servers.allocations.list(serverId);
       setAllocations(data);
-    } catch (err) {
-      console.error("Failed to fetch allocations:", err);
+    } catch (error) {
+      console.error("Failed to fetch allocations:", error);
     } finally {
       setLoading(false);
     }
@@ -90,8 +92,8 @@ const NetworkPage = (): JSX.Element | null => {
     try {
       const data = await servers.allocations.available(serverId);
       setAvailableAllocations(data);
-    } catch (err) {
-      console.error("Failed to fetch available allocations:", err);
+    } catch (error) {
+      console.error("Failed to fetch available allocations:", error);
     }
   };
 
@@ -110,8 +112,8 @@ const NetworkPage = (): JSX.Element | null => {
       await refetch();
       setAddAllocationModalOpen(false);
       setSelectedNewAllocation(null);
-    } catch (err) {
-      console.error("Failed to add allocation:", err);
+    } catch (error) {
+      console.error("Failed to add allocation:", error);
     } finally {
       setAddingAllocation(false);
     }
@@ -168,8 +170,8 @@ const NetworkPage = (): JSX.Element | null => {
       await fetchAllocations();
       setDeletePortModalOpen(false);
       setSelectedAllocation(null);
-    } catch (err) {
-      console.error("Failed to delete allocation:", err);
+    } catch (error) {
+      console.error("Failed to delete allocation:", error);
     }
   };
 
@@ -180,8 +182,8 @@ const NetworkPage = (): JSX.Element | null => {
       setSettingPrimary(allocation.id);
       await servers.allocations.setPrimary(serverId, allocation.id);
       await refetch();
-    } catch (err) {
-      console.error("Failed to set primary allocation:", err);
+    } catch (error) {
+      console.error("Failed to set primary allocation:", error);
     } finally {
       setSettingPrimary(null);
     }
@@ -219,276 +221,282 @@ const NetworkPage = (): JSX.Element | null => {
   const canAddAllocation = allocationsRemaining > 0;
 
   return (
-    <div className="relative min-h-full transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={openAddAllocationModal}
+                  disabled={!canAddAllocation}
+                  title={canAddAllocation ? "Add a new allocation" : "Allocation limit reached"}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  Add Allocation
+                </TextureButton>
+              </div>
             </div>
-          </div>
+          </FadeIn>
 
-          {/* Port Allocations Section */}
-          <div className="mb-8">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <BsHddNetwork className={cn("h-5 w-5", "text-zinc-400")} />
-                  <h2
-                    className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
-                  >
+          <div className="space-y-4">
+            {/* Port Allocations Card */}
+            <FadeIn delay={0.05}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                  <div className="flex items-center gap-2 text-xs opacity-50">
+                    <BsHddNetwork className="h-3 w-3" />
                     Port Allocations
-                  </h2>
+                  </div>
+                  <span className="text-xs text-zinc-500">
+                    {allocations.length} / {allocationLimit} used
+                  </span>
                 </div>
-                <span className={cn("text-xs", "text-zinc-500")}>
-                  {allocations.length} / {allocationLimit} used
-                </span>
-              </div>
-              <TextureButton
-                variant="primary"
-                onClick={openAddAllocationModal}
-                disabled={!canAddAllocation}
-                title={canAddAllocation ? "Add a new allocation" : "Allocation limit reached"}
-              >
-                <BsPlus className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">Add Allocation</span>
-              </TextureButton>
-            </div>
-
-            {loading ? (
-              <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
-                Loading allocations...
-              </div>
-            ) : allocations.length === 0 ? (
-              <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
-                No allocations assigned to this server.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {allocations.map((allocation) => (
-                  <div
-                    key={allocation.id}
-                    className={cn(
-                      "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 transition-all"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={cn("font-mono text-lg font-medium", "text-zinc-100")}>
-                          {allocation.ip}:{allocation.port}
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Spinner />
+                    </div>
+                  ) : allocations.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <BsHddNetwork className="mb-4 h-12 w-12 text-zinc-600" />
+                      <h3 className="mb-2 text-sm font-medium text-zinc-300">No Allocations</h3>
+                      <p className="mb-4 text-xs text-zinc-500">
+                        No port allocations assigned to this server.
+                      </p>
+                      <TextureButton
+                        variant="minimal"
+                        size="sm"
+                        className="w-fit"
+                        onClick={openAddAllocationModal}
+                      >
+                        <BsPlus className="h-4 w-4" />
+                        Add Allocation
+                      </TextureButton>
+                    </div>
+                  ) : (
+                    allocations.map((allocation, index) => (
+                      <div
+                        key={allocation.id}
+                        className={cn(
+                          "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                          index !== allocations.length - 1 && "border-b border-zinc-800/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="font-mono text-lg font-medium text-zinc-100">
+                            {allocation.ip}:{allocation.port}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isPrimary(allocation) && (
+                              <span className="rounded border border-green-500/50 px-2 py-0.5 text-[10px] font-medium tracking-wider text-green-400 uppercase">
+                                Primary
+                              </span>
+                            )}
+                            {allocation.alias && (
+                              <span className="text-sm text-zinc-500">{allocation.alias}</span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isPrimary(allocation) && (
-                            <span
-                              className={cn(
-                                "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                "border-green-500/50 text-green-400"
-                              )}
+                          {!isPrimary(allocation) && (
+                            <TextureButton
+                              variant="minimal"
+                              size="sm"
+                              className="w-fit"
+                              disabled={settingPrimary === allocation.id}
+                              onClick={() => handleSetPrimary(allocation)}
+                              title="Set as primary"
                             >
-                              Primary
-                            </span>
+                              {settingPrimary === allocation.id ? (
+                                <Spinner className="h-4 w-4" />
+                              ) : (
+                                <BsStar className="h-4 w-4" />
+                              )}
+                            </TextureButton>
                           )}
-                          {allocation.alias && (
-                            <span className={cn("text-sm", "text-zinc-500")}>
-                              {allocation.alias}
-                            </span>
+                          {isPrimary(allocation) && (
+                            <div className="p-2 text-yellow-400">
+                              <BsStarFill className="h-4 w-4" />
+                            </div>
                           )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!isPrimary(allocation) && (
                           <TextureButton
                             variant="minimal"
                             size="sm"
-                            disabled={settingPrimary === allocation.id}
-                            onClick={() => handleSetPrimary(allocation)}
-                            title="Set as primary"
+                            className="w-fit"
+                            disabled={isPrimary(allocation) || allocations.length <= 1}
+                            onClick={() => openDeletePortModal(allocation)}
                           >
-                            {settingPrimary === allocation.id ? (
-                              <span className="h-4 w-4 animate-spin">⏳</span>
-                            ) : (
-                              <BsStar className="h-4 w-4" />
-                            )}
+                            <BsTrash className="h-4 w-4" />
                           </TextureButton>
-                        )}
-                        {isPrimary(allocation) && (
-                          <div className={cn("p-2", "text-yellow-400")}>
-                            <BsStarFill className="h-4 w-4" />
-                          </div>
-                        )}
-                        <TextureButton
-                          variant="minimal"
-                          size="sm"
-                          disabled={isPrimary(allocation) || allocations.length <= 1}
-                          onClick={() => openDeletePortModal(allocation)}
-                        >
-                          <BsTrash className="h-4 w-4" />
-                        </TextureButton>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Subdomains Section - Only show if feature is enabled */}
-          {subdomainFeature?.enabled && (
-            <div className="mb-8">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BsGlobe className={cn("h-5 w-5", "text-zinc-400")} />
-                  <h2
-                    className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
-                  >
-                    Subdomains
-                  </h2>
-                </div>
-                <TextureButton variant="minimal" size="sm" onClick={openAddSubdomainModal}>
-                  <BsPlus className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Add Subdomain</span>
-                </TextureButton>
-              </div>
-
-              {subdomains.length === 0 ? (
-                <div className={cn("border p-8 text-center", "border-zinc-800 text-zinc-500")}>
-                  No subdomains configured. Add a subdomain to create a friendly URL for your
-                  server.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {subdomains.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className={cn(
-                        "relative border p-4 transition-all",
-                        "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={cn("font-mono text-sm", "text-zinc-100")}>
-                            {sub.subdomain}.{sub.domain}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {sub.ssl && (
-                              <span
-                                className={cn(
-                                  "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                  "border-green-500/50 text-green-400"
-                                )}
-                              >
-                                SSL
-                              </span>
-                            )}
-                          </div>
-                          <span className={cn("text-sm", "text-zinc-500")}>
-                            → Port {sub.targetPort}
-                          </span>
                         </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Subdomains Card - Only show if feature is enabled */}
+            {subdomainFeature?.enabled && (
+              <FadeIn delay={0.1}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                    <div className="flex items-center gap-2 text-xs opacity-50">
+                      <BsGlobe className="h-3 w-3" />
+                      Subdomains
+                    </div>
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={openAddSubdomainModal}
+                    >
+                      <BsPlus className="h-4 w-4" />
+                      Add
+                    </TextureButton>
+                  </div>
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                    {subdomains.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <BsGlobe className="mb-4 h-12 w-12 text-zinc-600" />
+                        <h3 className="mb-2 text-sm font-medium text-zinc-300">No Subdomains</h3>
+                        <p className="mb-4 text-center text-xs text-zinc-500">
+                          Add a subdomain to create a friendly URL for your server.
+                        </p>
                         <TextureButton
                           variant="minimal"
                           size="sm"
-                          onClick={() => openDeleteSubdomainModal(sub)}
+                          className="w-fit"
+                          onClick={openAddSubdomainModal}
                         >
-                          <BsTrash className="h-4 w-4" />
+                          <BsPlus className="h-4 w-4" />
+                          Add Subdomain
                         </TextureButton>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* SFTP Connection Details Section */}
-          <div className="mb-8">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BsKey className={cn("h-5 w-5", "text-zinc-400")} />
-                <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-zinc-300")}>
-                  SFTP Connection
-                </h2>
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "relative border p-6 transition-all",
-                "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-              )}
-            >
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div>
-                  <Label>Host</Label>
-                  <div className={cn("font-mono text-sm", "text-zinc-100")}>
-                    {server?.node?.host || <span className="text-zinc-600">Loading...</span>}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Port</Label>
-                  <div className={cn("font-mono text-sm", "text-zinc-100")}>
-                    {server?.node?.sftpPort ?? 2022}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Username</Label>
-                  <div className={cn("font-mono text-sm break-all", "text-zinc-100")}>
-                    {server && session?.user ? (
-                      `${server.id}.${session.user.email}`
                     ) : (
-                      <span className="text-zinc-600">Loading...</span>
+                      subdomains.map((sub, index) => (
+                        <div
+                          key={sub.id}
+                          className={cn(
+                            "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                            index !== subdomains.length - 1 && "border-b border-zinc-800/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="font-mono text-sm text-zinc-100">
+                              {sub.subdomain}.{sub.domain}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {sub.ssl && (
+                                <span className="rounded border border-green-500/50 px-2 py-0.5 text-[10px] font-medium tracking-wider text-green-400 uppercase">
+                                  SSL
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm text-zinc-500">→ Port {sub.targetPort}</span>
+                          </div>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => openDeleteSubdomainModal(sub)}
+                          >
+                            <BsTrash className="h-4 w-4" />
+                          </TextureButton>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
+              </FadeIn>
+            )}
+
+            {/* SFTP Connection Card */}
+            <FadeIn delay={subdomainFeature?.enabled ? 0.15 : 0.1}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
+                  <BsKey className="h-3 w-3" />
+                  SFTP Connection
+                </div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div>
+                      <Label className="text-xs text-zinc-500">Host</Label>
+                      <div className="mt-1 font-mono text-sm text-zinc-100">
+                        {server?.node?.host || <span className="text-zinc-600">Loading...</span>}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500">Port</Label>
+                      <div className="mt-1 font-mono text-sm text-zinc-100">
+                        {server?.node?.sftpPort ?? 2022}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500">Username</Label>
+                      <div className="mt-1 font-mono text-sm break-all text-zinc-100">
+                        {server && user ? (
+                          `${server.id}.${user.email}`
+                        ) : (
+                          <span className="text-zinc-600">Loading...</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex gap-3">
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => {
+                        if (!server || !user) return;
+                        const host = server.node?.host || "localhost";
+                        const port = server.node?.sftpPort || 2022;
+                        const username = `${server.id}.${user.email}`;
+                        window.open(`sftp://${username}@${host}:${port}`, "_blank");
+                      }}
+                      disabled={!server || !user}
+                    >
+                      <BsKey className="h-4 w-4" />
+                      Connect via SFTP
+                    </TextureButton>
+
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => {
+                        if (!server || !user) return;
+                        const host = server.node?.host || "localhost";
+                        const port = server.node?.sftpPort || 2022;
+                        const username = `${server.id}.${user.email}`;
+                        navigator.clipboard.writeText(`sftp://${username}@${host}:${port}`);
+                      }}
+                      disabled={!server || !user}
+                    >
+                      Copy Connection URL
+                    </TextureButton>
+                  </div>
+
+                  <p className="mt-4 text-xs text-zinc-600">
+                    Use your account password to authenticate via SFTP.
+                  </p>
+                </div>
               </div>
-
-              <div className="mt-6 flex gap-3">
-                <TextureButton
-                  variant="minimal"
-                  onClick={() => {
-                    if (!server || !session?.user) return;
-                    const host = server.node?.host || "localhost";
-                    const port = server.node?.sftpPort || 2022;
-                    const username = `${server.id}.${session.user.email}`;
-                    // Try to open SFTP URL - this will work if user has an SFTP handler installed
-                    window.open(`sftp://${username}@${host}:${port}`, "_blank");
-                  }}
-                  disabled={!server || !session?.user}
-                >
-                  <BsKey className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Connect via SFTP</span>
-                </TextureButton>
-
-                <TextureButton
-                  variant="minimal"
-                  onClick={() => {
-                    if (!server || !session?.user) return;
-                    const host = server.node?.host || "localhost";
-                    const port = server.node?.sftpPort || 2022;
-                    const username = `${server.id}.${session.user.email}`;
-                    navigator.clipboard.writeText(`sftp://${username}@${host}:${port}`);
-                  }}
-                  disabled={!server || !session?.user}
-                >
-                  <span className="text-xs tracking-wider uppercase">Copy Connection URL</span>
-                </TextureButton>
-              </div>
-
-              <p className={cn("mt-4 text-xs", "text-zinc-600")}>
-                Use your account password to authenticate via SFTP.
-              </p>
-            </div>
+            </FadeIn>
           </div>
         </div>
       </div>
@@ -629,7 +637,7 @@ const NetworkPage = (): JSX.Element | null => {
           </div>
         </div>
       </FormModal>
-    </div>
+    </FadeIn>
   );
 };
 

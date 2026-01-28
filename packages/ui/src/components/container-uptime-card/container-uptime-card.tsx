@@ -44,10 +44,7 @@ export const ContainerUptimeCard = ({
   }
 
   return (
-    <UsageCard className={cn("h-full", isXs && "p-4", isOffline && "opacity-60")}>
-      <UsageCardTitle className={cn("opacity-80", isCompact ? "text-xs mb-2" : "text-md")}>
-        {labels.title}
-      </UsageCardTitle>
+    <UsageCard title={labels.title} className={cn("h-full", isOffline && "opacity-60")}>
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <div className="flex items-baseline gap-2">
           <span className={cn(

@@ -3,21 +3,23 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
-import {
-  ArrowLeft,
-  ExternalLink,
-  Network,
-  Plus,
-  RefreshCw,
-  Save,
-  GitFork,
-  Trash,
-} from "lucide-react";
-import { useServer, useServerMutations } from "@/hooks/queries";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import {
+  BsArrowLeft,
+  BsBoxArrowRight,
+  BsHdd,
+  BsPlus,
+  BsArrowRepeat,
+  BsSave,
+  BsSliders,
+  BsTrash,
+  BsPencil,
+} from "react-icons/bs";
+import { useServer, useServerMutations } from "@/hooks/queries";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -40,8 +42,6 @@ export default function EditServerPage() {
   // React Query hooks
   const { data: server, isLoading, refetch } = useServer(serverId);
   const { update, reinstall, setStatus } = useServerMutations();
-
-  //TODO: CLEAN UP THIS USESTATE WALL?? WTF
 
   // Modal state
   const [reinstallModalOpen, setReinstallModalOpen] = useState(false);
@@ -77,7 +77,7 @@ export default function EditServerPage() {
   // Track if form has been initialized to prevent polling from overwriting user edits
   const [formInitialized, setFormInitialized] = useState(false);
 
-  // Form state - use strings for number fields to allow empty state while editing
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -106,7 +106,6 @@ export default function EditServerPage() {
         oomKillDisable: server.oomKillDisable,
         backupLimit: String(server.backupLimit),
       });
-      // Set initial allocations from server data
       if (server.allocations) {
         setAllocations(server.allocations);
       }
@@ -121,13 +120,12 @@ export default function EditServerPage() {
       try {
         const list = await blueprints.list();
         setBlueprintList(list);
-      } catch (_err: unknown) {
+      } catch (error: any) {
         toast.error("Failed to load blueprints");
       } finally {
         setIsLoadingBlueprints(false);
       }
     };
-
     loadBlueprints();
   }, []);
 
@@ -138,13 +136,12 @@ export default function EditServerPage() {
       try {
         const list = await nodes.list();
         setNodesList(list);
-      } catch (_err: unknown) {
+      } catch (error: any) {
         toast.error("Failed to load nodes");
       } finally {
         setIsLoadingNodes(false);
       }
     };
-
     loadNodes();
   }, []);
 
@@ -155,7 +152,7 @@ export default function EditServerPage() {
     try {
       const allocs = await servers.allocations.list(serverId);
       setAllocations(allocs);
-    } catch (_err: unknown) {
+    } catch (error: any) {
       toast.error("Failed to load allocations");
     } finally {
       setIsLoadingAllocations(false);
@@ -168,7 +165,7 @@ export default function EditServerPage() {
     try {
       const available = await servers.allocations.available(serverId);
       setAvailableAllocations(available);
-    } catch (_err: unknown) {
+    } catch (error: any) {
       toast.error("Failed to load available allocations");
     }
   };
@@ -183,8 +180,8 @@ export default function EditServerPage() {
       setShowAddAllocation(false);
       setSelectedAllocationId("");
       loadAllocations();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to add allocation");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add allocation");
     } finally {
       setIsAddingAllocation(false);
     }
@@ -198,8 +195,8 @@ export default function EditServerPage() {
       await servers.allocations.remove(serverId, allocationId);
       toast.success("Allocation removed successfully");
       loadAllocations();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to remove allocation");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to remove allocation");
     } finally {
       setRemovingAllocationId(null);
     }
@@ -215,8 +212,8 @@ export default function EditServerPage() {
       setShowTransferModal(false);
       setSelectedTargetNodeId("");
       fetchTransferStatus();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to initiate transfer");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate transfer");
     } finally {
       setIsTransferring(false);
     }
@@ -227,8 +224,8 @@ export default function EditServerPage() {
     try {
       const status = await servers.transfer.get(serverId);
       setTransferStatus(status);
-    } catch (_err: unknown) {
-      console.error("Failed to fetch transfer status", _err);
+    } catch (error: any) {
+      console.error("Failed to fetch transfer status", error);
     }
   };
 
@@ -238,8 +235,8 @@ export default function EditServerPage() {
       await servers.transfer.cancel(serverId);
       toast.success("Transfer cancelled");
       setTransferStatus(null);
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to cancel transfer");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to cancel transfer");
     }
   };
 
@@ -247,7 +244,7 @@ export default function EditServerPage() {
   useEffect(() => {
     if (showTransferModal && serverId) {
       fetchTransferStatus();
-      const interval = setInterval(fetchTransferStatus, 5000); // Poll every 5 seconds
+      const interval = setInterval(fetchTransferStatus, 5000);
       return () => clearInterval(interval);
     }
   }, [showTransferModal, serverId]);
@@ -259,8 +256,8 @@ export default function EditServerPage() {
       toast.success("Server reinstall initiated");
       setReinstallModalOpen(false);
       refetch();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to reinstall server");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reinstall server");
     } finally {
       setIsReinstalling(false);
     }
@@ -272,8 +269,8 @@ export default function EditServerPage() {
       toast.success(`Server status set to ${newStatus}`);
       setSelectedStatus(newStatus);
       refetch();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to update server status");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update server status");
     }
   };
 
@@ -289,8 +286,8 @@ export default function EditServerPage() {
       setShowBlueprintModal(false);
       setReinstallOnBlueprintChange(false);
       refetch();
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to change server blueprint");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change server blueprint");
     } finally {
       setIsChangingBlueprint(false);
     }
@@ -298,7 +295,6 @@ export default function EditServerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       await update.mutateAsync({
         id: serverId,
@@ -316,535 +312,520 @@ export default function EditServerPage() {
       });
       toast.success("Server updated successfully");
       router.push("/admin/servers");
-    } catch (_err: unknown) {
-      toast.error((_err as Error)?.message || "Failed to update server");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update server");
     }
   };
 
   if (isLoading) {
     return (
-      <div className={cn("relative flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <Spinner className="h-6 w-6" />
-      </div>
+      <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+          <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col items-center justify-center rounded-lg bg-black px-4 pb-4">
+            <Spinner className="h-8 w-8" />
+          </div>
+        </div>
+      </FadeIn>
     );
   }
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="w-full">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="mb-8 flex items-center gap-4">
-              <TextureButton
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/admin/servers")}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </TextureButton>
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-                  EDIT SERVER
-                </h1>
-                <p className={cn("mt-1 text-sm text-zinc-500")}>
-                  {server?.name} ({server?.shortId})
-                </p>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => router.push("/admin/servers")}
+                >
+                  <BsArrowLeft className="h-4 w-4" />
+                  Back
+                </TextureButton>
               </div>
             </div>
           </FadeIn>
 
+          {/* Page Title */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4">
+              <h1 className="text-xl font-semibold text-zinc-100">Edit Server</h1>
+              <p className="text-sm text-zinc-500">
+                {server?.name} ({server?.shortId})
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* Form Content */}
           <FadeIn delay={0.1}>
             <form onSubmit={handleSubmit}>
-              <div className={cn("relative rounded-lg border border-zinc-700 bg-zinc-900/50 p-6")}>
-                <div className="space-y-4">
-                  {/* Basic Info */}
-                  <div>
-                    <Label>Name</Label>
-                    <Input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                  <div className="flex items-center gap-2 text-xs opacity-50">
+                    <BsPencil className="h-3 w-3" />
+                    Server Configuration
                   </div>
-
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Optional description..."
-                      rows={5}
-                    />
-                  </div>
-
-                  {/* Resources */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <h3
-                      className={cn(
-                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                      )}
-                    >
-                      Resources
-                    </h3>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label>CPU (%)</Label>
-                        <Input
-                          type="number"
-                          value={formData.cpu}
-                          onChange={(e) => setFormData({ ...formData, cpu: e.target.value })}
-                          min={1}
-                          step={1}
-                          required
-                        />
-                        <p className={cn("mt-1 text-xs text-zinc-600")}>100 = 1 thread</p>
-                      </div>
-                      <div>
-                        <Label>Memory (MiB)</Label>
-                        <Input
-                          type="number"
-                          value={formData.memory}
-                          onChange={(e) => setFormData({ ...formData, memory: e.target.value })}
-                          min={128}
-                          step={128}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label>Disk (MiB)</Label>
-                        <Input
-                          type="number"
-                          value={formData.disk}
-                          onChange={(e) => setFormData({ ...formData, disk: e.target.value })}
-                          min={1024}
-                          step={1024}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Advanced */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <h3
-                      className={cn(
-                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                      )}
-                    >
-                      Advanced
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>CPU Pinning</Label>
-                        <Input
-                          type="text"
-                          value={formData.cpuPinning}
-                          onChange={(e) => setFormData({ ...formData, cpuPinning: e.target.value })}
-                          placeholder="e.g., 0,1,2,3 or 0-3"
-                        />
-                      </div>
-                      <div>
-                        <Label>Swap (MiB)</Label>
-                        <Input
-                          type="number"
-                          value={formData.swap}
-                          onChange={(e) => setFormData({ ...formData, swap: e.target.value })}
-                        />
-                        <p className={cn("mt-1 text-xs text-zinc-600")}>
-                          -1 = unlimited, 0 = disabled
-                        </p>
-                      </div>
+                </div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg shadow-black/20">
+                  <div className="space-y-6">
+                    {/* Basic Info */}
+                    <div>
+                      <Label>Name</Label>
+                      <Input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Backup Limit</Label>
-                        <Input
-                          type="number"
-                          value={formData.backupLimit}
-                          onChange={(e) =>
-                            setFormData({ ...formData, backupLimit: e.target.value })
-                          }
-                          min={0}
-                        />
-                      </div>
-                      <div className="flex items-center gap-3 pt-6">
-                        <Input
-                          type="checkbox"
-                          id="oomKillDisable"
-                          checked={formData.oomKillDisable}
-                          onChange={(e) =>
-                            setFormData({ ...formData, oomKillDisable: e.target.checked })
-                          }
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="oomKillDisable">Disable OOM Killer</Label>
-                      </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Optional description..."
+                        rows={3}
+                      />
                     </div>
-                  </div>
 
-                  {/* Server Management */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <h3
-                      className={cn(
-                        "mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                      )}
-                    >
-                      Server Management
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Server Status</Label>
-                        <Select
-                          value={selectedStatus}
-                          onValueChange={handleStatusChange}
-                          disabled={setStatus.isPending}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="STOPPED">Stopped</SelectItem>
-                            <SelectItem value="RUNNING">Running</SelectItem>
-                            <SelectItem value="STARTING">Starting</SelectItem>
-                            <SelectItem value="STOPPING">Stopping</SelectItem>
-                            <SelectItem value="INSTALLING">Installing</SelectItem>
-                            <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                            <SelectItem value="ERROR">Error</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className={cn("mt-1 text-xs text-zinc-600")}>
-                          Manually override server status
-                        </p>
-                      </div>
-                      <div className="pt-6">
-                        <TextureButton
-                          type="button"
-                          variant="secondary"
-                          onClick={() => setReinstallModalOpen(true)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                          Reinstall Server
-                        </TextureButton>
-                        <p className={cn("mt-1 text-center text-xs text-zinc-600")}>
-                          Wipes server and runs install script
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/*TODO: UPDATE THE DIALOG TO USE THE NEW ONE*/}
-                  {/* Blueprint Change */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <h3
-                          className={cn(
-                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                          )}
-                        >
-                          Core
-                        </h3>
-                        <p className={cn("mt-1 text-xs text-zinc-500")}>
-                          {server?.blueprint?.name || "No core selected"}
-                        </p>
-                      </div>
-                      <TextureButton
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowBlueprintModal(true)}
-                      >
-                        Change Core
-                      </TextureButton>
-                    </div>
-                  </div>
-
-                  {/*TODO: ADD THE OPTION TO SET LIMITS ON ALLOCATIONS*/}
-                  {/* Allocations */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3
-                        className={cn("text-sm font-medium tracking-wider text-zinc-300 uppercase")}
-                      >
-                        Allocations
+                    {/* Resources */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <h3 className="mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                        Resources
                       </h3>
-                      <TextureButton
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setShowAddAllocation(true);
-                          loadAvailableAllocations();
-                        }}
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add
-                      </TextureButton>
-                    </div>
-
-                    {/* Current allocations list */}
-                    <div className="space-y-2">
-                      {isLoadingAllocations ? (
-                        <div className="flex items-center justify-center py-4">
-                          <Spinner className="h-4 w-4" />
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>CPU (%)</Label>
+                          <Input
+                            type="number"
+                            value={formData.cpu}
+                            onChange={(e) => setFormData({ ...formData, cpu: e.target.value })}
+                            min={1}
+                            step={1}
+                            required
+                          />
+                          <p className="mt-1 text-xs text-zinc-600">100 = 1 thread</p>
                         </div>
-                      ) : allocations.length === 0 ? (
-                        <p className={cn("py-4 text-center text-sm text-zinc-500")}>
-                          No allocations assigned
-                        </p>
-                      ) : (
-                        allocations.map((allocation, index) => (
-                          <div
-                            key={allocation.id}
-                            className={cn(
-                              "flex items-center justify-between border border-zinc-800 bg-zinc-900/50 p-3"
-                            )}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Network className={cn("h-4 w-4 text-zinc-500")} />
-                              <span className={cn("font-mono text-sm text-zinc-200")}>
-                                {allocation.ip}:{allocation.port}
-                              </span>
-                              {index === 0 && (
-                                <span
-                                  className={cn(
-                                    "border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium tracking-wider text-emerald-400 uppercase"
-                                  )}
-                                >
-                                  Primary
-                                </span>
-                              )}
-                              {allocation.alias && (
-                                <span className={cn("text-xs text-zinc-500")}>
-                                  ({allocation.alias})
-                                </span>
-                              )}
-                            </div>
-                            <TextureButton
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={index === 0 || removingAllocationId === allocation.id}
-                              onClick={() => handleRemoveAllocation(allocation.id)}
-                              title={
-                                index === 0
-                                  ? "Cannot remove primary allocation"
-                                  : "Remove allocation"
-                              }
-                            >
-                              {removingAllocationId === allocation.id ? (
-                                <Spinner className="h-4 w-4" />
-                              ) : (
-                                <Trash className="h-4 w-4" />
-                              )}
-                            </TextureButton>
-                          </div>
-                        ))
-                      )}
+                        <div>
+                          <Label>Memory (MiB)</Label>
+                          <Input
+                            type="number"
+                            value={formData.memory}
+                            onChange={(e) => setFormData({ ...formData, memory: e.target.value })}
+                            min={128}
+                            step={128}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label>Disk (MiB)</Label>
+                          <Input
+                            type="number"
+                            value={formData.disk}
+                            onChange={(e) => setFormData({ ...formData, disk: e.target.value })}
+                            min={1024}
+                            step={1024}
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Add allocation dialog */}
-                    {showAddAllocation && (
-                      <div className={cn("mt-4 border border-zinc-700 bg-zinc-900/50 p-4")}>
-                        <p className={cn("mb-3 text-sm text-zinc-300")}>
-                          Select an available allocation to add:
-                        </p>
-                        <Select
-                          value={selectedAllocationId}
-                          onValueChange={setSelectedAllocationId}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select allocation..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableAllocations.map((alloc) => (
-                              <SelectItem key={alloc.id} value={alloc.id}>
-                                {alloc.ip}:{alloc.port}
-                                {alloc.alias ? ` (${alloc.alias})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {availableAllocations.length === 0 && (
-                          <p className={cn("mt-2 text-xs text-zinc-500")}>
-                            No available allocations on this node
+                    {/* Advanced */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <h3 className="mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                        Advanced
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>CPU Pinning</Label>
+                          <Input
+                            type="text"
+                            value={formData.cpuPinning}
+                            onChange={(e) =>
+                              setFormData({ ...formData, cpuPinning: e.target.value })
+                            }
+                            placeholder="e.g., 0,1,2,3 or 0-3"
+                          />
+                        </div>
+                        <div>
+                          <Label>Swap (MiB)</Label>
+                          <Input
+                            type="number"
+                            value={formData.swap}
+                            onChange={(e) => setFormData({ ...formData, swap: e.target.value })}
+                          />
+                          <p className="mt-1 text-xs text-zinc-600">-1 = unlimited, 0 = disabled</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Backup Limit</Label>
+                          <Input
+                            type="number"
+                            value={formData.backupLimit}
+                            onChange={(e) =>
+                              setFormData({ ...formData, backupLimit: e.target.value })
+                            }
+                            min={0}
+                          />
+                        </div>
+                        <div className="flex items-center gap-3 pt-6">
+                          <Input
+                            type="checkbox"
+                            id="oomKillDisable"
+                            checked={formData.oomKillDisable}
+                            onChange={(e) =>
+                              setFormData({ ...formData, oomKillDisable: e.target.checked })
+                            }
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="oomKillDisable">Disable OOM Killer</Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Server Management */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <h3 className="mb-4 text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                        Server Management
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Server Status</Label>
+                          <Select
+                            value={selectedStatus}
+                            onValueChange={handleStatusChange}
+                            disabled={setStatus.isPending}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="STOPPED">Stopped</SelectItem>
+                              <SelectItem value="RUNNING">Running</SelectItem>
+                              <SelectItem value="STARTING">Starting</SelectItem>
+                              <SelectItem value="STOPPING">Stopping</SelectItem>
+                              <SelectItem value="INSTALLING">Installing</SelectItem>
+                              <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                              <SelectItem value="ERROR">Error</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="mt-1 text-xs text-zinc-600">
+                            Manually override server status
                           </p>
-                        )}
-                        <div className="mt-3 flex items-center gap-2">
+                        </div>
+                        <div className="pt-6">
                           <TextureButton
                             type="button"
                             variant="secondary"
                             size="sm"
-                            onClick={() => {
-                              setShowAddAllocation(false);
-                              setSelectedAllocationId("");
-                            }}
+                            onClick={() => setReinstallModalOpen(true)}
                           >
-                            Cancel
+                            <BsArrowRepeat className="h-4 w-4" />
+                            Reinstall Server
                           </TextureButton>
-                          <TextureButton
-                            type="button"
-                            size="sm"
-                            disabled={!selectedAllocationId || isAddingAllocation}
-                            onClick={handleAddAllocation}
-                          >
-                            {isAddingAllocation ? (
-                              <>
-                                <Spinner className="mr-1 h-3 w-3" />
-                                Adding...
-                              </>
-                            ) : (
-                              "Add Allocation"
-                            )}
-                          </TextureButton>
+                          <p className="mt-1 text-xs text-zinc-600">
+                            Wipes server and runs install script
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Server Splitting */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <h3
-                          className={cn(
-                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                          )}
-                        >
-                          Server Splitting
-                        </h3>
-                        <p className={cn("mt-1 text-xs text-zinc-500")}>
-                          {server?.parentServerId
-                            ? "This is a child server"
-                            : "Split resources to create child servers"}
-                        </p>
-                      </div>
-                      <TextureButton
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => router.push(`/servers/${serverId}/split`)}
-                      >
-                        <GitFork className="h-4 w-4" />
-                        Manage
-                        <ExternalLink className="h-3 w-3" />
-                      </TextureButton>
-                    </div>
-                  </div>
-
-                  {/* Server Transfer */}
-                  <div className={cn("border-t border-zinc-700/50 pt-4")}>
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <h3
-                          className={cn(
-                            "text-sm font-medium tracking-wider text-zinc-300 uppercase"
-                          )}
-                        >
-                          Server Transfer
-                        </h3>
-                        <p className={cn("mt-1 text-xs text-zinc-500")}>
-                          Transfer server to another node
-                        </p>
-                      </div>
-                      <TextureButton
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowTransferHistory(!showTransferHistory)}
-                      >
-                        {showTransferHistory ? "Hide History" : "Show History"}
-                      </TextureButton>
                     </div>
 
-                    {/* Transfer History */}
-                    {showTransferHistory && transferStatus && (
-                      <div className={cn("mb-4 border border-zinc-800 bg-zinc-900/50 p-4")}>
-                        <div className={cn("mb-2 flex items-center justify-between text-zinc-300")}>
-                          <span className="text-sm">Transfer Status</span>
-                          <span
-                            className={cn(
-                              "text-xs font-medium",
-                              transferStatus.status === "PENDING"
-                                ? "text-yellow-400"
-                                : transferStatus.status === "COMPLETED"
-                                  ? "text-green-400"
-                                  : transferStatus.status === "FAILED"
-                                    ? "text-red-400"
-                                    : "text-zinc-500"
-                            )}
-                          >
-                            {transferStatus.status}
-                          </span>
+                    {/* Blueprint Change */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                            Core
+                          </h3>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            {server?.blueprint?.name || "No core selected"}
+                          </p>
                         </div>
-                        {transferStatus.progress > 0 && (
-                          <div className={cn("mb-2 h-2 overflow-hidden rounded-full bg-zinc-800")}>
-                            <div
-                              className="h-full rounded-full bg-blue-500 transition-all"
-                              style={{ width: `${transferStatus.progress}%` }}
-                            />
-                          </div>
-                        )}
-                        <div className="space-y-2 text-xs">
-                          <div>
-                            <span className={cn("text-zinc-500")}>From:</span>{" "}
-                            <span className={cn("text-zinc-300")}>
-                              {transferStatus.sourceNode?.displayName || "Unknown"}
-                            </span>
-                          </div>
-                          <div>
-                            <span className={cn("text-zinc-500")}>To:</span>{" "}
-                            <span className={cn("text-zinc-300")}>
-                              {transferStatus.targetNode?.displayName || "Unknown"}
-                            </span>
-                          </div>
-                          {transferStatus.error && (
-                            <div>
-                              <span className={cn("text-zinc-500")}>Error:</span>{" "}
-                              <span className="text-red-400">{transferStatus.error}</span>
-                            </div>
-                          )}
-                        </div>
-                        {transferStatus.status !== "COMPLETED" &&
-                          transferStatus.status !== "FAILED" && (
-                            <div className="flex gap-2 pt-2">
-                              <TextureButton
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={handleCancelTransfer}
-                              >
-                                Cancel Transfer
-                              </TextureButton>
-                            </div>
-                          )}
-                      </div>
-                    )}
-
-                    {/*TODO: UPDATE TO USE THE NEW DIALOG SYSTEM*/}
-                    {!showTransferHistory && (
-                      <div className="mt-4">
                         <TextureButton
                           type="button"
                           variant="secondary"
                           size="sm"
-                          onClick={() => setShowTransferModal(true)}
-                          disabled={
-                            !!transferStatus &&
-                            transferStatus.status !== "COMPLETED" &&
-                            transferStatus.status !== "FAILED"
-                          }
+                          onClick={() => setShowBlueprintModal(true)}
                         >
-                          Start Transfer
+                          <BsSliders className="h-4 w-4" />
+                          Change Core
                         </TextureButton>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Allocations */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h3 className="text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                          Allocations
+                        </h3>
+                        <TextureButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setShowAddAllocation(true);
+                            loadAvailableAllocations();
+                          }}
+                        >
+                          <BsPlus className="h-3 w-3" />
+                          Add
+                        </TextureButton>
+                      </div>
+
+                      {/* Current allocations list */}
+                      <div className="space-y-2">
+                        {isLoadingAllocations ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Spinner className="h-4 w-4" />
+                          </div>
+                        ) : allocations.length === 0 ? (
+                          <p className="py-4 text-center text-sm text-zinc-500">
+                            No allocations assigned
+                          </p>
+                        ) : (
+                          allocations.map((allocation, index) => (
+                            <div
+                              key={allocation.id}
+                              className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <BsHdd className="h-4 w-4 text-zinc-500" />
+                                <span className="font-mono text-sm text-zinc-200">
+                                  {allocation.ip}:{allocation.port}
+                                </span>
+                                {index === 0 && (
+                                  <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium tracking-wider text-emerald-400 uppercase">
+                                    Primary
+                                  </span>
+                                )}
+                                {allocation.alias && (
+                                  <span className="text-xs text-zinc-500">
+                                    ({allocation.alias})
+                                  </span>
+                                )}
+                              </div>
+                              <TextureButton
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="w-fit text-red-400 hover:text-red-300"
+                                disabled={index === 0 || removingAllocationId === allocation.id}
+                                onClick={() => handleRemoveAllocation(allocation.id)}
+                                title={
+                                  index === 0
+                                    ? "Cannot remove primary allocation"
+                                    : "Remove allocation"
+                                }
+                              >
+                                {removingAllocationId === allocation.id ? (
+                                  <Spinner className="h-4 w-4" />
+                                ) : (
+                                  <BsTrash className="h-4 w-4" />
+                                )}
+                              </TextureButton>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Add allocation dialog */}
+                      {showAddAllocation && (
+                        <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-900/50 p-4">
+                          <p className="mb-3 text-sm text-zinc-300">
+                            Select an available allocation to add:
+                          </p>
+                          <Select
+                            value={selectedAllocationId}
+                            onValueChange={setSelectedAllocationId}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select allocation..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableAllocations.map((alloc) => (
+                                <SelectItem key={alloc.id} value={alloc.id}>
+                                  {alloc.ip}:{alloc.port}
+                                  {alloc.alias ? ` (${alloc.alias})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {availableAllocations.length === 0 && (
+                            <p className="mt-2 text-xs text-zinc-500">
+                              No available allocations on this node
+                            </p>
+                          )}
+                          <div className="mt-3 flex items-center gap-2">
+                            <TextureButton
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setShowAddAllocation(false);
+                                setSelectedAllocationId("");
+                              }}
+                            >
+                              Cancel
+                            </TextureButton>
+                            <TextureButton
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              disabled={!selectedAllocationId || isAddingAllocation}
+                              onClick={handleAddAllocation}
+                            >
+                              {isAddingAllocation ? (
+                                <>
+                                  <Spinner className="mr-1 h-3 w-3" />
+                                  Adding...
+                                </>
+                              ) : (
+                                "Add Allocation"
+                              )}
+                            </TextureButton>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Server Splitting */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                            Server Splitting
+                          </h3>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            {server?.parentServerId
+                              ? "This is a child server"
+                              : "Split resources to create child servers"}
+                          </p>
+                        </div>
+                        <TextureButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => router.push(`/servers/${serverId}/split`)}
+                        >
+                          <BsSliders className="h-4 w-4" />
+                          Manage
+                          <BsBoxArrowRight className="h-3 w-3" />
+                        </TextureButton>
+                      </div>
+                    </div>
+
+                    {/* Server Transfer */}
+                    <div className="border-t border-zinc-700/50 pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-medium tracking-wider text-zinc-300 uppercase">
+                            Server Transfer
+                          </h3>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Transfer server to another node
+                          </p>
+                        </div>
+                        <TextureButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowTransferHistory(!showTransferHistory)}
+                        >
+                          {showTransferHistory ? "Hide History" : "Show History"}
+                        </TextureButton>
+                      </div>
+
+                      {/* Transfer History */}
+                      {showTransferHistory && transferStatus && (
+                        <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+                          <div className="mb-2 flex items-center justify-between text-zinc-300">
+                            <span className="text-sm">Transfer Status</span>
+                            <span
+                              className={cn(
+                                "text-xs font-medium",
+                                transferStatus.status === "PENDING"
+                                  ? "text-yellow-400"
+                                  : transferStatus.status === "COMPLETED"
+                                    ? "text-green-400"
+                                    : transferStatus.status === "FAILED"
+                                      ? "text-red-400"
+                                      : "text-zinc-500"
+                              )}
+                            >
+                              {transferStatus.status}
+                            </span>
+                          </div>
+                          {transferStatus.progress > 0 && (
+                            <div className="mb-2 h-2 overflow-hidden rounded-full bg-zinc-800">
+                              <div
+                                className="h-full rounded-full bg-blue-500 transition-all"
+                                style={{ width: `${transferStatus.progress}%` }}
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-2 text-xs">
+                            <div>
+                              <span className="text-zinc-500">From:</span>{" "}
+                              <span className="text-zinc-300">
+                                {transferStatus.sourceNode?.displayName || "Unknown"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-zinc-500">To:</span>{" "}
+                              <span className="text-zinc-300">
+                                {transferStatus.targetNode?.displayName || "Unknown"}
+                              </span>
+                            </div>
+                            {transferStatus.error && (
+                              <div>
+                                <span className="text-zinc-500">Error:</span>{" "}
+                                <span className="text-red-400">{transferStatus.error}</span>
+                              </div>
+                            )}
+                          </div>
+                          {transferStatus.status !== "COMPLETED" &&
+                            transferStatus.status !== "FAILED" && (
+                              <div className="flex gap-2 pt-2">
+                                <TextureButton
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={handleCancelTransfer}
+                                >
+                                  Cancel Transfer
+                                </TextureButton>
+                              </div>
+                            )}
+                        </div>
+                      )}
+
+                      {!showTransferHistory && (
+                        <div className="mt-4">
+                          <TextureButton
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setShowTransferModal(true)}
+                            disabled={
+                              !!transferStatus &&
+                              transferStatus.status !== "COMPLETED" &&
+                              transferStatus.status !== "FAILED"
+                            }
+                          >
+                            Start Transfer
+                          </TextureButton>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -854,15 +835,21 @@ export default function EditServerPage() {
                 <TextureButton
                   type="button"
                   variant="secondary"
+                  size="sm"
                   onClick={() => router.push("/admin/servers")}
                 >
                   Cancel
                 </TextureButton>
-                <TextureButton type="submit" disabled={update.isPending}>
+                <TextureButton
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={update.isPending}
+                >
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
-                    <Save className="h-4 w-4" />
+                    <BsSave className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
                 </TextureButton>
@@ -886,11 +873,9 @@ export default function EditServerPage() {
       {/* Blueprint Change Modal */}
       {showBlueprintModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            className={cn("w-full rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}
-          >
-            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Change Core</h2>
-            <p className={cn("mb-4 text-sm text-zinc-400")}>
+          <div className="w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+            <h2 className="mb-4 text-lg font-medium text-zinc-100">Change Core</h2>
+            <p className="mb-4 text-sm text-zinc-400">
               Select a new core for this server. Changing the core will update the server's
               configuration and runtime environment.
             </p>
@@ -929,7 +914,7 @@ export default function EditServerPage() {
                     Reinstall server after changing core
                   </Label>
                 </div>
-                <p className={cn("text-xs text-zinc-500")}>
+                <p className="text-xs text-zinc-500">
                   Warning: Reinstalling will wipe all server files. Uncheck if you only want to
                   change the core configuration.
                 </p>
@@ -940,6 +925,7 @@ export default function EditServerPage() {
               <TextureButton
                 type="button"
                 variant="secondary"
+                size="sm"
                 onClick={() => {
                   setShowBlueprintModal(false);
                   setSelectedBlueprintId(server?.blueprintId || "");
@@ -951,6 +937,8 @@ export default function EditServerPage() {
               </TextureButton>
               <TextureButton
                 type="button"
+                variant="primary"
+                size="sm"
                 disabled={!selectedBlueprintId || isChangingBlueprint}
                 onClick={handleChangeBlueprint}
               >
@@ -964,11 +952,9 @@ export default function EditServerPage() {
       {/* Transfer Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            className={cn("w-full rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl")}
-          >
-            <h2 className={cn("mb-4 text-lg font-medium text-zinc-100")}>Transfer Server</h2>
-            <p className={cn("mb-6 text-sm text-zinc-400")}>
+          <div className="w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+            <h2 className="mb-4 text-lg font-medium text-zinc-100">Transfer Server</h2>
+            <p className="mb-6 text-sm text-zinc-400">
               Select a target node to transfer this server to. The server will be archived and moved
               to the new node.
             </p>
@@ -996,7 +982,7 @@ export default function EditServerPage() {
                     </SelectContent>
                   </Select>
                   {server?.node && (
-                    <p className={cn("mt-2 text-xs text-zinc-500")}>
+                    <p className="mt-2 text-xs text-zinc-500">
                       Current node: {server.node.displayName}
                     </p>
                   )}
@@ -1006,6 +992,7 @@ export default function EditServerPage() {
                   <TextureButton
                     type="button"
                     variant="secondary"
+                    size="sm"
                     onClick={() => {
                       setShowTransferModal(false);
                       setSelectedTargetNodeId("");
@@ -1016,6 +1003,8 @@ export default function EditServerPage() {
                   </TextureButton>
                   <TextureButton
                     type="button"
+                    variant="primary"
+                    size="sm"
                     disabled={!selectedTargetNodeId || isTransferring}
                     onClick={handleStartTransfer}
                   >
@@ -1027,6 +1016,6 @@ export default function EditServerPage() {
           </div>
         </div>
       )}
-    </div>
+    </FadeIn>
   );
 }

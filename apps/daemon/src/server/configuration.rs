@@ -487,3 +487,32 @@ impl ServerConfig {
         }
     }
 }
+
+/// Server schedule data
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Schedule {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "cronExpression")]
+    pub cron_expression: String,
+    #[serde(default)]
+    pub enabled: bool,
+    pub tasks: Vec<ScheduleTask>,
+}
+
+/// Task within a schedule
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ScheduleTask {
+    pub id: String,
+    pub action: String,
+    pub payload: Option<String>,
+    #[serde(rename = "timeOffset")]
+    pub time_offset: i32,
+    pub sequence: i32,
+    #[serde(rename = "triggerMode", default = "default_trigger_mode")]
+    pub trigger_mode: String,
+}
+
+fn default_trigger_mode() -> String {
+    "TIME_DELAY".to_string()
+}
