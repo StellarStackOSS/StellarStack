@@ -374,7 +374,7 @@ const SettingsPage = (): JSX.Element | null => {
       try {
         const list = await blueprints.list();
         setBlueprintList(list);
-      } catch (error) {
+      } catch {
         toast.error("Failed to load cores");
       } finally {
         setIsLoadingBlueprints(false);
@@ -479,8 +479,8 @@ const SettingsPage = (): JSX.Element | null => {
       setSaveModalOpen(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save settings");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to save settings");
     }
   };
 
@@ -494,7 +494,7 @@ const SettingsPage = (): JSX.Element | null => {
       await servers.reinstall(serverId);
       setReinstallModalOpen(false);
       toast.success("Server reinstalled successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to reinstall server");
     } finally {
       setIsReinstalling(false);
@@ -972,9 +972,9 @@ const SettingsPage = (): JSX.Element | null => {
               <div className="mb-3 flex items-center justify-between">
                 <Label>Memory Allocation</Label>
                 <span className={cn("font-mono text-xs", "text-zinc-400")}>
-                  {/*@ts-ignore*/}
+                  {/* @ts-expect-error Server settings type */}
                   {Math.round((settings.memoryLimit * splitResources.memory) / 100)} MB /{" "}
-                  {/*@ts-ignore*/}
+                  {/* @ts-expect-error Server settings type */}
                   {Math.round((settings.memoryLimit * (100 - splitResources.memory)) / 100)} MB
                 </span>
               </div>
@@ -998,8 +998,9 @@ const SettingsPage = (): JSX.Element | null => {
               <div className="mb-3 flex items-center justify-between">
                 <Label>Disk Allocation</Label>
                 <span className={cn("font-mono text-xs", "text-zinc-400")}>
-                  {/*@ts-ignore*/}
-                  {Math.round((settings.diskLimit ?? 0) / 100)} MB / {/*@ts-ignore*/}
+                  {/* @ts-expect-error Server settings type */}
+                  {Math.round((settings.diskLimit ?? 0) / 100)} MB /{" "}
+                  {/* @ts-expect-error Server settings type */}
                   {Math.round((settings.diskLimit ?? 0) / 100)} MB
                 </span>
               </div>

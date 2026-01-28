@@ -9,22 +9,13 @@ import { Label } from "@workspace/ui/components/label";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
-import {
-  BsArrowRight,
-  BsCpu,
-  BsExclamationTriangle,
-  BsHdd,
-  BsMemory,
-  BsPlus,
-  BsServer,
-  BsTrash,
-} from "react-icons/bs";
+import { BsArrowRight, BsExclamationTriangle, BsPlus, BsServer, BsTrash } from "react-icons/bs";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
-import {Spinner} from "@workspace/ui/components";
+import { Spinner } from "@workspace/ui/components";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -67,8 +58,8 @@ const SplitPage = (): JSX.Element | null => {
       setLoading(true);
       const data = await servers.split.children(serverId);
       setChildren(data);
-    } catch (error) {
-      console.error("Failed to fetch child servers:", error);
+    } catch (err) {
+      console.error("Failed to fetch child servers:", err);
     } finally {
       setLoading(false);
     }
@@ -143,8 +134,8 @@ const SplitPage = (): JSX.Element | null => {
       resetForm();
       fetchChildren();
       refetch(); // Refresh parent server data
-    } catch (error: any) {
-      toast.error(error.message || "Failed to split server");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to split server");
     } finally {
       setSplitting(false);
     }
@@ -160,8 +151,8 @@ const SplitPage = (): JSX.Element | null => {
       setSelectedChild(null);
       fetchChildren();
       refetch(); // Refresh parent to update resources
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete child server");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to delete child server");
     }
   };
 
@@ -204,10 +195,15 @@ const SplitPage = (): JSX.Element | null => {
           {isChildServer && (
             <div
               className={cn(
-                "mb-6 flex items-center gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4")}
+                "mb-6 flex items-center gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4"
+              )}
             >
               {/*<BsExclamationTriangle className="h-5 w-5 shrink-0" />*/}
-              <img src="/icons/24-triangle-warning.svg" alt="Warning" className="h-5 w-5 shrink-0" />
+              <img
+                src="/icons/24-triangle-warning.svg"
+                alt="Warning"
+                className="h-5 w-5 shrink-0"
+              />
               <div>
                 <p className="text-sm font-bold">This is a Child Server</p>
                 <p className={cn("mt-0.5 text-xs")}>
@@ -269,17 +265,26 @@ const SplitPage = (): JSX.Element | null => {
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center flex flex-row items-center justify-center", "text-zinc-500")}>
-              <Spinner/>
+            <div
+              className={cn(
+                "flex flex-row items-center justify-center py-12 text-center",
+                "text-zinc-500"
+              )}
+            >
+              <Spinner />
             </div>
           ) : children.length === 0 ? (
             <div
               className={cn(
-                "relative border rounded-lg p-8 text-center",
+                "relative rounded-lg border p-8 text-center",
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              <img src="/icons/24-storage.svg" alt="No Child Servers" className="mx-auto mb-4 h-18" />
+              <img
+                src="/icons/24-storage.svg"
+                alt="No Child Servers"
+                className="mx-auto mb-4 h-18"
+              />
               <h3 className={cn("mb-2 text-lg font-medium", "text-zinc-300")}>No Child Servers</h3>
               <p className={cn("mb-4 text-sm", "text-zinc-500")}>
                 {isChildServer

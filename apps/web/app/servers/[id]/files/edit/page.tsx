@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ export default function FileEditPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { resolvedTheme } = useTheme();
+  useTheme(); // Theme context required for editor
 
   const serverId = params.id as string;
   const filePath = searchParams.get("path") || "";
@@ -98,10 +98,12 @@ export default function FileEditPage() {
           // For binary media files, use the download endpoint with token
           try {
             const { token } = await servers.files.getDownloadToken(serverId, filePath);
-            
+
             if (cancelled) return;
-            
-            const downloadUrl = getApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
+
+            const downloadUrl = getApiEndpoint(
+              `/api/servers/${serverId}/files/download?token=${token}`
+            );
             const response = await fetch(downloadUrl, {
               credentials: "include", // Include cookies for auth
             });
@@ -177,40 +179,22 @@ export default function FileEditPage() {
             )}
           >
             <div className="flex items-center gap-4">
-              <TextureButton variant="minimal"
-                onClick={handleBack}
-              >
+              <TextureButton variant="minimal" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
               </TextureButton>
 
               <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "border p-2",
-                    "border-zinc-700 bg-zinc-800"
-                  )}
-                >
+                <div className={cn("border p-2", "border-zinc-700 bg-zinc-800")}>
                   <File className={cn("h-5 w-5", "text-zinc-400")} />
                 </div>
                 <div>
-                  <h1
-                    className={cn("text-lg font-medium", "text-white")}
-                  >
-                    {fileName}
-                  </h1>
-                  <p className={cn("text-xs", "text-zinc-500")}>
-                    {filePath}
-                  </p>
+                  <h1 className={cn("text-lg font-medium", "text-white")}>{fileName}</h1>
+                  <p className={cn("text-xs", "text-zinc-500")}>{filePath}</p>
                 </div>
               </div>
 
               {hasChanges && (
-                <span
-                  className={cn(
-                    "border px-2 py-1 text-xs",
-                    "border-zinc-600 text-zinc-400"
-                  )}
-                >
+                <span className={cn("border px-2 py-1 text-xs", "border-zinc-600 text-zinc-400")}>
                   Unsaved changes
                 </span>
               )}
@@ -245,12 +229,8 @@ export default function FileEditPage() {
             </div>
           ) : error ? (
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className={cn("text-lg", "text-red-400")}>
-                Failed to load file
-              </p>
-              <TextureButton variant="minimal"
-                onClick={handleBack}
-              >
+              <p className={cn("text-lg", "text-red-400")}>Failed to load file</p>
+              <TextureButton variant="minimal" onClick={handleBack}>
                 Go Back
               </TextureButton>
             </div>

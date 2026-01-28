@@ -61,7 +61,7 @@ export default function LocationsPage() {
       }
       setIsModalOpen(false);
       resetForm();
-    } catch (error) {
+    } catch {
       toast.error(editingLocation ? "Failed to update location" : "Failed to create location");
     }
   };
@@ -83,7 +83,7 @@ export default function LocationsPage() {
       await remove.mutateAsync(deleteConfirmLocation.id);
       toast.success("Location deleted successfully");
       setDeleteConfirmLocation(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete location");
     }
   };

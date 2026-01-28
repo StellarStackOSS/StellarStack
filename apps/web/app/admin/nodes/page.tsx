@@ -97,7 +97,7 @@ export default function NodesPage() {
       toast.success("Node created successfully");
       setIsModalOpen(false);
       resetForm();
-    } catch (error) {
+    } catch {
       toast.error("Failed to create node");
     }
   };
@@ -108,7 +108,7 @@ export default function NodesPage() {
       await remove.mutateAsync(deleteConfirmNode.id);
       toast.success("Node deleted successfully");
       setDeleteConfirmNode(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete node");
     }
   };

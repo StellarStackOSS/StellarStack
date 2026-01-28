@@ -14,7 +14,7 @@ import {
 import React, { useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@workspace/ui/components/sheet";
 import { TextureButton } from "@workspace/ui/components/texture-button";
-import { ZoomIn, LayoutGrid } from "lucide-react";
+import { ZoomIn } from "lucide-react";
 
 import {
   ScheduleStartNode,

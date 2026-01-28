@@ -12,7 +12,7 @@ import {
 import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries";
 import { useServerWebSocket } from "@/hooks/useWebSocket";
 import { useAuth } from "@/hooks/auth-provider";
-import type { Server, ConsoleInfo, ServerMember } from "@/lib/api";
+import type { Server, ConsoleInfo } from "@/lib/api";
 import { servers } from "@/lib/api";
 import { playSoundEffect } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";

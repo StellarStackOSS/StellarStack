@@ -104,7 +104,7 @@ export default function BlueprintsPage() {
       }
       setIsModalOpen(false);
       resetForm();
-    } catch (error) {
+    } catch {
       toast.error(editingBlueprint ? "Failed to update blueprint" : "Failed to create blueprint");
     }
   };
@@ -136,7 +136,7 @@ export default function BlueprintsPage() {
       await remove.mutateAsync(deleteConfirmBlueprint.id);
       toast.success("Blueprint deleted successfully");
       setDeleteConfirmBlueprint(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete blueprint");
     }
   };
@@ -148,8 +148,8 @@ export default function BlueprintsPage() {
       toast.success(result.message);
       setIsImportModalOpen(false);
       setImportJson("");
-    } catch (error) {
-      if (error instanceof SyntaxError) {
+    } catch (err) {
+      if (err instanceof SyntaxError) {
         toast.error("Invalid JSON format");
       } else {
         toast.error("Failed to import core");

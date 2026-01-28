@@ -57,8 +57,8 @@ const WebhooksPage = (): JSX.Element | null => {
       const data = await webhooks.list();
       // Filter to show only webhooks for this server
       setWebhookList(data.filter((w) => w.serverId === serverId));
-    } catch (error) {
-      console.error("Failed to fetch webhooks:", error);
+    } catch (err) {
+      console.error("Failed to fetch webhooks:", err);
       toast.error("Failed to load webhooks");
     } finally {
       setLoading(false);
@@ -122,10 +122,10 @@ const WebhooksPage = (): JSX.Element | null => {
       try {
         await webhooks.test(newWebhook.id);
         toast.success("Test message sent to webhook");
-      } catch (error) {
+      } catch (err) {
         toast.info("Webhook created, but test message failed to send");
       }
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to create webhook");
     }
   };
@@ -142,7 +142,7 @@ const WebhooksPage = (): JSX.Element | null => {
       setEditModalOpen(false);
       setSelectedWebhook(null);
       toast.success("Webhook updated");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to update webhook");
     }
   };
@@ -155,7 +155,7 @@ const WebhooksPage = (): JSX.Element | null => {
       setDeleteModalOpen(false);
       setSelectedWebhook(null);
       toast.success("Webhook deleted");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to delete webhook");
     }
   };
@@ -164,7 +164,7 @@ const WebhooksPage = (): JSX.Element | null => {
     try {
       await webhooks.test(webhook.id);
       toast.success("Test message sent successfully");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to send test message");
     }
   };
@@ -174,7 +174,7 @@ const WebhooksPage = (): JSX.Element | null => {
       await webhooks.delete(webhook.id);
       setWebhookList((prev) => prev.filter((w) => w.id !== webhook.id));
       toast.success("Webhook deleted");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to delete webhook");
     }
   };

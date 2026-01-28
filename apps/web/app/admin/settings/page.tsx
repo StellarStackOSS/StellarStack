@@ -201,8 +201,8 @@ export default function AdminSettingsPage() {
           smtp: em.smtp || { host: "", port: 587, secure: false, username: "", password: "" },
         });
         setBranding(br);
-      } catch (error) {
-        console.error("Failed to fetch settings:", error);
+      } catch (err) {
+        console.error("Failed to fetch settings:", err);
         toast.error("Failed to load settings");
       } finally {
         setIsLoading(false);
@@ -218,7 +218,7 @@ export default function AdminSettingsPage() {
       const updated = await adminSettings.cloudflare.update(cloudflare);
       setCloudflare(updated);
       toast.success("Cloudflare settings saved");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to save Cloudflare settings");
     } finally {
       setSavingCloudflare(false);
@@ -236,8 +236,8 @@ export default function AdminSettingsPage() {
           ? `Connected to zone: ${result.zone?.name} (${result.zone?.status})`
           : result.error,
       });
-    } catch (error: any) {
-      setCloudflareTestResult({ success: false, message: error.message });
+    } catch (_err: unknown) {
+      setCloudflareTestResult({ success: false, message: (_err as Error)?.message });
     } finally {
       setTestingCloudflare(false);
     }
@@ -249,7 +249,7 @@ export default function AdminSettingsPage() {
       const updated = await adminSettings.subdomains.update(subdomains);
       setSubdomains(updated);
       toast.success("Subdomain settings saved");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to save subdomain settings");
     } finally {
       setSavingSubdomains(false);
@@ -265,7 +265,7 @@ export default function AdminSettingsPage() {
         smtp: updated.smtp || { host: "", port: 587, secure: false, username: "", password: "" },
       });
       toast.success("Email settings saved");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to save email settings");
     } finally {
       setSavingEmail(false);
@@ -285,8 +285,8 @@ export default function AdminSettingsPage() {
         success: result.success,
         message: result.success ? result.message : result.error,
       });
-    } catch (error: any) {
-      setEmailTestResult({ success: false, message: error.message });
+    } catch (_err: unknown) {
+      setEmailTestResult({ success: false, message: (_err as Error)?.message });
     } finally {
       setTestingEmail(false);
     }
@@ -298,7 +298,7 @@ export default function AdminSettingsPage() {
       const updated = await adminSettings.branding.update(branding);
       setBranding(updated);
       toast.success("Branding settings saved");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to save branding settings");
     } finally {
       setSavingBranding(false);

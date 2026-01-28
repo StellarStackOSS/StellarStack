@@ -46,7 +46,7 @@ export default function AdminServersPage() {
       await remove.mutateAsync(deleteConfirmServer.id);
       toast.success("Server deleted successfully");
       setDeleteConfirmServer(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete server");
     }
   };
@@ -63,7 +63,7 @@ export default function AdminServersPage() {
         await restart.mutateAsync(server.id);
         toast.success("Server restarting...");
       }
-    } catch (error) {
+    } catch {
       toast.error(`Failed to ${action} server`);
     }
   };

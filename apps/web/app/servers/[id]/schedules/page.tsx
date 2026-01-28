@@ -194,7 +194,7 @@ const SchedulesPage = (): JSX.Element | null => {
     try {
       const data = await servers.schedules.list(serverId);
       setSchedules(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch schedules");
     } finally {
       setIsLoading(false);
@@ -871,7 +871,7 @@ const SchedulesPage = (): JSX.Element | null => {
       setCreateModalOpen(false);
       resetForm();
       fetchSchedules();
-    } catch (error) {
+    } catch {
       toast.error("Failed to create schedule");
     } finally {
       setIsSaving(false);
@@ -899,7 +899,7 @@ const SchedulesPage = (): JSX.Element | null => {
       setEditModalOpen(false);
       setSelectedSchedule(null);
       fetchSchedules();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update schedule");
     } finally {
       setIsSaving(false);
@@ -914,7 +914,7 @@ const SchedulesPage = (): JSX.Element | null => {
       setDeleteModalOpen(false);
       setSelectedSchedule(null);
       fetchSchedules();
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete schedule");
     }
   };
@@ -934,7 +934,7 @@ const SchedulesPage = (): JSX.Element | null => {
         })),
       });
       fetchSchedules();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update schedule");
     }
   };
@@ -960,7 +960,7 @@ const SchedulesPage = (): JSX.Element | null => {
       toast.success(`Running schedule: ${schedule.name}`);
       // Refresh schedules to get updated lastRunAt
       setTimeout(fetchSchedules, 1000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to execute schedule");
     } finally {
       setIsSaving(false);
