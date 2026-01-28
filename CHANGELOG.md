@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.5](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.4...v1.3.5) (2026-01-28)
+
+
+### Bug Fixes
+
+* resolve build errors for lucide-react icons and type issues ([0fe4b82](https://github.com/StellarStackOSS/StellarStack/commit/0fe4b828de1a65b23f783870e482c0db997b1f40))
+* reversed docker containers ([cd7aee5](https://github.com/StellarStackOSS/StellarStack/commit/cd7aee5a842cf90d441a100ce4fbdeb8280fcbe5))
+
 ## [1.3.4](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.3...v1.3.4) (2026-01-28)
 
 
