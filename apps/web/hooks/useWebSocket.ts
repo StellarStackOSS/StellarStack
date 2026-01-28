@@ -21,7 +21,7 @@ const fetchWsToken = async (): Promise<{ token: string; userId: string } | null>
     });
     if (!response.ok) return null;
     return await response.json();
-  } catch {
+  } catch (err) {
     return null;
   }
 };
@@ -243,8 +243,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
             // Heartbeat response, connection is alive
             break;
         }
-      } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
       }
     },
     [queryClient]
@@ -306,12 +306,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       };
 
       ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        console.error("WebSocket error:", err);
       };
 
       wsRef.current = ws;
-    } catch (error) {
-      console.error("Failed to connect WebSocket:", error);
+    } catch (err) {
+      console.error("Failed to connect WebSocket:", err);
     }
   }, [serverIds, autoReconnect, reconnectDelay, enabled, handleMessage]);
 

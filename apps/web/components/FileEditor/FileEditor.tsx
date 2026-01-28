@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { cn } from "@workspace/ui/lib/utils";
@@ -112,10 +112,7 @@ const FileEditor = ({
   return (
     <div
       ref={containerRef}
-      className={cn(
-        "border border-zinc-700 bg-zinc-900",
-        className
-      )}
+      className={cn("border border-zinc-700 bg-zinc-900", className)}
       style={{
         height: heightStyle,
         minHeight: "200px",

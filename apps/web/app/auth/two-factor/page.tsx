@@ -40,8 +40,8 @@ const TwoFactorPage = (): JSX.Element | null => {
           router.push("/servers");
         }
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Invalid verification code");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Invalid verification code");
     } finally {
       setIsSubmitting(false);
     }

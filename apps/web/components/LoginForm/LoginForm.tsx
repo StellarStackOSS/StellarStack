@@ -46,7 +46,7 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
   const [captchaToken, setCaptchaToken] = useState<string>("");
 
   const form = useForm<LoginValues>({
-    //@ts-ignore
+    // @ts-expect-error zodResolver type mismatch
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
