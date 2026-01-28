@@ -14,7 +14,7 @@ interface WaveTextProps {
 export const WaveText = ({
   text,
   className,
-  highlightClassName = "text-zinc-100",
+  highlightClassName: _highlightClassName = "text-zinc-100",
   baseClassName = "text-zinc-600",
 }: WaveTextProps) => {
   const [waveIndex, setWaveIndex] = useState(-1);

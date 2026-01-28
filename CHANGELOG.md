@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.3.6](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.5...v1.3.6) (2026-01-28)
+
+
+### Bug Fixes
+
+* rename Providers directory to lowercase providers for case-sensitive systems ([db7dd36](https://github.com/StellarStackOSS/StellarStack/commit/db7dd362fad3d071118dcf7d251952997a18fa15))
+
+## [1.3.5](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.4...v1.3.5) (2026-01-28)
+
+
+### Bug Fixes
+
+* resolve build errors for lucide-react icons and type issues ([0fe4b82](https://github.com/StellarStackOSS/StellarStack/commit/0fe4b828de1a65b23f783870e482c0db997b1f40))
+* reversed docker containers ([cd7aee5](https://github.com/StellarStackOSS/StellarStack/commit/cd7aee5a842cf90d441a100ce4fbdeb8280fcbe5))
+
+## [1.3.4](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.3...v1.3.4) (2026-01-28)
+
+
+### Bug Fixes
+
+* reversed docker containers ([26d45ac](https://github.com/StellarStackOSS/StellarStack/commit/26d45ac2d7bee5ef548ec5e0b9a8f0d879509655))
+
+## [1.3.3](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.2...v1.3.3) (2026-01-28)
+
+
+### Bug Fixes
+
+* fix issue related to release ([ec3a3a3](https://github.com/StellarStackOSS/StellarStack/commit/ec3a3a375f55c7fa6be1354fb9f93cc17e479c8c))
+* fix issue related to release ([af847c6](https://github.com/StellarStackOSS/StellarStack/commit/af847c6e20abe85b9a59f0bd198248cbfa12ae4d))
+
+
+### Documentation
+
+* sync changelog to docs ([#41](https://github.com/StellarStackOSS/StellarStack/issues/41)) ([105ccd0](https://github.com/StellarStackOSS/StellarStack/commit/105ccd07a8e899219e3ea615f82896b96bc42265))
+
+## [1.3.2](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.1...v1.3.2) (2026-01-25)
+
+
+### Bug Fixes
+
+* Potential improvement for runners ([a6c3bdf](https://github.com/StellarStackOSS/StellarStack/commit/a6c3bdf4550c971f599b3a15cb1b6712c130bf91))
+
 ## [1.3.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.0...v1.3.1) (2026-01-20)
 
 
