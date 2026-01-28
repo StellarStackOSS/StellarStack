@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.9](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.8...v1.3.9) (2026-01-28)
+
+
+### Bug Fixes
+
+* fix build ([b31df61](https://github.com/StellarStackOSS/StellarStack/commit/b31df61671fc34aa49cae75f334625c799b14992))
+
 ## [1.3.8](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.7...v1.3.8) (2026-01-28)
 
 
