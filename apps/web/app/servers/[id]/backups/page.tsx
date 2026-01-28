@@ -174,16 +174,9 @@ const BackupsPage = (): JSX.Element | null => {
             <div className="flex items-center gap-2">
               {!backupsDisabled && (
                 <TextureButton
-                  variant="minimal"
+                  variant="primary"
                   onClick={openCreateModal}
                   disabled={!canCreateBackup}
-                  title={
-                    isBackupInProgress
-                      ? "A backup is currently in progress"
-                      : completedBackups >= backupLimit
-                        ? "Backup limit reached"
-                        : "Create a new backup"
-                  }
                 >
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Create Backup</span>

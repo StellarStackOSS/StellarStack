@@ -1009,6 +1009,99 @@ remote.post("/activity", async (c) => {
 });
 
 // ============================================================================
+// Metrics Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/metrics
+ * Receive node metrics from daemon
+ */
+const nodeMetricsSchema = z.object({
+  cpu_usage: z.number().min(0).max(100),
+  memory_usage: z.number().min(0),
+  memory_limit: z.number().min(0),
+  disk_usage: z.number().min(0),
+  disk_limit: z.number().min(0),
+  active_containers: z.number().min(0),
+  total_containers: z.number().min(0),
+});
+
+const serverMetricsSchema = z.object({
+  server_id: z.string().uuid(),
+  cpu_usage: z.number().min(0).max(100),
+  memory_usage: z.number().min(0),
+  memory_limit: z.number().min(0),
+  disk_usage: z.number().min(0),
+  disk_limit: z.number().min(0),
+  uptime: z.number().min(0),
+  status: z.string(),
+  players: z.number().optional(),
+  fps: z.number().optional(),
+  tps: z.number().optional(),
+});
+
+const metricsPayloadSchema = z.object({
+  node: nodeMetricsSchema,
+  servers: z.array(serverMetricsSchema).optional(),
+});
+
+remote.post("/metrics", async (c) => {
+  try {
+    const node = c.get("node");
+    const body = await c.req.json();
+
+    const parsed = metricsPayloadSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid metrics payload", details: parsed.error.errors }, 400);
+    }
+
+    const { node: nodeMetrics, servers: serverMetrics } = parsed.data;
+
+    // Store node metrics snapshot
+    await db.nodeMetricsSnapshot.create({
+      data: {
+        nodeId: node.id,
+        cpuUsage: nodeMetrics.cpu_usage,
+        memoryUsage: BigInt(nodeMetrics.memory_usage),
+        memoryLimit: BigInt(nodeMetrics.memory_limit),
+        diskUsage: BigInt(nodeMetrics.disk_usage),
+        diskLimit: BigInt(nodeMetrics.disk_limit),
+        activeContainers: nodeMetrics.active_containers,
+        totalContainers: nodeMetrics.total_containers,
+      },
+    });
+
+    // Store server metrics snapshots if provided
+    if (serverMetrics && serverMetrics.length > 0) {
+      await Promise.all(
+        serverMetrics.map((metrics) =>
+          db.serverMetricsSnapshot.create({
+            data: {
+              serverId: metrics.server_id,
+              cpuUsage: metrics.cpu_usage,
+              memoryUsage: BigInt(metrics.memory_usage),
+              memoryLimit: BigInt(metrics.memory_limit),
+              diskUsage: BigInt(metrics.disk_usage),
+              diskLimit: BigInt(metrics.disk_limit),
+              uptime: metrics.uptime,
+              status: metrics.status,
+              players: metrics.players || null,
+              fps: metrics.fps || null,
+              tps: metrics.tps || null,
+            },
+          })
+        )
+      );
+    }
+
+    return c.json({ success: true, metricsStored: 1 + (serverMetrics?.length || 0) });
+  } catch (error) {
+    console.error("Failed to store metrics:", error);
+    return c.json({ error: "Failed to store metrics" }, 500);
+  }
+});
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

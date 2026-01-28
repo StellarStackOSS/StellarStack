@@ -7,14 +7,14 @@ import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
-  ArrowLeftIcon,
-  ExternalLinkIcon,
-  NetworkIcon,
-  PlusIcon,
-  RefreshCwIcon,
-  SaveIcon,
-  SplitIcon,
-  TrashIcon,
+  ArrowLeft,
+  ExternalLink,
+  Network,
+  Plus,
+  RefreshCw,
+  Save,
+  Split,
+  Trash,
 } from "lucide-react";
 import { useServer, useServerMutations } from "@/hooks/queries";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
@@ -341,7 +341,7 @@ export default function EditServerPage() {
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
               >
-                <ArrowLeftIcon className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
               </TextureButton>
               <div>
                 <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
@@ -528,7 +528,7 @@ export default function EditServerPage() {
                           variant="secondary"
                           onClick={() => setReinstallModalOpen(true)}
                         >
-                          <RefreshCwIcon className="h-4 w-4" />
+                          <RefreshCw className="h-4 w-4" />
                           Reinstall Server
                         </TextureButton>
                         <p className={cn("mt-1 text-center text-xs text-zinc-600")}>
@@ -583,7 +583,7 @@ export default function EditServerPage() {
                           loadAvailableAllocations();
                         }}
                       >
-                        <PlusIcon className="h-3 w-3" />
+                        <Plus className="h-3 w-3" />
                         Add
                       </TextureButton>
                     </div>
@@ -607,7 +607,7 @@ export default function EditServerPage() {
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <NetworkIcon className={cn("h-4 w-4 text-zinc-500")} />
+                              <Network className={cn("h-4 w-4 text-zinc-500")} />
                               <span className={cn("font-mono text-sm text-zinc-200")}>
                                 {allocation.ip}:{allocation.port}
                               </span>
@@ -641,7 +641,7 @@ export default function EditServerPage() {
                               {removingAllocationId === allocation.id ? (
                                 <Spinner className="h-4 w-4" />
                               ) : (
-                                <TrashIcon className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                               )}
                             </TextureButton>
                           </div>
@@ -731,9 +731,9 @@ export default function EditServerPage() {
                         size="sm"
                         onClick={() => router.push(`/servers/${serverId}/split`)}
                       >
-                        <SplitIcon className="h-4 w-4" />
+                        <Split className="h-4 w-4" />
                         Manage
-                        <ExternalLinkIcon className="h-3 w-3" />
+                        <ExternalLink className="h-3 w-3" />
                       </TextureButton>
                     </div>
                   </div>
@@ -862,7 +862,7 @@ export default function EditServerPage() {
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
-                    <SaveIcon className="h-4 w-4" />
+                    <Save className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
                 </TextureButton>

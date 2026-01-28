@@ -15,14 +15,14 @@ import {
   ContextMenuTrigger,
 } from "@workspace/ui/components/context-menu";
 import {
-  EditIcon,
-  ExternalLinkIcon,
-  PlayIcon,
-  PlusIcon,
-  RefreshCwIcon,
-  ServerIcon,
-  SquareIcon,
-  TrashIcon,
+  Edit,
+  ExternalLink,
+  Play,
+  Plus,
+  RefreshCw,
+  Server,
+  Square,
+  Trash,
 } from "lucide-react";
 import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
 import { useServerMutations, useServers } from "@/hooks/queries";
@@ -98,7 +98,7 @@ export default function AdminServersPage() {
               description="Manage all game servers"
               action={{
                 label: "Create Server",
-                icon: <PlusIcon className="h-4 w-4" />,
+                icon: <Plus className="h-4 w-4" />,
                 onClick: () => router.push("/admin/servers/new"),
               }}
             />
@@ -142,7 +142,7 @@ export default function AdminServersPage() {
                                   "rounded border border-zinc-700 bg-zinc-800/50 p-2.5"
                                 )}
                               >
-                                <ServerIcon className={cn("h-5 w-5 text-zinc-400")} />
+                                <Server className={cn("h-5 w-5 text-zinc-400")} />
                               </div>
                               <div>
                                 <div className="flex items-center gap-3">
@@ -195,7 +195,7 @@ export default function AdminServersPage() {
                                 size="sm"
                                 onClick={() => router.push(`/servers/${server.id}`)}
                               >
-                                <ExternalLinkIcon className="h-3.5 w-3.5" />
+                                <ExternalLink className="h-3.5 w-3.5" />
                               </TextureButton>
                               {server.status === "STOPPED" && (
                                 <TextureButton
@@ -204,7 +204,7 @@ export default function AdminServersPage() {
                                   onClick={() => handleAction(server, "start")}
                                   disabled={start.isPending}
                                 >
-                                  <PlayIcon className="h-3.5 w-3.5" />
+                                  <Play className="h-3.5 w-3.5" />
                                 </TextureButton>
                               )}
                               {server.status === "RUNNING" && (
@@ -215,7 +215,7 @@ export default function AdminServersPage() {
                                     onClick={() => handleAction(server, "stop")}
                                     disabled={stop.isPending}
                                   >
-                                    <SquareIcon className="h-3.5 w-3.5" />
+                                    <Square className="h-3.5 w-3.5" />
                                   </TextureButton>
                                   <TextureButton
                                     variant="secondary"
@@ -223,7 +223,7 @@ export default function AdminServersPage() {
                                     onClick={() => handleAction(server, "restart")}
                                     disabled={restart.isPending}
                                   >
-                                    <RefreshCwIcon className="h-3.5 w-3.5" />
+                                    <RefreshCw className="h-3.5 w-3.5" />
                                   </TextureButton>
                                 </>
                               )}
@@ -232,14 +232,14 @@ export default function AdminServersPage() {
                                 size="sm"
                                 onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
                               >
-                                <EditIcon className="h-3.5 w-3.5" />
+                                <Edit className="h-3.5 w-3.5" />
                               </TextureButton>
                               <TextureButton
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => setDeleteConfirmServer(server)}
                               >
-                                <TrashIcon className="h-3.5 w-3.5" />
+                                <Trash className="h-3.5 w-3.5" />
                               </TextureButton>
                             </div>
                           </div>
@@ -252,14 +252,14 @@ export default function AdminServersPage() {
                           onClick={() => router.push(`/servers/${server.id}`)}
                           className="cursor-pointer gap-2"
                         >
-                          <ExternalLinkIcon className="h-4 w-4" />
+                          <ExternalLink className="h-4 w-4" />
                           Open Server
                         </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => router.push(`/admin/servers/${server.id}/edit`)}
                           className="cursor-pointer gap-2"
                         >
-                          <EditIcon className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                           Edit Server
                         </ContextMenuItem>
                         <ContextMenuSeparator className={"bg-zinc-700"} />
@@ -268,7 +268,7 @@ export default function AdminServersPage() {
                             onClick={() => handleAction(server, "start")}
                             className="cursor-pointer gap-2"
                           >
-                            <PlayIcon className="h-4 w-4" />
+                            <Play className="h-4 w-4" />
                             Start Server
                           </ContextMenuItem>
                         )}
@@ -278,14 +278,14 @@ export default function AdminServersPage() {
                               onClick={() => handleAction(server, "stop")}
                               className="cursor-pointer gap-2"
                             >
-                              <SquareIcon className="h-4 w-4" />
+                              <Square className="h-4 w-4" />
                               Stop Server
                             </ContextMenuItem>
                             <ContextMenuItem
                               onClick={() => handleAction(server, "restart")}
                               className="cursor-pointer gap-2"
                             >
-                              <RefreshCwIcon className="h-4 w-4" />
+                              <RefreshCw className="h-4 w-4" />
                               Restart Server
                             </ContextMenuItem>
                           </>
@@ -296,7 +296,7 @@ export default function AdminServersPage() {
                           className="cursor-pointer gap-2"
                           variant="destructive"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <Trash className="h-4 w-4" />
                           Delete Server
                         </ContextMenuItem>
                       </ContextMenuContent>
