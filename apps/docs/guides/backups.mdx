@@ -1,0 +1,65 @@
+---
+title: 'Backups'
+description: 'Create and manage server backups'
+icon: 'database'
+---
+
+# Backups
+
+Protect your server data with automated and manual backups.
+
+<Info>
+  This guide is currently being expanded. Basic backup functionality is available in the web panel.
+</Info>
+
+## Manual Backups
+
+Create a backup immediately:
+
+1. Navigate to your server
+2. Go to the **Backups** tab
+3. Click **Create Backup**
+4. Wait for the backup to complete
+5. Download or restore as needed
+
+## Scheduled Backups
+
+Configure automatic backups:
+
+1. Go to **Settings** → **Backup Schedule**
+2. Set backup frequency (daily, weekly, etc.)
+3. Choose retention policy
+4. Backups will run automatically
+
+## Backup Storage
+
+Backups are stored with compression:
+
+- **Local Storage**: Default storage on the node
+- **Retention**: Configurable retention period
+- **Compression**: Automatic compression to save space
+
+## Restoration
+
+To restore from a backup:
+
+1. Go to the **Backups** tab
+2. Select the backup to restore
+3. Click **Restore**
+4. Confirm restoration
+5. Server will be restored to backup state
+
+<Warning>
+  Restoration will overwrite current server data. Ensure you have a current backup before restoring.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="File Management" icon="folder" href="/guides/files">
+    Manage server files
+  </Card>
+  <Card title="Server Management" icon="server" href="/guides/servers">
+    Server configuration
+  </Card>
+</CardGroup>

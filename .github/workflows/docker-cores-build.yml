@@ -96,8 +96,7 @@ jobs:
     name: Build ${{ matrix.job_name }}
     needs: discover-cores
     if: needs.discover-cores.outputs.has_cores == 'true'
-    # Use GitHub-hosted runner rather than a custom self-hosted runner
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write

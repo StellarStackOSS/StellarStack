@@ -16,6 +16,7 @@ import { domains } from "./routes/domains";
 import { remote } from "./routes/remote";
 import { members } from "./routes/members";
 import { settings } from "./routes/settings";
+import { analyticsRouter } from "./routes/analytics";
 import { securityHeaders, validateEnvironment, getRequiredEnv } from "./middleware/security";
 import { authRateLimit, apiRateLimit } from "./middleware/rate-limit";
 import { db } from "./lib/db";
@@ -286,6 +287,7 @@ app.route("/api/webhooks", webhooks);
 app.route("/api/servers", domains); // Domain routes under /api/servers/:serverId/subdomain and /domains
 app.route("/api/servers", members); // Member routes under /api/servers/:serverId/members
 app.route("/api/admin/settings", settings); // Admin settings routes
+app.route("/api/analytics", analyticsRouter); // Admin analytics routes
 
 // Daemon-facing API routes (node authentication required)
 app.route("/api/remote", remote);

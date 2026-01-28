@@ -9,14 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 import { Switch } from "@workspace/ui/components/switch";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
-  ArrowLeftIcon,
-  BoxIcon,
-  CpuIcon,
-  ImageIcon,
-  InfoIcon,
-  NetworkIcon,
-  ServerIcon,
-  VariableIcon,
+  ArrowLeft,
+  Box,
+  Cpu,
+  Image,
+  Info,
+  Network,
+  Server,
+  Settings,
 } from "lucide-react";
 import { useBlueprints, useNode, useNodes, useServerMutations, useUsers } from "@/hooks/queries";
 import type { CreateServerData } from "@/lib/api";
@@ -176,7 +176,7 @@ export default function NewServerPage() {
                 size="sm"
                 onClick={() => router.push("/admin/servers")}
               >
-                <ArrowLeftIcon className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
               </TextureButton>
               <div>
                 <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
@@ -203,7 +203,7 @@ export default function NewServerPage() {
                       "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <InfoIcon className="h-3.5 w-3.5" />
+                    <Info className="h-3.5 w-3.5" />
                     Basic Info
                   </TabsTrigger>
                   <TabsTrigger
@@ -212,7 +212,7 @@ export default function NewServerPage() {
                       "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <CpuIcon className="h-3.5 w-3.5" />
+                    <Cpu className="h-3.5 w-3.5" />
                     Resources
                   </TabsTrigger>
                   <TabsTrigger
@@ -221,7 +221,7 @@ export default function NewServerPage() {
                       "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <NetworkIcon className="h-3.5 w-3.5" />
+                    <Network className="h-3.5 w-3.5" />
                     Allocations
                     {formData.allocationIds.length > 0 && (
                       <span
@@ -239,7 +239,7 @@ export default function NewServerPage() {
                       "-mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs tracking-wider text-zinc-500 uppercase hover:text-zinc-300 data-[state=active]:border-zinc-100 data-[state=active]:text-zinc-100 data-[state=active]:shadow-none"
                     )}
                   >
-                    <BoxIcon className="h-3.5 w-3.5" />
+                    <Box className="h-3.5 w-3.5" />
                     Blueprint
                   </TabsTrigger>
                 </TabsList>
@@ -599,7 +599,7 @@ export default function NewServerPage() {
                             "mb-4 flex items-center gap-2 text-sm font-medium text-zinc-200"
                           )}
                         >
-                          <ImageIcon className="h-4 w-4" />
+                          <Image className="h-4 w-4" />
                           Docker Image
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -628,7 +628,7 @@ export default function NewServerPage() {
                           "mb-4 flex items-center gap-2 text-sm font-medium text-zinc-200"
                         )}
                       >
-                        <VariableIcon className="h-4 w-4" />
+                        <Settings className="h-4 w-4" />
                         Startup Variables
                       </h3>
                       <div className="space-y-4">
@@ -711,7 +711,7 @@ export default function NewServerPage() {
                   {create.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
-                    <ServerIcon className="h-4 w-4" />
+                    <Server className="h-4 w-4" />
                   )}
                   {create.isPending ? "Creating..." : "Create Server"}
                 </TextureButton>

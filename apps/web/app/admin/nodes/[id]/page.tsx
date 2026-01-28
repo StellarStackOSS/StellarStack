@@ -5,14 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import {
-  ActivityIcon,
-  ArrowLeftIcon,
-  CpuIcon,
-  HardDriveIcon,
-  MemoryStickIcon,
-  PlusIcon,
-  ServerIcon,
-  TrashIcon,
+  Activity,
+  ArrowLeft,
+  Cpu,
+  HardDrive,
+  MemoryStick,
+  Plus,
+  Server,
+  Trash,
 } from "lucide-react";
 import type { Allocation, Node, NodeStats } from "@/lib/api";
 import { nodes } from "@/lib/api";
@@ -148,7 +148,7 @@ export default function NodeDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <TextureButton variant="minimal" onClick={() => router.push("/admin/nodes")}>
-          <ArrowLeftIcon className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
         </TextureButton>
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export default function NodeDetailPage() {
           {/* CPU */}
           <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
             <div className="mb-2 flex items-center gap-2">
-              <CpuIcon className={cn("h-4 w-4 text-zinc-400")} />
+              <Cpu className={cn("h-4 w-4 text-zinc-400")} />
               <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>CPU</span>
             </div>
             <div className={cn("text-2xl font-light text-zinc-100")}>
@@ -193,7 +193,7 @@ export default function NodeDetailPage() {
           {/* Memory */}
           <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
             <div className="mb-2 flex items-center gap-2">
-              <MemoryStickIcon className={cn("h-4 w-4 text-zinc-400")} />
+              <MemoryStick className={cn("h-4 w-4 text-zinc-400")} />
               <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Memory</span>
             </div>
             <div className={cn("text-2xl font-light text-zinc-100")}>
@@ -207,7 +207,7 @@ export default function NodeDetailPage() {
           {/* Disk */}
           <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
             <div className="mb-2 flex items-center gap-2">
-              <HardDriveIcon className={cn("h-4 w-4 text-zinc-400")} />
+              <HardDrive className={cn("h-4 w-4 text-zinc-400")} />
               <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Disk</span>
             </div>
             <div className={cn("text-2xl font-light text-zinc-100")}>
@@ -221,7 +221,7 @@ export default function NodeDetailPage() {
           {/* System Info */}
           <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
             <div className="mb-2 flex items-center gap-2">
-              <ActivityIcon className={cn("h-4 w-4 text-zinc-400")} />
+              <Activity className={cn("h-4 w-4 text-zinc-400")} />
               <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Uptime</span>
             </div>
             <div className={cn("text-2xl font-light text-zinc-100")}>
@@ -239,7 +239,7 @@ export default function NodeDetailPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className={cn("text-lg font-light tracking-wider text-zinc-100")}>Allocations</h2>
           <TextureButton onClick={() => setIsAddingAllocation(true)}>
-            <PlusIcon className="mr-1 h-3 w-3" />
+            <Plus className="mr-1 h-3 w-3" />
             Add
           </TextureButton>
         </div>
@@ -360,7 +360,7 @@ export default function NodeDetailPage() {
                         onClick={() => handleDeleteAllocation(allocation)}
                         disabled={allocation.assigned}
                       >
-                        <TrashIcon className="h-3 w-3" />
+                        <Trash className="h-3 w-3" />
                       </TextureButton>
                     </td>
                   </tr>
@@ -381,7 +381,7 @@ export default function NodeDetailPage() {
             {node.servers.map((server) => (
               <div key={server.id} className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
                 <div className="flex items-center gap-2">
-                  <ServerIcon className={cn("h-4 w-4 text-zinc-400")} />
+                  <Server className={cn("h-4 w-4 text-zinc-400")} />
                   <span className={cn("font-medium text-zinc-100")}>{server.name}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-2">

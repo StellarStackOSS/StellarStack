@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { TextureButton } from "@workspace/ui/components/texture-button";
 import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
 import { MediaViewer } from "@/components/MediaViewer/MediaViewer";
 import { getMediaType } from "@/lib/media-utils";
+import { getApiEndpoint } from "@/lib/public-env";
 import { servers } from "@/lib/api";
 
 export default function FileEditPage() {
@@ -36,6 +37,7 @@ export default function FileEditPage() {
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [blobUrl, setBlobUrl] = useState("");
+  const blobUrlRef = useRef<string>("");
 
   // Set initial content when loaded
   useEffect(() => {
@@ -78,43 +80,68 @@ export default function FileEditPage() {
     router.push(`/servers/${serverId}/files${parentPath ? `/${parentPath}` : ""}`);
   };
 
+  // Update ref when blobUrl changes
+  useEffect(() => {
+    blobUrlRef.current = blobUrl;
+  }, [blobUrl]);
+
   // Load blob URL for media files
   useEffect(() => {
+    if (!fileName || !serverId || !filePath) return;
+
+    let cancelled = false;
+
     const loadBlobUrl = async () => {
       try {
         const mediaType = getMediaType(fileName);
         if (mediaType !== "unknown" && !fileName.endsWith(".svg")) {
-          // For binary media files, use the download endpoint
+          // For binary media files, use the download endpoint with token
           try {
-            const apiUrl =
-              typeof window !== "undefined" &&
-              window.location.hostname !== "localhost" &&
-              window.location.hostname !== "127.0.0.1"
-                ? window.location.origin
-                : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-            const downloadUrl = `${apiUrl}/download/file?server=${encodeURIComponent(serverId)}&file=${encodeURIComponent(filePath)}`;
-            const response = await fetch(downloadUrl);
-            if (response.ok) {
+            const { token } = await servers.files.getDownloadToken(serverId, filePath);
+            
+            if (cancelled) return;
+            
+            const downloadUrl = getApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
+            const response = await fetch(downloadUrl, {
+              credentials: "include", // Include cookies for auth
+            });
+            if (response.ok && !cancelled) {
               const blob = await response.blob();
-              const url = URL.createObjectURL(blob);
-              setBlobUrl(url);
+              if (!cancelled) {
+                const url = URL.createObjectURL(blob);
+                blobUrlRef.current = url;
+                setBlobUrl(url);
+              }
             }
           } catch (err) {
-            console.debug("Could not load blob URL, will use data URL:", err);
+            if (!cancelled) {
+              console.debug("Could not load blob URL, will use data URL:", err);
+            }
           }
         }
       } catch (err) {
-        console.warn("Failed to load blob URL for media:", err);
+        if (!cancelled) {
+          console.warn("Failed to load blob URL for media:", err);
+        }
       }
     };
 
-    if (fileName && serverId && filePath) {
-      loadBlobUrl();
+    // Clean up previous blob URL
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = "";
+      setBlobUrl("");
     }
 
+    loadBlobUrl();
+
     return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      cancelled = true;
+      // Clean up blob URL
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = "";
+      }
     };
   }, [fileName, serverId, filePath]);
 

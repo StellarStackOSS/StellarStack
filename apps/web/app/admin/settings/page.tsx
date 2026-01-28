@@ -4,16 +4,15 @@ import { useEffect, useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
-  ArrowLeftIcon,
-  CheckCircle2Icon,
-  CloudIcon,
-  GlobeIcon,
-  Loader2Icon,
-  MailIcon,
-  PaletteIcon,
-  SaveIcon,
-  TestTube2Icon,
-  XCircleIcon,
+  ArrowLeft,
+  CheckCircle2,
+  Cloud,
+  Globe,
+  Loader2,
+  Mail,
+  Palette,
+  Save,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -88,9 +87,9 @@ const SettingsSection = ({
           )}
         >
           {testResult.success ? (
-            <CheckCircle2Icon className="h-4 w-4" />
+            <CheckCircle2 className="h-4 w-4" />
           ) : (
-            <XCircleIcon className="h-4 w-4" />
+            <XCircle className="h-4 w-4" />
           )}
           {testResult.message || (testResult.success ? "Test successful" : "Test failed")}
         </div>
@@ -100,18 +99,19 @@ const SettingsSection = ({
       <div className="flex items-center gap-3">
         <TextureButton variant="minimal" onClick={onSave} disabled={isSaving}>
           {isSaving ? (
-            <Loader2Icon className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <SaveIcon className="h-4 w-4" />
+            <Save className="h-4 w-4" />
           )}
           Save
         </TextureButton>
         {onTest && (
           <TextureButton variant="minimal" onClick={onTest} disabled={isTesting}>
             {isTesting ? (
-              <Loader2Icon className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <TestTube2Icon className="h-4 w-4" />
+              // <TestTube2 className="h-4 w-4" />
+                <>dsakmdsakmds</>
             )}
             Test Connection
           </TextureButton>
@@ -308,7 +308,7 @@ export default function AdminSettingsPage() {
   if (isLoading) {
     return (
       <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
-        <Loader2Icon className={cn("h-8 w-8 animate-spin text-zinc-400")} />
+        <Loader2 className={cn("h-8 w-8 animate-spin text-zinc-400")} />
       </div>
     );
   }
@@ -326,7 +326,7 @@ export default function AdminSettingsPage() {
                   "mb-4 inline-flex items-center gap-2 text-xs tracking-wider text-zinc-500 uppercase transition-opacity hover:opacity-70"
                 )}
               >
-                <ArrowLeftIcon className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </Link>
               <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>SETTINGS</h1>
@@ -340,7 +340,7 @@ export default function AdminSettingsPage() {
               <SettingsSection
                 title="Cloudflare"
                 description="Configure Cloudflare API for DNS management"
-                icon={CloudIcon}
+                icon={Cloud}
                 onSave={handleSaveCloudflare}
                 onTest={handleTestCloudflare}
                 isSaving={savingCloudflare}
@@ -388,7 +388,7 @@ export default function AdminSettingsPage() {
               <SettingsSection
                 title="Subdomains"
                 description="Configure automatic subdomain provisioning for servers"
-                icon={GlobeIcon}
+                icon={Globe}
                 onSave={handleSaveSubdomains}
                 isSaving={savingSubdomains}
               >
@@ -445,7 +445,7 @@ export default function AdminSettingsPage() {
               <SettingsSection
                 title="Email"
                 description="Configure email settings for notifications and invitations"
-                icon={MailIcon}
+                icon={Mail}
                 onSave={handleSaveEmail}
                 onTest={handleTestEmail}
                 isSaving={savingEmail}
@@ -582,7 +582,7 @@ export default function AdminSettingsPage() {
               <SettingsSection
                 title="Branding"
                 description="Customize the appearance and branding of your panel"
-                icon={PaletteIcon}
+                icon={Palette}
                 onSave={handleSaveBranding}
                 isSaving={savingBranding}
               >

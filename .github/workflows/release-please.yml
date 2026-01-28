@@ -27,6 +27,140 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      - name: AI-Enhanced Changelog Generation
+        if: steps.release.outputs.release_created && secrets.OLLAMA_URL != ''
+        id: ai_changelog
+        env:
+          OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x .github/scripts/ollama-client.sh
+
+          # Get commits in this release
+          CURRENT_TAG="${{ steps.release.outputs.tag_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 $CURRENT_TAG^ 2>/dev/null || echo "")
+
+          echo "Current tag: $CURRENT_TAG"
+          echo "Previous tag: $PREV_TAG"
+
+          # Get list of commits for this release
+          if [ -z "$PREV_TAG" ]; then
+            # First release - get all commits
+            COMMIT_RANGE="$CURRENT_TAG"
+          else
+            COMMIT_RANGE="${PREV_TAG}..$CURRENT_TAG"
+          fi
+
+          # Store commits in a temp file
+          git log --format="%H|%s|%b" $COMMIT_RANGE > /tmp/commits.txt
+
+          # Initialize enhanced changelog
+          echo "# Changelog" > /tmp/enhanced_changelog.md
+          echo "" >> /tmp/enhanced_changelog.md
+          echo "## [${{ steps.release.outputs.version }}](https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${CURRENT_TAG}) ($(date '+%Y-%m-%d'))" >> /tmp/enhanced_changelog.md
+          echo "" >> /tmp/enhanced_changelog.md
+
+          # Track processed entries
+          ENTRY_COUNT=0
+          MAX_ENTRIES=20
+
+          # Process each commit
+          while IFS='|' read -r SHA SUBJECT BODY; do
+            # Avoid processing too many entries at once
+            if [ $ENTRY_COUNT -ge $MAX_ENTRIES ]; then
+              echo "Processed $MAX_ENTRIES entries, stopping to avoid timeout"
+              break
+            fi
+
+            ENTRY_COUNT=$((ENTRY_COUNT + 1))
+
+            # Skip empty lines
+            if [ -z "$SHA" ]; then
+              continue
+            fi
+
+            echo "Processing commit: $SHA ($(echo "$SUBJECT" | cut -c1-50)...)"
+
+            # Extract PR number if exists in subject
+            PR_NUMBER=$(echo "$SUBJECT" | grep -oP '#\K\d+' || echo "")
+
+            # Get commit diff summary
+            DIFF=$(git show --stat $SHA 2>/dev/null | head -30 || echo "")
+
+            # Get PR details if exists
+            PR_TITLE=""
+            if [ -n "$PR_NUMBER" ]; then
+              PR_DATA=$(gh pr view $PR_NUMBER --json title 2>/dev/null || echo '{}')
+              PR_TITLE=$(echo "$PR_DATA" | jq -r '.title // ""' 2>/dev/null || echo "")
+            fi
+
+            # Build prompt for AI changelog entry
+            PROMPT=$(cat <<EOF
+Generate a concise changelog entry for this change.
+
+Type: feature/fix/docs/chore
+Original Message: $SUBJECT
+PR Title: $PR_TITLE
+Code Changes Summary:
+$DIFF
+
+Requirements:
+1. Single-line entry (max 100 characters)
+2. Focus on what changed from user perspective
+3. Use active voice, present tense
+4. Be clear and concise
+5. No commit hashes, no PR numbers, no technical jargon
+6. Just the description, no bullet or prefix
+
+Example format: "Add dark mode toggle to user preferences"
+EOF
+            )
+
+            # Call Ollama with timeout and error handling
+            if AI_ENTRY=$(.github/scripts/ollama-client.sh "$PROMPT" "neural-chat" 2>/dev/null || echo ""); then
+              # Clean up the AI entry (remove extra newlines, trim whitespace)
+              AI_ENTRY=$(echo "$AI_ENTRY" | tr '\n' ' ' | sed 's/  */ /g' | sed 's/^ //;s/ $//' | cut -c1-100)
+
+              if [ -n "$AI_ENTRY" ]; then
+                # Add to changelog with commit hash link
+                echo "* $AI_ENTRY ([${SHA:0:7}](https://github.com/${{ github.repository }}/commit/$SHA))" >> /tmp/enhanced_changelog.md
+                echo "✓ Added: $AI_ENTRY"
+              else
+                echo "⚠️  Empty response for $SHA, using original message"
+                echo "* $SUBJECT" >> /tmp/enhanced_changelog.md
+              fi
+            else
+              echo "⚠️  Failed to generate AI entry for $SHA, using original"
+              echo "* $SUBJECT" >> /tmp/enhanced_changelog.md
+            fi
+
+          done < /tmp/commits.txt
+
+          # Append rest of CHANGELOG.md if it exists
+          if [ -f CHANGELOG.md ]; then
+            # Skip first release header if it exists
+            tail -n +3 CHANGELOG.md >> /tmp/enhanced_changelog.md
+          fi
+
+          # Replace CHANGELOG.md
+          mv /tmp/enhanced_changelog.md CHANGELOG.md
+
+          # Commit updated changelog
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+
+          if git diff --cached --quiet; then
+            echo "No changelog changes to commit"
+          else
+            git commit -m "chore: AI-enhanced changelog for v${{ steps.release.outputs.version }}" || echo "Commit failed or no changes"
+            git push origin master || echo "Push failed or nothing to push"
+            echo "✓ Updated and pushed enhanced changelog"
+          fi
+
+          # Update GitHub release notes with enhanced changelog
+          gh release edit $CURRENT_TAG --notes-file CHANGELOG.md || echo "Failed to update release notes"
+
 #      - name: Link Linear Tickets in Changelog
 #        if: steps.release.outputs.release_created
 #        run: |
@@ -68,6 +202,14 @@ jobs:
           git push origin master || echo "Nothing to push"
 
           echo "Updated install-script.sh to version ${VERSION} at ${TIMESTAMP}"
+
+      - name: Trigger Changelog Sync
+        if: steps.release.outputs.release_created
+        run: |
+          # Trigger the sync-changelog workflow
+          gh workflow run sync-changelog.yml --ref master
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Trigger Docker Build
         if: steps.release.outputs.release_created

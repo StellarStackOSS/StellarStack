@@ -156,17 +156,9 @@ const DatabasesPage = (): JSX.Element | null => {
                   "text-zinc-400 hover:text-zinc-100"
                 )}
               />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
-                  DATABASES
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Server {serverId} • {databases.length} databases
-                </p>
-              </div>
             </div>
             <div className="flex items-center gap-2">
-              <TextureButton variant="secondary" size="sm" onClick={openCreateModal}>
+              <TextureButton variant="primary" onClick={openCreateModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Database</span>
               </TextureButton>

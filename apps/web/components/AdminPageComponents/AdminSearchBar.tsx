@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { SearchIcon } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@workspace/ui/components";
 
 interface AdminSearchBarProps {
@@ -16,7 +16,7 @@ export const AdminSearchBar = ({
   placeholder = "Search...",
 }: AdminSearchBarProps) => (
   <div className="relative mb-6">
-    <SearchIcon
+    <Search
       className={cn("absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2", "text-zinc-500")}
     />
     <Input

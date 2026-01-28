@@ -17,7 +17,7 @@ interface EmptyStateProps {
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => (
   <div
     className={cn(
-      "relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 text-center"
+      "relative border rounded-lg border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 text-center"
     )}
   >
     <div className={cn("mx-auto mb-4 h-12 w-12 text-zinc-600")}>{icon}</div>

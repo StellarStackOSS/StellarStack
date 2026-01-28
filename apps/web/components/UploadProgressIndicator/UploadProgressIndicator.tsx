@@ -1,6 +1,6 @@
 "use client";
 
-import { useUploads } from "@/components/Providers/UploadProvider/UploadProvider";
+import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
 import { ArrowUp, Upload, X } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { motion } from "framer-motion";

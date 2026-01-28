@@ -9,7 +9,7 @@ export const MEDIA_EXTENSIONS = {
 /**
  * Detect media type from file extension
  */
-export function getMediaType(fileName: string): MediaType {
+export const getMediaType = (fileName: string): MediaType => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
 
   if (MEDIA_EXTENSIONS.image.includes(ext as any)) return "image";
@@ -17,19 +17,19 @@ export function getMediaType(fileName: string): MediaType {
   if (MEDIA_EXTENSIONS.audio.includes(ext as any)) return "audio";
 
   return "unknown";
-}
+};
 
 /**
  * Check if a file is a media file
  */
-export function isMediaFile(fileName: string): boolean {
+export const isMediaFile = (fileName: string): boolean => {
   return getMediaType(fileName) !== "unknown";
-}
+};
 
 /**
  * Get MIME type for a file
  */
-export function getMimeType(fileName: string): string {
+export const getMimeType = (fileName: string): string => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const mimeMap: Record<string, string> = {
     jpg: "image/jpeg",
@@ -51,12 +51,12 @@ export function getMimeType(fileName: string): string {
     aac: "audio/aac",
   };
   return mimeMap[ext] || "application/octet-stream";
-}
+};
 
 /**
  * Create a data URL from content with multiple fallbacks
  */
-export function createMediaDataUrl(fileName: string, content: string): string {
+export const createMediaDataUrl = (fileName: string, content: string): string => {
   const mimeType = getMimeType(fileName);
   try {
     // Try to create a data URL
@@ -65,11 +65,13 @@ export function createMediaDataUrl(fileName: string, content: string): string {
     // Fallback for non-latin1 characters
     try {
       const encoded = new TextEncoder().encode(content);
-      const binaryString = Array.from(encoded).map((byte) => String.fromCharCode(byte)).join("");
+      const binaryString = Array.from(encoded)
+        .map((byte) => String.fromCharCode(byte))
+        .join("");
       return `data:${mimeType};base64,${btoa(binaryString)}`;
     } catch {
       // Last resort - return as-is
       return content;
     }
   }
-}
+};
