@@ -46,7 +46,8 @@ const LoginForm: FunctionComponent<LoginFormProps> = ({ isLoading, error, handle
   const [captchaToken, setCaptchaToken] = useState<string>("");
 
   const form = useForm<LoginValues>({
-    // @ts-expect-error zodResolver type mismatch
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - zodResolver has version mismatch with zod
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
