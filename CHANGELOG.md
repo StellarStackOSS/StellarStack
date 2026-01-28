@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.1...v1.3.2) (2026-01-25)
+
+
+### Bug Fixes
+
+* Potential improvement for runners ([a6c3bdf](https://github.com/StellarStackOSS/StellarStack/commit/a6c3bdf4550c971f599b3a15cb1b6712c130bf91))
+
 ## [1.3.1](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.0...v1.3.1) (2026-01-20)
 
 
