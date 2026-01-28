@@ -195,7 +195,7 @@ export default function UsersPage() {
       toast.success("User updated successfully");
       setIsModalOpen(false);
       resetForm();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update user");
     }
   };
@@ -230,7 +230,7 @@ export default function UsersPage() {
       await remove.mutateAsync(deleteConfirmUser.id);
       toast.success("User deleted successfully");
       setDeleteConfirmUser(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete user");
     }
   };
@@ -244,7 +244,7 @@ export default function UsersPage() {
       const newRole = user.role === "admin" ? "user" : "admin";
       await update.mutateAsync({ id: user.id, data: { role: newRole } });
       toast.success(`User role changed to ${newRole}`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update user role");
     }
   };

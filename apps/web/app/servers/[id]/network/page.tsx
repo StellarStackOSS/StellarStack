@@ -68,8 +68,8 @@ const NetworkPage = (): JSX.Element | null => {
     try {
       const status = await features.subdomains();
       setSubdomainFeature(status);
-    } catch (error) {
-      console.error("Failed to fetch subdomain feature status:", error);
+    } catch (err) {
+      console.error("Failed to fetch subdomain feature status:", err);
       setSubdomainFeature({ enabled: false, baseDomain: null, dnsProvider: "manual" });
     }
   };
@@ -79,8 +79,8 @@ const NetworkPage = (): JSX.Element | null => {
       setLoading(true);
       const data = await servers.allocations.list(serverId);
       setAllocations(data);
-    } catch (error) {
-      console.error("Failed to fetch allocations:", error);
+    } catch (err) {
+      console.error("Failed to fetch allocations:", err);
     } finally {
       setLoading(false);
     }
@@ -90,8 +90,8 @@ const NetworkPage = (): JSX.Element | null => {
     try {
       const data = await servers.allocations.available(serverId);
       setAvailableAllocations(data);
-    } catch (error) {
-      console.error("Failed to fetch available allocations:", error);
+    } catch (err) {
+      console.error("Failed to fetch available allocations:", err);
     }
   };
 
@@ -110,8 +110,8 @@ const NetworkPage = (): JSX.Element | null => {
       await refetch();
       setAddAllocationModalOpen(false);
       setSelectedNewAllocation(null);
-    } catch (error) {
-      console.error("Failed to add allocation:", error);
+    } catch (err) {
+      console.error("Failed to add allocation:", err);
     } finally {
       setAddingAllocation(false);
     }
@@ -168,8 +168,8 @@ const NetworkPage = (): JSX.Element | null => {
       await fetchAllocations();
       setDeletePortModalOpen(false);
       setSelectedAllocation(null);
-    } catch (error) {
-      console.error("Failed to delete allocation:", error);
+    } catch (err) {
+      console.error("Failed to delete allocation:", err);
     }
   };
 
@@ -180,8 +180,8 @@ const NetworkPage = (): JSX.Element | null => {
       setSettingPrimary(allocation.id);
       await servers.allocations.setPrimary(serverId, allocation.id);
       await refetch();
-    } catch (error) {
-      console.error("Failed to set primary allocation:", error);
+    } catch (err) {
+      console.error("Failed to set primary allocation:", err);
     } finally {
       setSettingPrimary(null);
     }

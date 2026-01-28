@@ -1,13 +1,11 @@
 "use client";
 
-import { EdgeProps, getBezierPath, useReactFlow } from "@xyflow/react";
+import { EdgeProps, getBezierPath } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { SVGProps } from "react";
 
 // Time Delay Edge - Blue with animated pulse and time badge
 export const TimeDelayEdge = (props: EdgeProps) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd } =
-    props;
+  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd } = props;
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -83,7 +81,7 @@ export const TimeDelayEdge = (props: EdgeProps) => {
           height={24}
           requiredExtensions="http://www.w3.org/1999/xhtml"
         >
-          <div className="flex items-center justify-center w-full h-full bg-blue-900/80 text-blue-200 text-xs font-semibold rounded border border-blue-600/50 backdrop-blur-sm">
+          <div className="flex h-full w-full items-center justify-center rounded border border-blue-600/50 bg-blue-900/80 text-xs font-semibold text-blue-200 backdrop-blur-sm">
             {formatTime(timeOffset)}
           </div>
         </foreignObject>
@@ -94,8 +92,7 @@ export const TimeDelayEdge = (props: EdgeProps) => {
 
 // On Completion Edge - Purple with pulsing animation and badge
 export const OnCompletionEdge = (props: EdgeProps) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd } =
-    props;
+  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd } = props;
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -150,7 +147,7 @@ export const OnCompletionEdge = (props: EdgeProps) => {
         height={24}
         requiredExtensions="http://www.w3.org/1999/xhtml"
       >
-        <div className="flex items-center justify-center w-full h-full bg-purple-900/80 text-purple-200 text-xs font-semibold rounded border border-purple-600/50 backdrop-blur-sm">
+        <div className="flex h-full w-full items-center justify-center rounded border border-purple-600/50 bg-purple-900/80 text-xs font-semibold text-purple-200 backdrop-blur-sm">
           Wait for completion
         </div>
       </foreignObject>

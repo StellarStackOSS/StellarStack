@@ -84,8 +84,8 @@ export default function EditNodePage() {
       });
       toast.success("Node updated successfully");
       router.push("/admin/nodes");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update node");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to update node");
     }
   };
 
@@ -95,8 +95,8 @@ export default function EditNodePage() {
       setNewToken(result);
       setShowRegenerateConfirm(false);
       toast.success("Token regenerated successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to regenerate token");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to regenerate token");
     }
   };
 
@@ -114,8 +114,8 @@ export default function EditNodePage() {
       setShowAddAllocation(false);
       setAllocationForm({ ip: "", port: 25565, alias: "" });
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add allocation");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to add allocation");
     }
   };
 
@@ -133,8 +133,8 @@ export default function EditNodePage() {
       setShowAddRange(false);
       setRangeForm({ ip: "", startPort: 25565, endPort: 25575 });
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add allocation range");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to add allocation range");
     }
   };
 
@@ -144,8 +144,8 @@ export default function EditNodePage() {
       await deleteAllocation.mutateAsync({ nodeId, allocationId });
       toast.success("Allocation deleted successfully");
       await refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete allocation");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to delete allocation");
     } finally {
       setDeletingAllocationId(null);
     }

@@ -60,7 +60,7 @@ const StartupPage = (): JSX.Element | null => {
       setFeatures(config.features);
       setCustomStartupCommands(config.customStartupCommands || "");
       setOriginalCustomStartupCommands(config.customStartupCommands || "");
-    } catch (error) {
+    } catch {
       toast.error("Failed to load startup configuration");
     } finally {
       setIsLoading(false);
@@ -131,7 +131,7 @@ const StartupPage = (): JSX.Element | null => {
 
       // Refresh to get updated startup command
       fetchStartupConfig();
-    } catch (error) {
+    } catch {
       toast.error("Failed to save configuration");
     } finally {
       setIsSaving(false);
@@ -150,7 +150,7 @@ const StartupPage = (): JSX.Element | null => {
       await servers.reinstall(serverId);
       setReinstallModalOpen(false);
       toast.success("Server reinstalled successfully with new configuration");
-    } catch (error) {
+    } catch {
       toast.error("Failed to reinstall server");
     } finally {
       setIsReinstalling(false);

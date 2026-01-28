@@ -106,8 +106,8 @@ export default function AdminOverviewPage() {
           blueprints: blueprintsList.length,
           users: usersList.length,
         });
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
       } finally {
         setIsLoading(false);
       }

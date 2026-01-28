@@ -35,7 +35,7 @@ const ServersPage = (): JSX.Element | null => {
       try {
         const data = await serversApi.list();
         setServers(data);
-      } catch (error) {
+      } catch {
         toast.error("Failed to fetch servers");
       } finally {
         setIsLoading(false);

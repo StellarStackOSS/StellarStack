@@ -140,8 +140,8 @@ export default function NewServerPage() {
       await create.mutateAsync(data);
       toast.success("Server created successfully");
       router.push("/admin/servers");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create server");
+    } catch (_err: unknown) {
+      toast.error((_err as Error)?.message || "Failed to create server");
     }
   };
 

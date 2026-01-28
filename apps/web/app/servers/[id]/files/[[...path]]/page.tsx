@@ -117,7 +117,7 @@ const parseDaemonError = (error: unknown): string => {
         }
         return parsed.message || message;
       }
-    } catch {
+    } catch (err) {
       // If parsing fails, try simpler extraction
       if (message.includes("Already exists")) {
         const match = message.match(/Already exists:\s*([^"}\]]+)/);
@@ -230,8 +230,8 @@ const FilesPage = (): JSX.Element | null => {
       const usedBytes = usage.used_bytes || 0;
 
       setDiskUsage({ used: usedBytes, total: totalBytes });
-    } catch (error) {
-      console.error("[Disk Usage] Failed to fetch disk usage:", error);
+    } catch (err) {
+      console.error("[Disk Usage] Failed to fetch disk usage:", err);
       // Fall back to server config if daemon request fails
       if (server?.disk) {
         setDiskUsage({ used: 0, total: server.disk * 1024 * 1024 });
@@ -256,7 +256,7 @@ const FilesPage = (): JSX.Element | null => {
         path: f.path,
       }));
       setFiles(mappedFiles);
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to fetch files");
       setFiles([]);
     } finally {
@@ -309,7 +309,7 @@ const FilesPage = (): JSX.Element | null => {
             modified: new Date().toLocaleString(),
             path: filePath,
           });
-        } catch {
+        } catch (err) {
           failCount++;
         }
       }
@@ -333,7 +333,7 @@ const FilesPage = (): JSX.Element | null => {
 
       // Refresh disk usage
       fetchDiskUsage();
-    } catch (error) {
+    } catch (err) {
       toast.error(parseDaemonError(error), { id: toastId });
     } finally {
       setIsUploading(false);
@@ -435,7 +435,7 @@ const FilesPage = (): JSX.Element | null => {
       setFiles((prev) => prev.filter((f) => f.path !== deletePath));
       toast.success("File deleted");
       fetchDiskUsage();
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to delete file");
     } finally {
       setFileToDelete(null);
@@ -456,7 +456,7 @@ const FilesPage = (): JSX.Element | null => {
       toast.success(`Deleted ${selectedIds.length} file(s)`);
       setRowSelection({});
       fetchDiskUsage();
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to delete some files");
       // Refetch on error to ensure consistency
       fetchFiles();
@@ -486,7 +486,7 @@ const FilesPage = (): JSX.Element | null => {
         )
       );
       toast.success("File renamed");
-    } catch (error) {
+    } catch (err) {
       toast.error(parseDaemonError(error));
     } finally {
       setRenameModalOpen(false);
@@ -528,7 +528,7 @@ const FilesPage = (): JSX.Element | null => {
       playSound("copy");
       setPermissionsModalOpen(false);
       setFileToEditPermissions(null);
-    } catch (error) {
+    } catch (err) {
       toast.error(parseDaemonError(error));
     }
   };
@@ -569,7 +569,7 @@ const FilesPage = (): JSX.Element | null => {
       });
       playSound("copy");
       toast.success("Folder created");
-    } catch (error) {
+    } catch (err) {
       toast.error(parseDaemonError(error));
     } finally {
       setNewFolderModalOpen(false);
@@ -621,7 +621,7 @@ const FilesPage = (): JSX.Element | null => {
       if (isEditable(fileName)) {
         router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(filePath)}`);
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(parseDaemonError(error));
     }
   };
@@ -750,9 +750,9 @@ const FilesPage = (): JSX.Element | null => {
           speed: calculateSpeed(startTime, file.size, Date.now()),
         });
         removeUpload(fileId);
-      } catch (error) {
+      } catch (err) {
         removeUpload(fileId);
-        console.error(`Upload failed for file ${file.name}:`, error);
+        console.error(`Upload failed for file ${file.name}:`, err);
       }
     }
 
@@ -991,7 +991,7 @@ const FilesPage = (): JSX.Element | null => {
                           `${typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${downloadUrl}`,
                           "_blank"
                         );
-                      } catch (error) {
+                      } catch (err) {
                         toast.error("Failed to generate download link");
                       }
                     }}

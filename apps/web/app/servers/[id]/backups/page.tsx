@@ -103,7 +103,7 @@ const BackupsPage = (): JSX.Element | null => {
         name: name,
       });
       toast.success("Backup created", { id: "backup-create" });
-    } catch (error) {
+    } catch {
       toast.error("Failed to create backup", { id: "backup-create" });
     }
   };
@@ -115,7 +115,7 @@ const BackupsPage = (): JSX.Element | null => {
       toast.success("Backup deleted");
       setDeleteModalOpen(false);
       setSelectedBackup(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete backup");
     }
   };
@@ -127,7 +127,7 @@ const BackupsPage = (): JSX.Element | null => {
       toast.success("Backup restored");
       setRestoreModalOpen(false);
       setSelectedBackup(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to restore backup");
     }
   };
@@ -136,7 +136,7 @@ const BackupsPage = (): JSX.Element | null => {
     try {
       await lock.mutateAsync({ backupId: backup.id, locked: !backup.isLocked });
       toast.success(backup.isLocked ? "Backup unlocked" : "Backup locked");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update backup");
     }
   };
@@ -152,7 +152,7 @@ const BackupsPage = (): JSX.Element | null => {
           ? window.location.origin
           : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
       window.open(`${apiUrl}${downloadUrl}`, "_blank");
-    } catch (error) {
+    } catch {
       toast.error("Failed to generate download link");
     }
   };

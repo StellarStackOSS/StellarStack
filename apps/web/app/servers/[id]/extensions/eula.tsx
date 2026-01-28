@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTheme } from "next-themes";
+
 import {
   Dialog,
   DialogContent,
@@ -97,8 +97,8 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
 
       // Restart the server
       await onRestart();
-    } catch (error) {
-      console.error("Failed to accept EULA:", error);
+    } catch (err) {
+      console.error("Failed to accept EULA:", err);
       toast.error("Failed to accept EULA. Please try manually editing eula.txt");
     } finally {
       setIsAccepting(false);
@@ -121,10 +121,7 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
         </DialogHeader>
 
         <div
-          className={cn(
-            "space-y-3 rounded-lg p-4 text-sm",
-            "border border-zinc-800 bg-white/5"
-          )}
+          className={cn("space-y-3 rounded-lg p-4 text-sm", "border border-zinc-800 bg-white/5")}
         >
           <p className="text-zinc-300">
             By clicking &quot;Accept&quot;, you agree to the{" "}
@@ -132,10 +129,7 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
               href="https://aka.ms/MinecraftEULA"
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(
-                "underline hover:no-underline",
-                "text-blue-400 hover:text-blue-300"
-              )}
+              className={cn("underline hover:no-underline", "text-blue-400 hover:text-blue-300")}
             >
               Minecraft EULA
             </a>
@@ -147,10 +141,20 @@ export const EulaExtension = ({ serverId, lines, onRestart }: EulaExtensionProps
         </div>
 
         <DialogFooter className="pt-2">
-          <TextureButton className="w-full" variant="minimal" onClick={handleDecline} disabled={isAccepting}>
+          <TextureButton
+            className="w-full"
+            variant="minimal"
+            onClick={handleDecline}
+            disabled={isAccepting}
+          >
             Decline
           </TextureButton>
-          <TextureButton className="w-full" variant="success" onClick={handleAcceptEula} disabled={isAccepting}>
+          <TextureButton
+            className="w-full"
+            variant="success"
+            onClick={handleAcceptEula}
+            disabled={isAccepting}
+          >
             {isAccepting ? "Accepting..." : "Accept EULA"}
           </TextureButton>
         </DialogFooter>
