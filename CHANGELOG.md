@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.5...v1.3.6) (2026-01-28)
+
+
+### Bug Fixes
+
+* rename Providers directory to lowercase providers for case-sensitive systems ([db7dd36](https://github.com/StellarStackOSS/StellarStack/commit/db7dd362fad3d071118dcf7d251952997a18fa15))
+
 ## [1.3.5](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.4...v1.3.5) (2026-01-28)
 
 
