@@ -44,7 +44,7 @@ interface VisualizerNode extends Node<any> {
   type: string;
 }
 
-type VisualizerEdge = Edge<{ timeOffset?: number }>;
+type VisualizerEdge = Edge<{ timeOffset?: number; edgeIndex?: number }>;
 
 // Format cron expression to human-readable
 function formatCronExpression(cronExpr: string): string {
@@ -68,9 +68,10 @@ function formatCronExpression(cronExpr: string): string {
 }
 
 // Data transformation: Convert schedule to nodes and edges with vertical layout
-function scheduleToNodesAndEdges(
-  schedule: ScheduleVisualizerData
-): { nodes: VisualizerNode[]; edges: VisualizerEdge[] } {
+function scheduleToNodesAndEdges(schedule: ScheduleVisualizerData): {
+  nodes: VisualizerNode[];
+  edges: VisualizerEdge[];
+} {
   const nodes: VisualizerNode[] = [];
   const edges: VisualizerEdge[] = [];
 
@@ -136,8 +137,7 @@ function scheduleToNodesAndEdges(
   });
 
   // Edge from last task to end node
-  const lastNodeId =
-    schedule.tasks.length > 0 ? `task-${schedule.tasks.length - 1}` : "start";
+  const lastNodeId = schedule.tasks.length > 0 ? `task-${schedule.tasks.length - 1}` : "start";
   edges.push({
     id: `edge-${lastNodeId}-to-end`,
     source: lastNodeId,
@@ -169,11 +169,7 @@ const FlowControls = () => {
 };
 
 // Main Visualizer Component with ReactFlow provider
-const VisualizerFlow = ({
-  schedule,
-}: {
-  schedule: ScheduleVisualizerData;
-}) => {
+const VisualizerFlow = ({ schedule }: { schedule: ScheduleVisualizerData }) => {
   const nodeTypes = useMemo(
     () => ({
       scheduleStart: ScheduleStartNode,
@@ -191,15 +187,13 @@ const VisualizerFlow = ({
     []
   );
 
-  const { nodes, edges } = useMemo(
-    () => scheduleToNodesAndEdges(schedule),
-    [schedule]
-  );
+  const { nodes, edges } = useMemo(() => scheduleToNodesAndEdges(schedule), [schedule]);
 
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
+      // @ts-expect-error React Flow v12 NodeProps typing incompatibility
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       connectionLineType={ConnectionLineType.Bezier}
@@ -215,7 +209,7 @@ const VisualizerFlow = ({
       <Controls
         position="bottom-right"
         showInteractive={false}
-        className="bg-zinc-900/50 border border-zinc-700/50"
+        className="border border-zinc-700/50 bg-zinc-900/50"
       />
       <FlowControls />
     </ReactFlow>
@@ -234,8 +228,8 @@ export const ScheduleVisualizer = ({
 }) => {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:w-4/5 md:w-3/4 lg:w-2/3 p-0 flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b border-zinc-800">
+      <SheetContent side="right" className="flex w-full flex-col p-0 sm:w-4/5 md:w-3/4 lg:w-2/3">
+        <SheetHeader className="border-b border-zinc-800 px-6 py-4">
           <SheetTitle>Schedule Flow: {schedule.name}</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-hidden">

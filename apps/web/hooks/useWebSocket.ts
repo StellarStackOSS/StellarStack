@@ -84,10 +84,15 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
         // Convert daemon message format (event/args) to WSEvent format (type/data)
         let data: WSEvent;
-        if ('event' in rawData && 'args' in rawData) {
+        if ("event" in rawData && "args" in rawData) {
           // Daemon WebSocket format
-          const convertedType = (rawData.event as string).replace(/\s+/g, ':');
-          console.log("[WebSocket] Daemon message - event:", rawData.event, "-> type:", convertedType);
+          const convertedType = (rawData.event as string).replace(/\s+/g, ":");
+          console.log(
+            "[WebSocket] Daemon message - event:",
+            rawData.event,
+            "-> type:",
+            convertedType
+          );
           data = {
             type: convertedType as WSEventType,
             data: rawData.args?.[0],
@@ -306,7 +311,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       };
 
       ws.onerror = (error) => {
-        console.error("WebSocket error:", err);
+        console.error("WebSocket error:", error);
       };
 
       wsRef.current = ws;
