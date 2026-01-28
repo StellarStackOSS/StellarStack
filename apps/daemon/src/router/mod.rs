@@ -97,6 +97,7 @@ fn server_routes() -> Router<AppState> {
         // Server info
         .route("/", get(handlers::servers::get_server))
         .route("/", delete(handlers::servers::delete_server))
+        .route("/", axum::routing::patch(handlers::servers::update_server))
 
         // Power operations
         .route("/power", post(handlers::servers::power_action))

@@ -32,10 +32,7 @@ export const RecentLogsCard = ({
   };
 
   return (
-    <UsageCard className={cn("h-full flex flex-col", isXs && "p-4", isOffline && "opacity-60")}>
-      <UsageCardTitle className={cn("opacity-80", isXs ? "text-xs mb-2" : "text-md")}>
-        {labels.title}
-      </UsageCardTitle>
+    <UsageCard title={labels.title} className={cn("h-full flex flex-col", isOffline && "opacity-60")}>
       <UsageCardContent className="flex-1 overflow-hidden">
         <div className="space-y-0.5 overflow-y-auto h-full font-mono text-[10px]">
           {logs.slice(0, isXs ? 5 : 8).map((log, i) => (

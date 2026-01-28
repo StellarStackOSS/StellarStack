@@ -70,15 +70,10 @@ export const UsageMetricCard = ({
   }
 
   return (
-    <UsageCard className={cn("h-full", isXs && "p-4", isOffline && "opacity-60")}>
+    <UsageCard title={labels.title} className={cn("h-full", isOffline && "opacity-60")}>
       {tooltipContent && (
         <InfoTooltip content={tooltipContent} visible={!isEditing} />
       )}
-      <UsageCardTitle
-        className={cn("opacity-80", isXs ? "mb-2 text-xs" : isCompact ? "mb-4 text-xs" : "text-md")}
-      >
-        {labels.title}
-      </UsageCardTitle>
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <span
           className={cn(

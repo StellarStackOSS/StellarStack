@@ -49,7 +49,7 @@ export const NetworkUsageCard = ({
   }
 
   return (
-    <UsageCard className={cn("h-full", isXs && "p-4", isOffline && "opacity-60")}>
+    <UsageCard title={labels.title} className={cn("h-full", isOffline && "opacity-60")}>
       {tooltipData && (
         <InfoTooltip
           visible={!isEditing}
@@ -65,12 +65,6 @@ export const NetworkUsageCard = ({
           }
         />
       )}
-      <UsageCardTitle className={cn(
-        "opacity-80",
-        isXs ? "text-xs mb-2" : isCompact ? "text-xs mb-4" : "text-md"
-      )}>
-        {labels.title}
-      </UsageCardTitle>
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <div className={cn(
           "tracking-wide text-zinc-400",

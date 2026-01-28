@@ -10,8 +10,10 @@ import { Switch } from "@workspace/ui/components/switch";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   BsArrowRepeat,
+  BsCalendar,
   BsArrowRight,
   BsChevronDown,
   BsClock,
@@ -968,156 +970,177 @@ const SchedulesPage = (): JSX.Element | null => {
   };
 
   return (
-    <div className="relative min-h-full transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-5 md:p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <TextureButton variant="primary" onClick={openCreateModal}>
-                <BsPlus className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">New Schedule</span>
-              </TextureButton>
-            </div>
-          </div>
-
-          {/* Schedule List */}
-          <div className="space-y-4">
-            {isLoading ? (
-              <div
-                className={cn(
-                  "flex items-center justify-center gap-2 py-12 text-center text-sm",
-                  "text-zinc-500"
-                )}
-              >
-                <Spinner className="h-4 w-4" />
-                Loading schedules...
-              </div>
-            ) : schedules.length === 0 ? (
-              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
-                No schedules found. Create your first schedule.
-              </div>
-            ) : (
-              schedules.map((schedule) => (
-                <div
-                  key={schedule.id}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
                   className={cn(
-                    "relative rounded-lg border p-6 transition-all hover:scale-101",
-                    "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]",
-                    !schedule.isActive && "opacity-50"
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                   )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={openCreateModal}
                 >
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex-1">
-                      <div className="mb-3 flex items-center gap-3">
-                        <h3
-                          className={cn(
-                            "text-sm font-medium tracking-wider uppercase",
-                            "text-zinc-100"
-                          )}
-                        >
-                          {schedule.name}
-                        </h3>
-                        <span
-                          className={cn(
-                            "rounded border bg-white/10 px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                            "border-zinc-600 text-zinc-400"
-                          )}
-                        >
-                          {schedule.tasks.length} task{schedule.tasks.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
+                  <BsPlus className="h-4 w-4" />
+                  New Schedule
+                </TextureButton>
+              </div>
+            </div>
+          </FadeIn>
 
-                      {/* Task list preview */}
-                      <div className="mb-3 flex h-full flex-wrap items-center gap-2">
-                        {schedule.tasks.map((task, index) => {
-                          const isExecuting = schedule.executingTaskIndex === index;
-                          return (
-                            <div
-                              className="item-center flex h-full flex-row justify-center gap-2"
-                              key={`task-wrapper-${task.id}`}
-                            >
-                              <div
-                                key={task.id}
-                                className={cn(
-                                  "flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-all",
-                                  isExecuting
-                                    ? "border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/50"
-                                    : "border-zinc-700 bg-zinc-800/50"
-                                )}
-                              >
-                                {isExecuting && <Spinner className="h-3 w-3 text-blue-400" />}
-                                <span className={cn("text-[10px]", "text-zinc-500")}>
-                                  {index + 1}.
-                                </span>
-                                <span className={cn("text-zinc-300")}>
-                                  {getActionLabel(task.action)}
-                                </span>
-                                {task.timeOffset > 0 && (
-                                  <span className={cn("text-[10px]", "text-zinc-500")}>
-                                    +{task.timeOffset}s
-                                  </span>
-                                )}
-                              </div>
-                              {index < schedule.tasks.length - 1 && (
-                                <div className="flex h-6 w-3 items-center">
-                                  <BsArrowRight
-                                    key={`arrow-${task.id}`}
-                                    className={cn("text-zinc-500")}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className={cn("flex items-center gap-4 text-xs", "text-zinc-500")}>
-                        <span>{formatCronExpression(schedule.cronExpression)}</span>
-                        <span>-</span>
-                        <span>Next: {formatNextRun(schedule)}</span>
-                        <span>-</span>
-                        <span>Last: {formatLastRun(schedule)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 md:ml-4">
-                      <Switch
-                        checked={schedule.isActive}
-                        onCheckedChange={() => toggleSchedule(schedule)}
-                      />
-                      <TextureButton
-                        variant="minimal"
-                        onClick={() => runScheduleNow(schedule)}
-                        disabled={isSaving}
-                        title="Run this schedule now"
-                      >
-                        <BsPlayFill className="h-4 w-4" />
-                      </TextureButton>
-                      <TextureButton variant="minimal" onClick={() => openEditModal(schedule)}>
-                        <BsPencil className="h-4 w-4" />
-                      </TextureButton>
-                      <TextureButton
-                        variant="destructive"
-                        onClick={() => openDeleteModal(schedule)}
-                      >
-                        <BsTrash className="h-4 w-4" />
-                      </TextureButton>
-                    </div>
-                  </div>
+          {/* Schedules Card */}
+          <FadeIn delay={0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsCalendar className="h-3 w-3" />
+                  Schedules
                 </div>
-              ))
-            )}
-          </div>
+                <span className="text-xs text-zinc-500">
+                  {schedules.length} schedule{schedules.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : schedules.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsCalendar className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Schedules</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      Create your first schedule to automate tasks.
+                    </p>
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={openCreateModal}
+                    >
+                      <BsPlus className="h-4 w-4" />
+                      New Schedule
+                    </TextureButton>
+                  </div>
+                ) : (
+                  schedules.map((schedule, index) => (
+                    <div
+                      key={schedule.id}
+                      className={cn(
+                        "p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== schedules.length - 1 && "border-b border-zinc-800/50",
+                        !schedule.isActive && "opacity-50"
+                      )}
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="flex-1">
+                          <div className="mb-3 flex items-center gap-3">
+                            <h3 className="text-sm font-medium text-zinc-100">{schedule.name}</h3>
+                            <span className="rounded border border-zinc-600 bg-white/10 px-2 py-0.5 text-[10px] font-medium tracking-wider text-zinc-400 uppercase">
+                              {schedule.tasks.length} task{schedule.tasks.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+
+                          {/* Task list preview */}
+                          <div className="mb-3 flex h-full flex-wrap items-center gap-2">
+                            {schedule.tasks.map((task, taskIndex) => {
+                              const isExecuting = schedule.executingTaskIndex === taskIndex;
+                              return (
+                                <div
+                                  className="flex h-full flex-row items-center justify-center gap-2"
+                                  key={`task-wrapper-${task.id}`}
+                                >
+                                  <div
+                                    key={task.id}
+                                    className={cn(
+                                      "flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs transition-all",
+                                      isExecuting
+                                        ? "border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/50"
+                                        : "border-zinc-700 bg-zinc-800/50"
+                                    )}
+                                  >
+                                    {isExecuting && <Spinner className="h-3 w-3 text-blue-400" />}
+                                    <span className="text-[10px] text-zinc-500">
+                                      {taskIndex + 1}.
+                                    </span>
+                                    <span className="text-zinc-300">
+                                      {getActionLabel(task.action)}
+                                    </span>
+                                    {task.timeOffset > 0 && (
+                                      <span className="text-[10px] text-zinc-500">
+                                        +{task.timeOffset}s
+                                      </span>
+                                    )}
+                                  </div>
+                                  {taskIndex < schedule.tasks.length - 1 && (
+                                    <div className="flex h-6 w-3 items-center">
+                                      <BsArrowRight
+                                        key={`arrow-${task.id}`}
+                                        className="text-zinc-500"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                            <span>{formatCronExpression(schedule.cronExpression)}</span>
+                            <span>•</span>
+                            <span>Next: {formatNextRun(schedule)}</span>
+                            <span>•</span>
+                            <span>Last: {formatLastRun(schedule)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 md:ml-4">
+                          <Switch
+                            checked={schedule.isActive}
+                            onCheckedChange={() => toggleSchedule(schedule)}
+                          />
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => runScheduleNow(schedule)}
+                            disabled={isSaving}
+                            title="Run this schedule now"
+                          >
+                            <BsPlayFill className="h-4 w-4" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => openEditModal(schedule)}
+                          >
+                            <BsPencil className="h-4 w-4" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="destructive"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => openDeleteModal(schedule)}
+                          >
+                            <BsTrash className="h-4 w-4" />
+                          </TextureButton>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -1171,7 +1194,7 @@ const SchedulesPage = (): JSX.Element | null => {
           onOpenChange={setVisualizerOpen}
         />
       )}
-    </div>
+    </FadeIn>
   );
 };
 

@@ -3,17 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import {
-  Activity,
-  ArrowLeft,
-  Cpu,
-  HardDrive,
-  MemoryStick,
-  Plus,
-  Server,
-  Trash,
-} from "lucide-react";
+  BsCpu,
+  BsMemory,
+  BsHdd,
+  BsClock,
+  BsPlus,
+  BsTrash,
+  BsServer,
+  BsArrowLeft,
+} from "react-icons/bs";
 import type { Allocation, Node, NodeStats } from "@/lib/api";
 import { nodes } from "@/lib/api";
 import { toast } from "sonner";
@@ -129,278 +132,339 @@ export default function NodeDetailPage() {
 
   if (isLoading) {
     return (
-      <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a] p-6")}>
-        <div className={cn("text-sm text-zinc-500")}>Loading...</div>
-      </div>
+      <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+          <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col items-center justify-center rounded-lg bg-black px-4 pb-4">
+            <Spinner className="h-8 w-8" />
+          </div>
+        </div>
+      </FadeIn>
     );
   }
 
   if (!node) {
     return (
-      <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a] p-6")}>
-        <div className={cn("text-sm text-zinc-500")}>Node not found</div>
-      </div>
+      <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+          <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col items-center justify-center rounded-lg bg-black px-4 pb-4">
+            <p className="text-sm text-zinc-500">Node not found</p>
+          </div>
+        </div>
+      </FadeIn>
     );
   }
 
   return (
-    <div className={cn("min-h-svh bg-[#0b0b0a] p-6")}>
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <TextureButton variant="minimal" onClick={() => router.push("/admin/nodes")}>
-          <ArrowLeft className="h-4 w-4" />
-        </TextureButton>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-              {node.displayName}
-            </h1>
-            <span
-              className={cn(
-                "px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                node.isOnline ? "bg-green-900/50 text-green-400" : "bg-zinc-800 text-zinc-500"
-              )}
-            >
-              {node.isOnline ? "Online" : "Offline"}
-            </span>
-            {node.heartbeatLatency && (
-              <span className={cn("text-xs text-zinc-500")}>{node.heartbeatLatency}ms</span>
-            )}
-          </div>
-          <p className={cn("mt-1 text-sm text-zinc-500")}>
-            {node.protocol.toLowerCase()}://{node.host}:{node.port}
-          </p>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      {stats && (
-        <div className="mb-6 grid grid-cols-4 gap-4">
-          {/* CPU */}
-          <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
-            <div className="mb-2 flex items-center gap-2">
-              <Cpu className={cn("h-4 w-4 text-zinc-400")} />
-              <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>CPU</span>
-            </div>
-            <div className={cn("text-2xl font-light text-zinc-100")}>
-              {stats.cpu.usage_percent.toFixed(1)}%
-            </div>
-            <div className={cn("mt-1 text-xs text-zinc-600")}>
-              {stats.cpu.cores} cores | Load: {stats.cpu.load_avg.one.toFixed(2)}
-            </div>
-          </div>
-
-          {/* Memory */}
-          <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
-            <div className="mb-2 flex items-center gap-2">
-              <MemoryStick className={cn("h-4 w-4 text-zinc-400")} />
-              <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Memory</span>
-            </div>
-            <div className={cn("text-2xl font-light text-zinc-100")}>
-              {stats.memory.usage_percent.toFixed(1)}%
-            </div>
-            <div className={cn("mt-1 text-xs text-zinc-600")}>
-              {formatBytes(stats.memory.used)} / {formatBytes(stats.memory.total)}
-            </div>
-          </div>
-
-          {/* Disk */}
-          <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
-            <div className="mb-2 flex items-center gap-2">
-              <HardDrive className={cn("h-4 w-4 text-zinc-400")} />
-              <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Disk</span>
-            </div>
-            <div className={cn("text-2xl font-light text-zinc-100")}>
-              {stats.disk.usage_percent.toFixed(1)}%
-            </div>
-            <div className={cn("mt-1 text-xs text-zinc-600")}>
-              {formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
-            </div>
-          </div>
-
-          {/* System Info */}
-          <div className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
-            <div className="mb-2 flex items-center gap-2">
-              <Activity className={cn("h-4 w-4 text-zinc-400")} />
-              <span className={cn("text-xs tracking-wider text-zinc-400 uppercase")}>Uptime</span>
-            </div>
-            <div className={cn("text-2xl font-light text-zinc-100")}>
-              {formatUptime(stats.uptime)}
-            </div>
-            <div className={cn("mt-1 text-xs text-zinc-600")}>
-              {stats.os.name} {stats.os.arch}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Allocations Section */}
-      <div className="mb-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className={cn("text-lg font-light tracking-wider text-zinc-100")}>Allocations</h2>
-          <TextureButton onClick={() => setIsAddingAllocation(true)}>
-            <Plus className="mr-1 h-3 w-3" />
-            Add
-          </TextureButton>
-        </div>
-
-        {isAddingAllocation && (
-          <form
-            onSubmit={handleAddAllocation}
-            className={cn("mb-4 border border-zinc-700/50 bg-zinc-900/50 p-4")}
-          >
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <Label>IP Address</Label>
-                <Input
-                  type="text"
-                  value={allocationForm.ip}
-                  onChange={(e) => setAllocationForm({ ...allocationForm, ip: e.target.value })}
-                  placeholder="0.0.0.0"
-                  required
-                />
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => router.push("/admin/nodes")}
+                >
+                  <BsArrowLeft className="h-4 w-4" />
+                  Back
+                </TextureButton>
               </div>
-              <div>
-                <Label>{allocationForm.isRange ? "Start Port" : "Port"}</Label>
-                <Input
-                  type="number"
-                  value={allocationForm.startPort}
-                  onChange={(e) =>
-                    setAllocationForm({ ...allocationForm, startPort: parseInt(e.target.value) })
-                  }
-                  required
-                />
+            </div>
+          </FadeIn>
+
+          {/* Node Info Header */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold text-zinc-100">{node.displayName}</h1>
+                <span
+                  className={cn(
+                    "rounded px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                    node.isOnline ? "bg-green-900/50 text-green-400" : "bg-zinc-800 text-zinc-500"
+                  )}
+                >
+                  {node.isOnline ? "Online" : "Offline"}
+                </span>
+                {node.heartbeatLatency && (
+                  <span className="text-xs text-zinc-500">{node.heartbeatLatency}ms</span>
+                )}
               </div>
-              {allocationForm.isRange && (
-                <div>
-                  <Label>End Port</Label>
-                  <Input
-                    type="number"
-                    value={allocationForm.endPort}
-                    onChange={(e) =>
-                      setAllocationForm({ ...allocationForm, endPort: parseInt(e.target.value) })
-                    }
-                    required
-                  />
+              <p className="text-sm text-zinc-500">
+                {node.protocol.toLowerCase()}://{node.host}:{node.port}
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* Stats Grid */}
+          {stats && (
+            <FadeIn delay={0.1}>
+              <div className="mb-4 grid grid-cols-4 gap-4">
+                {/* CPU */}
+                <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <BsCpu className="h-4 w-4 text-zinc-400" />
+                    <span className="text-xs tracking-wider text-zinc-400 uppercase">CPU</span>
+                  </div>
+                  <div className="text-2xl font-light text-zinc-100">
+                    {stats.cpu.usage_percent.toFixed(1)}%
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    {stats.cpu.cores} cores | Load: {stats.cpu.load_avg.one.toFixed(2)}
+                  </div>
                 </div>
-              )}
-              <div className="flex items-end gap-2">
-                <Label>
-                  <Input
-                    type="checkbox"
-                    checked={allocationForm.isRange}
-                    onChange={(e) =>
-                      setAllocationForm({ ...allocationForm, isRange: e.target.checked })
-                    }
-                    className="rounded"
-                  />
-                  <span className={cn("text-xs text-zinc-400")}>Range</span>
-                </Label>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <TextureButton variant="minimal" onClick={() => setIsAddingAllocation(false)}>
-                Cancel
-              </TextureButton>
-              <TextureButton variant="minimal" type="submit">
-                Add
-              </TextureButton>
-            </div>
-          </form>
-        )}
 
-        <div className={cn("overflow-hidden border border-zinc-700/50")}>
-          <table className="w-full">
-            <thead>
-              <tr className={cn("bg-zinc-900/50 text-xs tracking-wider text-zinc-400 uppercase")}>
-                <th className="p-3 text-left">IP:Port</th>
-                <th className="p-3 text-left">Alias</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Server</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!node.allocations || node.allocations.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className={cn("py-8 text-center text-sm text-zinc-500")}>
-                    No allocations. Add some to assign to servers.
-                  </td>
-                </tr>
-              ) : (
-                node.allocations.map((allocation) => (
-                  <tr
-                    key={allocation.id}
-                    className={cn(
-                      "border-t border-zinc-700/50 transition-colors hover:bg-zinc-900/30"
-                    )}
-                  >
-                    <td className={cn("p-3 font-mono text-sm text-zinc-100")}>
-                      {allocation.ip}:{allocation.port}
-                    </td>
-                    <td className={cn("p-3 text-sm text-zinc-400")}>{allocation.alias || "-"}</td>
-                    <td className="p-3">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                          allocation.assigned
-                            ? "bg-blue-900/50 text-blue-400"
-                            : "bg-zinc-800 text-zinc-500"
-                        )}
-                      >
-                        {allocation.assigned ? "Assigned" : "Available"}
-                      </span>
-                    </td>
-                    <td className={cn("p-3 text-sm text-zinc-400")}>
-                      {allocation.serverId || "-"}
-                    </td>
-                    <td className="p-3 text-right">
+                {/* Memory */}
+                <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <BsMemory className="h-4 w-4 text-zinc-400" />
+                    <span className="text-xs tracking-wider text-zinc-400 uppercase">Memory</span>
+                  </div>
+                  <div className="text-2xl font-light text-zinc-100">
+                    {stats.memory.usage_percent.toFixed(1)}%
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    {formatBytes(stats.memory.used)} / {formatBytes(stats.memory.total)}
+                  </div>
+                </div>
+
+                {/* Disk */}
+                <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <BsHdd className="h-4 w-4 text-zinc-400" />
+                    <span className="text-xs tracking-wider text-zinc-400 uppercase">Disk</span>
+                  </div>
+                  <div className="text-2xl font-light text-zinc-100">
+                    {stats.disk.usage_percent.toFixed(1)}%
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    {formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
+                  </div>
+                </div>
+
+                {/* Uptime */}
+                <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <BsClock className="h-4 w-4 text-zinc-400" />
+                    <span className="text-xs tracking-wider text-zinc-400 uppercase">Uptime</span>
+                  </div>
+                  <div className="text-2xl font-light text-zinc-100">
+                    {formatUptime(stats.uptime)}
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    {stats.os.name} {stats.os.arch}
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          )}
+
+          {/* Allocations Section */}
+          <FadeIn delay={0.15}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsServer className="h-3 w-3" />
+                  Allocations
+                </div>
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setIsAddingAllocation(true)}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  Add
+                </TextureButton>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {/* Add Allocation Form */}
+                {isAddingAllocation && (
+                  <form onSubmit={handleAddAllocation} className="border-b border-zinc-800/50 p-4">
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <Label>IP Address</Label>
+                        <Input
+                          type="text"
+                          value={allocationForm.ip}
+                          onChange={(e) =>
+                            setAllocationForm({ ...allocationForm, ip: e.target.value })
+                          }
+                          placeholder="0.0.0.0"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label>{allocationForm.isRange ? "Start Port" : "Port"}</Label>
+                        <Input
+                          type="number"
+                          value={allocationForm.startPort}
+                          onChange={(e) =>
+                            setAllocationForm({
+                              ...allocationForm,
+                              startPort: parseInt(e.target.value),
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      {allocationForm.isRange && (
+                        <div>
+                          <Label>End Port</Label>
+                          <Input
+                            type="number"
+                            value={allocationForm.endPort}
+                            onChange={(e) =>
+                              setAllocationForm({
+                                ...allocationForm,
+                                endPort: parseInt(e.target.value),
+                              })
+                            }
+                            required
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-end gap-2">
+                        <label className="flex items-center gap-2">
+                          <Input
+                            type="checkbox"
+                            checked={allocationForm.isRange}
+                            onChange={(e) =>
+                              setAllocationForm({ ...allocationForm, isRange: e.target.checked })
+                            }
+                            className="h-4 w-4"
+                          />
+                          <span className="text-xs text-zinc-400">Range</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-end gap-2">
                       <TextureButton
-                        variant="destructive"
-                        onClick={() => handleDeleteAllocation(allocation)}
-                        disabled={allocation.assigned}
+                        variant="minimal"
+                        size="sm"
+                        type="button"
+                        onClick={() => setIsAddingAllocation(false)}
                       >
-                        <Trash className="h-3 w-3" />
+                        Cancel
                       </TextureButton>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      <TextureButton variant="primary" size="sm" type="submit">
+                        Add
+                      </TextureButton>
+                    </div>
+                  </form>
+                )}
 
-      {/* Servers Section */}
-      {node.servers && node.servers.length > 0 && (
-        <div>
-          <h2 className={cn("mb-4 text-lg font-light tracking-wider text-zinc-100")}>
-            Servers on this Node
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            {node.servers.map((server) => (
-              <div key={server.id} className={cn("border border-zinc-700/50 bg-zinc-900/50 p-4")}>
-                <div className="flex items-center gap-2">
-                  <Server className={cn("h-4 w-4 text-zinc-400")} />
-                  <span className={cn("font-medium text-zinc-100")}>{server.name}</span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                      server.status === "RUNNING"
-                        ? "bg-green-900/50 text-green-400"
-                        : "bg-zinc-800 text-zinc-500"
-                    )}
-                  >
-                    {server.status}
-                  </span>
+                {/* Allocations Table */}
+                <div className="overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-zinc-800/50 text-xs tracking-wider text-zinc-500 uppercase">
+                        <th className="p-3 text-left font-medium">IP:Port</th>
+                        <th className="p-3 text-left font-medium">Alias</th>
+                        <th className="p-3 text-left font-medium">Status</th>
+                        <th className="p-3 text-left font-medium">Server</th>
+                        <th className="p-3 text-right font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {!node.allocations || node.allocations.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-sm text-zinc-500">
+                            No allocations. Add some to assign to servers.
+                          </td>
+                        </tr>
+                      ) : (
+                        node.allocations.map((allocation) => (
+                          <tr
+                            key={allocation.id}
+                            className="border-b border-zinc-800/50 transition-colors hover:bg-zinc-800/20"
+                          >
+                            <td className="p-3 font-mono text-sm text-zinc-100">
+                              {allocation.ip}:{allocation.port}
+                            </td>
+                            <td className="p-3 text-sm text-zinc-400">{allocation.alias || "-"}</td>
+                            <td className="p-3">
+                              <span
+                                className={cn(
+                                  "rounded px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                                  allocation.assigned
+                                    ? "bg-blue-900/50 text-blue-400"
+                                    : "bg-zinc-800 text-zinc-500"
+                                )}
+                              >
+                                {allocation.assigned ? "Assigned" : "Available"}
+                              </span>
+                            </td>
+                            <td className="p-3 text-sm text-zinc-400">
+                              {allocation.serverId || "-"}
+                            </td>
+                            <td className="p-3 text-right">
+                              <TextureButton
+                                variant="secondary"
+                                size="sm"
+                                className="w-fit text-red-400 hover:text-red-300"
+                                onClick={() => handleDeleteAllocation(allocation)}
+                                disabled={allocation.assigned}
+                              >
+                                <BsTrash className="h-3 w-3" />
+                              </TextureButton>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          </FadeIn>
+
+          {/* Servers Section */}
+          {node.servers && node.servers.length > 0 && (
+            <FadeIn delay={0.2}>
+              <div className="mt-4 flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                  <div className="flex items-center gap-2 text-xs opacity-50">
+                    <BsServer className="h-3 w-3" />
+                    Servers on this Node
+                  </div>
+                  <span className="text-xs text-zinc-500">{node.servers.length} servers</span>
+                </div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="grid grid-cols-3 gap-4">
+                    {node.servers.map((server) => (
+                      <div
+                        key={server.id}
+                        className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BsServer className="h-4 w-4 text-zinc-400" />
+                          <span className="font-medium text-zinc-100">{server.name}</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                              server.status === "RUNNING"
+                                ? "bg-green-900/50 text-green-400"
+                                : "bg-zinc-800 text-zinc-500"
+                            )}
+                          >
+                            {server.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </FadeIn>
   );
 }

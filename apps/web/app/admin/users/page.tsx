@@ -1,29 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { TextureButton } from "@workspace/ui/components/texture-button";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { DataTable } from "@workspace/ui/components/data-table";
-import {
-  ArrowLeft,
-  Edit,
-  Plus,
-  Search,
-  Shield,
-  Trash,
-  User,
-} from "lucide-react";
-import { useUserMutations, useUsers } from "@/hooks/queries";
-import { useAuth } from "hooks/auth-provider";
-import type { User } from "@/lib/api";
-import { toast } from "sonner";
-import { ColumnDef, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { Label } from "@workspace/ui/components/label";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -31,9 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import { BsPerson, BsShield, BsPlus, BsPencil, BsTrash } from "react-icons/bs";
+import { useUserMutations, useUsers } from "@/hooks/queries";
+import { useAuth } from "hooks/auth-provider";
+import type { User as UserType } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function UsersPage() {
-  const router = useRouter();
   const { user: currentUser } = useAuth();
 
   // React Query hooks
@@ -43,117 +33,9 @@ export default function UsersPage() {
   // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserType | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Define table columns
-  const columns = useMemo<ColumnDef<User>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "User",
-        cell: ({ row }) => {
-          const user = row.original;
-          return (
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-800 text-zinc-400"
-                )}
-              >
-                {user.role === "admin" ? (
-                  <Shield className="h-4 w-4" />
-                ) : (
-                  <User className="h-4 w-4" />
-                )}
-              </div>
-              <div>
-                <div className="font-medium">{user.name}</div>
-                {user.id === currentUser?.id && (
-                  <div className={cn("text-xs text-zinc-500")}>(You)</div>
-                )}
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "email",
-        header: "Email",
-        cell: ({ row }) => {
-          const user = row.original;
-          return (
-            <div className={cn("text-sm text-zinc-400")}>
-              {user.email}
-              {user.emailVerified && (
-                <span
-                  className={cn("ml-2 border border-zinc-600 px-1 py-0.5 text-xs text-zinc-400")}
-                >
-                  Verified
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "role",
-        header: "Role",
-        cell: ({ row }) => {
-          const user = row.original;
-          return (
-            <TextureButton
-              variant="minimal"
-              onClick={() => toggleRole(user)}
-              disabled={user.id === currentUser?.id || update.isPending}
-            >
-              {user.role === "admin" ? (
-                <Shield className="h-3 w-3" />
-              ) : (
-                <User className="h-3 w-3" />
-              )}
-              {user.role}
-            </TextureButton>
-          );
-        },
-      },
-      {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
-      },
-      {
-        id: "actions",
-        header: () => <div className="text-right">Actions</div>,
-        cell: ({ row }) => {
-          const user = row.original;
-          return (
-            <div className="flex items-center justify-end gap-1">
-              <TextureButton variant="minimal" size="sm" onClick={() => handleEdit(user)}>
-                <Edit className="h-3 w-3" />
-              </TextureButton>
-              <TextureButton
-                variant="minimal"
-                size="sm"
-                onClick={() => {
-                  if (user.id === currentUser?.id) {
-                    toast.error("You cannot delete yourself");
-                    return;
-                  }
-                  setDeleteConfirmUser(user);
-                }}
-                disabled={user.id === currentUser?.id}
-              >
-                <Trash className="h-3 w-3" />
-              </TextureButton>
-            </div>
-          );
-        },
-      },
-    ],
-    [currentUser?.id, update.isPending]
-  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -164,12 +46,7 @@ export default function UsersPage() {
   });
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "user",
-    });
+    setFormData({ name: "", email: "", password: "", role: "user" });
     setEditingUser(null);
     setIsCreateMode(false);
   };
@@ -211,24 +88,14 @@ export default function UsersPage() {
   const handleCreate = () => {
     setIsCreateMode(true);
     setEditingUser(null);
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "user",
-    });
+    setFormData({ name: "", email: "", password: "", role: "user" });
     setIsModalOpen(true);
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: UserType) => {
     setIsCreateMode(false);
     setEditingUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email,
-      password: "",
-      role: user.role,
-    });
+    setFormData({ name: user.name, email: user.email, password: "", role: user.role });
     setIsModalOpen(true);
   };
 
@@ -243,7 +110,7 @@ export default function UsersPage() {
     }
   };
 
-  const toggleRole = async (user: User) => {
+  const toggleRole = async (user: UserType) => {
     if (user.id === currentUser?.id) {
       toast.error("You cannot change your own role");
       return;
@@ -257,7 +124,6 @@ export default function UsersPage() {
     }
   };
 
-  // Filter users based on search query
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return usersList;
     const query = searchQuery.toLowerCase();
@@ -269,59 +135,149 @@ export default function UsersPage() {
     );
   }, [usersList, searchQuery]);
 
-  // Create table instance
-  const table = useReactTable({
-    data: filteredUsers,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            {/* Header */}
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <TextureButton variant="ghost" size="sm" onClick={() => router.push("/admin")}>
-                  <ArrowLeft className="h-4 w-4" />
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                <TextureButton variant="primary" size="sm" className="w-fit" onClick={handleCreate}>
+                  <BsPlus className="h-4 w-4" />
+                  Create User
                 </TextureButton>
-                <div>
-                  <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>USERS</h1>
-                  <p className={cn("mt-1 text-sm text-zinc-500")}>
-                    Manage user accounts and permissions
-                  </p>
-                </div>
               </div>
-              <TextureButton variant="secondary" size="sm" onClick={handleCreate}>
-                <Plus className="h-4 w-4" />
-                Create User
-              </TextureButton>
             </div>
+          </FadeIn>
 
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <Search
-                className={cn("absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500")}
-              />
+          {/* Search */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4">
               <Input
                 type="text"
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9"
               />
             </div>
           </FadeIn>
 
-          {/* Users Table */}
+          {/* Users List */}
           <FadeIn delay={0.1}>
-            <DataTable
-              table={table}
-              columns={columns}
-              isLoading={isLoading}
-              emptyMessage={searchQuery ? "No users match your search." : "No users found."}
-            />
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsPerson className="h-3 w-3" />
+                  Users
+                </div>
+                <span className="text-xs text-zinc-500">
+                  {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsPerson className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Users</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      {searchQuery ? "No users match your search." : "No users found."}
+                    </p>
+                  </div>
+                ) : (
+                  filteredUsers.map((user, index) => (
+                    <div
+                      key={user.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== filteredUsers.length - 1 && "border-b border-zinc-800/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={cn(
+                            "flex h-10 w-10 items-center justify-center rounded-lg border",
+                            user.role === "admin"
+                              ? "border-amber-700/50 bg-amber-900/30"
+                              : "border-zinc-700 bg-zinc-800/50"
+                          )}
+                        >
+                          {user.role === "admin" ? (
+                            <BsShield className="h-5 w-5 text-amber-400" />
+                          ) : (
+                            <BsPerson className="h-5 w-5 text-zinc-400" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-zinc-100">{user.name}</span>
+                            {user.id === currentUser?.id && (
+                              <span className="text-xs text-zinc-500">(You)</span>
+                            )}
+                            <button
+                              onClick={() => toggleRole(user)}
+                              disabled={user.id === currentUser?.id || update.isPending}
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase transition-colors",
+                                user.role === "admin"
+                                  ? "bg-amber-900/30 text-amber-400 hover:bg-amber-900/50"
+                                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700",
+                                (user.id === currentUser?.id || update.isPending) &&
+                                  "cursor-not-allowed opacity-50"
+                              )}
+                            >
+                              {user.role}
+                            </button>
+                          </div>
+                          <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                            <span>{user.email}</span>
+                            {user.emailVerified && (
+                              <span className="rounded bg-zinc-800 px-1 py-0.5 text-[10px] text-zinc-400">
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-600">
+                            Created: {new Date(user.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <BsPencil className="h-4 w-4" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="secondary"
+                          size="sm"
+                          className="w-fit text-red-400 hover:text-red-300"
+                          onClick={() => {
+                            if (user.id === currentUser?.id) {
+                              toast.error("You cannot delete yourself");
+                              return;
+                            }
+                            setDeleteConfirmUser(user);
+                          }}
+                          disabled={user.id === currentUser?.id}
+                        >
+                          <BsTrash className="h-4 w-4" />
+                        </TextureButton>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </FadeIn>
         </div>
       </div>
@@ -354,7 +310,6 @@ export default function UsersPage() {
               required
             />
           </div>
-
           <div>
             <Label>Email</Label>
             <Input
@@ -365,11 +320,8 @@ export default function UsersPage() {
               disabled={!isCreateMode}
               required
             />
-            {!isCreateMode && (
-              <p className={cn("mt-1 text-xs text-zinc-600")}>Email cannot be changed</p>
-            )}
+            {!isCreateMode && <p className="mt-1 text-xs text-zinc-600">Email cannot be changed</p>}
           </div>
-
           {isCreateMode && (
             <div>
               <Label>Password</Label>
@@ -382,13 +334,12 @@ export default function UsersPage() {
                 minLength={8}
               />
               {formData.password.length > 0 && formData.password.length < 8 && (
-                <p className={cn("mt-1 text-xs text-amber-500")}>
+                <p className="mt-1 text-xs text-amber-500">
                   Password must be at least 8 characters
                 </p>
               )}
             </div>
           )}
-
           <div>
             <Label>Role</Label>
             <Select
@@ -407,7 +358,7 @@ export default function UsersPage() {
               </SelectContent>
             </Select>
             {!isCreateMode && editingUser?.id === currentUser?.id && (
-              <p className={cn("mt-1 text-xs text-zinc-500")}>You cannot change your own role</p>
+              <p className="mt-1 text-xs text-zinc-500">You cannot change your own role</p>
             )}
           </div>
         </div>
@@ -423,6 +374,6 @@ export default function UsersPage() {
         onConfirm={handleDelete}
         isLoading={remove.isPending}
       />
-    </div>
+    </FadeIn>
   );
 }

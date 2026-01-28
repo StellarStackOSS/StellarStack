@@ -1695,11 +1695,12 @@ servers.get("/:serverId/files/download", async (c) => {
     const isImage = mimeType.startsWith("image/");
     const isVideo = mimeType.startsWith("video/");
     const isAudio = mimeType.startsWith("audio/");
-    
+
     // Use inline for media files (so they display), attachment for others
-    const disposition = isImage || isVideo || isAudio 
-      ? `inline; filename="${filename}"`
-      : `attachment; filename="${filename}"`;
+    const disposition =
+      isImage || isVideo || isAudio
+        ? `inline; filename="${filename}"`
+        : `attachment; filename="${filename}"`;
 
     return new Response(data, {
       headers: {
@@ -1746,7 +1747,7 @@ servers.post("/:serverId/files/upload", requireServerAccess, requireNotSuspended
 
   try {
     const formData = await c.req.formData();
-    const directory = formData.get("directory") as string || "";
+    const directory = (formData.get("directory") as string) || "";
 
     if (!formData.has("file")) {
       return c.json({ error: "No file provided" }, 400);
@@ -1772,8 +1773,13 @@ servers.post("/:serverId/files/upload", requireServerAccess, requireNotSuspended
     }
 
     // Make request to daemon with FormData
-    const protocol = fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY" ? "https" : "http";
-    const daemonUrl = new URL(`${protocol}://${fullServer.node.host}:${fullServer.node.port}/api/servers/${server.id}/files/upload`);
+    const protocol =
+      fullServer.node.protocol === "HTTPS" || fullServer.node.protocol === "HTTPS_PROXY"
+        ? "https"
+        : "http";
+    const daemonUrl = new URL(
+      `${protocol}://${fullServer.node.host}:${fullServer.node.port}/api/servers/${server.id}/files/upload`
+    );
 
     // Add directory as query parameter
     if (directory) {
@@ -2409,44 +2415,49 @@ servers.patch("/:serverId/backups/lock", requireServerAccess, async (c) => {
 
 // === Schedules ===
 
-const taskSchema = z.object({
-  action: z.enum(["power_start", "power_stop", "power_restart", "backup", "command"]),
-  payload: z.string().optional(),
-  timeOffset: z.number().int().min(0).default(0),
-  sequence: z.number().int().min(0).default(0),
-  triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
-}).refine(
-  (task) => {
-    // Commands require a payload
-    if (task.action === "command" && !task.payload) {
-      return false;
+const taskSchema = z
+  .object({
+    action: z.enum(["power_start", "power_stop", "power_restart", "backup", "command"]),
+    payload: z.string().optional(),
+    timeOffset: z.number().int().min(0).default(0),
+    sequence: z.number().int().min(0).default(0),
+    triggerMode: z.enum(["TIME_DELAY", "ON_COMPLETION"]).default("TIME_DELAY"),
+  })
+  .refine(
+    (task) => {
+      // Commands require a payload
+      if (task.action === "command" && !task.payload) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Commands require a payload",
+      path: ["payload"],
     }
-    return true;
-  },
-  {
-    message: "Commands require a payload",
-    path: ["payload"],
-  }
-);
+  );
 
 const scheduleBaseSchema = z.object({
   name: z.string().min(1).max(255),
-  cronExpression: z.string().min(1).refine(
-    (expr) => {
-      // Validate cron expression format
-      // Basic validation: should be 5 fields (minute hour day month day-of-week)
-      // or 6 fields (second minute hour day month day-of-week)
-      const parts = expr.trim().split(/\s+/);
-      if (parts.length < 5 || parts.length > 6) {
-        return false;
+  cronExpression: z
+    .string()
+    .min(1)
+    .refine(
+      (expr) => {
+        // Validate cron expression format
+        // Basic validation: should be 5 fields (minute hour day month day-of-week)
+        // or 6 fields (second minute hour day month day-of-week)
+        const parts = expr.trim().split(/\s+/);
+        if (parts.length < 5 || parts.length > 6) {
+          return false;
+        }
+        // Simple validation: check if it contains only valid cron chars
+        return /^[\d\s\-,/\*]+$/.test(expr);
+      },
+      {
+        message: "Invalid cron expression format (expected 5 or 6 space-separated fields)",
       }
-      // Simple validation: check if it contains only valid cron chars
-      return /^[\d\s\-,/\*]+$/.test(expr);
-    },
-    {
-      message: "Invalid cron expression format (expected 5 or 6 space-separated fields)",
-    }
-  ),
+    ),
   isActive: z.boolean().default(true),
   tasks: z.array(taskSchema),
 });
@@ -2534,7 +2545,12 @@ servers.post("/:serverId/schedules", requireServerAccess, async (c) => {
             triggerMode: task.triggerMode,
           })),
         };
-        await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/schedules`, daemonSchedule);
+        await daemonRequest(
+          fullServer.node,
+          "POST",
+          `/api/servers/${server.id}/schedules`,
+          daemonSchedule
+        );
       }
     } catch (error: any) {
       console.warn("[Schedule] Failed to sync to daemon:", error.message);
@@ -2618,7 +2634,12 @@ servers.patch("/:serverId/schedules/:scheduleId", requireServerAccess, async (c)
             triggerMode: task.triggerMode,
           })),
         };
-        await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}/schedules/${scheduleId}`, daemonSchedule);
+        await daemonRequest(
+          fullServer.node,
+          "PATCH",
+          `/api/servers/${server.id}/schedules/${scheduleId}`,
+          daemonSchedule
+        );
       }
     } catch (error: any) {
       console.warn("[Schedule] Failed to sync to daemon:", error.message);
@@ -2668,7 +2689,11 @@ servers.delete("/:serverId/schedules/:scheduleId", requireServerAccess, async (c
       });
 
       if (fullServer?.node) {
-        await daemonRequest(fullServer.node, "DELETE", `/api/servers/${server.id}/schedules/${scheduleId}`);
+        await daemonRequest(
+          fullServer.node,
+          "DELETE",
+          `/api/servers/${server.id}/schedules/${scheduleId}`
+        );
       }
     } catch (error: any) {
       console.warn("[Schedule] Failed to sync delete to daemon:", error.message);
@@ -2877,19 +2902,25 @@ servers.post("/:serverId/allocations", requireServerAccess, async (c) => {
   if (fullServer.node.isOnline) {
     try {
       const allAllocations = [...fullServer.allocations, updated];
+      const primaryAllocation = fullServer.allocations[0] || updated;
+
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of allAllocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
-            ip: fullServer.allocations[0]?.ip || "0.0.0.0",
-            port: fullServer.allocations[0]?.port || 25565,
+            ip: primaryAllocation.ip || "0.0.0.0",
+            port: primaryAllocation.port || 25565,
           },
-          mappings: allAllocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {
@@ -2951,19 +2982,25 @@ servers.delete("/:serverId/allocations/:allocationId", requireServerAccess, asyn
   if (fullServer.node.isOnline) {
     try {
       const remainingAllocations = fullServer.allocations.filter((a) => a.id !== allocationId);
+      const primaryAllocation = remainingAllocations[0];
+
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of remainingAllocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
-            ip: remainingAllocations[0]?.ip || "0.0.0.0",
-            port: remainingAllocations[0]?.port || 25565,
+            ip: primaryAllocation?.ip || "0.0.0.0",
+            port: primaryAllocation?.port || 25565,
           },
-          mappings: remainingAllocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {
@@ -3006,19 +3043,23 @@ servers.post("/:serverId/allocations/:allocationId/primary", requireServerAccess
   // Update the daemon with the new primary allocation
   if (fullServer.node.isOnline) {
     try {
+      // Build mappings in daemon format: { "ip": [ports] }
+      const mappings: Record<string, number[]> = {};
+      for (const alloc of fullServer.allocations) {
+        const ip = alloc.ip || "0.0.0.0";
+        if (!mappings[ip]) {
+          mappings[ip] = [];
+        }
+        mappings[ip].push(alloc.port);
+      }
+
       await daemonRequest(fullServer.node, "PATCH", `/api/servers/${server.id}`, {
         allocations: {
           default: {
             ip: allocation.ip,
             port: allocation.port,
           },
-          mappings: fullServer.allocations.reduce(
-            (acc, a) => {
-              acc[a.port] = a.port;
-              return acc;
-            },
-            {} as Record<number, number>
-          ),
+          mappings,
         },
       });
     } catch (error: any) {

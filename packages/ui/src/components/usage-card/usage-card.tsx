@@ -1,5 +1,6 @@
-import {ComponentPropsWithoutRef} from "react";
+import {ComponentPropsWithoutRef, ReactNode} from "react";
 import {cn} from "@workspace/ui/lib/utils";
+import {InfoTooltip} from "@workspace/ui/components";
 
 type CardProps = ComponentPropsWithoutRef<"div">;
 
@@ -40,17 +41,32 @@ const UsageCardFooter = ({ className, children, ...props }: CardProps) => {
     );
 };
 
-const UsageCard = ({ className, children, ...props }: CardProps) => {
+interface UsageCardProps extends Omit<CardProps, 'title'> {
+  title?: string;
+  tooltipContent?: ReactNode;
+}
+
+const UsageCard = ({ className, children, title, tooltipContent, ...props }: UsageCardProps) => {
   return (
-    <div
-      className={cn(
-        "relative flex flex-col rounded-lg border p-8 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </div>
+      <div className="bg-[#090909] border border-white/5 pt-2 p-1 rounded-lg flex flex-col h-full">
+          {title && (
+            <div className="text-xs pl-2 pb-2 opacity-50 flex flex-row justify-between shrink-0">
+                <span>
+                    {title}
+                </span>
+                {tooltipContent && <InfoTooltip content={tooltipContent} />}
+            </div>
+          )}
+          <div
+              className={cn(
+                  "relative flex flex-col flex-1 rounded-lg border p-4 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
+                  className
+              )}
+              {...props}
+          >
+              {children}
+          </div>
+      </div>
   );
 };
 
@@ -58,4 +74,4 @@ UsageCard.Title = UsageCardTitle;
 UsageCard.Content = UsageCardContent;
 UsageCard.Footer = UsageCardFooter;
 
-export { UsageCard, UsageCardContent, UsageCardTitle, UsageCardFooter };
+export {UsageCard, UsageCardContent, UsageCardTitle, UsageCardFooter};

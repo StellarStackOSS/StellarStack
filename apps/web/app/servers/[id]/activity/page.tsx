@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, type JSX } from "react";
+import { useState, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   BsPlayFill,
   BsStopFill,
@@ -294,138 +295,143 @@ const ActivityPage = (): JSX.Element | null => {
   const logs = activityData?.logs || [];
 
   return (
-    <div className="relative min-h-svh transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center gap-4">
-            <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-            <div>
-              <h1 className="text-2xl font-light tracking-wider text-zinc-100">ACTIVITY LOG</h1>
-              <p className="mt-1 text-sm text-zinc-500">
-                Server {server?.shortId || serverId.slice(0, 8)} • {logs.length} recent activities
-              </p>
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">{logs.length} activities</span>
+              </div>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Activity Timeline */}
-          <div className="relative border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]">
-            {/* Corner decorations */}
-            <div className="absolute top-0 left-0 h-3 w-3 border-t border-l border-zinc-500" />
-            <div className="absolute top-0 right-0 h-3 w-3 border-t border-r border-zinc-500" />
-            <div className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-zinc-500" />
-            <div className="absolute right-0 bottom-0 h-3 w-3 border-r border-b border-zinc-500" />
-
-            {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Spinner className="h-8 w-8" />
-              </div>
-            ) : logs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                <BsGear className="mb-4 h-12 w-12 opacity-50" />
-                <p className="text-sm">No activity recorded yet</p>
-              </div>
-            ) : (
-              logs.map((activity: ActivityLog, index: number) => {
-                const config = getEventConfig(activity.event);
-                const hasMetadata = activity.metadata && Object.keys(activity.metadata).length > 0;
-                const isExpanded = expandedIds.has(activity.id);
-
-                return (
-                  <div
-                    key={activity.id}
-                    className={cn(index !== logs.length - 1 && "border-b border-zinc-800/50")}
-                  >
-                    <div
-                      onClick={() => hasMetadata && toggleExpanded(activity.id)}
-                      className={cn(
-                        "flex items-start gap-4 px-6 py-4 transition-colors hover:bg-zinc-800/20",
-                        hasMetadata && "cursor-pointer"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border border-zinc-700 bg-zinc-800/50",
-                          config.color
-                        )}
-                      >
-                        {config.icon}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-zinc-200">{config.label}</span>
-                          {activity.ip && (
-                            <span className="border border-zinc-700 px-2 py-0.5 text-xs text-zinc-500">
-                              {activity.ip}
-                            </span>
-                          )}
-                        </div>
-                        {!!activity.metadata?.command && (
-                          <p className="mt-1 font-mono text-xs text-zinc-500">
-                            {String(activity.metadata.command)}
-                          </p>
-                        )}
-                        {!!activity.metadata?.path && !activity.metadata?.command && (
-                          <p className="mt-1 font-mono text-xs text-zinc-500">
-                            {String(activity.metadata.path)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-xs text-zinc-600">
-                          {formatTimestamp(activity.timestamp)}
-                        </span>
-                        {hasMetadata && (
-                          <motion.div
-                            animate={{ rotate: isExpanded ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <BsChevronDown className="h-4 w-4 text-zinc-600" />
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expandable metadata section */}
-                    <AnimatePresence>
-                      {isExpanded && activity.metadata && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="relative px-6 pt-1 pb-4">
-                            {/* Arrow connector - positioned below the icon */}
-                            <div className="absolute top-0 left-[2.2rem] flex items-start gap-1">
-                              <BsArrowReturnRight className="mt-1 h-4 w-4 text-zinc-600" />
-                            </div>
-                            <div className="ml-8 grid grid-cols-2 gap-4 border border-zinc-800 bg-zinc-900/50 p-4 md:grid-cols-3 lg:grid-cols-4">
-                              {Object.entries(activity.metadata).map(([key, value]) => (
-                                <div key={key}>
-                                  <span className="block text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
-                                    {key.replace(/_/g, " ")}
-                                  </span>
-                                  <span className="mt-0.5 block font-mono text-xs break-all text-zinc-300">
-                                    {typeof value === "object"
-                                      ? JSON.stringify(value)
-                                      : String(value)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+          <FadeIn delay={0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Activity Log</div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Spinner className="h-8 w-8" />
                   </div>
-                );
-              })
-            )}
-          </div>
+                ) : logs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                    <BsGear className="mb-4 h-12 w-12 opacity-50" />
+                    <p className="text-sm">No activity recorded yet</p>
+                  </div>
+                ) : (
+                  logs.map((activity: ActivityLog, index: number) => {
+                    const config = getEventConfig(activity.event);
+                    const hasMetadata =
+                      activity.metadata && Object.keys(activity.metadata).length > 0;
+                    const isExpanded = expandedIds.has(activity.id);
+
+                    return (
+                      <div
+                        key={activity.id}
+                        className={cn(index !== logs.length - 1 && "border-b border-zinc-800/50")}
+                      >
+                        <div
+                          onClick={() => hasMetadata && toggleExpanded(activity.id)}
+                          className={cn(
+                            "flex items-start gap-4 px-4 py-3 transition-colors hover:bg-zinc-800/20",
+                            hasMetadata && "cursor-pointer"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800/50",
+                              config.color
+                            )}
+                          >
+                            {config.icon}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-zinc-200">
+                                {config.label}
+                              </span>
+                              {activity.ip && (
+                                <span className="rounded border border-zinc-700 px-2 py-0.5 text-xs text-zinc-500">
+                                  {activity.ip}
+                                </span>
+                              )}
+                            </div>
+                            {!!activity.metadata?.command && (
+                              <p className="mt-1 font-mono text-xs text-zinc-500">
+                                {String(activity.metadata.command)}
+                              </p>
+                            )}
+                            {!!activity.metadata?.path && !activity.metadata?.command && (
+                              <p className="mt-1 font-mono text-xs text-zinc-500">
+                                {String(activity.metadata.path)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span className="text-xs text-zinc-600">
+                              {formatTimestamp(activity.timestamp)}
+                            </span>
+                            {hasMetadata && (
+                              <motion.div
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <BsChevronDown className="h-4 w-4 text-zinc-600" />
+                              </motion.div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Expandable metadata section */}
+                        <AnimatePresence>
+                          {isExpanded && activity.metadata && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="relative px-4 pt-1 pb-4">
+                                {/* Arrow connector - positioned below the icon */}
+                                <div className="absolute top-0 left-[1.7rem] flex items-start gap-1">
+                                  <BsArrowReturnRight className="mt-1 h-4 w-4 text-zinc-600" />
+                                </div>
+                                <div className="ml-8 grid grid-cols-2 gap-4 rounded-md border border-zinc-800 bg-zinc-900/50 p-4 md:grid-cols-3 lg:grid-cols-4">
+                                  {Object.entries(activity.metadata).map(([key, value]) => (
+                                    <div key={key}>
+                                      <span className="block text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                                        {key.replace(/_/g, " ")}
+                                      </span>
+                                      <span className="mt-0.5 block font-mono text-xs break-all text-zinc-300">
+                                        {typeof value === "object"
+                                          ? JSON.stringify(value)
+                                          : String(value)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </FadeIn>
 
           {/* Pagination info */}
           {activityData && activityData.total > 0 && (
@@ -435,7 +441,7 @@ const ActivityPage = (): JSX.Element | null => {
           )}
         </div>
       </div>
-    </div>
+    </FadeIn>
   );
 };
 

@@ -6,6 +6,8 @@ import { cn } from "@workspace/ui/lib/utils";
 import { TextureButton } from "@workspace/ui/components/texture-button";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { BsGlobe, BsPencil, BsPlus, BsTrash } from "react-icons/bs";
 import { TbWand } from "react-icons/tb";
 import { useServer } from "components/ServerStatusPages/server-provider";
@@ -16,9 +18,7 @@ import { WebhookUrlField } from "./WebhookUrlField";
 import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
 import { toast } from "sonner";
 import { Label } from "@workspace/ui/components/label";
-import {Card, SidebarTrigger} from "@workspace/ui/components";
-import { EmptyState } from "@/components/EmptyState/EmptyState";
-import { PageHeader } from "@/components/PageHeader/PageHeader";
+import { SidebarTrigger } from "@workspace/ui/components";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -189,91 +189,130 @@ const WebhooksPage = (): JSX.Element | null => {
   const isFormValid = formUrl.startsWith("http") && formEvents.length > 0;
 
   return (
-    <div className="relative min-h-svh transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto flex justify-between w-full flex-col">
-          <div className="flex flex-row justify-between items-center pb-4">
-            <SidebarTrigger
-                className={cn(
-                    "transition-all hover:scale-110 active:scale-95",
-                    "text-zinc-400 hover:text-zinc-100"
-                )}
-            />
-            <TextureButton variant="primary" onClick={openAddModal}>
-              <BsPlus className="h-4 w-4" />
-              <span className="text-xs tracking-wider uppercase">Add Webhook</span>
-            </TextureButton>
-          </div>
-
-          {/* Loading State */}
-          {loading ? (
-            <div className={cn("py-12 text-center", "text-zinc-500")}>Loading webhooks...</div>
-          ) : webhookList.length === 0 ? (
-            <EmptyState
-              icon={<BsGlobe className="h-12 w-12" />}
-              title="No Webhooks"
-              description="Add a webhook to receive notifications about server events."
-              action={{ label: "Add Webhook", onClick: openAddModal }}
-            />
-          ) : (
-            /* Webhooks List */
-            <div className="space-y-4 rounded-lg">
-              {webhookList.map((webhook) => (
-                <Card key={webhook.id}>
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-2 flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-8 w-8 items-center justify-center border",
-                            "border-zinc-700 bg-zinc-800/50"
-                          )}
-                        >
-                          <BsGlobe className={cn("h-4 w-4", "text-zinc-400")} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "max-w-[400px] truncate font-mono text-xs",
-                              "text-zinc-400"
-                            )}
-                          >
-                            {webhook.url}
-                          </span>
-                          {/*<StatusBadge*/}
-                          {/*  label={webhook.enabled ? "Active" : "Disabled"}*/}
-                          {/*  color={webhook.enabled ? "green" : "zinc"}*/}
-                          {/*/>*/}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {/*{webhook.events.map((event) => (*/}
-                        {/*  <StatusBadge key={event} label={event.replace(/_/g, " ")} />*/}
-                        {/*))}*/}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex items-center gap-2">
-                      <TextureButton variant="minimal" onClick={() => openEditModal(webhook)}>
-                        <BsPencil className="h-4 w-4" />
-                      </TextureButton>
-                      <TextureButton
-                        variant="minimal"
-                        onClick={() => handleTestWebhook(webhook)}
-                        title="Send test message to webhook"
-                      >
-                        <TbWand className="h-4 w-4" />
-                      </TextureButton>
-                      <TextureButton variant="destructive" onClick={() => openDeleteModal(webhook)}>
-                        <BsTrash className="h-4 w-4" />
-                      </TextureButton>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <TextureButton variant="primary" size="sm" className="w-fit" onClick={openAddModal}>
+                  <BsPlus className="h-4 w-4" />
+                  Add Webhook
+                </TextureButton>
+              </div>
             </div>
-          )}
+          </FadeIn>
+
+          {/* Webhooks Card */}
+          <FadeIn delay={0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
+                Webhooks {webhookList.length > 0 && `(${webhookList.length})`}
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : webhookList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsGlobe className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Webhooks</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      Add a webhook to receive notifications about server events.
+                    </p>
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={openAddModal}
+                    >
+                      <BsPlus className="h-4 w-4" />
+                      Add Webhook
+                    </TextureButton>
+                  </div>
+                ) : (
+                  webhookList.map((webhook, index) => (
+                    <div
+                      key={webhook.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== webhookList.length - 1 && "border-b border-zinc-800/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800/50">
+                          <BsGlobe className="h-5 w-5 text-zinc-400" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="max-w-[400px] truncate font-mono text-sm text-zinc-200">
+                              {webhook.url}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
+                                webhook.enabled
+                                  ? "border-green-700/50 text-green-400"
+                                  : "border-zinc-700 text-zinc-500"
+                              )}
+                            >
+                              {webhook.enabled ? "Active" : "Disabled"}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-2">
+                            {webhook.events.map((event) => (
+                              <span
+                                key={event}
+                                className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500"
+                              >
+                                {event.replace(/[._]/g, " ")}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => openEditModal(webhook)}
+                        >
+                          <BsPencil className="h-4 w-4" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => handleTestWebhook(webhook)}
+                          title="Send test message to webhook"
+                        >
+                          <TbWand className="h-4 w-4" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="destructive"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => openDeleteModal(webhook)}
+                        >
+                          <BsTrash className="h-4 w-4" />
+                        </TextureButton>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -353,7 +392,7 @@ const WebhooksPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
       />
-    </div>
+    </FadeIn>
   );
 };
 
