@@ -9,7 +9,16 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { BsCloudDownload, BsDownload, BsLock, BsPlus, BsTrash, BsUnlock } from "react-icons/bs";
+import { FadeIn } from "@workspace/ui/components/fade-in";
+import {
+  BsCloudDownload,
+  BsDownload,
+  BsLock,
+  BsPlus,
+  BsTrash,
+  BsUnlock,
+  BsArchive,
+} from "react-icons/bs";
 import { useBackupMutations, useBackups } from "@/hooks/queries";
 import type { Backup } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider";
@@ -158,156 +167,167 @@ const BackupsPage = (): JSX.Element | null => {
   };
 
   return (
-    <div className="relative min-h-svh transition-colors">
-      <div className="relative p-5 md:p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center justify-between gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              {!backupsDisabled && (
-                <TextureButton
-                  variant="primary"
-                  onClick={openCreateModal}
-                  disabled={!canCreateBackup}
-                >
-                  <BsPlus className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Create Backup</span>
-                </TextureButton>
-              )}
-            </div>
-          </div>
-
-          {/* Backup List */}
-          <div className="space-y-4">
-            {isLoading ? (
-              <div
-                className={cn(
-                  "flex items-center justify-center gap-2 py-12 text-center text-sm",
-                  "text-zinc-500"
-                )}
-              >
-                <Spinner className="h-4 w-4" />
-                Loading backups...
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                  )}
+                />
               </div>
-            ) : backupsDisabled ? (
-              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
-                <p className="mb-2">Backups are not available for this server.</p>
-                <p className="text-xs">Contact an administrator to enable backups.</p>
-              </div>
-            ) : backups.length === 0 ? (
-              <div className={cn("py-12 text-center", "border-zinc-800 text-zinc-500")}>
-                No backups found. Create your first backup.
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {backups.map((backup) => (
-                  <motion.div
-                    key={backup.id}
-                    layout
-                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -100, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className={cn(
-                      "relative rounded-lg border p-6",
-                      "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] hover:border-zinc-700"
-                    )}
+              <div className="flex items-center gap-2">
+                {!backupsDisabled && (
+                  <TextureButton
+                    variant="primary"
+                    size="sm"
+                    className="w-fit"
+                    onClick={openCreateModal}
+                    disabled={!canCreateBackup}
                   >
-                    <div className="flex w-full flex-wrap items-center justify-between gap-4">
-                      <div className="flex w-full items-center gap-4">
-                        {convertServerBackupStatusToIcon(backup.status)}
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3
-                              className={cn(
-                                "text-sm font-medium tracking-wider uppercase",
-                                "text-zinc-100"
+                    <BsPlus className="h-4 w-4" />
+                    Create Backup
+                  </TextureButton>
+                )}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Backups Card */}
+          <FadeIn delay={0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsArchive className="h-3 w-3" />
+                  Backups
+                </div>
+                <span className="text-xs text-zinc-500">
+                  {completedBackups} / {backupLimit} used
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : backupsDisabled ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsArchive className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">Backups Disabled</h3>
+                    <p className="text-xs text-zinc-500">
+                      Contact an administrator to enable backups.
+                    </p>
+                  </div>
+                ) : backups.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsArchive className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Backups</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      Create your first backup to protect your data.
+                    </p>
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      className="w-fit"
+                      onClick={openCreateModal}
+                    >
+                      <BsPlus className="h-4 w-4" />
+                      Create Backup
+                    </TextureButton>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {backups.map((backup, index) => (
+                      <motion.div
+                        key={backup.id}
+                        layout
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -100, scale: 0.95 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className={cn(
+                          "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                          index !== backups.length - 1 && "border-b border-zinc-800/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          {convertServerBackupStatusToIcon(backup.status)}
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-sm font-medium text-zinc-100">{backup.name}</h3>
+                              {backup.isLocked && (
+                                <span className="flex items-center gap-1 rounded border border-amber-500/50 px-2 py-0.5 text-[10px] font-medium tracking-wider text-amber-400 uppercase">
+                                  <BsLock className="h-3 w-3" />
+                                  Locked
+                                </span>
                               )}
-                            >
-                              {backup.name}
-                            </h3>
-                            {backup.isLocked && (
-                              <span
-                                className={cn(
-                                  "flex items-center gap-1 border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                  "border-amber-500/50 text-amber-400"
-                                )}
-                              >
-                                <BsLock className="h-3 w-3" />
-                                Locked
-                              </span>
-                            )}
-                            {backup.status !== "COMPLETED" && (
-                              <ServerBackupStatusBadge status={backup.status} />
-                            )}
-                          </div>
-                          <div
-                            className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
-                          >
-                            <span>{formatFileSize(backup.size)}</span>
-                            <span>-</span>
-                            <span>{new Date(backup.createdAt).toLocaleString()}</span>
+                              {backup.status !== "COMPLETED" && (
+                                <ServerBackupStatusBadge status={backup.status} />
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
+                              <span>{formatFileSize(backup.size)}</span>
+                              <span>•</span>
+                              <span>{new Date(backup.createdAt).toLocaleString()}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex w-full flex-nowrap items-center gap-2 overflow-x-auto">
-                        <TextureButton
-                          variant="minimal"
-                          onClick={() => handleToggleLock(backup)}
-                          disabled={lock.isPending || backup.status !== "COMPLETED"}
-                          title={backup.isLocked ? "Unlock backup" : "Lock backup"}
-                        >
-                          {backup.isLocked ? (
-                            <BsUnlock className="h-4 w-4" />
-                          ) : (
-                            <BsLock className="h-4 w-4" />
-                          )}
-                        </TextureButton>
-                        <TextureButton
-                          variant="minimal"
-                          onClick={() => handleDownload(backup)}
-                          disabled={getDownloadToken.isPending || backup.status !== "COMPLETED"}
-                          title="Download backup"
-                        >
-                          <BsDownload className="h-4 w-4" />
-                          <span className="text-xs tracking-wider uppercase">Download</span>
-                        </TextureButton>
-                        <TextureButton
-                          disabled={backup.status !== "COMPLETED"}
-                          variant="minimal"
-                          onClick={() => openRestoreModal(backup)}
-                        >
-                          <BsCloudDownload className="h-4 w-4" />
-                          <span className="text-xs tracking-wider uppercase">Restore</span>
-                        </TextureButton>
-                        <TextureButton
-                          variant="destructive"
-                          disabled={backup.isLocked || backup.status !== "COMPLETED"}
-                          onClick={() => openDeleteModal(backup)}
-                        >
-                          <BsTrash className="h-4 w-4" />
-                        </TextureButton>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            )}
-            <div>
-              <p className={cn("pt-2 text-center text-xs uppercase opacity-75", "text-zinc-500")}>
-                {completedBackups} / {backupLimit} backup
-                {backupLimit !== 1 ? "s" : ""} used
-              </p>
+                        <div className="flex items-center gap-2">
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => handleToggleLock(backup)}
+                            disabled={lock.isPending || backup.status !== "COMPLETED"}
+                            title={backup.isLocked ? "Unlock backup" : "Lock backup"}
+                          >
+                            {backup.isLocked ? (
+                              <BsUnlock className="h-4 w-4" />
+                            ) : (
+                              <BsLock className="h-4 w-4" />
+                            )}
+                          </TextureButton>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => handleDownload(backup)}
+                            disabled={getDownloadToken.isPending || backup.status !== "COMPLETED"}
+                            title="Download backup"
+                          >
+                            <BsDownload className="h-4 w-4" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            disabled={backup.status !== "COMPLETED"}
+                            onClick={() => openRestoreModal(backup)}
+                            title="Restore backup"
+                          >
+                            <BsCloudDownload className="h-4 w-4" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="destructive"
+                            size="sm"
+                            className="w-fit"
+                            disabled={backup.isLocked || backup.status !== "COMPLETED"}
+                            onClick={() => openDeleteModal(backup)}
+                          >
+                            <BsTrash className="h-4 w-4" />
+                          </TextureButton>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                )}
+              </div>
             </div>
-          </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -363,7 +383,7 @@ const BackupsPage = (): JSX.Element | null => {
         confirmLabel="Delete"
         isLoading={remove.isPending}
       />
-    </div>
+    </FadeIn>
   );
 };
 

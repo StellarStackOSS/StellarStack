@@ -1,10 +1,10 @@
 "use client";
 
-import {createContext, useCallback, useContext, useEffect, useRef, useState} from "react";
-import type {Layout, Layouts} from "react-grid-layout";
-import {Responsive, WidthProvider} from "react-grid-layout";
-import {cn} from "@workspace/ui/lib/utils";
-import {BsArrowsFullscreen, BsGripVertical} from "react-icons/bs";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { Layout, Layouts } from "react-grid-layout";
+import { Responsive, WidthProvider } from "react-grid-layout";
+import { cn } from "@workspace/ui/lib/utils";
+import { BsArrowsFullscreen, BsGripVertical } from "react-icons/bs";
 import type {
   DragDropGridContextValue,
   DragDropGridProps,
@@ -17,7 +17,7 @@ import type {
 // Import react-grid-layout styles
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import {TextureButton} from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@workspace/ui/components/texture-button";
 
 export type {
   GridSize,
@@ -86,6 +86,17 @@ const generateLayout = (items: GridItemConfig[], cols: number = 12): Layout[] =>
       rowHeight = 0;
     }
 
+    // Calculate min and max heights from allowed sizes
+    let minH = gridSizeConfig.xxs.h;
+    let maxH = gridSizeConfig.xxl.h;
+
+    if (item.minSize) {
+      minH = gridSizeConfig[item.minSize].h;
+    }
+    if (item.maxSize) {
+      maxH = gridSizeConfig[item.maxSize].h;
+    }
+
     const layout: Layout = {
       i: item.i,
       x,
@@ -93,7 +104,8 @@ const generateLayout = (items: GridItemConfig[], cols: number = 12): Layout[] =>
       w,
       h: size.h,
       minW: 2,
-      minH: 2,
+      minH,
+      maxH,
     };
 
     x += w;
@@ -128,6 +140,7 @@ export const DragDropGrid = ({
   savedLayouts,
   removeConfirmLabels,
   isDroppable = false,
+  allItems: _allItems, // Destructure to prevent passing to DOM
   ...props
 }: DragDropGridProps) => {
   const [items, setItems] = useState<GridItemConfig[]>(externalItems);
@@ -186,6 +199,28 @@ export const DragDropGrid = ({
     [items]
   );
 
+  const getItemAllowedSizes = useCallback(
+    (itemId: string): GridSize[] => {
+      const item = items.find((i) => i.i === itemId);
+      if (!item) return SIZE_ORDER;
+
+      // If allowedSizes is specified, use those
+      if (item.allowedSizes && item.allowedSizes.length > 0) {
+        return item.allowedSizes;
+      }
+
+      // Otherwise, use min/max range
+      const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
+      const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
+
+      return SIZE_ORDER.slice(minIndex, maxIndex + 1);
+    },
+    [items]
+  );
+
+  // Track which item is being resized
+  const [resizingItemId, setResizingItemId] = useState<string | null>(null);
+
   const cycleItemSize = useCallback((itemId: string) => {
     // Get current items from state
     setItems((prevItems) => {
@@ -232,17 +267,61 @@ export const DragDropGrid = ({
     });
   }, []);
 
-  const handleLayoutChange = useCallback((currentLayout: Layout[], allLayouts: Layouts) => {
-    setLayouts(allLayouts);
-    // Save layouts when dragging completes
-    console.log("[DragDropGrid] handleLayoutChange - saving layouts");
-    setItems((currentItems) => {
-      setTimeout(() => {
-        onLayoutChangeRef.current?.(currentItems, allLayouts);
-      }, 0);
-      return currentItems;
-    });
-  }, []);
+  const handleLayoutChange = useCallback(
+    (currentLayout: Layout[], allLayouts: Layouts) => {
+      // Snap resized items to nearest predefined size
+      const snappedItems = items.map((item) => {
+        const layoutItem = currentLayout.find((l) => l.i === item.i);
+        if (!layoutItem || layoutItem.h === gridSizeConfig[item.size].h) {
+          return item; // No change
+        }
+
+        // Find nearest predefined size height
+        let nearestSize = item.size;
+        let nearestDiff = Math.abs(layoutItem.h - gridSizeConfig[item.size].h);
+
+        for (const [sizeName, sizeConfig] of Object.entries(gridSizeConfig)) {
+          const diff = Math.abs(layoutItem.h - sizeConfig.h);
+          if (diff < nearestDiff) {
+            nearestDiff = diff;
+            nearestSize = sizeName as GridSize;
+          }
+        }
+
+        // Check if new size is within allowed range
+        if (item.minSize || item.maxSize) {
+          const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
+          const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
+          const sizeIndex = SIZE_ORDER.indexOf(nearestSize as GridSize);
+
+          if (sizeIndex < minIndex) {
+            nearestSize = item.minSize || nearestSize;
+          } else if (sizeIndex > maxIndex) {
+            nearestSize = item.maxSize || nearestSize;
+          }
+        }
+
+        return nearestSize !== item.size ? { ...item, size: nearestSize as GridSize } : item;
+      });
+
+      // If any items changed, regenerate layouts
+      if (snappedItems.some((item, idx) => item.size !== items[idx]?.size)) {
+        setItems(snappedItems);
+        const newLayouts = generateResponsiveLayouts(snappedItems);
+        setLayouts(newLayouts);
+        setTimeout(() => {
+          onLayoutChangeRef.current?.(snappedItems, newLayouts);
+        }, 0);
+      } else {
+        setLayouts(allLayouts);
+        console.log("[DragDropGrid] handleLayoutChange - saving layouts");
+        setTimeout(() => {
+          onLayoutChangeRef.current?.(items, allLayouts);
+        }, 0);
+      }
+    },
+    [items]
+  );
 
   // Handle external drop
   const onDropRef = useRef(onDropItem);
@@ -261,6 +340,139 @@ export const DragDropGrid = ({
     return { i: "__dropping-elem__", w: 3, h: 3 };
   }, []);
 
+  // Get allowed heights for an item (for snapping)
+  const getAllowedHeights = useCallback(
+    (itemId: string): number[] => {
+      const item = items.find((i) => i.i === itemId);
+      if (!item) return Object.values(gridSizeConfig).map((c) => c.h);
+
+      let allowedSizes: GridSize[];
+      if (item.allowedSizes && item.allowedSizes.length > 0) {
+        allowedSizes = item.allowedSizes;
+      } else {
+        const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
+        const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
+        allowedSizes = SIZE_ORDER.slice(minIndex, maxIndex + 1);
+      }
+
+      return allowedSizes.map((size) => gridSizeConfig[size].h).sort((a, b) => a - b);
+    },
+    [items]
+  );
+
+  // Track resize start position for step-based resizing
+  const resizeStartRef = useRef<{ itemId: string; startH: number; startY: number } | null>(null);
+
+  // Handle resize - snap to discrete allowed sizes only
+  const handleResize = useCallback(
+    (
+      layout: Layout[],
+      oldItem: Layout,
+      newItem: Layout,
+      placeholder: Layout,
+      event: MouseEvent,
+      element: HTMLElement
+    ) => {
+      const allowedHeights = getAllowedHeights(newItem.i);
+      if (allowedHeights.length === 0) return;
+
+      // Initialize tracking on first resize event
+      if (!resizeStartRef.current || resizeStartRef.current.itemId !== newItem.i) {
+        resizeStartRef.current = {
+          itemId: newItem.i,
+          startH: oldItem.h,
+          startY: event.clientY,
+        };
+      }
+
+      const currentItemIndex = allowedHeights.indexOf(oldItem.h);
+      const deltaY = event.clientY - resizeStartRef.current.startY;
+
+      // Calculate step threshold (pixels needed to move to next/prev size)
+      // Use rowHeight + gap as the threshold for changing size
+      const stepThreshold = rowHeight * 1.5;
+      const steps = Math.round(deltaY / stepThreshold);
+
+      // Find target height based on steps from original position
+      const startIndex = allowedHeights.indexOf(resizeStartRef.current.startH);
+      const targetIndex = Math.max(0, Math.min(allowedHeights.length - 1, startIndex + steps));
+      const targetHeight = allowedHeights[targetIndex]!;
+
+      // Only update if height actually changed
+      if (newItem.h !== targetHeight || placeholder.h !== targetHeight) {
+        newItem.h = targetHeight;
+        newItem.w = oldItem.w; // Keep width stable
+        placeholder.h = targetHeight;
+        placeholder.w = oldItem.w;
+
+        // Update items state to reflect new size immediately
+        setItems((prevItems) => {
+          const item = prevItems.find((i) => i.i === newItem.i);
+          if (!item) return prevItems;
+
+          // Find the size name for this height
+          let newSize = item.size;
+          for (const [sizeName, config] of Object.entries(gridSizeConfig)) {
+            if (config.h === targetHeight) {
+              newSize = sizeName as GridSize;
+              break;
+            }
+          }
+
+          if (newSize === item.size) return prevItems;
+
+          return prevItems.map((i) => (i.i === newItem.i ? { ...i, size: newSize } : i));
+        });
+
+        // Update layouts for immediate visual feedback
+        setLayouts((prev) => {
+          const updated = { ...prev };
+          for (const breakpoint of Object.keys(updated)) {
+            const breakpointLayout = updated[breakpoint as keyof Layouts];
+            if (breakpointLayout) {
+              updated[breakpoint as keyof Layouts] = breakpointLayout.map((l) =>
+                l.i === newItem.i ? { ...l, h: targetHeight } : l
+              );
+            }
+          }
+          return updated;
+        });
+      }
+    },
+    [getAllowedHeights, rowHeight]
+  );
+
+  // Handle resize start
+  const handleResizeStart = useCallback((layout: Layout[], oldItem: Layout) => {
+    setResizingItemId(oldItem.i);
+    resizeStartRef.current = null; // Reset tracking
+  }, []);
+
+  // Handle resize stop
+  const handleResizeStop = useCallback(
+    (layout: Layout[], oldItem: Layout, newItem: Layout) => {
+      setResizingItemId(null);
+      resizeStartRef.current = null;
+
+      // Ensure final state is saved
+      const allowedHeights = getAllowedHeights(newItem.i);
+      if (allowedHeights.length > 0 && !allowedHeights.includes(newItem.h)) {
+        // Snap to nearest if somehow ended up at invalid height
+        let nearestHeight = allowedHeights[0]!;
+        let nearestDiff = Math.abs(newItem.h - nearestHeight);
+        for (const height of allowedHeights) {
+          const diff = Math.abs(newItem.h - height);
+          if (diff < nearestDiff) {
+            nearestDiff = diff;
+            nearestHeight = height;
+          }
+        }
+        newItem.h = nearestHeight;
+      }
+    },
+    [getAllowedHeights]
+  );
+
   return (
     <DragDropGridContext.Provider
       value={{
@@ -273,7 +485,7 @@ export const DragDropGrid = ({
         removeConfirmLabels,
       }}
     >
-      <div className={cn("drag-drop-grid", className)} {...props}>
+      <div className={cn("drag-drop-grid w-full", className)} {...props}>
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
@@ -283,8 +495,11 @@ export const DragDropGrid = ({
           margin={[gap, gap]}
           containerPadding={[0, 0]}
           onLayoutChange={handleLayoutChange}
-          draggableHandle=".drag-handle"
-          isResizable={false}
+          onResize={handleResize}
+          onResizeStart={handleResizeStart}
+          onResizeStop={handleResizeStop}
+          isDraggable={isEditing}
+          isResizable={isEditing}
           useCSSTransforms={true}
           isDroppable={isDroppable && isEditing}
           onDrop={handleDrop}
@@ -310,6 +525,10 @@ export const DragDropGrid = ({
           transition: none;
           z-index: 100;
           opacity: 0.9;
+        }
+        .drag-drop-grid .react-grid-item.resizing {
+          transition: none;
+          z-index: 100;
         }
         .drag-drop-grid .react-grid-item.dropping {
           visibility: hidden;
@@ -356,74 +575,26 @@ export const GridItem = ({
   itemId,
   children,
   className,
-  showResizeHandle = true,
+  showRemoveHandle = true,
   showDragHandle = true,
   ...props
 }: GridItemProps) => {
-  const { cycleItemSize, getItemSize, canResize, isEditing, removeConfirmLabels } =
-    useDragDropGrid();
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const size = getItemSize(itemId);
-  const isResizable = canResize(itemId);
-
-  const handleResize = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    cycleItemSize(itemId);
-  };
+  const { isEditing } = useDragDropGrid();
 
   return (
     <div
       key={itemId}
       data-item-id={itemId}
       className={cn(
-        "group relative flex h-full w-full flex-row gap-2",
-        isEditing && "rounded-lg bg-white/5 p-2 select-none",
+        "group relative flex h-full w-full flex-col",
+        isEditing &&
+          "cursor-move hover:rounded-xl hover:outline hover:outline-2 hover:outline-zinc-500/50",
         className
       )}
       {...props}
     >
-      {/* Drag handle */}
-      {showDragHandle && isEditing && (
-        <TextureButton
-          variant="icon"
-          className={cn("drag-handle w-fit cursor-grab active:cursor-grabbing")}
-          style={{ touchAction: "none" }}
-          title="Drag to reorder"
-        >
-          <BsGripVertical className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
-        </TextureButton>
-      )}
-
-      {/* Resize handle */}
-      {showResizeHandle && isResizable && isEditing && (
-        <TextureButton
-          onClick={handleResize}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleResize(e as unknown as React.MouseEvent);
-          }}
-          title={`Size: ${size.toUpperCase()} (click to cycle)`}
-          type="button"
-        >
-          <BsArrowsFullscreen className={cn("pointer-events-none h-3.5 w-3.5 text-zinc-400")} />
-        </TextureButton>
-      )}
-
       {/* Content wrapper */}
-      <div className="relative h-full w-full overflow-hidden">
-        {children}
-        {isEditing && (
-          <TextureButton
-            variant="minimal"
-            className={cn(
-              "text-xxs pointer-events-none absolute right-2 bottom-2 z-10 w-fit uppercase opacity-0 transition-opacity group-hover:opacity-100"
-            )}
-          >
-            {size}
-          </TextureButton>
-        )}
-      </div>
+      <div className="relative h-full w-full flex-1 overflow-hidden">{children}</div>
     </div>
   );
 };

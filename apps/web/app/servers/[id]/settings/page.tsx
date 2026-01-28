@@ -40,6 +40,7 @@ import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 
 interface ServerSettings {
   name: string;
@@ -264,7 +265,7 @@ const defaultSettings: ServerSettings = {
 const SettingsPage = (): JSX.Element | null => {
   const params = useParams();
   const serverId = params.id as string;
-  const { server, isInstalling } = useServer();
+  const { server, isInstalling, refetch } = useServer();
   const [settings, setSettings] = useState<ServerSettings>(defaultSettings);
   const [originalSettings, setOriginalSettings] = useState<ServerSettings>(defaultSettings);
   const [blueprintList, setBlueprintList] = useState<Blueprint[]>([]);
@@ -467,6 +468,17 @@ const SettingsPage = (): JSX.Element | null => {
 
   const handleSave = async () => {
     try {
+      // Check if name or description changed
+      const nameChanged = settings.name !== originalSettings.name;
+      const descriptionChanged = settings.description !== originalSettings.description;
+
+      if (nameChanged || descriptionChanged) {
+        await servers.update(serverId, {
+          name: settings.name,
+          description: settings.description || undefined,
+        });
+      }
+
       // Check if blueprint changed
       if (settings.blueprintId && settings.blueprintId !== originalSettings.blueprintId) {
         await servers.changeBlueprint(serverId, {
@@ -475,9 +487,14 @@ const SettingsPage = (): JSX.Element | null => {
         });
         toast.success("Core changed successfully");
       }
+
+      // Refetch server data to update sidebar and other components
+      await refetch();
+
       setOriginalSettings({ ...settings });
       setSaveModalOpen(false);
       setSaved(true);
+      toast.success("Settings saved successfully");
       setTimeout(() => setSaved(false), 2000);
     } catch (error: any) {
       toast.error(error.message || "Failed to save settings");
@@ -508,183 +525,157 @@ const SettingsPage = (): JSX.Element | null => {
   };
 
   return (
-    <div className="relative min-h-full transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="w-full">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
-                  SERVER SETTINGS
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Server {serverId} • Configuration
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasChanges && (
-                <TextureButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleReset}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
                   className={cn(
-                    "gap-2 transition-all",
-                    "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100"
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                   )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                {hasChanges && (
+                  <TextureButton variant="minimal" size="sm" onClick={handleReset}>
+                    Reset
+                  </TextureButton>
+                )}
+                <TextureButton
+                  variant={saved ? "primary" : "minimal"}
+                  size="sm"
+                  onClick={() => setSaveModalOpen(true)}
+                  disabled={!hasChanges}
                 >
-                  <span className="text-xs tracking-wider uppercase">Reset</span>
+                  {saved ? (
+                    <>
+                      <BsCheckCircle className="h-4 w-4" />
+                      Saved
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </TextureButton>
-              )}
-              <TextureButton
-                variant="secondary"
-                size="sm"
-                onClick={() => setSaveModalOpen(true)}
-                disabled={!hasChanges}
-                className={cn(
-                  "gap-2 transition-all",
-                  saved
-                    ? "border-green-500/50 text-green-400"
-                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40"
-                )}
-              >
-                {saved ? (
-                  <>
-                    <BsCheckCircle className="h-4 w-4" />
-                    <span className="text-xs tracking-wider uppercase">Saved</span>
-                  </>
-                ) : (
-                  <span className="text-xs tracking-wider uppercase">Save Changes</span>
-                )}
-              </TextureButton>
-            </div>
-          </div>
-
-          {/* General Settings */}
-          <div
-            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
-          >
-            <h2
-              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
-            >
-              General
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <Label>Server Name</Label>
-                <Input
-                  type="text"
-                  value={settings.name}
-                  onChange={(e) => handleSettingChange("name", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Description</Label>
-                <Textarea
-                  value={settings.description}
-                  onChange={(e) => handleSettingChange("description", e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Core</Label>
-                <Select
-                  value={settings.blueprintId || ""}
-                  onValueChange={(value) => handleSettingChange("blueprintId", value)}
-                  disabled={isLoadingBlueprints}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a core..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {blueprintList.map((blueprint) => (
-                      <SelectItem key={blueprint.id} value={blueprint.id}>
-                        {blueprint.name}
-                        {blueprint.category && ` - ${blueprint.category}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
-          </div>
+          </FadeIn>
 
-          {/* Resource Limits */}
-          <div
-            className={cn("relative mb-6 rounded-lg border p-6", "border-zinc-700 bg-zinc-900/50")}
-          >
-            <h2
-              className={cn("mb-6 text-sm font-medium tracking-wider uppercase", "text-zinc-300")}
-            >
-              Resource Limits
-            </h2>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>CPU</div>
-                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
-                  {server?.cpu || 0}%
+          {/* Settings Grid */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* General Settings */}
+            <FadeIn delay={0.05}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">General</div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs text-zinc-500">Server Name</Label>
+                      <Input
+                        type="text"
+                        value={settings.name}
+                        onChange={(e) => handleSettingChange("name", e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500">Description</Label>
+                      <Textarea
+                        value={settings.description}
+                        onChange={(e) => handleSettingChange("description", e.target.value)}
+                        rows={3}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500">Core</Label>
+                      <Select
+                        value={settings.blueprintId || ""}
+                        onValueChange={(value) => handleSettingChange("blueprintId", value)}
+                        disabled={isLoadingBlueprints}
+                      >
+                        <SelectTrigger className="mt-1 w-full">
+                          <SelectValue placeholder="Select a core..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {blueprintList.map((blueprint) => (
+                            <SelectItem key={blueprint.id} value={blueprint.id}>
+                              {blueprint.name}
+                              {blueprint.category && ` - ${blueprint.category}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-                <p className={cn("mt-1 text-xs text-zinc-600")}>
-                  {Math.floor((server?.cpu || 0) / 100)} core
-                  {Math.floor((server?.cpu || 0) / 100) !== 1 ? "s" : ""}
-                </p>
               </div>
-              <div>
-                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Memory</div>
-                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
-                  {Math.floor((server?.memory || 0) / 1024)} GB
-                </div>
-                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.memory || 0} MiB</p>
-              </div>
-              <div>
-                <div className={cn("text-xs tracking-wider text-zinc-500 uppercase")}>Disk</div>
-                <div className={cn("mt-2 text-2xl font-light text-zinc-100")}>
-                  {Math.floor((server?.disk || 0) / 1024)} GB
-                </div>
-                <p className={cn("mt-1 text-xs text-zinc-600")}>{server?.disk || 0} MiB</p>
-              </div>
-            </div>
-          </div>
+            </FadeIn>
 
-          {/* Danger Zone */}
-          <div className={cn("relative rounded-lg border p-6", "border-red-900/30 bg-zinc-900/50")}>
-            <div className="mb-6 flex items-center gap-2">
-              <BsExclamationTriangle className={cn("h-4 w-4", "text-red-400")} />
-              <h2 className={cn("text-sm font-medium tracking-wider uppercase", "text-red-400")}>
-                Danger Zone
-              </h2>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className={cn("text-sm font-medium", "text-zinc-200")}>Reinstall Server</h3>
-                <p className={cn("mt-1 text-xs", "text-zinc-500")}>
-                  This will reinstall the server with its current configuration
-                </p>
+            {/* Resource Limits */}
+            <FadeIn delay={0.1}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Resource Limits</div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-xs tracking-wider text-zinc-500 uppercase">CPU</div>
+                      <div className="mt-2 text-2xl font-light text-zinc-100">
+                        {server?.cpu || 0}%
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600">
+                        {Math.floor((server?.cpu || 0) / 100)} core
+                        {Math.floor((server?.cpu || 0) / 100) !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <div className="text-xs tracking-wider text-zinc-500 uppercase">Memory</div>
+                      <div className="mt-2 text-2xl font-light text-zinc-100">
+                        {Math.floor((server?.memory || 0) / 1024)} GB
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600">{server?.memory || 0} MiB</p>
+                    </div>
+                    <div>
+                      <div className="text-xs tracking-wider text-zinc-500 uppercase">Disk</div>
+                      <div className="mt-2 text-2xl font-light text-zinc-100">
+                        {Math.floor((server?.disk || 0) / 1024)} GB
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600">{server?.disk || 0} MiB</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <TextureButton
-                variant="secondary"
-                size="sm"
-                onClick={() => setReinstallModalOpen(true)}
-                className={cn(
-                  "transition-all",
-                  "border-red-900/60 text-red-400/80 hover:border-red-700 hover:text-red-300"
-                )}
-              >
-                <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </TextureButton>
-            </div>
+            </FadeIn>
+
+            {/* Danger Zone - Full Width */}
+            <FadeIn delay={0.15} className="lg:col-span-2">
+              <div className="flex h-full flex-col rounded-lg border border-red-900/30 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
+                  <BsExclamationTriangle className="h-3 w-3 text-red-400" />
+                  <span className="text-red-400">Danger Zone</span>
+                </div>
+                <div className="flex flex-1 flex-col rounded-lg border border-red-900/20 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-zinc-200">Reinstall Server</h3>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        This will reinstall the server with its current configuration
+                      </p>
+                    </div>
+                    <TextureButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setReinstallModalOpen(true)}
+                      className="border-red-900/60 text-red-400/80 transition-all hover:border-red-700 hover:text-red-300"
+                    >
+                      Reinstall
+                    </TextureButton>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
           </div>
         </div>
       </div>
@@ -1040,7 +1031,7 @@ const SettingsPage = (): JSX.Element | null => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </FadeIn>
   );
 };
 

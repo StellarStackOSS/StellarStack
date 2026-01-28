@@ -33,7 +33,7 @@ import {
 } from "@workspace/ui/components";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Download, Layout, Upload, X, FileJson } from "lucide-react";
+import { Download, Layout, Upload, X, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/api.types";
 
@@ -1251,8 +1251,14 @@ const BlueprintBuilderPage = () => {
                 <Download className="h-4 w-4" />
                 Export
               </Button>
-              <Button onClick={handleLogBlueprint} variant="ghost" size="sm" className="gap-2">
-                <FileJson className="h-4 w-4" />
+              <Button
+                onClick={() => console.log(nodesToPterodactylEgg(nodes, edges))}
+                variant="ghost"
+                size="sm"
+                className="gap-2"
+                title="Log Blueprint JSON"
+              >
+                <FileCode className="h-4 w-4" />
               </Button>
               <input
                 ref={fileInputRef}

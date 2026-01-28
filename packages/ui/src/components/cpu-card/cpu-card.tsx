@@ -140,24 +140,15 @@ export const CpuCard = ({
      * ========================= */
     return (
         <UsageCard
+            title={labels.title}
             className={cn(
                 "flex h-full flex-col",
-                isXs && "p-4",
                 isOffline && "opacity-60"
             )}
         >
             {tooltipContent && (
                 <InfoTooltip content={tooltipContent} visible={!isEditing} />
             )}
-
-            <UsageCardTitle
-                className={cn(
-                    "opacity-80",
-                    isXs ? "mb-2 text-xs" : isCompact ? "mb-4 text-xs" : "text-md"
-                )}
-            >
-                {labels.title}
-            </UsageCardTitle>
 
             <UsageCardContent
                 className={cn(

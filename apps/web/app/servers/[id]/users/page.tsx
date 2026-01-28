@@ -9,10 +9,12 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import { FormModal } from "@workspace/ui/components/form-modal";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import {
   BsClock,
   BsEnvelope,
   BsPencil,
+  BsPeopleFill,
   BsPersonFill,
   BsPlus,
   BsShieldFill,
@@ -298,230 +300,215 @@ const UsersPage = (): JSX.Element | null => {
   ]);
 
   return (
-    <div className="relative min-h-svh transition-colors">
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              {isOwner && (
-                <TextureButton variant="primary" onClick={openInviteModal}>
-                  <BsPlus className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Invite User</span>
-                </TextureButton>
-              )}
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Spinner className="h-8 w-8" />
-            </div>
-          ) : (
-            <>
-              {/* Pending Invitations */}
-              {invitations.length > 0 && (
-                <div className="mb-8">
-                  <h2
-                    className={cn(
-                      "mb-4 text-sm font-medium tracking-wider uppercase",
-                      "text-zinc-400"
-                    )}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                {isOwner && (
+                  <TextureButton
+                    variant="primary"
+                    size="sm"
+                    className="w-fit"
+                    onClick={openInviteModal}
                   >
+                    <BsPlus className="h-4 w-4" />
+                    Invite User
+                  </TextureButton>
+                )}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Pending Invitations Card */}
+          {invitations.length > 0 && (
+            <FadeIn delay={0.05}>
+              <div className="mb-4 flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                  <div className="flex items-center gap-2 text-xs opacity-50">
+                    <BsEnvelope className="h-3 w-3" />
                     Pending Invitations
-                  </h2>
-                  <div className="space-y-3">
-                    {invitations.map((invitation) => (
-                      <div
-                        key={invitation.id}
-                        className={cn(
-                          "relative flex items-center justify-between border p-4 transition-all",
-                          "border-amber-700/30 bg-amber-950/10"
-                        )}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={cn(
-                              "flex h-10 w-10 items-center justify-center border",
-                              "border-amber-700/50 bg-amber-900/30"
-                            )}
-                          >
-                            <BsEnvelope className={cn("h-5 w-5", "text-amber-400")} />
-                          </div>
-                          <div>
-                            <div className={cn("text-sm font-medium", "text-amber-200")}>
-                              {invitation.email}
-                            </div>
-                            <div
-                              className={cn("flex items-center gap-3 text-xs", "text-amber-200/60")}
-                            >
-                              <span>{getPermissionCount(invitation.permissions)}</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <BsClock className="h-3 w-3" />
-                                Expires {new Date(invitation.expiresAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {isOwner && (
-                          <TextureButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openCancelInviteModal(invitation)}
-                          >
-                            <BsTrash className="h-4 w-4" />
-                          </TextureButton>
-                        )}
-                      </div>
-                    ))}
                   </div>
+                  <span className="text-xs text-zinc-500">
+                    {invitations.length} invitation{invitations.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
-              )}
-
-              {/* Members List */}
-              <div className="space-y-4">
-                {/* Server Owner (always shown first) */}
-                {server?.owner && (
-                  <div
-                    className={cn(
-                      "relative border p-6 transition-all",
-                      "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                  {invitations.map((invitation, index) => (
+                    <div
+                      key={invitation.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== invitations.length - 1 && "border-b border-zinc-800/50"
+                      )}
+                    >
                       <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center border",
-                            "border-amber-700/50 bg-amber-900/30"
-                          )}
-                        >
-                          <BsShieldFill className={cn("h-5 w-5", "text-amber-400")} />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-900/30">
+                          <BsEnvelope className="h-5 w-5 text-amber-400" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-3">
-                            <h3
-                              className={cn(
-                                "text-sm font-medium tracking-wider uppercase",
-                                "text-zinc-100"
-                              )}
-                            >
-                              {server.owner.name}
-                            </h3>
-                            <span
-                              className={cn(
-                                "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                "border-amber-500/50 text-amber-400"
-                              )}
-                            >
-                              Owner
-                            </span>
-                            {server.owner.id === currentUser?.id && (
-                              <span className={cn("text-[10px] tracking-wider", "text-zinc-500")}>
-                                (You)
-                              </span>
-                            )}
+                          <div className="text-sm font-medium text-amber-200">
+                            {invitation.email}
                           </div>
-                          <div className={cn("mt-1 text-xs", "text-zinc-500")}>
-                            {server.owner.email}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Server Members */}
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className={cn(
-                      "relative border p-6 transition-all",
-                      "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center border",
-                            "border-zinc-700 bg-zinc-800/50"
-                          )}
-                        >
-                          <BsPersonFill className={cn("h-5 w-5", "text-zinc-400")} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3
-                              className={cn(
-                                "text-sm font-medium tracking-wider uppercase",
-                                "text-zinc-100"
-                              )}
-                            >
-                              {member.user.name}
-                            </h3>
-                            <span
-                              className={cn(
-                                "border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase",
-                                "border-zinc-600 text-zinc-400"
-                              )}
-                            >
-                              {getPermissionCount(member.permissions)}
-                            </span>
-                            {member.user.id === currentUser?.id && (
-                              <span className={cn("text-[10px] tracking-wider", "text-zinc-500")}>
-                                (You)
-                              </span>
-                            )}
-                          </div>
-                          <div
-                            className={cn("mt-1 flex items-center gap-4 text-xs", "text-zinc-500")}
-                          >
-                            <span>{member.user.email}</span>
+                          <div className="flex items-center gap-3 text-xs text-amber-200/60">
+                            <span>{getPermissionCount(invitation.permissions)}</span>
                             <span>•</span>
-                            <span>Added: {new Date(member.createdAt).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1">
+                              <BsClock className="h-3 w-3" />
+                              Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
                       {isOwner && (
-                        <div className="flex items-center gap-2">
-                          <TextureButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openEditModal(member)}
-                          >
-                            <BsPencil className="h-4 w-4" />
-                          </TextureButton>
-                          <TextureButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openDeleteModal(member)}
-                          >
-                            <BsTrash className="h-4 w-4" />
-                          </TextureButton>
-                        </div>
+                        <TextureButton
+                          variant="secondary"
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => openCancelInviteModal(invitation)}
+                        >
+                          <BsTrash className="h-4 w-4" />
+                        </TextureButton>
                       )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            </FadeIn>
+          )}
 
-                {members.length === 0 && (
-                  <div className={cn("py-12 text-center text-sm", "text-zinc-500")}>
-                    No members yet. Invite users to collaborate on this server.
+          {/* Members Card */}
+          <FadeIn delay={invitations.length > 0 ? 0.1 : 0.05}>
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsPeopleFill className="h-3 w-3" />
+                  Members
+                </div>
+                <span className="text-xs text-zinc-500">
+                  {members.length + 1} member{members.length !== 0 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
                   </div>
+                ) : (
+                  <>
+                    {/* Server Owner (always shown first) */}
+                    {server?.owner && (
+                      <div
+                        className={cn(
+                          "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                          members.length > 0 && "border-b border-zinc-800/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-900/30">
+                            <BsShieldFill className="h-5 w-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-zinc-100">
+                                {server.owner.name}
+                              </span>
+                              <span className="rounded border border-amber-500/50 px-2 py-0.5 text-[10px] font-medium text-amber-400 uppercase">
+                                Owner
+                              </span>
+                              {server.owner.id === currentUser?.id && (
+                                <span className="text-[10px] text-zinc-500">(You)</span>
+                              )}
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-500">{server.owner.email}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Server Members */}
+                    {members.map((member, index) => (
+                      <div
+                        key={member.id}
+                        className={cn(
+                          "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                          index !== members.length - 1 && "border-b border-zinc-800/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/50">
+                            <BsPersonFill className="h-5 w-5 text-zinc-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-zinc-100">
+                                {member.user.name}
+                              </span>
+                              <span className="rounded border border-zinc-600 px-2 py-0.5 text-[10px] font-medium text-zinc-400 uppercase">
+                                {getPermissionCount(member.permissions)}
+                              </span>
+                              {member.user.id === currentUser?.id && (
+                                <span className="text-[10px] text-zinc-500">(You)</span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-center gap-4 text-xs text-zinc-500">
+                              <span>{member.user.email}</span>
+                              <span>•</span>
+                              <span>Added: {new Date(member.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {isOwner && (
+                          <div className="flex items-center gap-2">
+                            <TextureButton
+                              variant="secondary"
+                              size="sm"
+                              className="w-fit"
+                              onClick={() => openEditModal(member)}
+                            >
+                              <BsPencil className="h-4 w-4" />
+                            </TextureButton>
+                            <TextureButton
+                              variant="secondary"
+                              size="sm"
+                              className="w-fit"
+                              onClick={() => openDeleteModal(member)}
+                            >
+                              <BsTrash className="h-4 w-4" />
+                            </TextureButton>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {members.length === 0 && !server?.owner && (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <BsPeopleFill className="mb-4 h-12 w-12 text-zinc-600" />
+                        <h3 className="mb-2 text-sm font-medium text-zinc-300">No Members</h3>
+                        <p className="mb-4 text-xs text-zinc-500">
+                          Invite users to collaborate on this server.
+                        </p>
+                        {isOwner && (
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={openInviteModal}
+                          >
+                            <BsPlus className="h-4 w-4" />
+                            Invite User
+                          </TextureButton>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-            </>
-          )}
+            </div>
+          </FadeIn>
         </div>
       </div>
 
@@ -608,7 +595,7 @@ const UsersPage = (): JSX.Element | null => {
         confirmLabel="Cancel Invitation"
         isLoading={cancelInvitation.isPending}
       />
-    </div>
+    </FadeIn>
   );
 };
 

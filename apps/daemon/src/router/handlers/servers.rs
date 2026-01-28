@@ -411,3 +411,110 @@ pub async fn sync_server(
         "success": true
     })))
 }
+
+/// Partial update request for server configuration
+#[derive(Debug, Deserialize)]
+pub struct UpdateServerRequest {
+    #[serde(default)]
+    pub allocations: Option<AllocationsConfigRequest>,
+    #[serde(default)]
+    pub build: Option<BuildConfigRequest>,
+    #[serde(default)]
+    pub container: Option<ContainerConfigRequest>,
+    #[serde(default)]
+    pub suspended: Option<bool>,
+    #[serde(default)]
+    pub invocation: Option<String>,
+}
+
+/// Update server configuration (partial update)
+pub async fn update_server(
+    Extension(server): Extension<Arc<Server>>,
+    Json(request): Json<UpdateServerRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let uuid = server.uuid();
+    tracing::info!("Updating server configuration for {}", uuid);
+
+    // Get current config and apply updates
+    let mut config = server.config().clone();
+    let mut needs_rebuild = false;
+
+    // Update allocations if provided
+    if let Some(allocs) = request.allocations {
+        tracing::info!("Updating allocations for server {}: default={}:{}, mappings={:?}",
+            uuid, allocs.default.ip, allocs.default.port, allocs.mappings);
+
+        let old_ports = config.get_port_bindings();
+
+        config.allocations = crate::server::AllocationsConfig {
+            default: crate::server::Allocation {
+                ip: allocs.default.ip.clone(),
+                port: allocs.default.port,
+            },
+            mappings: allocs.mappings,
+        };
+
+        // Update environment variables
+        config.environment.insert("SERVER_IP".to_string(), allocs.default.ip);
+        config.environment.insert("SERVER_PORT".to_string(), allocs.default.port.to_string());
+
+        // Check if port bindings changed (requires container rebuild)
+        let new_ports = config.get_port_bindings();
+        if old_ports != new_ports {
+            needs_rebuild = true;
+            tracing::info!("Port bindings changed for server {}, container will need rebuild", uuid);
+        }
+    }
+
+    // Update build config if provided
+    if let Some(build) = request.build {
+        config.build = crate::server::BuildConfig {
+            memory_limit: build.memory_limit,
+            swap: build.swap,
+            io_weight: build.io_weight,
+            cpu_limit: build.cpu_limit,
+            threads: None,
+            disk_space: build.disk_space,
+            oom_disabled: build.oom_disabled,
+        };
+        needs_rebuild = true;
+    }
+
+    // Update container config if provided
+    if let Some(container) = request.container {
+        if config.container.image != container.image {
+            needs_rebuild = true;
+        }
+        config.container = crate::server::ContainerConfig {
+            image: container.image,
+            oom_disabled: container.oom_disabled,
+            requires_rebuild: needs_rebuild,
+        };
+    }
+
+    // Update suspended status if provided
+    if let Some(suspended) = request.suspended {
+        config.suspended = suspended;
+    }
+
+    // Update invocation if provided
+    if let Some(invocation) = request.invocation {
+        config.invocation = invocation.clone();
+        config.environment.insert("STARTUP".to_string(), invocation);
+    }
+
+    // Mark container for rebuild if needed
+    if needs_rebuild {
+        config.container.requires_rebuild = true;
+    }
+
+    // Apply the updated configuration
+    server.update_config(config);
+
+    tracing::info!("Server {} configuration updated successfully, requires_rebuild={}", uuid, needs_rebuild);
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "requires_rebuild": needs_rebuild
+    })))
+}

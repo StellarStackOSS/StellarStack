@@ -8,6 +8,9 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import {
   Dialog,
   DialogContent,
@@ -16,34 +19,16 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@workspace/ui/components/context-menu";
-import {
-  Check,
-  Copy,
-  Cpu,
-  Edit,
-  Plus,
-  Settings,
-  Trash,
-} from "lucide-react";
-import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
-import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
-import type { CreateNodeData, Node } from "@/lib/api";
-import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import { BsCpu, BsPlus, BsGear, BsPencil, BsTrash, BsCheck, BsClipboard } from "react-icons/bs";
+import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
+import type { CreateNodeData, Node } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function NodesPage() {
   const router = useRouter();
@@ -68,10 +53,10 @@ export default function NodesPage() {
     port: 3001,
     protocol: "HTTP",
     sftpPort: 2022,
-    memoryLimit: 8589934592, // 8GB
-    diskLimit: 53687091200, // 50GB
+    memoryLimit: 8589934592,
+    diskLimit: 53687091200,
     cpuLimit: 4,
-    uploadLimit: 104857600, // 100MB
+    uploadLimit: 104857600,
     locationId: "",
   });
 
@@ -135,7 +120,6 @@ export default function NodesPage() {
     return gb >= 1 ? `${gb.toFixed(0)} GB` : `${(numBytes / 1048576).toFixed(0)} MB`;
   };
 
-  // Filter nodes based on search query
   const filteredNodes = useMemo(() => {
     if (!searchQuery) return nodesList;
     const query = searchQuery.toLowerCase();
@@ -150,150 +134,168 @@ export default function NodesPage() {
   const isFormValid = formData.displayName.length > 0 && formData.host.length > 0;
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            <AdminPageHeader
-              title="NODES"
-              description="Manage daemon nodes"
-              action={{
-                label: "Add Node",
-                icon: <Plus className="h-4 w-4" />,
-                onClick: () => {
-                  resetForm();
-                  setIsModalOpen(true);
-                },
-              }}
-            />
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  Add Node
+                </TextureButton>
+              </div>
+            </div>
+          </FadeIn>
 
-            <AdminSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search nodes..."
-            />
+          {/* Search */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search nodes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9"
+              />
+            </div>
           </FadeIn>
 
           {/* Nodes List */}
           <FadeIn delay={0.1}>
-            <div className="space-y-3">
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Spinner className="h-6 w-6" />
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsCpu className="h-3 w-3" />
+                  Nodes
                 </div>
-              ) : filteredNodes.length === 0 ? (
-                <AdminEmptyState
-                  message={
-                    searchQuery
-                      ? "No nodes match your search."
-                      : "No nodes configured. Add your first node to get started."
-                  }
-                />
-              ) : (
-                filteredNodes.map((node, index) => (
-                  <FadeIn key={node.id} delay={0.1 + index * 0.05}>
-                    <ContextMenu>
-                      <ContextMenuTrigger asChild>
+                <span className="text-xs text-zinc-500">
+                  {filteredNodes.length} node{filteredNodes.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : filteredNodes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsCpu className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Nodes</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      {searchQuery
+                        ? "No nodes match your search."
+                        : "Add your first node to get started."}
+                    </p>
+                    {!searchQuery && (
+                      <TextureButton
+                        variant="minimal"
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => {
+                          resetForm();
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <BsPlus className="h-4 w-4" />
+                        Add Node
+                      </TextureButton>
+                    )}
+                  </div>
+                ) : (
+                  filteredNodes.map((node, index) => (
+                    <div
+                      key={node.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 transition-colors hover:bg-zinc-800/20",
+                        index !== filteredNodes.length - 1 && "border-b border-zinc-800/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
                         <div
                           className={cn(
-                            "group relative cursor-context-menu border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-5 shadow-lg shadow-black/20 transition-all hover:scale-[1.005] hover:border-zinc-700"
+                            "flex h-10 w-10 items-center justify-center rounded-lg border",
+                            node.isOnline
+                              ? "border-green-700/50 bg-green-900/30"
+                              : "border-zinc-700 bg-zinc-800/50"
                           )}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <Cpu
-                                className={cn(
-                                  "h-8 w-8",
-                                  node.isOnline ? "text-zinc-300" : "text-zinc-600"
-                                )}
-                              />
-                              <div>
-                                <div
-                                  className={cn(
-                                    "flex items-center gap-2 font-medium text-zinc-100"
-                                  )}
-                                >
-                                  {node.displayName}
-                                  <span
-                                    className={cn(
-                                      "border px-1.5 py-0.5 text-[10px] tracking-wider uppercase",
-                                      node.isOnline
-                                        ? "border-zinc-600 text-zinc-300"
-                                        : "border-zinc-700 text-zinc-500"
-                                    )}
-                                  >
-                                    {node.isOnline ? "Online" : "Offline"}
-                                  </span>
-                                </div>
-                                <div className={cn("mt-1 text-xs text-zinc-500")}>
-                                  {node.protocol.toLowerCase()}://{node.host}:{node.port}
-                                </div>
-                                <div className={cn("mt-1 flex gap-4 text-xs text-zinc-600")}>
-                                  <span>CPU: {node.cpuLimit} cores</span>
-                                  <span>RAM: {formatBytes(node.memoryLimit)}</span>
-                                  <span>Disk: {formatBytes(node.diskLimit)}</span>
-                                  {node.heartbeatLatency && (
-                                    <span className={cn("text-zinc-400")}>
-                                      {node.heartbeatLatency}ms
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <TextureButton
-                                variant="minimal"
-                                onClick={() => router.push(`/admin/nodes/${node.id}`)}
-                              >
-                                <Settings className="h-3.5 w-3.5" />
-                              </TextureButton>
-                              <TextureButton
-                                variant="minimal"
-                                onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </TextureButton>
-                              <TextureButton
-                                variant="destructive"
-                                onClick={() => setDeleteConfirmNode(node)}
-                              >
-                                <Trash className="h-3.5 w-3.5" />
-                              </TextureButton>
-                            </div>
+                          <BsCpu
+                            className={cn(
+                              "h-5 w-5",
+                              node.isOnline ? "text-green-400" : "text-zinc-500"
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-zinc-100">
+                              {node.displayName}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
+                                node.isOnline
+                                  ? "bg-green-900/30 text-green-400"
+                                  : "bg-zinc-800 text-zinc-500"
+                              )}
+                            >
+                              {node.isOnline ? "Online" : "Offline"}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            {node.protocol.toLowerCase()}://{node.host}:{node.port}
+                          </div>
+                          <div className="mt-1 flex gap-4 text-xs text-zinc-600">
+                            <span>CPU: {node.cpuLimit} cores</span>
+                            <span>RAM: {formatBytes(node.memoryLimit)}</span>
+                            <span>Disk: {formatBytes(node.diskLimit)}</span>
+                            {node.heartbeatLatency && (
+                              <span className="text-zinc-400">{node.heartbeatLatency}ms</span>
+                            )}
                           </div>
                         </div>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent
-                        className={cn("min-w-[160px] border-zinc-700 bg-zinc-900")}
-                      >
-                        <ContextMenuItem
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
                           onClick={() => router.push(`/admin/nodes/${node.id}`)}
-                          className="cursor-pointer gap-2"
                         >
-                          <Settings className="h-4 w-4" />
-                          Configure
-                        </ContextMenuItem>
-                        <ContextMenuItem
+                          <BsGear className="h-4 w-4" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="minimal"
+                          size="sm"
+                          className="w-fit"
                           onClick={() => router.push(`/admin/nodes/${node.id}/edit`)}
-                          className="cursor-pointer gap-2"
                         >
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </ContextMenuItem>
-                        <ContextMenuSeparator className={"bg-zinc-700"} />
-                        <ContextMenuItem
+                          <BsPencil className="h-4 w-4" />
+                        </TextureButton>
+                        <TextureButton
+                          variant="secondary"
+                          size="sm"
+                          className="w-fit text-red-400 hover:text-red-300"
                           onClick={() => setDeleteConfirmNode(node)}
-                          className="cursor-pointer gap-2"
-                          variant="destructive"
                         >
-                          <Trash className="h-4 w-4" />
-                          Delete
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  </FadeIn>
-                ))
-              )}
+                          <BsTrash className="h-4 w-4" />
+                        </TextureButton>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </FadeIn>
         </div>
@@ -354,10 +356,7 @@ export default function NodesPage() {
               <Select
                 value={formData.protocol}
                 onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    protocol: value as "HTTP" | "HTTPS" | "HTTPS_PROXY",
-                  })
+                  setFormData({ ...formData, protocol: value as "HTTP" | "HTTPS" | "HTTPS_PROXY" })
                 }
               >
                 <SelectTrigger className="w-full">
@@ -465,10 +464,10 @@ export default function NodesPage() {
 
       {/* Token Modal */}
       <Dialog open={!!showToken} onOpenChange={(open) => !open && setShowToken(null)}>
-        <DialogContent className={cn("border-zinc-700 bg-zinc-900 sm:max-w-lg")}>
+        <DialogContent className="border-zinc-700 bg-zinc-900 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className={cn("text-zinc-100")}>Node Credentials</DialogTitle>
-            <DialogDescription className={cn("text-zinc-400")}>
+            <DialogTitle className="text-zinc-100">Node Credentials</DialogTitle>
+            <DialogDescription className="text-zinc-400">
               Copy these credentials and use them to configure the daemon. They will only be shown
               once.
             </DialogDescription>
@@ -476,41 +475,38 @@ export default function NodesPage() {
           <div className="space-y-3">
             <div>
               <Label>Token ID</Label>
-              <div
-                className={cn(
-                  "flex items-center justify-between gap-2 border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300"
-                )}
-              >
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300">
                 <span className="flex-1">{showToken?.token_id}</span>
-                <TextureButton variant="minimal" onClick={copyTokenId}>
+                <TextureButton variant="minimal" size="sm" className="w-fit" onClick={copyTokenId}>
                   {copiedTokenId ? (
-                    <Check className={cn("h-4 w-4 text-zinc-300")} />
+                    <BsCheck className="h-4 w-4 text-green-400" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <BsClipboard className="h-4 w-4" />
                   )}
                 </TextureButton>
               </div>
             </div>
             <div>
               <Label>Token</Label>
-              <div
-                className={cn(
-                  "flex items-center justify-between gap-2 border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300"
-                )}
-              >
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs break-all text-zinc-300">
                 <span className="flex-1">{showToken?.token}</span>
-                <TextureButton variant="minimal" onClick={copyToken}>
+                <TextureButton variant="minimal" size="sm" className="w-fit" onClick={copyToken}>
                   {copiedToken ? (
-                    <Check className={cn("h-4 w-4 text-zinc-300")} />
+                    <BsCheck className="h-4 w-4 text-green-400" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <BsClipboard className="h-4 w-4" />
                   )}
                 </TextureButton>
               </div>
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <TextureButton variant="minimal" onClick={() => setShowToken(null)}>
+            <TextureButton
+              variant="minimal"
+              size="sm"
+              className="w-fit"
+              onClick={() => setShowToken(null)}
+            >
               Close
             </TextureButton>
           </div>
@@ -527,6 +523,6 @@ export default function NodesPage() {
         onConfirm={handleDelete}
         isLoading={remove.isPending}
       />
-    </div>
+    </FadeIn>
   );
 }

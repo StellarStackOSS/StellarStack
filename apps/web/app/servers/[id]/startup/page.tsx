@@ -10,6 +10,7 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { FadeIn } from "@workspace/ui/components/fade-in";
 import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
 import type { DockerImageOption, StartupVariable } from "@/lib/api";
 import { servers } from "@/lib/api";
@@ -177,200 +178,188 @@ const StartupPage = (): JSX.Element | null => {
   }
 
   return (
-    <div className="relative min-h-full transition-colors">
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "transition-all hover:scale-110 active:scale-95",
-                  "text-zinc-400 hover:text-zinc-100"
-                )}
-              />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
-                  STARTUP PARAMETERS
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Configure startup variables and Docker image
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasChanges && (
-                <TextureButton variant="minimal" onClick={handleReset}>
-                  <span className="text-xs tracking-wider uppercase">Reset</span>
-                </TextureButton>
-              )}
-              <TextureButton
-                variant="minimal"
-                onClick={() => setSaveModalOpen(true)}
-                disabled={!hasChanges}
-              >
-                {saved ? (
-                  <>
-                    <BsCheckCircle className="h-4 w-4" />
-                    <span className="text-xs tracking-wider uppercase">Saved</span>
-                  </>
-                ) : (
-                  <span className="text-xs tracking-wider uppercase">Save Changes</span>
-                )}
-              </TextureButton>
-              <TextureButton
-                variant="minimal"
-                onClick={() => setReinstallModalOpen(true)}
-                disabled={hasChanges}
-                title={
-                  hasChanges
-                    ? "Save changes first before reinstalling"
-                    : "Reinstall server with current configuration"
-                }
-              >
-                <BsArrowRepeat className="h-4 w-4" />
-                <span className="text-xs tracking-wider uppercase">Reinstall</span>
-              </TextureButton>
-            </div>
-          </div>
-
-          {/* Docker Image Selector */}
-          {dockerImages.length > 0 && (
-            <div
-              className={cn(
-                "relative mb-6 border p-4",
-                "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-              )}
-            >
-              <Label>Docker Image</Label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {dockerImages.map((img) => (
-                  <TextureButton
-                    key={img.image}
-                    variant="minimal"
-                    onClick={() => handleDockerImageChange(img.image)}
-                  >
-                    {img.label}
-                  </TextureButton>
-                ))}
-              </div>
-              <p className={cn("mt-2 font-mono text-[10px]", "text-zinc-600")}>
-                {selectedDockerImage}
-              </p>
-            </div>
-          )}
-
-          {/* Startup Command Preview */}
-          <div
-            className={cn(
-              "relative mb-6 border p-4",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
-            <Label>Startup Command</Label>
-            <div
-              className={cn(
-                "mt-2 overflow-x-auto border p-3 font-mono text-xs",
-                "border-zinc-700/50 bg-zinc-900/50 text-zinc-300"
-              )}
-            >
-              {getStartupCommandPreview() || "No startup command configured"}
-            </div>
-          </div>
-
-          {/* Custom Startup Commands */}
-          <div
-            className={cn(
-              "relative mb-6 border p-4",
-              "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
-            )}
-          >
-            <Label>Custom Startup Commands</Label>
-            <p className={cn("mt-1 mb-3 text-xs", "text-zinc-400")}>
-              Additional commands to append to the startup command. These will be executed after the
-              main command.
-            </p>
-            <Textarea
-              value={customStartupCommands}
-              onChange={(e) => handleCustomStartupCommandsChange(e.target.value)}
-              placeholder="e.g., && echo 'Server started' || --additional-flag"
-              rows={3}
-            />
-          </div>
-
-          {/* Variables */}
-          {variables.length === 0 ? (
-            <div className={cn("border py-12 text-center", "border-zinc-800 text-zinc-500")}>
-              No startup variables configured for this blueprint.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {variables.map((variable) => (
-                <div
-                  key={variable.envVariable}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
                   className={cn(
-                    "relative border p-6 transition-all",
-                    "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                   )}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                {hasChanges && (
+                  <TextureButton
+                    variant="minimal"
+                    size="sm"
+                    className="w-fit"
+                    onClick={handleReset}
+                  >
+                    Reset
+                  </TextureButton>
+                )}
+                <TextureButton
+                  variant={saved ? "primary" : "minimal"}
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setSaveModalOpen(true)}
+                  disabled={!hasChanges}
                 >
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center gap-3">
-                        <h3
-                          className={cn(
-                            "text-sm font-medium tracking-wider uppercase",
-                            "text-zinc-100"
-                          )}
+                  {saved ? (
+                    <>
+                      <BsCheckCircle className="h-4 w-4" />
+                      Saved
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </TextureButton>
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setReinstallModalOpen(true)}
+                  disabled={hasChanges}
+                  title={
+                    hasChanges
+                      ? "Save changes first before reinstalling"
+                      : "Reinstall server with current configuration"
+                  }
+                >
+                  <BsArrowRepeat className="h-4 w-4" />
+                  Reinstall
+                </TextureButton>
+              </div>
+            </div>
+          </FadeIn>
+
+          <div className="space-y-4">
+            {/* Docker Image Selector */}
+            {dockerImages.length > 0 && (
+              <FadeIn delay={0.05}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Docker Image</div>
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    <div className="flex flex-wrap gap-2">
+                      {dockerImages.map((img) => (
+                        <TextureButton
+                          key={img.image}
+                          variant={selectedDockerImage === img.image ? "primary" : "minimal"}
+                          size="sm"
+                          className="w-fit"
+                          onClick={() => handleDockerImageChange(img.image)}
                         >
-                          {variable.name}
-                        </h3>
-                        <span
-                          className={cn(
-                            "border px-2 py-0.5 font-mono text-[10px]",
-                            "border-zinc-700 text-zinc-500"
-                          )}
-                        >
-                          {variable.envVariable}
-                        </span>
-                        {!variable.userEditable && (
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 text-[10px] tracking-wider uppercase",
-                              "bg-zinc-800 text-zinc-500"
-                            )}
-                          >
-                            Read Only
-                          </span>
-                        )}
-                      </div>
-                      <p className={cn("mb-4 text-xs", "text-zinc-500")}>{variable.description}</p>
-                      <Input
-                        type="text"
-                        value={variable.value}
-                        onChange={(e) => handleVariableChange(variable.envVariable, e.target.value)}
-                        disabled={!variable.userEditable}
-                        placeholder={variable.defaultValue}
-                      />
-                      <div
-                        className={cn("mt-2 flex items-center gap-1 text-[10px]", "text-zinc-600")}
-                      >
-                        <BsInfoCircle className="h-3 w-3" />
-                        <span>Default: {variable.defaultValue || "(empty)"}</span>
-                        {variable.rules && (
-                          <>
-                            <span className="mx-1">|</span>
-                            <span>Rules: {variable.rules}</span>
-                          </>
-                        )}
-                      </div>
+                          {img.label}
+                        </TextureButton>
+                      ))}
                     </div>
+                    <p className="mt-3 font-mono text-[10px] text-zinc-600">
+                      {selectedDockerImage}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </FadeIn>
+            )}
+
+            {/* Startup Command Preview */}
+            <FadeIn delay={0.1}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Startup Command</div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="overflow-x-auto rounded border border-zinc-700/50 bg-zinc-900/50 p-3 font-mono text-xs text-zinc-300">
+                    {getStartupCommandPreview() || "No startup command configured"}
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Custom Startup Commands */}
+            <FadeIn delay={0.15}>
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Custom Startup Commands</div>
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <p className="mb-3 text-xs text-zinc-400">
+                    Additional commands to append to the startup command. These will be executed
+                    after the main command.
+                  </p>
+                  <Textarea
+                    value={customStartupCommands}
+                    onChange={(e) => handleCustomStartupCommandsChange(e.target.value)}
+                    placeholder="e.g., && echo 'Server started' || --additional-flag"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Variables */}
+            {variables.length === 0 ? (
+              <FadeIn delay={0.2}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Variables</div>
+                  <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 shadow-lg shadow-black/20">
+                    <p className="text-sm text-zinc-500">
+                      No startup variables configured for this blueprint.
+                    </p>
+                  </div>
+                </div>
+              </FadeIn>
+            ) : (
+              <FadeIn delay={0.2}>
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                  <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
+                    Variables ({variables.length})
+                  </div>
+                  <div className="flex flex-1 flex-col gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                    {variables.map((variable, index) => (
+                      <div
+                        key={variable.envVariable}
+                        className="rounded-lg border border-zinc-800/50 bg-zinc-900/30 p-4"
+                      >
+                        <div className="mb-2 flex items-center gap-3">
+                          <h3 className="text-sm font-medium tracking-wider text-zinc-100 uppercase">
+                            {variable.name}
+                          </h3>
+                          <span className="rounded border border-zinc-700 px-2 py-0.5 font-mono text-[10px] text-zinc-500">
+                            {variable.envVariable}
+                          </span>
+                          {!variable.userEditable && (
+                            <span className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] tracking-wider text-zinc-500 uppercase">
+                              Read Only
+                            </span>
+                          )}
+                        </div>
+                        <p className="mb-4 text-xs text-zinc-500">{variable.description}</p>
+                        <Input
+                          type="text"
+                          value={variable.value}
+                          onChange={(e) =>
+                            handleVariableChange(variable.envVariable, e.target.value)
+                          }
+                          disabled={!variable.userEditable}
+                          placeholder={variable.defaultValue}
+                        />
+                        <div className="mt-2 flex items-center gap-1 text-[10px] text-zinc-600">
+                          <BsInfoCircle className="h-3 w-3" />
+                          <span>Default: {variable.defaultValue || "(empty)"}</span>
+                          {variable.rules && (
+                            <>
+                              <span className="mx-1">|</span>
+                              <span>Rules: {variable.rules}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </FadeIn>
+            )}
+          </div>
         </div>
       </div>
 
@@ -395,7 +384,7 @@ const StartupPage = (): JSX.Element | null => {
         confirmLabel="Reinstall"
         isLoading={isReinstalling}
       />
-    </div>
+    </FadeIn>
   );
 };
 

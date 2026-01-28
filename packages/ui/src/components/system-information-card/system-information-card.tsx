@@ -50,12 +50,7 @@ export const SystemInformationCard = ({
   }
 
   return (
-    <UsageCard className={cn("h-full", isXs && "p-4")}>
-      <UsageCardTitle
-        className={cn("opacity-80", isXs ? "mb-2 text-xs" : isCompact ? "mb-4 text-xs" : "text-md")}
-      >
-        {isXs ? labels.titleShort : labels.title}
-      </UsageCardTitle>
+    <UsageCard title={isXs ? labels.titleShort : labels.title} className="h-full">
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <div
           className={cn(

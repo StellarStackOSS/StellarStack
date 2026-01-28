@@ -8,34 +8,30 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
-  Download,
-  Edit,
-  Eye,
-  EyeOff,
-  Image,
-  Package,
-  Plus,
-  Terminal,
-  Trash,
-  Upload,
-  User,
-  GitBranch,
-} from "lucide-react";
-import { AdminEmptyState, AdminPageHeader, AdminSearchBar } from "components/AdminPageComponents";
+  BsBox,
+  BsPlus,
+  BsDownload,
+  BsUpload,
+  BsPencil,
+  BsTrash,
+  BsEye,
+  BsEyeSlash,
+  BsPerson,
+  BsDiagram3,
+} from "react-icons/bs";
 import { useBlueprintMutations, useBlueprints } from "@/hooks/queries";
 import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { Input } from "@workspace/ui/components";
 
 export default function BlueprintsPage() {
-  // React Query hooks
   const { data: blueprintsList = [], isLoading } = useBlueprints();
   const { create, update, remove, importEgg, exportEgg } = useBlueprintMutations();
 
-  // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
@@ -44,7 +40,6 @@ export default function BlueprintsPage() {
   const [showJsonEditor, setShowJsonEditor] = useState(false);
   const [importJson, setImportJson] = useState("");
 
-  // Form state
   const [formData, setFormData] = useState<CreateBlueprintData>({
     name: "",
     description: "",
@@ -202,179 +197,199 @@ export default function BlueprintsPage() {
   }, [blueprintsList, searchQuery]);
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="w-full">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            <AdminPageHeader
-              title="BLUEPRINTS"
-              description="Docker container templates"
-              action={{
-                label: "Add Blueprint",
-                icon: <Plus className="h-4 w-4" />,
-                onClick: () => {
-                  resetForm();
-                  setIsModalOpen(true);
-                },
-              }}
-            />
-
-            <div className="mb-6 flex gap-2">
-              <Link href="/admin/blueprints/builder">
-                <TextureButton variant="minimal">
-                  <GitBranch className="h-4 w-4" />
-                  Open Builder
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                <Link href="/admin/blueprints/builder">
+                  <TextureButton variant="minimal" size="sm" className="w-fit">
+                    <BsDiagram3 className="h-4 w-4" />
+                    Builder
+                  </TextureButton>
+                </Link>
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setIsImportModalOpen(true)}
+                >
+                  <BsUpload className="h-4 w-4" />
+                  Import
                 </TextureButton>
-              </Link>
-              <TextureButton onClick={() => setIsImportModalOpen(true)} variant="minimal">
-                <Upload className="h-4 w-4" />
-                Import Core
-              </TextureButton>
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  Add Blueprint
+                </TextureButton>
+              </div>
             </div>
-
-            <AdminSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search blueprints..."
-            />
           </FadeIn>
 
-          {/* Blueprints Grid */}
+          {/* Search */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search blueprints..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          </FadeIn>
+
+          {/* Blueprints List */}
           <FadeIn delay={0.1}>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {isLoading ? (
-                <div className="col-span-full flex justify-center py-12">
-                  <Spinner className="h-6 w-6" />
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsBox className="h-3 w-3" />
+                  Blueprints
                 </div>
-              ) : filteredBlueprints.length === 0 ? (
-                <AdminEmptyState
-                  message={
-                    searchQuery
-                      ? "No blueprints match your search."
-                      : "No blueprints configured. Add your first blueprint."
-                  }
-                />
-              ) : (
-                filteredBlueprints.map((blueprint) => (
-                  <div
-                    key={blueprint.id}
-                    className={cn(
-                      "relative rounded-lg border border-zinc-700 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-600"
+                <span className="text-xs text-zinc-500">
+                  {filteredBlueprints.length} blueprint{filteredBlueprints.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : filteredBlueprints.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsBox className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Blueprints</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      {searchQuery
+                        ? "No blueprints match your search."
+                        : "Add your first blueprint to get started."}
+                    </p>
+                    {!searchQuery && (
+                      <TextureButton
+                        variant="minimal"
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => {
+                          resetForm();
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <BsPlus className="h-4 w-4" />
+                        Add Blueprint
+                      </TextureButton>
                     )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <Package className={cn("mt-0.5 h-6 w-6 text-zinc-400")} />
-                        <div>
-                          <div className={cn("flex items-center gap-2 font-medium text-zinc-100")}>
-                            {blueprint.name}
-                            {blueprint.isPublic ? (
-                              <Eye className={cn("h-3 w-3 text-zinc-500")} />
-                            ) : (
-                              <EyeOff className={cn("h-3 w-3 text-zinc-600")} />
-                            )}
-                          </div>
-                          <div className={cn("mt-1 font-mono text-xs text-zinc-500")}>
-                            {Object.values(blueprint.dockerImages || {})[0] || "No docker images"}
-                          </div>
-                          {blueprint.category && (
-                            <div
-                              className={cn(
-                                "mt-2 inline-block border border-zinc-700 px-1.5 py-0.5 text-[10px] tracking-wider text-zinc-400 uppercase"
-                              )}
-                            >
-                              {blueprint.category}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredBlueprints.map((blueprint) => (
+                      <div
+                        key={blueprint.id}
+                        className="flex flex-col rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4 transition-colors hover:border-zinc-600"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-900/30">
+                              <BsBox className="h-5 w-5 text-amber-400" />
                             </div>
-                          )}
-                          {blueprint.author && (
-                            <div
-                              className={cn("mt-1 flex items-center gap-1 text-xs text-zinc-500")}
-                            >
-                              <User className="h-3 w-3" />
-                              {blueprint.author}
-                            </div>
-                          )}
-                          {blueprint.description && (
-                            <div className={cn("mt-2 line-clamp-2 text-xs text-zinc-600")}>
-                              {blueprint.description}
-                            </div>
-                          )}
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {blueprint.dockerImages &&
-                              Object.keys(blueprint.dockerImages).length > 1 && (
-                                <span
-                                  className={cn(
-                                    "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
-                                  )}
-                                >
-                                  {Object.keys(blueprint.dockerImages).length} images
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-zinc-100">
+                                  {blueprint.name}
                                 </span>
-                              )}
-                            {blueprint.variables && blueprint.variables.length > 0 && (
-                              <span
-                                className={cn(
-                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                                {blueprint.isPublic ? (
+                                  <BsEye className="h-3 w-3 text-zinc-500" />
+                                ) : (
+                                  <BsEyeSlash className="h-3 w-3 text-zinc-600" />
                                 )}
-                              >
-                                {blueprint.variables.length} variables
-                              </span>
-                            )}
-                            {blueprint.startup && (
-                              <span
-                                className={cn(
-                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
-                                )}
-                              >
-                                startup
-                              </span>
-                            )}
-                            {(blueprint.scripts as any)?.installation?.script && (
-                              <span
-                                className={cn(
-                                  "border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500"
-                                )}
-                              >
-                                install script
-                              </span>
-                            )}
+                              </div>
+                              <div className="mt-1 font-mono text-xs text-zinc-500">
+                                {Object.values(blueprint.dockerImages || {})[0] ||
+                                  "No docker images"}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <TextureButton
-                          variant="minimal"
-                          size="sm"
-                          onClick={() => handleExportCore(blueprint)}
-                          disabled={exportEgg.isPending}
-                          title="Export as Core"
-                        >
-                          <Download className="h-3 w-3" />
-                        </TextureButton>
-                        <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
-                          <TextureButton variant="minimal" size="sm" title="Edit in Builder">
-                            <GitBranch className="h-3 w-3" />
+
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {blueprint.category && (
+                            <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400 uppercase">
+                              {blueprint.category}
+                            </span>
+                          )}
+                          {blueprint.dockerImages &&
+                            Object.keys(blueprint.dockerImages).length > 1 && (
+                              <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+                                {Object.keys(blueprint.dockerImages).length} images
+                              </span>
+                            )}
+                          {blueprint.variables && blueprint.variables.length > 0 && (
+                            <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500">
+                              {blueprint.variables.length} vars
+                            </span>
+                          )}
+                        </div>
+
+                        {blueprint.author && (
+                          <div className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
+                            <BsPerson className="h-3 w-3" />
+                            {blueprint.author}
+                          </div>
+                        )}
+
+                        {blueprint.description && (
+                          <p className="mt-2 line-clamp-2 text-xs text-zinc-600">
+                            {blueprint.description}
+                          </p>
+                        )}
+
+                        <div className="mt-3 flex items-center justify-end gap-1 border-t border-zinc-800/50 pt-3">
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => handleExportCore(blueprint)}
+                            disabled={exportEgg.isPending}
+                          >
+                            <BsDownload className="h-3.5 w-3.5" />
                           </TextureButton>
-                        </Link>
-                        <TextureButton
-                          variant="minimal"
-                          size="sm"
-                          onClick={() => handleEdit(blueprint)}
-                          title="Edit Form"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </TextureButton>
-                        <TextureButton
-                          variant="minimal"
-                          size="sm"
-                          onClick={() => setDeleteConfirmBlueprint(blueprint)}
-                        >
-                          <Trash className="h-3 w-3" />
-                        </TextureButton>
+                          <Link href={`/admin/blueprints/builder?id=${blueprint.id}`}>
+                            <TextureButton variant="minimal" size="sm" className="w-fit">
+                              <BsDiagram3 className="h-3.5 w-3.5" />
+                            </TextureButton>
+                          </Link>
+                          <TextureButton
+                            variant="minimal"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => handleEdit(blueprint)}
+                          >
+                            <BsPencil className="h-3.5 w-3.5" />
+                          </TextureButton>
+                          <TextureButton
+                            variant="secondary"
+                            size="sm"
+                            className="w-fit text-red-400 hover:text-red-300"
+                            onClick={() => setDeleteConfirmBlueprint(blueprint)}
+                          >
+                            <BsTrash className="h-3.5 w-3.5" />
+                          </TextureButton>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
           </FadeIn>
         </div>
@@ -418,7 +433,7 @@ export default function BlueprintsPage() {
           </div>
 
           <div>
-            <Label>Docker Image (e.g., itzg/minecraft-server:latest)</Label>
+            <Label>Docker Image</Label>
             <Input
               type="text"
               value={Object.values(formData.dockerImages || {})[0] || ""}
@@ -461,12 +476,11 @@ export default function BlueprintsPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description..."
               rows={2}
-              className={cn("resize-none")}
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Input
+            <input
               type="checkbox"
               id="isPublic"
               checked={formData.isPublic}
@@ -481,126 +495,27 @@ export default function BlueprintsPage() {
               <Label>Docker Config (JSON)</Label>
               <TextureButton
                 variant="minimal"
+                size="sm"
                 type="button"
                 onClick={() => setShowJsonEditor(!showJsonEditor)}
               >
                 {showJsonEditor ? "Hide" : "Show"} Editor
               </TextureButton>
             </div>
-            {showJsonEditor && (
+            {showJsonEditor ? (
               <Textarea
                 value={configJson}
                 onChange={(e) => setConfigJson(e.target.value)}
-                placeholder='{"environment": {"EULA": "TRUE"}, "ports": [...]}'
+                placeholder='{"environment": {"EULA": "TRUE"}}'
                 rows={10}
-                className={cn("resize-none font-mono text-xs")}
+                className="font-mono text-xs"
               />
-            )}
-            {!showJsonEditor && (
-              <div
-                className={cn(
-                  "max-h-32 overflow-auto border border-zinc-700 bg-zinc-900 p-3 font-mono text-xs text-zinc-400"
-                )}
-              >
+            ) : (
+              <div className="max-h-32 overflow-auto rounded-lg border border-zinc-700 bg-zinc-900 p-3 font-mono text-xs text-zinc-400">
                 <pre>{configJson}</pre>
               </div>
             )}
           </div>
-
-          {/* Docker Images (from Pterodactyl egg) */}
-          {editingBlueprint?.dockerImages &&
-            Object.keys(editingBlueprint.dockerImages).length > 0 && (
-              <div>
-                <Label>
-                  <Image className="h-3 w-3" />
-                  Docker Images
-                </Label>
-                <div className={cn("space-y-2 border border-zinc-700 bg-zinc-900/50 p-3")}>
-                  {Object.entries(editingBlueprint.dockerImages).map(([label, image]) => (
-                    <div key={label} className="flex items-center justify-between gap-2">
-                      <span className={cn("text-xs font-medium text-zinc-300")}>{label}</span>
-                      <span className={cn("font-mono text-xs text-zinc-500")}>{image}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          {/* Startup Command (from Pterodactyl egg) */}
-          {editingBlueprint?.startup && (
-            <div>
-              <Label>
-                <Terminal className="h-3 w-3" />
-                Startup Command
-              </Label>
-              <div
-                className={cn(
-                  "overflow-x-auto border border-zinc-700 bg-zinc-900/50 p-3 font-mono text-xs text-zinc-400"
-                )}
-              >
-                {editingBlueprint.startup}
-              </div>
-            </div>
-          )}
-
-          {/* Variables (from Pterodactyl egg) */}
-          {editingBlueprint?.variables && editingBlueprint.variables.length > 0 && (
-            <div>
-              <Label>
-                {/*<Variable className="h-3 w-3" />*/}
-                Variables ({editingBlueprint.variables.length})
-              </Label>
-              <div
-                className={cn(
-                  "max-h-64 divide-y divide-zinc-700/50 overflow-y-auto border border-zinc-700 bg-zinc-900/50"
-                )}
-              >
-                {editingBlueprint.variables.map((variable) => (
-                  <div key={variable.env_variable} className="p-3">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className={cn("text-xs font-medium text-zinc-200")}>
-                        {variable.name}
-                      </span>
-                      <span
-                        className={cn(
-                          "rounded border border-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500"
-                        )}
-                      >
-                        {variable.env_variable}
-                      </span>
-                    </div>
-                    {variable.description && (
-                      <p className={cn("mb-2 text-[11px] text-zinc-500")}>{variable.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-[10px]">
-                      <span className={"text-zinc-600"}>
-                        Default:{" "}
-                        <span className="font-mono">{variable.default_value || "(empty)"}</span>
-                      </span>
-                      {variable.rules && (
-                        <span className={"text-zinc-600"}>Rules: {variable.rules}</span>
-                      )}
-                      <div className="flex gap-2">
-                        {variable.user_viewable && (
-                          <span className={cn("rounded bg-zinc-800 px-1 py-0.5 text-zinc-500")}>
-                            viewable
-                          </span>
-                        )}
-                        {variable.user_editable && (
-                          <span className={cn("rounded bg-zinc-800 px-1 py-0.5 text-zinc-500")}>
-                            editable
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className={cn("mt-1 text-[10px] text-zinc-600")}>
-                Variables are imported from Pterodactyl eggs and can be overridden per-server.
-              </p>
-            </div>
-          )}
         </div>
       </FormModal>
 
@@ -622,24 +537,16 @@ export default function BlueprintsPage() {
         <div className="space-y-4">
           <div>
             <Label>Upload File</Label>
-            <Input
-              type="file"
-              accept=".json"
-              onChange={handleFileImport}
-              className={cn(
-                "w-full text-sm text-zinc-400 file:mr-4 file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-medium file:text-zinc-300"
-              )}
-            />
+            <Input type="file" accept=".json" onChange={handleFileImport} />
           </div>
-
           <div>
             <Label>Or Paste JSON</Label>
             <Textarea
               value={importJson}
               onChange={(e) => setImportJson(e.target.value)}
-              placeholder='{"name": "Paper", "docker_images": {...}, ...}'
+              placeholder='{"name": "Paper", "docker_images": {...}}'
               rows={15}
-              className={cn("resize-none font-mono text-xs")}
+              className="font-mono text-xs"
               required
             />
           </div>
@@ -656,6 +563,6 @@ export default function BlueprintsPage() {
         onConfirm={handleDelete}
         isLoading={remove.isPending}
       />
-    </div>
+    </FadeIn>
   );
 }

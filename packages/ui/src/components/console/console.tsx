@@ -172,39 +172,45 @@ export const Console = ({
   const displayLines = lines.slice(-maxLines);
 
   return (
-    <div
-      className={cn(
-        "relative flex h-full flex-col rounded-lg border transition-colors",
-        "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
-        isOffline && "opacity-60",
-        className
-      )}
-      onClick={handleConsoleClick}
-    >
-      {/* Header */}
-      <div
-        className={cn("flex items-center justify-end border-b px-4 py-2", "border-zinc-200/10")}
-      >
-        <div className="flex items-center gap-2">
-          {!autoScroll && (
-            <button
-              onClick={() => {
-                setAutoScroll(true);
-                if (scrollRef.current) {
-                  scrollRef.current.scrollTo({
-                    top: scrollRef.current.scrollHeight,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-              className={cn("text-xs cursor-pointer transition-colors", "text-zinc-500 hover:text-zinc-300")}
-            >
-              Scroll to bottom
-            </button>
-          )}
-          <span className={cn("text-xs", "text-zinc-600")}>{displayLines.length} lines</span>
-        </div>
+    <div className="bg-[#090909] border border-white/5 pt-2 p-1 rounded-lg flex flex-col h-full">
+      {/* Console Title Header */}
+      <div className="text-xs pl-2 pb-2 opacity-50 flex flex-row justify-between shrink-0">
+        <span>CONSOLE</span>
       </div>
+
+      <div
+        className={cn(
+          "relative flex h-full flex-col rounded-lg border transition-colors flex-1",
+          "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
+          isOffline && "opacity-60",
+          className
+        )}
+        onClick={handleConsoleClick}
+      >
+        {/* Header */}
+        <div
+          className={cn("flex items-center justify-end border-b px-4 py-2", "border-zinc-200/10")}
+        >
+          <div className="flex items-center gap-2">
+            {!autoScroll && (
+              <button
+                onClick={() => {
+                  setAutoScroll(true);
+                  if (scrollRef.current) {
+                    scrollRef.current.scrollTo({
+                      top: scrollRef.current.scrollHeight,
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+                className={cn("text-xs cursor-pointer transition-colors", "text-zinc-500 hover:text-zinc-300")}
+              >
+                Scroll to bottom
+              </button>
+            )}
+            <span className={cn("text-xs", "text-zinc-600")}>{displayLines.length} lines</span>
+          </div>
+        </div>
 
       {/* Console output */}
       <ScrollContext.Provider value={scrollSignal}>
@@ -299,6 +305,7 @@ export const Console = ({
           )}
         </div>
       </form>
+      </div>
     </div>
   );
 };

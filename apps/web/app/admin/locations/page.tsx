@@ -7,19 +7,14 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { Edit, MapPin, Plus, Trash } from "lucide-react";
-import {
-  AdminCard,
-  AdminEmptyState,
-  AdminPageHeader,
-  AdminSearchBar,
-} from "components/AdminPageComponents";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { BsGeoAlt, BsPlus, BsPencil, BsTrash } from "react-icons/bs";
 import { useLocationMutations, useLocations } from "@/hooks/queries";
 import type { CreateLocationData, Location } from "@/lib/api";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 export default function LocationsPage() {
   // React Query hooks
@@ -41,12 +36,7 @@ export default function LocationsPage() {
   });
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      country: "",
-      city: "",
-    });
+    setFormData({ name: "", description: "", country: "", city: "" });
     setEditingLocation(null);
   };
 
@@ -88,7 +78,6 @@ export default function LocationsPage() {
     }
   };
 
-  // Filter locations based on search query
   const filteredLocations = useMemo(() => {
     if (!searchQuery) return locationsList;
     const query = searchQuery.toLowerCase();
@@ -102,88 +91,137 @@ export default function LocationsPage() {
   }, [locationsList, searchQuery]);
 
   return (
-    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <div className="relative p-8">
-        <div className="mx-auto">
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
           <FadeIn delay={0}>
-            <AdminPageHeader
-              title="LOCATIONS"
-              description="Manage geographic locations for nodes"
-              action={{
-                label: "Add Location",
-                icon: <Plus className="h-4 w-4" />,
-                onClick: () => {
-                  resetForm();
-                  setIsModalOpen(true);
-                },
-              }}
-            />
-
-            <AdminSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search locations..."
-            />
+            <div className="mb-6 flex items-center justify-between">
+              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+              <div className="flex items-center gap-2">
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <BsPlus className="h-4 w-4" />
+                  Add Location
+                </TextureButton>
+              </div>
+            </div>
           </FadeIn>
 
-          {/* Locations Grid */}
+          {/* Search */}
+          <FadeIn delay={0.05}>
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search locations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          </FadeIn>
+
+          {/* Locations List */}
           <FadeIn delay={0.1}>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {isLoading ? (
-                <div className="col-span-full flex justify-center py-12">
-                  <Spinner className="h-6 w-6" />
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
+                <div className="flex items-center gap-2 text-xs opacity-50">
+                  <BsGeoAlt className="h-3 w-3" />
+                  Locations
                 </div>
-              ) : filteredLocations.length === 0 ? (
-                <AdminEmptyState
-                  message={
-                    searchQuery
-                      ? "No locations match your search."
-                      : "No locations configured. Add your first location."
-                  }
-                />
-              ) : (
-                filteredLocations.map((location) => (
-                  <AdminCard
-                    key={location.id}
-                    icon={<MapPin className={cn("h-6 w-6", "text-zinc-400")} />}
-                    title={location.name}
-                    actions={
-                      <div className="flex items-center gap-1">
-                        <TextureButton
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleEdit(location)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </TextureButton>
-                        <TextureButton
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setDeleteConfirmLocation(location)}
-                        >
-                          <Trash className="h-3 w-3" />
-                        </TextureButton>
-                      </div>
-                    }
-                  >
-                    {(location.city || location.country) && (
-                      <div className={cn("mt-1 text-xs", "text-zinc-500")}>
-                        {[location.city, location.country].filter(Boolean).join(", ")}
-                      </div>
+                <span className="text-xs text-zinc-500">
+                  {filteredLocations.length} location{filteredLocations.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : filteredLocations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <BsGeoAlt className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">No Locations</h3>
+                    <p className="mb-4 text-xs text-zinc-500">
+                      {searchQuery
+                        ? "No locations match your search."
+                        : "Add your first location to get started."}
+                    </p>
+                    {!searchQuery && (
+                      <TextureButton
+                        variant="minimal"
+                        size="sm"
+                        className="w-fit"
+                        onClick={() => {
+                          resetForm();
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <BsPlus className="h-4 w-4" />
+                        Add Location
+                      </TextureButton>
                     )}
-                    {location.description && (
-                      <div className={cn("mt-2 text-xs", "text-zinc-600")}>
-                        {location.description}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredLocations.map((location) => (
+                      <div
+                        key={location.id}
+                        className="flex flex-col rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4 transition-colors hover:border-zinc-600"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-700/50 bg-blue-900/30">
+                              <BsGeoAlt className="h-5 w-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-medium text-zinc-100">{location.name}</h3>
+                              {(location.city || location.country) && (
+                                <p className="text-xs text-zinc-500">
+                                  {[location.city, location.country].filter(Boolean).join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <TextureButton
+                              variant="minimal"
+                              size="sm"
+                              className="w-fit"
+                              onClick={() => handleEdit(location)}
+                            >
+                              <BsPencil className="h-3.5 w-3.5" />
+                            </TextureButton>
+                            <TextureButton
+                              variant="secondary"
+                              size="sm"
+                              className="w-fit text-red-400 hover:text-red-300"
+                              onClick={() => setDeleteConfirmLocation(location)}
+                            >
+                              <BsTrash className="h-3.5 w-3.5" />
+                            </TextureButton>
+                          </div>
+                        </div>
+                        {location.description && (
+                          <p className="mt-3 text-xs text-zinc-500">{location.description}</p>
+                        )}
+                        {location.nodes && location.nodes.length > 0 && (
+                          <p className="mt-2 text-xs text-zinc-600">
+                            {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
+                          </p>
+                        )}
                       </div>
-                    )}
-                    {location.nodes && location.nodes.length > 0 && (
-                      <div className={cn("mt-2 text-xs", "text-zinc-500")}>
-                        {location.nodes.length} node{location.nodes.length !== 1 ? "s" : ""}
-                      </div>
-                    )}
-                  </AdminCard>
-                ))
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </FadeIn>
         </div>
@@ -213,7 +251,6 @@ export default function LocationsPage() {
               required
             />
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Country</Label>
@@ -234,7 +271,6 @@ export default function LocationsPage() {
               />
             </div>
           </div>
-
           <div>
             <Label>Description</Label>
             <Textarea
@@ -257,6 +293,6 @@ export default function LocationsPage() {
         onConfirm={handleDelete}
         isLoading={remove.isPending}
       />
-    </div>
+    </FadeIn>
   );
 }

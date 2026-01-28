@@ -285,171 +285,181 @@ const ServerOverviewPage = (): JSX.Element | null => {
   }
 
   return (
-    <div className="relative w-full transition-colors">
-      <FadeIn direction={"down"} delay={500} duration={400} className="mb-4">
-        <LightBoard gap={2} text={server?.name || "Server"} font="default" updateInterval={50000} />
-      </FadeIn>
-      {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
-        <div className="relative z-10 flex items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
-          <BsExclamationTriangle className="h-4 w-4 flex-shrink-0" />
-          <span>
-            Unable to connect to daemon. Server controls may not work until connection is restored.
-          </span>
-        </div>
-      )}
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        {showConnectionBanner && wsEnabled && !wsConnected && !wsConnecting && (
+          <div className="relative z-10 flex items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+            <BsExclamationTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>
+              Unable to connect to daemon. Server controls may not work until connection is
+              restored.
+            </span>
+          </div>
+        )}
 
-      <div className="relative h-full p-5 md:p-8">
-        <FadeIn delay={0}>
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
-                  "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                )}
-              />
-            </div>
-            <div className="flex w-2/3 flex-row justify-end gap-2">
-              <div className="flex flex-row items-center gap-2">
-                <TextureButton
-                  variant={isEditing ? "primary" : "minimal"}
-                  size="sm"
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="w-fit"
-                >
-                  {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
-                </TextureButton>
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
+                  className={cn(
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
+                  )}
+                />
+              </div>
+              <div className="flex w-2/3 flex-row justify-end gap-2">
+                <div className="flex flex-row items-center gap-2">
+                  <TextureButton
+                    variant={isEditing ? "primary" : "minimal"}
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="w-fit"
+                  >
+                    {isEditing ? labels.dashboard.doneEditing : labels.dashboard.editLayout}
+                  </TextureButton>
 
-                <ServerStatusBadge server={server} />
+                  {isEditing && (
+                    <TextureButton
+                      variant="minimal"
+                      size="sm"
+                      onClick={() => resetLayout()}
+                      className="w-fit"
+                    >
+                      Reset Layout
+                    </TextureButton>
+                  )}
+
+                  <ServerStatusBadge server={server} />
+                </div>
               </div>
             </div>
-          </div>
-        </FadeIn>
+          </FadeIn>
 
-        <DragDropGrid
-          className="mx-auto"
-          items={visibleItems}
-          allItems={items}
-          savedLayouts={layouts}
-          onLayoutChange={saveLayout}
-          onDropItem={(itemId) => showCard(itemId)}
-          onRemoveItem={(itemId) => hideCard(itemId)}
-          rowHeight={50}
-          gap={16}
-          isEditing={isEditing}
-          isDroppable={true}
-          removeConfirmLabels={labels.removeCard}
-        >
-          <div key="instance-name" className="h-full">
-            <GridItem itemId="instance-name">
-              <InstanceNameCard
-                itemId="instance-name"
-                instanceName={displayData.name}
-                isOffline={isOffline}
-                status={containerControls.status}
-                onStart={containerControls.handleStart}
-                onStop={containerControls.handleStop}
-                onKill={containerControls.handleKill}
-                onRestart={containerControls.handleRestart}
-                labels={labels.containerControls}
-                loadingStates={powerActionLoading}
-              />
-            </GridItem>
-          </div>
+          <DragDropGrid
+            className="w-full"
+            items={visibleItems}
+            allItems={items}
+            savedLayouts={layouts}
+            onLayoutChange={saveLayout}
+            onDropItem={(itemId) => showCard(itemId)}
+            onRemoveItem={(itemId) => hideCard(itemId)}
+            rowHeight={50}
+            gap={16}
+            isEditing={isEditing}
+            isDroppable={true}
+            removeConfirmLabels={labels.removeCard}
+          >
+            <div key="instance-name" className="h-full">
+              <GridItem itemId="instance-name">
+                <InstanceNameCard
+                  itemId="instance-name"
+                  instanceName={displayData.name}
+                  isOffline={isOffline}
+                  status={containerControls.status}
+                  onStart={containerControls.handleStart}
+                  onStop={containerControls.handleStop}
+                  onKill={containerControls.handleKill}
+                  onRestart={containerControls.handleRestart}
+                  labels={labels.containerControls}
+                  loadingStates={powerActionLoading}
+                />
+              </GridItem>
+            </div>
 
-          <div key="system-info" className="h-full">
-            <GridItem itemId="system-info">
-              <SystemInformationCard
-                itemId="system-info"
-                nodeData={displayData.node}
-                labels={labels.systemInfo}
-              />
-            </GridItem>
-          </div>
+            <div key="system-info" className="h-full">
+              <GridItem itemId="system-info">
+                <SystemInformationCard
+                  itemId="system-info"
+                  nodeData={displayData.node}
+                  labels={labels.systemInfo}
+                />
+              </GridItem>
+            </div>
 
-          <div key="network-info" className="h-full">
-            <GridItem itemId="network-info">
-              <NetworkInfoCard
-                itemId="network-info"
-                networkInfo={{
-                  publicIp: displayData.networkConfig.publicIp || "",
-                  openPorts: displayData.networkConfig.openPorts,
-                }}
-                labels={labels.networkInfo}
-              />
-            </GridItem>
-          </div>
+            <div key="network-info" className="h-full">
+              <GridItem itemId="network-info">
+                <NetworkInfoCard
+                  itemId="network-info"
+                  networkInfo={{
+                    publicIp: displayData.networkConfig.publicIp || "",
+                    openPorts: displayData.networkConfig.openPorts,
+                  }}
+                  labels={labels.networkInfo}
+                />
+              </GridItem>
+            </div>
 
-          <div key="cpu" className="h-full">
-            <GridItem itemId="cpu">
-              <CpuCard
-                itemId="cpu"
-                // percentage={displayData.cpu.usage.percentage}
-                  percentage={20}
-                primaryValue={displayData.cpu.displayValue}
-                history={displayData.cpu.usage.history}
-                coreUsage={displayData.cpu.coreUsage}
-                isOffline={false}
-                labels={labels.cpu}
-              />
-            </GridItem>
-          </div>
+            <div key="cpu" className="h-full">
+              <GridItem itemId="cpu">
+                <CpuCard
+                  itemId="cpu"
+                  percentage={displayData.cpu.usage.percentage}
+                  primaryValue={displayData.cpu.displayValue}
+                  history={displayData.cpu.usage.history}
+                  coreUsage={displayData.cpu.coreUsage}
+                  isOffline={isOffline}
+                  labels={labels.cpu}
+                />
+              </GridItem>
+            </div>
 
-          <div key="ram" className="h-full">
-            <GridItem itemId="ram">
-              <UsageMetricCard
-                itemId="ram"
-                percentage={displayData.memory.usage.percentage}
-                primaryValue={displayData.memory.displayValue}
-                history={displayData.memory.usage.history}
-                isOffline={isOffline}
-                labels={labels.ram}
-              />
-            </GridItem>
-          </div>
+            <div key="ram" className="h-full">
+              <GridItem itemId="ram">
+                <UsageMetricCard
+                  itemId="ram"
+                  percentage={displayData.memory.usage.percentage}
+                  primaryValue={displayData.memory.displayValue}
+                  history={displayData.memory.usage.history}
+                  isOffline={isOffline}
+                  labels={labels.ram}
+                />
+              </GridItem>
+            </div>
 
-          <div key="disk" className="h-full">
-            <GridItem itemId="disk">
-              <UsageMetricCard
-                itemId="disk"
-                percentage={displayData.disk.usage.percentage}
-                primaryValue={`${displayData.disk.used.toFixed(2)} / ${displayData.disk.total.toFixed(0)} GiB`}
-                history={displayData.disk.usage.history}
-                isOffline={isOffline}
-                labels={labels.disk}
-              />
-            </GridItem>
-          </div>
+            <div key="disk" className="h-full">
+              <GridItem itemId="disk">
+                <UsageMetricCard
+                  itemId="disk"
+                  percentage={displayData.disk.usage.percentage}
+                  primaryValue={`${displayData.disk.used.toFixed(2)} / ${displayData.disk.total.toFixed(0)} GiB`}
+                  history={displayData.disk.usage.history}
+                  isOffline={isOffline}
+                  labels={labels.disk}
+                />
+              </GridItem>
+            </div>
 
-          <div key="network-usage" className="h-full">
-            <GridItem itemId="network-usage">
-              <NetworkUsageCard
-                itemId="network-usage"
-                download={displayData.network.download}
-                upload={displayData.network.upload}
-                downloadHistory={displayData.network.downloadHistory}
-                uploadHistory={displayData.network.uploadHistory}
-                isOffline={isOffline}
-                labels={labels.network}
-              />
-            </GridItem>
-          </div>
+            <div key="network-usage" className="h-full">
+              <GridItem itemId="network-usage">
+                <NetworkUsageCard
+                  itemId="network-usage"
+                  download={displayData.network.download}
+                  upload={displayData.network.upload}
+                  downloadHistory={displayData.network.downloadHistory}
+                  uploadHistory={displayData.network.uploadHistory}
+                  isOffline={isOffline}
+                  labels={labels.network}
+                />
+              </GridItem>
+            </div>
 
-          <div key="console" className="h-full">
-            <GridItem itemId="console" showRemoveHandle={false}>
-              <Console
-                lines={consoleLines}
-                onCommand={handleCommand}
-                isOffline={isOffline}
-                showSendButton={true}
-              />
-            </GridItem>
-          </div>
-        </DragDropGrid>
+            <div key="console" className="h-full">
+              <GridItem itemId="console" showRemoveHandle={false}>
+                <Console
+                  lines={consoleLines}
+                  onCommand={handleCommand}
+                  isOffline={isOffline}
+                  showSendButton={true}
+                />
+              </GridItem>
+            </div>
+          </DragDropGrid>
+        </div>
+
+        {/* Extensions */}
+        <EulaExtension serverId={serverId} lines={rawConsoleLines} onRestart={restart} />
       </div>
-
-      {/* Extensions */}
-      <EulaExtension serverId={serverId} lines={rawConsoleLines} onRestart={restart} />
-    </div>
+    </FadeIn>
   );
 };
 

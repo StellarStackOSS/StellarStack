@@ -37,13 +37,7 @@ export const NetworkInfoCard = ({ itemId, networkInfo, labels }: NetworkInfoCard
   }
 
   return (
-    <UsageCard className={cn("h-full", isXs && "p-4")}>
-      <UsageCardTitle className={cn(
-        "opacity-80",
-        isXs ? "text-xs mb-2" : isCompact ? "text-xs mb-4" : "text-md"
-      )}>
-        {isXs ? labels.titleShort : labels.title}
-      </UsageCardTitle>
+    <UsageCard title={isXs ? labels.titleShort : labels.title} className="h-full">
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <div className={cn(
           isXs ? "space-y-1 text-[10px]" : isCompact ? "space-y-2 text-xs" : "space-y-3 text-sm"
