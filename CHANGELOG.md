@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.7](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.6...v1.3.7) (2026-01-28)
+
+
+### Bug Fixes
+
+* reversed docker containers ([a6af1bc](https://github.com/StellarStackOSS/StellarStack/commit/a6af1bcfd77c27933e91d9a3b37a1433ed055caf))
+* reversed docker containers ([3bc0629](https://github.com/StellarStackOSS/StellarStack/commit/3bc06298c01498c431e98381c752ff271d66031a))
+
 ## [1.3.6](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.5...v1.3.6) (2026-01-28)
 
 
