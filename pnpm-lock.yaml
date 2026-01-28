@@ -109,8 +109,8 @@ importers:
   apps/home:
     dependencies:
       '@paper-design/shaders-react':
-        specifier: ^0.0.68
-        version: 0.0.68(@types/react@19.1.9)(react@19.2.1)
+        specifier: ^0.0.71
+        version: 0.0.71(@types/react@19.1.9)(react@19.2.1)
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.7(@react-three/fiber@9.4.2(@types/react@19.1.9)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(three@0.182.0))(@types/react@19.1.9)(@types/three@0.182.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(three@0.182.0)
@@ -218,8 +218,8 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@paper-design/shaders-react':
-        specifier: ^0.0.68
-        version: 0.0.68(@types/react@19.1.9)(react@19.2.1)
+        specifier: ^0.0.71
+        version: 0.0.71(@types/react@19.1.9)(react@19.2.1)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -1424,8 +1424,8 @@ packages:
       react: ^18 || ^19
       react-dom: ^18 || ^19
 
-  '@paper-design/shaders-react@0.0.68':
-    resolution: {integrity: sha512-RaL/OCfaPVyVcPHJnemRuobfgseq1Pb5d4ktjclCmKprUe5Ac5WsexFuJBHpIfrMdYC/bV2ADJj24+dnthTpig==}
+  '@paper-design/shaders-react@0.0.71':
+    resolution: {integrity: sha512-kTqjIlyZcpkwqJie+3ldEDscTtx1oOi8eRBD5QgWKI21GaNn/SSg26092M5zzqr3e8dVANv0ktS2ICSjbMFKbw==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -1433,8 +1433,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@paper-design/shaders@0.0.68':
-    resolution: {integrity: sha512-HWDb/mYfIDcwRGYjwTFEoupw4PgdmuoNONJ6TIXBaXWj3zdhS38iNehbAWQxWa1NHtOanOeQkbdG0wvaNKhvEw==}
+  '@paper-design/shaders@0.0.71':
+    resolution: {integrity: sha512-brCt05YxxyjBrhnE3l1wJJHcFXsM8aE4lmpd9TMQp+p0dMU3F+OWkJZL9m/RC1Tt7om5xr0Wg7d0HYm+b9NYZA==}
 
   '@peculiar/asn1-android@2.6.0':
     resolution: {integrity: sha512-cBRCKtYPF7vJGN76/yG8VbxRcHLPF3HnkoHhKOZeHpoVtbMYfY9ROKtH3DtYUY9m8uI1Mh47PRhHf2hSK3xcSQ==}
@@ -7092,14 +7092,14 @@ snapshots:
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
-  '@paper-design/shaders-react@0.0.68(@types/react@19.1.9)(react@19.2.1)':
+  '@paper-design/shaders-react@0.0.71(@types/react@19.1.9)(react@19.2.1)':
     dependencies:
-      '@paper-design/shaders': 0.0.68
+      '@paper-design/shaders': 0.0.71
       react: 19.2.1
     optionalDependencies:
       '@types/react': 19.1.9
 
-  '@paper-design/shaders@0.0.68': {}
+  '@paper-design/shaders@0.0.71': {}
 
   '@peculiar/asn1-android@2.6.0':
     dependencies:
