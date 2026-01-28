@@ -37,7 +37,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 // With rowHeight=50 and gap=16: height = rowHeight * h + gap * (h - 1)
 // h=2 → 116px, h=3 → 182px, h=4 → 248px, h=5 → 314px
 export const gridSizeConfig: Record<GridSize, GridSizeConfig> = {
-  xxs: { w: 3, h: 2 }, // ~116px height, 3 columns wide, compact for metric cards
+  xxs: { w: 3, h: 1.5 }, // ~116px height, 3 columns wide, compact for metric cards
   "xxs-wide": { w: 6, h: 2 }, // ~116px height, 6 columns wide, for header cards
   xs: { w: 3, h: 3 }, // ~182px height
   sm: { w: 3, h: 4 }, // ~248px height (close to 250px)

@@ -1,9 +1,10 @@
 "use client";
 
 import {ReactNode} from "react";
-import {BanIcon, DownloadIcon, Loader2Icon, RotateCcwIcon, ServerIcon, WrenchIcon} from "lucide-react";
+import {Download, Loader2, RotateCcw, Server, Wrench} from "lucide-react";
 import {cn} from "@workspace/ui/lib/utils";
 import {motion} from "framer-motion";
+import {CgDanger} from "react-icons/cg";
 
 type StatusType = "suspended" | "restoring" | "maintenance" | "installing";
 
@@ -23,8 +24,8 @@ const STATUS_CONFIG: Record<StatusType, {
 }> = {
   suspended: {
     title: "Server Suspended",
-    icon: <BanIcon className="h-3 w-3" />,
-    badgeIcon: <BanIcon className="h-3 w-3" />,
+    icon: <CgDanger className="h-3 w-3" />,
+    badgeIcon: <CgDanger className="h-3 w-3" />,
     badgeColor: "red",
     loadingElement: null,
     message: [
@@ -34,10 +35,10 @@ const STATUS_CONFIG: Record<StatusType, {
   },
   restoring: {
     title: "Restoring Backup",
-    icon: <RotateCcwIcon className="h-3 w-3" />,
+    icon: <RotateCcw className="h-3 w-3" />,
     badgeIcon: (
       <motion.div animate={{ rotate: -360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
-        <RotateCcwIcon className="h-3 w-3" />
+        <RotateCcw className="h-3 w-3" />
       </motion.div>
     ),
     badgeColor: "blue",
@@ -49,8 +50,8 @@ const STATUS_CONFIG: Record<StatusType, {
   },
   maintenance: {
     title: "Under Maintenance",
-    icon: <WrenchIcon className="h-3 w-3" />,
-    badgeIcon: <WrenchIcon className="h-3 w-3" />,
+    icon: <Wrench className="h-3 w-3" />,
+    badgeIcon: <Wrench className="h-3 w-3" />,
     badgeColor: "amber",
     loadingElement: "dots",
     message: [
@@ -67,8 +68,8 @@ const STATUS_CONFIG: Record<StatusType, {
   },
   installing: {
     title: "Installing Server",
-    icon: <DownloadIcon className="h-3 w-3" />,
-    badgeIcon: <DownloadIcon className="h-3 w-3" />,
+    icon: <Download className="h-3 w-3" />,
+    badgeIcon: <Download className="h-3 w-3" />,
     badgeColor: "zinc",
     loadingElement: "spinner",
     message: [
@@ -135,7 +136,7 @@ const renderLoadingElement = (type: string | null, color: string) => {
   if (type === "spinner") {
     return (
       <div className="flex items-center gap-2">
-        <Loader2Icon className="h-4 w-4 animate-spin text-zinc-500" />
+        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
         <span className="text-xs tracking-wider uppercase text-zinc-500">
           Please wait while your server is being set up...
         </span>
@@ -170,7 +171,7 @@ export const ServerStatusPlaceholder = ({ serverName, status }: ServerStatusPlac
             />
           )}
           <div className="relative flex h-16 w-16 items-center justify-center border border-zinc-700 bg-zinc-900">
-            <ServerIcon className="h-8 w-8 text-zinc-600" />
+            <Server className="h-8 w-8 text-zinc-600" />
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}

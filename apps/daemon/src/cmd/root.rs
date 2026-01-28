@@ -139,6 +139,46 @@ pub async fn run(config_path: &str) -> Result<()> {
         }
     });
 
+    // Start metrics collection task
+    info!("Starting metrics collection (every 5 minutes)");
+    let metrics_collector = Arc::new(stellar_daemon::MetricsCollector::new(
+        api_client.clone(),
+        config.clone(),
+        manager.clone(),
+    ));
+    let metrics_collector_clone = metrics_collector.clone();
+    let metrics_token = shutdown_token.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(300)); // Every 5 minutes
+        interval.tick().await; // Skip first immediate tick
+
+        loop {
+            tokio::select! {
+                _ = metrics_token.cancelled() => {
+                    debug!("Metrics collection stopped");
+                    return;
+                }
+                _ = interval.tick() => {
+                    debug!("Collecting and sending metrics...");
+                    match metrics_collector_clone.collect_node_metrics().await {
+                        Ok(node_metrics) => {
+                            if let Err(e) = metrics_collector_clone.send_metrics(&node_metrics).await {
+                                error!("Failed to send node metrics: {}", e);
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to collect node metrics: {}", e);
+                        }
+                    }
+
+                    // Also collect server metrics
+                    let server_metrics = metrics_collector_clone.collect_server_metrics().await;
+                    debug!("Collected metrics for {} servers", server_metrics.len());
+                }
+            }
+        }
+    });
+
     // Start the SFTP server if enabled
     if config.sftp.enabled {
         let sftp_config = config.sftp.clone();

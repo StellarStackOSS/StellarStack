@@ -16,6 +16,7 @@ import {
   BsChevronDown,
   BsClock,
   BsCloudUpload,
+  BsEye,
   BsPencil,
   BsPlayFill,
   BsPlus,
@@ -32,6 +33,7 @@ import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-
 import { useServerWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { Label } from "@workspace/ui/components/label";
+import { ScheduleVisualizer } from "./components/ScheduleVisualizer";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";
 
@@ -177,6 +179,7 @@ const SchedulesPage = (): JSX.Element | null => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [visualizerOpen, setVisualizerOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -207,22 +210,14 @@ const SchedulesPage = (): JSX.Element | null => {
   useEffect(() => {
     if (lastMessage?.type === "schedule:executing" && lastMessage.data) {
       const data = lastMessage.data as { schedule_id: string; task_index: number | null };
-      console.log("[Schedule WebSocket] Received schedule:executing event", data);
 
       setSchedules((prev) => {
         const updated = prev.map((schedule) => {
           if (schedule.id === data.schedule_id) {
-            console.log(
-              "[Schedule WebSocket] Updating schedule",
-              schedule.id,
-              "with taskIndex:",
-              data.task_index
-            );
             return { ...schedule, executingTaskIndex: data.task_index ?? null };
           }
           return schedule;
         });
-        console.log("[Schedule WebSocket] Updated schedules:", updated);
         return updated;
       });
     }
@@ -472,11 +467,24 @@ const SchedulesPage = (): JSX.Element | null => {
             <Label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
               Task Sequence ({formTasks.length}/{MAX_TASKS})
             </Label>
-            {formTasks.length >= MAX_TASKS && (
-              <span className={cn("text-xs font-semibold", "text-amber-400")}>
-                Maximum Tasks Reached
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {formTasks.length >= MAX_TASKS && (
+                <span className={cn("text-xs font-semibold", "text-amber-400")}>
+                  Maximum Tasks Reached
+                </span>
+              )}
+              {formTasks.length > 0 && (
+                <TextureButton
+                  variant="minimal"
+                  size="sm"
+                  onClick={() => setVisualizerOpen(true)}
+                  title="Visualize schedule flow"
+                >
+                  <BsEye className="h-3.5 w-3.5" />
+                  <span className="text-xs">Visualize</span>
+                </TextureButton>
+              )}
+            </div>
           </div>
 
           {/* Task Cards */}
@@ -518,96 +526,93 @@ const SchedulesPage = (): JSX.Element | null => {
                           : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
                     )}
                   >
-                    <button
+                    <div
                       onClick={() => toggleTaskExpanded(task.id)}
-                      disabled={isSaving}
-                      className="w-full text-left"
+                      className="flex cursor-pointer items-center gap-4 p-4"
                     >
-                      <div className="flex items-center gap-4 p-4">
-                        {/* Drag Handle & Index */}
+                      {/* Drag Handle & Index */}
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          setDraggedTaskId(task.id);
+                        }}
+                        onDragEnd={() => setDraggedTaskId(null)}
+                        className="flex shrink-0 cursor-grab items-center gap-2 active:cursor-grabbing"
+                      >
                         <div
-                          draggable
-                          onDragStart={(e) => {
-                            e.stopPropagation();
-                            setDraggedTaskId(task.id);
-                          }}
-                          onDragEnd={() => setDraggedTaskId(null)}
-                          className="flex shrink-0 cursor-grab items-center gap-2 active:cursor-grabbing"
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded font-semibold",
+                            "bg-zinc-700 text-zinc-200"
+                          )}
                         >
-                          <div
-                            className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded font-semibold",
-                              "bg-zinc-700 text-zinc-200"
-                            )}
-                          >
-                            {index + 1}
-                          </div>
-                          <div className={cn("text-xs text-zinc-500 select-none")}>⋮⋮</div>
+                          {index + 1}
                         </div>
+                        <div className={cn("text-xs text-zinc-500 select-none")}>⋮⋮</div>
+                      </div>
 
-                        {/* Action Icon & Label */}
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <div className="shrink-0">{getActionIcon(task.action)}</div>
-                          <div className="min-w-0">
-                            <p className={cn("font-medium", "text-zinc-100")}>
-                              {getActionLabel(task.action)}
+                      {/* Action Icon & Label */}
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="shrink-0">{getActionIcon(task.action)}</div>
+                        <div className="min-w-0">
+                          <p className={cn("font-medium", "text-zinc-100")}>
+                            {getActionLabel(task.action)}
+                          </p>
+                          {task.action === "command" && task.payload && (
+                            <p className={cn("truncate text-xs", "text-zinc-400")}>
+                              {task.payload}
                             </p>
-                            {task.action === "command" && task.payload && (
-                              <p className={cn("truncate text-xs", "text-zinc-400")}>
-                                {task.payload}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Trigger Badge */}
-                        <div className="shrink-0">
-                          <div
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium",
-                              task.triggerMode === "TIME_DELAY"
-                                ? "bg-blue-500/20 text-blue-300"
-                                : "bg-purple-500/20 text-purple-300"
-                            )}
-                          >
-                            {task.triggerMode === "TIME_DELAY" ? (
-                              <>
-                                <BsClock className="h-3 w-3" />
-                                {task.timeOffset}s
-                              </>
-                            ) : (
-                              <>
-                                <BsArrowRepeat className="h-3 w-3" />
-                                Wait
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Delete Button */}
-                        <TextureButton
-                          variant="minimal"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeTask(task.id);
-                          }}
-                          disabled={isSaving}
-                          className="shrink-0"
-                        >
-                          <BsX className="h-4 w-4 text-red-400" />
-                        </TextureButton>
-
-                        {/* Expand/Collapse Chevron */}
-                        <div className="shrink-0 text-zinc-400">
-                          <BsChevronDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-200",
-                              expandedTaskIds.includes(task.id) ? "rotate-180" : ""
-                            )}
-                          />
+                          )}
                         </div>
                       </div>
-                    </button>
+
+                      {/* Trigger Badge */}
+                      <div className="shrink-0">
+                        <div
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium",
+                            task.triggerMode === "TIME_DELAY"
+                              ? "bg-blue-500/20 text-blue-300"
+                              : "bg-purple-500/20 text-purple-300"
+                          )}
+                        >
+                          {task.triggerMode === "TIME_DELAY" ? (
+                            <>
+                              <BsClock className="h-3 w-3" />
+                              {task.timeOffset}s
+                            </>
+                          ) : (
+                            <>
+                              <BsArrowRepeat className="h-3 w-3" />
+                              Wait
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Delete Button */}
+                      <TextureButton
+                        variant="minimal"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeTask(task.id);
+                        }}
+                        disabled={isSaving}
+                        className="shrink-0"
+                      >
+                        <BsX className="h-4 w-4 text-red-400" />
+                      </TextureButton>
+
+                      {/* Expand/Collapse Chevron */}
+                      <div className="shrink-0 text-zinc-400">
+                        <BsChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            expandedTaskIds.includes(task.id) ? "rotate-180" : ""
+                          )}
+                        />
+                      </div>
+                    </div>
 
                     {/* Expanded Details */}
                     {expandedTaskIds.includes(task.id) && (
@@ -782,6 +787,7 @@ const SchedulesPage = (): JSX.Element | null => {
       toggleTaskExpanded,
       getActionIcon,
       getActionLabel,
+      setVisualizerOpen,
     ]
   );
 
@@ -978,7 +984,7 @@ const SchedulesPage = (): JSX.Element | null => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <TextureButton variant="minimal" onClick={openCreateModal}>
+              <TextureButton variant="primary" onClick={openCreateModal}>
                 <BsPlus className="h-4 w-4" />
                 <span className="text-xs tracking-wider uppercase">New Schedule</span>
               </TextureButton>
@@ -1152,6 +1158,19 @@ const SchedulesPage = (): JSX.Element | null => {
         onConfirm={handleDelete}
         confirmLabel="Delete"
       />
+
+      {/* Schedule Visualizer */}
+      {formTasks.length > 0 && (
+        <ScheduleVisualizer
+          schedule={{
+            name: formName || "Untitled Schedule",
+            cronExpression: formCron,
+            tasks: formTasks,
+          }}
+          open={visualizerOpen}
+          onOpenChange={setVisualizerOpen}
+        />
+      )}
     </div>
   );
 };

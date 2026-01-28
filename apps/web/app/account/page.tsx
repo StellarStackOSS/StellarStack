@@ -22,7 +22,6 @@ import { authClient, useSession } from "@/lib/auth-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import QRCode from "qrcode";
-import { Card } from "@workspace/ui/components";
 import { SectionTitle } from "@/components/AccountPageComponents/SectionTitle";
 
 interface Passkey {
@@ -214,66 +213,68 @@ const AccountPage = (): JSX.Element | null => {
   };
 
   return (
-    <Card className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
-      <Card className="relative p-8">
-        <Card className="mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger
-                className={cn(
+    <div className={cn("relative min-h-svh bg-[#0b0b0a] transition-colors")}>
+      <div className="relative p-8">
+        <div className="flex items-center gap-4 pb-4">
+          <SidebarTrigger
+              className={cn(
                   "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                )}
-              />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
-                  ACCOUNT SETTINGS
-                </h1>
-                <p className={cn("mt-1 text-sm text-zinc-500")}>Manage your account and security</p>
-              </div>
-            </div>
-          </div>
+              )}
+          />
+        </div>
+        <div
+            className="relative border rounded-lg border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 flex flex-col gap-4">
 
-          {/* Profile Section */}
-          <Card>
+          <div>
             <SectionTitle>Profile</SectionTitle>
 
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4 border-b border-zinc-700/50 pb-6 mb-6">
               <div>
                 <Label>Full Name</Label>
                 <Input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile((prev) => ({...prev, name: e.target.value}))}
                 />
               </div>
               <div>
                 <Label>Email Address</Label>
-                <Input type="email" value={profile.email} disabled />
+                <Input type="email" value={profile.email} disabled/>
                 <p className={cn("mt-1 text-xs text-zinc-500")}>
                   Email changes are not yet supported
                 </p>
               </div>
+              <div>
+              {/*  PASSWORD RESET */}
+              {/*  TODO: FORM VALIDATION FOR PASSWORD RESETTING */}
+                <div>
+                    <Label>Password</Label>
+                  <Input
+                        type="password"
+                        value="********"
+                        disabled
+                    />
+                </div>
+              </div>
+              <TextureButton
+                  variant="minimal"
+                  onClick={handleSaveProfile}
+                  disabled={!hasProfileChanges}
+              >
+                {saved ? (
+                    <>
+                      <BsCheckCircle className="h-4 w-4"/>
+                      <span className="text-xs tracking-wider uppercase">Saved</span>
+                    </>
+                ) : (
+                    <span className="text-xs tracking-wider uppercase">Update Profile</span>
+                )}
+              </TextureButton>
             </div>
-
-            <TextureButton
-              variant="minimal"
-              onClick={handleSaveProfile}
-              disabled={!hasProfileChanges}
-            >
-              {saved ? (
-                <>
-                  <BsCheckCircle className="h-4 w-4" />
-                  <span className="text-xs tracking-wider uppercase">Saved</span>
-                </>
-              ) : (
-                <span className="text-xs tracking-wider uppercase">Update Profile</span>
-              )}
-            </TextureButton>
-          </Card>
+          </div>
 
           {/* Connected Accounts Section */}
-          <Card>
+          <div className="flex flex-col border-b border-zinc-700/50 pb-6 mb-6">
             <SectionTitle>Connected Accounts</SectionTitle>
 
             <p className={cn("mb-4 text-xs text-zinc-500")}>
@@ -282,29 +283,29 @@ const AccountPage = (): JSX.Element | null => {
 
             <div className="flex flex-wrap gap-3">
               <TextureButton variant="minimal" onClick={() => handleSocialSignIn("google")}>
-                <BsGoogle className="h-4 w-4" />
+                <BsGoogle className="h-4 w-4"/>
                 <span className="text-xs tracking-wider uppercase">Google</span>
               </TextureButton>
               <TextureButton variant="minimal" onClick={() => handleSocialSignIn("github")}>
-                <BsGithub className="h-4 w-4" />
+                <BsGithub className="h-4 w-4"/>
                 <span className="text-xs tracking-wider uppercase">GitHub</span>
               </TextureButton>
               <TextureButton variant="minimal" onClick={() => handleSocialSignIn("discord")}>
-                <BsDiscord className="h-4 w-4" />
+                <BsDiscord className="h-4 w-4"/>
                 <span className="text-xs tracking-wider uppercase">Discord</span>
               </TextureButton>
             </div>
-          </Card>
+          </div>
 
           {/* Passkeys Section */}
-          <Card>
+          <div className="flex flex-col border-b border-zinc-700/50 pb-6 mb-6">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BsKey className={cn("h-4 w-4 text-zinc-400")} />
+                <BsKey className={cn("h-4 w-4 text-zinc-400")}/>
                 <SectionTitle className="mb-0">Passkeys</SectionTitle>
               </div>
               <TextureButton variant="minimal" onClick={() => setAddPasskeyModalOpen(true)}>
-                <BsPlus className="h-4 w-4" />
+                <BsPlus className="h-4 w-4"/>
                 <span className="text-xs tracking-wider uppercase">Add Passkey</span>
               </TextureButton>
             </div>
@@ -315,39 +316,40 @@ const AccountPage = (): JSX.Element | null => {
 
             <div className="space-y-3">
               {passkeys.length === 0 ? (
-                <p className={cn("text-sm text-zinc-500")}>No passkeys registered yet.</p>
+                  <p className={cn("text-sm text-zinc-500")}>No passkeys registered yet.</p>
               ) : (
-                passkeys.map((passkey) => (
-                  <div
-                    key={passkey.id}
-                    className={cn(
-                      "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
-                    )}
-                  >
-                    <div>
-                      <div className={cn("text-sm font-medium text-zinc-200")}>
-                        {passkey.name || "Unnamed Passkey"}
+                  passkeys.map((passkey) => (
+                      <div
+                          key={passkey.id}
+                          className={cn(
+                              "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
+                          )}
+                      >
+                        <div>
+                          <div className={cn("text-sm font-medium text-zinc-200")}>
+                            {passkey.name || "Unnamed Passkey"}
+                          </div>
+                          <div className={cn("mt-1 text-xs text-zinc-500")}>
+                            Added {new Date(passkey.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <TextureButton
+                            variant="destructive"
+                            onClick={() => openDeletePasskeyModal(passkey)}
+                        >
+                          <BsTrash className="h-4 w-4"/>
+                        </TextureButton>
                       </div>
-                      <div className={cn("mt-1 text-xs text-zinc-500")}>
-                        Added {new Date(passkey.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <TextureButton
-                      variant="destructive"
-                      onClick={() => openDeletePasskeyModal(passkey)}
-                    >
-                      <BsTrash className="h-4 w-4" />
-                    </TextureButton>
-                  </div>
-                ))
+                  ))
               )}
             </div>
-          </Card>
+          </div>
 
+          {/*TODO: ADD FORM VALIDATION FOR ERROR HANDLING WHEN TRYING TO ENABLE 2FA*/}
           {/* Two-Factor Authentication Section */}
-          <Card>
+          <div>
             <div className="mb-6 flex items-center gap-2">
-              <BsShieldCheck className={cn("h-4 w-4 text-zinc-400")} />
+              <BsShieldCheck className={cn("h-4 w-4 text-zinc-400")}/>
               <SectionTitle className="mb-0">Two-Factor Authentication</SectionTitle>
             </div>
 
@@ -357,100 +359,100 @@ const AccountPage = (): JSX.Element | null => {
             </p>
 
             {!showTotpSetup ? (
-              <div
-                className={cn(
-                  "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
-                )}
-              >
-                <div>
-                  <div className={cn("text-sm font-medium text-zinc-200")}>Authenticator App</div>
-                  <div className={cn("mt-1 text-xs text-zinc-500")}>
-                    {twoFactorEnabled
-                      ? "Two-factor authentication is enabled"
-                      : "Use an app like Google Authenticator or Authy"}
+                <div
+                    className={cn(
+                        "flex items-center justify-between border border-zinc-700/50 bg-zinc-900/30 p-4"
+                    )}
+                >
+                  <div>
+                    <div className={cn("text-sm font-medium text-zinc-200")}>Authenticator App</div>
+                    <div className={cn("mt-1 text-xs text-zinc-500")}>
+                      {twoFactorEnabled
+                          ? "Two-factor authentication is enabled"
+                          : "Use an app like Google Authenticator or Authy"}
+                    </div>
                   </div>
+                  {twoFactorEnabled ? (
+                      <TextureButton
+                          variant="destructive"
+                          onClick={() => setDisableTwoFactorModalOpen(true)}
+                      >
+                        <span className="text-xs tracking-wider uppercase">Disable</span>
+                      </TextureButton>
+                  ) : (
+                      <div className="flex items-center gap-2">
+                        <Input
+                            type="password"
+                            placeholder="Password"
+                            value={passwordForAction}
+                            onChange={(e) => setPasswordForAction(e.target.value)}
+                        />
+                        <TextureButton
+                            variant="minimal"
+                            onClick={handleEnableTwoFactor}
+                            disabled={!passwordForAction}
+                        >
+                          <span className="text-xs tracking-wider uppercase">Enable</span>
+                        </TextureButton>
+                      </div>
+                  )}
                 </div>
-                {twoFactorEnabled ? (
-                  <TextureButton
-                    variant="destructive"
-                    onClick={() => setDisableTwoFactorModalOpen(true)}
-                  >
-                    <span className="text-xs tracking-wider uppercase">Disable</span>
-                  </TextureButton>
-                ) : (
+            ) : (
+                <div className="space-y-4">
+                  <div className={cn("border border-zinc-700/50 bg-zinc-900/30 p-4")}>
+                    <p className={cn("mb-4 text-sm text-zinc-300")}>
+                      Scan this QR code with your authenticator app:
+                    </p>
+                    {totpQrCode && (
+                        <div className="mb-4 flex justify-center">
+                          <img src={totpQrCode} alt="TOTP QR Code" className="h-48 w-48"/>
+                        </div>
+                    )}
+                    <p className={cn("mb-2 text-xs text-zinc-500")}>Or enter this code manually:</p>
+                    <code className={cn("block bg-zinc-800 p-2 text-xs break-all text-zinc-300")}>
+                      {totpUri?.split("secret=")[1]?.split("&")[0] || ""}
+                    </code>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Input
-                      type="password"
-                      placeholder="Password"
-                      value={passwordForAction}
-                      onChange={(e) => setPasswordForAction(e.target.value)}
+                        type="text"
+                        placeholder="Enter 6-digit code"
+                        value={verifyCode}
+                        onChange={(e) => setVerifyCode(e.target.value)}
+                        maxLength={6}
                     />
                     <TextureButton
-                      variant="minimal"
-                      onClick={handleEnableTwoFactor}
-                      disabled={!passwordForAction}
+                        variant="minimal"
+                        onClick={handleVerifyTotp}
+                        disabled={verifyCode.length !== 6}
                     >
-                      <span className="text-xs tracking-wider uppercase">Enable</span>
+                      <span className="text-xs tracking-wider uppercase">Verify</span>
+                    </TextureButton>
+                    <TextureButton
+                        variant="minimal"
+                        onClick={() => {
+                          setShowTotpSetup(false);
+                          setTotpUri(null);
+                          setTotpQrCode(null);
+                          setVerifyCode("");
+                          setPasswordForAction("");
+                        }}
+                    >
+                      <span className="text-xs tracking-wider uppercase">Cancel</span>
                     </TextureButton>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className={cn("border border-zinc-700/50 bg-zinc-900/30 p-4")}>
-                  <p className={cn("mb-4 text-sm text-zinc-300")}>
-                    Scan this QR code with your authenticator app:
-                  </p>
-                  {totpQrCode && (
-                    <div className="mb-4 flex justify-center">
-                      <img src={totpQrCode} alt="TOTP QR Code" className="h-48 w-48" />
-                    </div>
-                  )}
-                  <p className={cn("mb-2 text-xs text-zinc-500")}>Or enter this code manually:</p>
-                  <code className={cn("block bg-zinc-800 p-2 text-xs break-all text-zinc-300")}>
-                    {totpUri?.split("secret=")[1]?.split("&")[0] || ""}
-                  </code>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={verifyCode}
-                    onChange={(e) => setVerifyCode(e.target.value)}
-                    maxLength={6}
-                  />
-                  <TextureButton
-                    variant="minimal"
-                    onClick={handleVerifyTotp}
-                    disabled={verifyCode.length !== 6}
-                  >
-                    <span className="text-xs tracking-wider uppercase">Verify</span>
-                  </TextureButton>
-                  <TextureButton
-                    variant="minimal"
-                    onClick={() => {
-                      setShowTotpSetup(false);
-                      setTotpUri(null);
-                      setTotpQrCode(null);
-                      setVerifyCode("");
-                      setPasswordForAction("");
-                    }}
-                  >
-                    <span className="text-xs tracking-wider uppercase">Cancel</span>
-                  </TextureButton>
-                </div>
-              </div>
             )}
-          </Card>
-        </Card>
-      </Card>
+          </div>
+        </div>
+      </div>
 
       {/* Backup Codes Modal */}
       <FormModal
-        open={showBackupCodes}
-        onOpenChange={setShowBackupCodes}
-        title="Backup Codes"
-        description="Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device."
+          open={showBackupCodes}
+          onOpenChange={setShowBackupCodes}
+          title="Backup Codes"
+          description="Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device."
         onSubmit={() => {
           setShowBackupCodes(false);
           setBackupCodes([]);
@@ -527,7 +529,7 @@ const AccountPage = (): JSX.Element | null => {
           </div>
         </div>
       </FormModal>
-    </Card>
+    </div>
   );
 };
 

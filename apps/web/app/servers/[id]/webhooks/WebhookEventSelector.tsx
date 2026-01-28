@@ -4,6 +4,7 @@ import { type WebhookEvent } from "@/lib/api";
 import { cn } from "@workspace/ui/lib/utils";
 import { BsCheck2 } from "react-icons/bs";
 import { TextureButton } from "@workspace/ui/components/texture-button";
+import {Checkbox} from "@workspace/ui/components";
 
 interface WebhookEventSelectorProps {
   events: Array<{ value: WebhookEvent; label: string; description: string }>;
@@ -18,24 +19,28 @@ export const WebhookEventSelector = ({
 }: WebhookEventSelectorProps) => (
   <div className="space-y-2">
     {events.map((event) => (
-      <TextureButton variant="minimal"
+      <div className="flex flex-row select-none cursor-pointer gap-4 p-2 rounded-lg border border-white/10 hover:border-white/50 hover:bg-white/15 duration-150 transition-all bg-white/5"
         key={event.value}
         onClick={() => onToggle(event.value)}
       >
-        <div
-          className={cn(
-            "flex h-5 w-5 items-center justify-center rounded border",
-            selectedEvents.includes(event.value)
-              ? "border-green-500 bg-green-500/20"
-              : "border-zinc-600"
-          )}
-        >
-          {selectedEvents.includes(event.value) && (
-            <BsCheck2
-              className={cn("h-3 w-3", "text-green-400")}
-            />
-          )}
-        </div>
+        <Checkbox
+          checked={selectedEvents.includes(event.value)}
+          onCheckedChange={() => onToggle(event.value)}
+        />
+        {/*<div*/}
+        {/*  className={cn(*/}
+        {/*    "flex h-5 w-5 items-center justify-center rounded border",*/}
+        {/*    selectedEvents.includes(event.value)*/}
+        {/*      ? "border-green-500 bg-green-500/20"*/}
+        {/*      : "border-zinc-600"*/}
+        {/*  )}*/}
+        {/*>*/}
+        {/*  {selectedEvents.includes(event.value) && (*/}
+        {/*    <BsCheck2*/}
+        {/*      className={cn("h-3 w-3", "text-green-400")}*/}
+        {/*    />*/}
+        {/*  )}*/}
+        {/*</div>*/}
         <div className="flex-1">
           <div
             className={cn(
@@ -49,7 +54,7 @@ export const WebhookEventSelector = ({
             {event.description}
           </div>
         </div>
-      </TextureButton>
+      </div>
     ))}
   </div>
 );

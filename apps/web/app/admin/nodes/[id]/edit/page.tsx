@@ -7,7 +7,7 @@ import { TextureButton } from "@workspace/ui/components/texture-button";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { ArrowLeftIcon, KeyIcon, NetworkIcon, PlusIcon, SaveIcon, TrashIcon } from "lucide-react";
+import { ArrowLeft, Key, Network, Plus, Save, Trash } from "lucide-react";
 import { useNode, useNodeMutations } from "@/hooks/queries";
 import { toast } from "sonner";
 import { Input } from "@workspace/ui/components";
@@ -179,7 +179,7 @@ export default function EditNodePage() {
             {/* Header */}
             <div className="mb-8 flex items-center gap-4">
               <TextureButton variant="minimal" onClick={() => router.push("/admin/nodes")}>
-                <ArrowLeftIcon className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
               </TextureButton>
               <div>
                 <h1 className={cn("text-2xl font-light tracking-wider text-zinc-100")}>
@@ -371,7 +371,7 @@ export default function EditNodePage() {
                         variant="minimal"
                         onClick={() => setShowRegenerateConfirm(true)}
                       >
-                        <KeyIcon className="h-3 w-3" />
+                        <Key className="h-3 w-3" />
                         Regenerate
                       </TextureButton>
                     </div>
@@ -406,7 +406,7 @@ export default function EditNodePage() {
                           variant="minimal"
                           onClick={() => setShowAddAllocation(true)}
                         >
-                          <PlusIcon className="h-3 w-3" />
+                          <Plus className="h-3 w-3" />
                           Add
                         </TextureButton>
                         <TextureButton
@@ -414,7 +414,7 @@ export default function EditNodePage() {
                           variant="minimal"
                           onClick={() => setShowAddRange(true)}
                         >
-                          <PlusIcon className="h-3 w-3" />
+                          <Plus className="h-3 w-3" />
                           Add Range
                         </TextureButton>
                       </div>
@@ -435,7 +435,7 @@ export default function EditNodePage() {
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <NetworkIcon className={cn("h-4 w-4 text-zinc-500")} />
+                              <Network className={cn("h-4 w-4 text-zinc-500")} />
                               <span className={cn("font-mono text-sm text-zinc-200")}>
                                 {allocation.ip}:{allocation.port}
                               </span>
@@ -470,7 +470,7 @@ export default function EditNodePage() {
                               {deletingAllocationId === allocation.id ? (
                                 <Spinner className="h-4 w-4" />
                               ) : (
-                                <TrashIcon className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                               )}
                             </TextureButton>
                           </div>
@@ -643,7 +643,7 @@ export default function EditNodePage() {
                   {update.isPending ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
-                    <SaveIcon className="h-4 w-4" />
+                    <Save className="h-4 w-4" />
                   )}
                   {update.isPending ? "Saving..." : "Save Changes"}
                 </TextureButton>

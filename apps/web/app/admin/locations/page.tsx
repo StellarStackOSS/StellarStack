@@ -7,7 +7,7 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { FormModal } from "@workspace/ui/components/form-modal";
 import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { EditIcon, MapPinIcon, PlusIcon, TrashIcon } from "lucide-react";
+import { Edit, MapPin, Plus, Trash } from "lucide-react";
 import {
   AdminCard,
   AdminEmptyState,
@@ -111,7 +111,7 @@ export default function LocationsPage() {
               description="Manage geographic locations for nodes"
               action={{
                 label: "Add Location",
-                icon: <PlusIcon className="h-4 w-4" />,
+                icon: <Plus className="h-4 w-4" />,
                 onClick: () => {
                   resetForm();
                   setIsModalOpen(true);
@@ -145,7 +145,7 @@ export default function LocationsPage() {
                 filteredLocations.map((location) => (
                   <AdminCard
                     key={location.id}
-                    icon={<MapPinIcon className={cn("h-6 w-6", "text-zinc-400")} />}
+                    icon={<MapPin className={cn("h-6 w-6", "text-zinc-400")} />}
                     title={location.name}
                     actions={
                       <div className="flex items-center gap-1">
@@ -154,14 +154,14 @@ export default function LocationsPage() {
                           size="sm"
                           onClick={() => handleEdit(location)}
                         >
-                          <EditIcon className="h-3 w-3" />
+                          <Edit className="h-3 w-3" />
                         </TextureButton>
                         <TextureButton
                           variant="secondary"
                           size="sm"
                           onClick={() => setDeleteConfirmLocation(location)}
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <Trash className="h-3 w-3" />
                         </TextureButton>
                       </div>
                     }

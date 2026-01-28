@@ -157,8 +157,6 @@ const ServerOverviewPage = (): JSX.Element | null => {
     powerActionLoading,
   } = useServer();
 
-  console.log(server?.status);
-
   const wsEnabled = !!consoleInfo;
 
   const {
@@ -385,11 +383,12 @@ const ServerOverviewPage = (): JSX.Element | null => {
             <GridItem itemId="cpu">
               <CpuCard
                 itemId="cpu"
-                percentage={displayData.cpu.usage.percentage}
+                // percentage={displayData.cpu.usage.percentage}
+                  percentage={20}
                 primaryValue={displayData.cpu.displayValue}
                 history={displayData.cpu.usage.history}
                 coreUsage={displayData.cpu.coreUsage}
-                isOffline={isOffline}
+                isOffline={false}
                 labels={labels.cpu}
               />
             </GridItem>

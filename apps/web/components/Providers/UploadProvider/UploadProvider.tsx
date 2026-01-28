@@ -20,7 +20,7 @@ interface UploadContextType {
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
-export function UploadProvider({ children }: { children: ReactNode }) {
+export const UploadProvider = ({ children }: { children: ReactNode }) => {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
 
   const addUpload = useCallback((upload: UploadProgress) => {
@@ -42,12 +42,12 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       {children}
     </UploadContext.Provider>
   );
-}
+};
 
-export function useUploads() {
+export const useUploads = () => {
   const context = useContext(UploadContext);
   if (context === undefined) {
     throw new Error("useUploads must be used within a UploadProvider");
   }
   return context;
-}
+};

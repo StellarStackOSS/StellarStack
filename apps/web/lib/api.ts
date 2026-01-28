@@ -232,6 +232,29 @@ export const servers = {
         method: "POST",
         body: { path, type, content },
       }),
+    upload: async (serverId: string, files: File[], directory: string = "") => {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("file", file);
+      });
+      if (directory) {
+        formData.append("directory", directory);
+      }
+
+      const response = await fetch(getApiEndpoint(`/api/servers/${serverId}/files/upload`), {
+        method: "POST",
+        body: formData,
+        credentials: "include", // Include cookies for auth
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Upload failed");
+      }
+
+      return response.json();
+    },
     delete: (serverId: string, path: string) =>
       request(`/api/servers/${serverId}/files/delete?path=${encodeURIComponent(path)}`, {
         method: "DELETE",

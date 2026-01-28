@@ -24,6 +24,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
+import {Spinner} from "@workspace/ui/components";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {
@@ -188,18 +189,10 @@ const SplitPage = (): JSX.Element | null => {
                   "text-zinc-400 hover:text-zinc-100"
                 )}
               />
-              <div>
-                <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>
-                  SERVER SPLITTING
-                </h1>
-                <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-                  Server {serverId} • {children.length} child servers
-                </p>
-              </div>
             </div>
             <div className="flex items-center gap-2">
               {!isChildServer && (
-                <TextureButton variant="minimal" onClick={openSplitModal}>
+                <TextureButton variant="primary" onClick={openSplitModal}>
                   <BsPlus className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Split Server</span>
                 </TextureButton>
@@ -211,14 +204,13 @@ const SplitPage = (): JSX.Element | null => {
           {isChildServer && (
             <div
               className={cn(
-                "mb-6 flex items-center gap-3 border p-4",
-                "border-amber-700/30 bg-amber-950/20 text-amber-200/80"
-              )}
+                "mb-6 flex items-center gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4")}
             >
-              <BsExclamationTriangle className="h-5 w-5 shrink-0" />
+              {/*<BsExclamationTriangle className="h-5 w-5 shrink-0" />*/}
+              <img src="/icons/24-triangle-warning.svg" alt="Warning" className="h-5 w-5 shrink-0" />
               <div>
-                <p className="text-sm font-medium">This is a Child Server</p>
-                <p className={cn("mt-0.5 text-xs", "text-amber-200/60")}>
+                <p className="text-sm font-bold">This is a Child Server</p>
+                <p className={cn("mt-0.5 text-xs")}>
                   Child servers cannot be split further. Only parent servers can create child
                   servers.
                 </p>
@@ -230,7 +222,7 @@ const SplitPage = (): JSX.Element | null => {
           {!isChildServer && (
             <div
               className={cn(
-                "relative mb-6 border p-6",
+                "relative mb-6 rounded-lg border p-6",
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
@@ -242,14 +234,6 @@ const SplitPage = (): JSX.Element | null => {
 
               <div className="grid grid-cols-3 gap-6">
                 <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center border",
-                      "border-zinc-700 bg-zinc-800/50"
-                    )}
-                  >
-                    <BsMemory className={cn("h-5 w-5", "text-blue-400")} />
-                  </div>
                   <div>
                     <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       Memory
@@ -261,14 +245,6 @@ const SplitPage = (): JSX.Element | null => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center border",
-                      "border-zinc-700 bg-zinc-800/50"
-                    )}
-                  >
-                    <BsHdd className={cn("h-5 w-5", "text-green-400")} />
-                  </div>
                   <div>
                     <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       Disk
@@ -280,14 +256,6 @@ const SplitPage = (): JSX.Element | null => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center border",
-                      "border-zinc-700 bg-zinc-800/50"
-                    )}
-                  >
-                    <BsCpu className={cn("h-5 w-5", "text-amber-400")} />
-                  </div>
                   <div>
                     <div className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
                       CPU
@@ -301,15 +269,17 @@ const SplitPage = (): JSX.Element | null => {
 
           {/* Loading State */}
           {loading ? (
-            <div className={cn("py-12 text-center", "text-zinc-500")}>Loading child servers...</div>
+            <div className={cn("py-12 text-center flex flex-row items-center justify-center", "text-zinc-500")}>
+              <Spinner/>
+            </div>
           ) : children.length === 0 ? (
             <div
               className={cn(
-                "relative border p-8 text-center",
+                "relative border rounded-lg p-8 text-center",
                 "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]"
               )}
             >
-              <BsServer className={cn("mx-auto mb-4 h-12 w-12", "text-zinc-600")} />
+              <img src="/icons/24-storage.svg" alt="No Child Servers" className="mx-auto mb-4 h-18" />
               <h3 className={cn("mb-2 text-lg font-medium", "text-zinc-300")}>No Child Servers</h3>
               <p className={cn("mb-4 text-sm", "text-zinc-500")}>
                 {isChildServer

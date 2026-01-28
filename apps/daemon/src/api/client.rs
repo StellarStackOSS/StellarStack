@@ -442,6 +442,22 @@ impl HttpClient {
 
         Ok(())
     }
+
+    // ========================================================================
+    // Metrics API
+    // ========================================================================
+
+    /// Send node and server metrics to the panel
+    pub async fn send_metrics(&self, metrics_data: serde_json::Value) -> ApiResult<()> {
+        self.request::<serde_json::Value>(
+            Method::POST,
+            "metrics",
+            Some(metrics_data),
+        )
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

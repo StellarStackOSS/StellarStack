@@ -33,7 +33,7 @@ import {
 } from "@workspace/ui/components";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Download, LayoutIcon, Upload, X, FileJson } from "lucide-react";
+import { Download, Layout, Upload, X, FileJson } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/api.types";
 
@@ -1047,7 +1047,7 @@ const AutoLayoutButton = () => {
       size="sm"
       className="gap-2"
     >
-      <LayoutIcon className="h-4 w-4" />
+      <Layout className="h-4 w-4" />
       {isLoading ? "Layouting..." : "Auto Layout"}
     </Button>
   );
@@ -1195,13 +1195,6 @@ const BlueprintBuilderPage = () => {
       fileInputRef.current.value = "";
     }
   }, []);
-
-  // Log current blueprint (for debugging)
-  const handleLogBlueprint = useCallback(() => {
-    const blueprint = nodesToBlueprint(nodes, edges);
-    console.log("Current Blueprint:", blueprint);
-    console.log("Pterodactyl Egg:", nodesToPterodactylEgg(nodes, edges));
-  }, [nodes, edges]);
 
   return (
     <ContextMenu>

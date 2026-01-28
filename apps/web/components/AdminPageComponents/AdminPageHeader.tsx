@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import {TextureButton} from "@workspace/ui/components/texture-button";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 interface AdminPageHeaderProps {
   title: string;
@@ -32,7 +32,7 @@ export const AdminPageHeader = ({
           <TextureButton variant="minimal"
             onClick={() => router.push("/admin")}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
           </TextureButton>
         )}
         <div>
