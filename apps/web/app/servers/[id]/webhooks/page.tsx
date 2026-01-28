@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { Label } from "@workspace/ui/components/label";
 import {Card, SidebarTrigger} from "@workspace/ui/components";
 import { EmptyState } from "@/components/EmptyState/EmptyState";
-import { PageHeader } from "@/components/PageHeader/PageHeader";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
