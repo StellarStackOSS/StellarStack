@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.9...v1.4.0) (2026-01-29)
+
+
+### Features
+
+* **home:** create comprehensive landing page with modern design ([7ec44bc](https://github.com/StellarStackOSS/StellarStack/commit/7ec44bc7f87728776b09806acc1b99bd6a99541f))
+
 ## [1.3.9](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.8...v1.3.9) (2026-01-28)
 
 
