@@ -19,6 +19,7 @@ import {
   getAllCategories,
   getPermissionsByCategory,
 } from "../lib/permissions";
+import { pluginManager } from "../lib/plugin-manager";
 
 const servers = new Hono<{ Variables: Variables }>();
 
@@ -139,6 +140,9 @@ const serializeServer = (server: any) => {
     memory: server.memory != null ? server.memory.toString() : null,
     disk: server.disk != null ? server.disk.toString() : null,
     swap: server.swap != null ? server.swap.toString() : null,
+    autoShutdownEnabled: server.autoShutdownEnabled ?? null,
+    autoShutdownTimeout: server.autoShutdownTimeout ?? null,
+    lastActivityAt: server.lastActivityAt ?? null,
   };
 };
 
@@ -161,6 +165,8 @@ const createServerSchema = z.object({
   config: z.record(z.any()).optional(), // Override blueprint config
   variables: z.record(z.string()).optional(), // Override blueprint variables
   dockerImage: z.string().optional(), // Selected docker image from blueprint
+  autoShutdownEnabled: z.boolean().nullable().default(null), // null = inherit global, true = enabled, false = disabled
+  autoShutdownTimeout: z.number().int().min(1).max(10080).optional(), // Inactivity timeout in minutes (1 min to 7 days)
 });
 
 const updateServerSchema = z.object({
@@ -188,6 +194,8 @@ const updateServerSchema = z.object({
       "ERROR",
     ])
     .optional(), // Admin only
+  autoShutdownEnabled: z.boolean().nullable().optional(), // null = inherit global, true = enabled, false = disabled
+  autoShutdownTimeout: z.number().int().min(1).max(10080).nullable().optional(), // Inactivity timeout in minutes (null = use global default)
 });
 
 const updateStartupSchema = z.object({
@@ -457,6 +465,8 @@ servers.post("/", requireAdmin, async (c) => {
       variables: variablesWithPort as any,
       dockerImage: parsed.data.dockerImage,
       status: "INSTALLING",
+      autoShutdownEnabled: parsed.data.autoShutdownEnabled,
+      autoShutdownTimeout: parsed.data.autoShutdownTimeout,
     },
   });
 
@@ -632,6 +642,16 @@ servers.post("/", requireAdmin, async (c) => {
       }
     }
 
+    // Emit plugin hook for server created
+    pluginManager
+      .getHookRegistry()
+      .emit("server:created", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { name: server.name, nodeId: server.nodeId, blueprintId: server.blueprintId },
+      })
+      .catch(() => {});
+
     return c.json(
       serializeServer({
         ...server,
@@ -668,12 +688,14 @@ servers.patch("/:serverId", requireServerAccess, async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
   }
 
-  // Only admins can change resources and status
+  // Only admins can change resources, status, and auto-shutdown settings
   if (user.role !== "admin") {
     delete parsed.data.memory;
     delete parsed.data.disk;
     delete parsed.data.cpu;
     delete parsed.data.status;
+    delete parsed.data.autoShutdownEnabled;
+    delete parsed.data.autoShutdownTimeout;
   }
 
   // Check if we're suspending the server - need to get child servers
@@ -810,6 +832,13 @@ servers.delete("/:serverId", requireAdmin, async (c) => {
     },
   });
 
+  // Emit plugin hook before deletion (server record still exists)
+  await pluginManager.getHookRegistry().emit("server:deleted", {
+    serverId,
+    userId: c.get("user").id,
+    data: { serverName: server.name },
+  });
+
   // Delete server
   await db.server.delete({ where: { id: serverId } });
 
@@ -835,13 +864,20 @@ servers.post("/:serverId/start", requireServerAccess, requireNotSuspended, async
   }
 
   try {
+    // Emit plugin hook before start
+    await pluginManager.getHookRegistry().emit("server:beforeStart", {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { action: "start" },
+    });
+
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
       action: "start",
     });
 
     await db.server.update({
       where: { id: server.id },
-      data: { status: "STARTING" },
+      data: { status: "STARTING", lastActivityAt: new Date() },
     });
 
     await logActivityFromContext(c, ActivityEvents.SERVER_START, { serverId: server.id });
@@ -854,6 +890,16 @@ servers.post("/:serverId/start", requireServerAccess, requireNotSuspended, async
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
+
+    // Emit plugin hook after start
+    pluginManager
+      .getHookRegistry()
+      .emit("server:afterStart", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { action: "start", status: "STARTING" },
+      })
+      .catch(() => {});
 
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
@@ -875,6 +921,13 @@ servers.post("/:serverId/stop", requireServerAccess, requireNotSuspended, async 
   }
 
   try {
+    // Emit plugin hook before stop
+    await pluginManager.getHookRegistry().emit("server:beforeStop", {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { action: "stop" },
+    });
+
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
       action: "stop",
     });
@@ -894,6 +947,16 @@ servers.post("/:serverId/stop", requireServerAccess, requireNotSuspended, async 
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STOPPING" });
+
+    // Emit plugin hook after stop
+    pluginManager
+      .getHookRegistry()
+      .emit("server:afterStop", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { action: "stop", status: "STOPPING" },
+      })
+      .catch(() => {});
 
     return c.json({ success: true, status: "STOPPING" });
   } catch (error: any) {
@@ -915,13 +978,20 @@ servers.post("/:serverId/restart", requireServerAccess, requireNotSuspended, asy
   }
 
   try {
+    // Emit plugin hook before restart
+    await pluginManager.getHookRegistry().emit("server:beforeRestart", {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { action: "restart" },
+    });
+
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
       action: "restart",
     });
 
     await db.server.update({
       where: { id: server.id },
-      data: { status: "STARTING" },
+      data: { status: "STARTING", lastActivityAt: new Date() },
     });
 
     await logActivityFromContext(c, ActivityEvents.SERVER_RESTART, { serverId: server.id });
@@ -934,6 +1004,16 @@ servers.post("/:serverId/restart", requireServerAccess, requireNotSuspended, asy
 
     // Emit WebSocket event for real-time updates
     emitServerEvent("server:status", server.id, { id: server.id, status: "STARTING" });
+
+    // Emit plugin hook after restart
+    pluginManager
+      .getHookRegistry()
+      .emit("server:afterRestart", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { action: "restart", status: "STARTING" },
+      })
+      .catch(() => {});
 
     return c.json({ success: true, status: "STARTING" });
   } catch (error: any) {
@@ -955,6 +1035,13 @@ servers.post("/:serverId/kill", requireServerAccess, requireNotSuspended, async 
   }
 
   try {
+    // Emit plugin hook before stop (kill variant)
+    await pluginManager.getHookRegistry().emit("server:beforeStop", {
+      serverId: server.id,
+      userId: c.get("user").id,
+      data: { action: "kill" },
+    });
+
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/power`, {
       action: "kill",
     });
@@ -965,6 +1052,16 @@ servers.post("/:serverId/kill", requireServerAccess, requireNotSuspended, async 
     });
 
     await logActivityFromContext(c, ActivityEvents.SERVER_KILL, { serverId: server.id });
+
+    // Emit plugin hook after stop (kill variant)
+    pluginManager
+      .getHookRegistry()
+      .emit("server:afterStop", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { action: "kill", status: "STOPPED" },
+      })
+      .catch(() => {});
 
     return c.json({ success: true, status: "STOPPED" });
   } catch (error: any) {
@@ -1365,6 +1462,23 @@ servers.post("/:serverId/command", requireServerAccess, requireNotSuspended, asy
 
   try {
     await daemonRequest(fullServer.node, "POST", `/api/servers/${server.id}/commands`, { command });
+
+    // Refresh lastActivityAt for auto-shutdown tracking
+    await db.server.update({
+      where: { id: server.id },
+      data: { lastActivityAt: new Date() },
+    });
+
+    // Emit plugin hook for console command
+    pluginManager
+      .getHookRegistry()
+      .emit("server:console", {
+        serverId: server.id,
+        userId: c.get("user").id,
+        data: { command, source: "http" },
+      })
+      .catch(() => {});
+
     await logActivityFromContext(c, ActivityEvents.CONSOLE_COMMAND, {
       serverId: server.id,
       metadata: { command },
