@@ -273,6 +273,11 @@ model Server {
   // Allocation settings
   allocationLimit Int @default(1) // Maximum number of allocations user can add
 
+  // Auto-shutdown settings (per-server override)
+  autoShutdownEnabled Boolean?  // null = inherit global, true = enabled, false = explicitly disabled
+  autoShutdownTimeout Int?      // Inactivity timeout in minutes (null = use global default)
+  lastActivityAt      DateTime? // Last time user activity was detected
+
   // Configuration overrides (merged with blueprint)
   config Json?
 
@@ -746,6 +751,85 @@ model Settings {
   value Json
 
   @@map("settings")
+}
+
+// ============================================
+// Plugin System Tables
+// ============================================
+
+model Plugin {
+  id String @id @default(cuid())
+
+  // Plugin identity (from manifest)
+  pluginId    String @unique // e.g., "curseforge-installer"
+  name        String
+  version     String
+  description String?
+  author      String?
+  license     String @default("MIT")
+  category    String @default("other")
+  icon        String?
+  homepage    String?
+  repository  String?
+
+  // Status
+  status    String  @default("installed") // installed, enabled, disabled, error
+  isBuiltIn Boolean @default(false) // Whether this is a built-in official plugin
+  error     String? // Error message if status is 'error'
+
+  // Game type support
+  gameTypes String[] @default(["*"])
+
+  // Required permissions
+  permissions String[] @default([])
+
+  // Plugin manifest (full JSON, preserved for reference)
+  manifest Json
+
+  // Plugin configuration (user-provided settings)
+  config Json @default("{}")
+
+  // Default configuration from manifest
+  defaultConfig Json @default("{}")
+
+  // Configuration schema (JSON Schema for validation)
+  configSchema Json?
+
+  // UI metadata (extracted from manifest for quick access)
+  uiMetadata Json?
+
+  // Timestamps
+  installedAt DateTime @default(now())
+  enabledAt   DateTime?
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  storage PluginStorage[]
+
+  @@map("plugins")
+}
+
+model PluginStorage {
+  id String @id @default(cuid())
+
+  // Plugin reference
+  pluginId String
+  plugin   Plugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  // Key-value storage
+  key   String
+  value Json
+
+  // Optional server scope (null = global plugin storage)
+  serverId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pluginId, key, serverId])
+  @@index([pluginId])
+  @@index([serverId])
+  @@map("plugin_storage")
 }
 
 // ============================================

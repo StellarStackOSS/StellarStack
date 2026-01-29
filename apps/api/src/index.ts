@@ -17,9 +17,12 @@ import { remote } from "./routes/remote";
 import { members } from "./routes/members";
 import { settings } from "./routes/settings";
 import { analyticsRouter } from "./routes/analytics";
+import { plugins } from "./routes/plugins";
+import { pluginManager } from "./lib/plugin-manager";
 import { securityHeaders, validateEnvironment, getRequiredEnv } from "./middleware/security";
 import { authRateLimit, apiRateLimit } from "./middleware/rate-limit";
 import { db } from "./lib/db";
+import { startAutoShutdownChecker } from "./lib/auto-shutdown";
 
 validateEnvironment();
 
@@ -288,6 +291,7 @@ app.route("/api/servers", domains); // Domain routes under /api/servers/:serverI
 app.route("/api/servers", members); // Member routes under /api/servers/:serverId/members
 app.route("/api/admin/settings", settings); // Admin settings routes
 app.route("/api/analytics", analyticsRouter); // Admin analytics routes
+app.route("/api/plugins", plugins); // Plugin management routes
 
 // Daemon-facing API routes (node authentication required)
 app.route("/api/remote", remote);
@@ -398,3 +402,11 @@ injectWebSocket(server);
 
 console.log(`API server running at http://localhost:${port}`);
 console.log(`WebSocket endpoint available at ws://localhost:${port}/api/ws`);
+
+// Initialize plugin system
+pluginManager.initialize().catch((error) => {
+  console.error("[Plugins] Failed to initialize plugin system:", error);
+});
+
+// Start auto-shutdown background checker
+startAutoShutdownChecker();

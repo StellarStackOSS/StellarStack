@@ -16,6 +16,7 @@ import { z } from "zod";
 import { db } from "../lib/db";
 import { requireDaemon } from "../middleware/auth";
 import { emitServerEvent } from "../lib/ws";
+import { pluginManager } from "../lib/plugin-manager";
 import type { Variables } from "../types";
 
 const remote = new Hono<{ Variables: Variables }>();
@@ -105,9 +106,8 @@ remote.get("/servers", async (c) => {
 
     if (startupConfigStr) {
       try {
-        const startupConfig = typeof startupConfigStr === "string"
-          ? JSON.parse(startupConfigStr)
-          : startupConfigStr;
+        const startupConfig =
+          typeof startupConfigStr === "string" ? JSON.parse(startupConfigStr) : startupConfigStr;
 
         if (startupConfig.done) {
           if (Array.isArray(startupConfig.done)) {
@@ -237,9 +237,8 @@ remote.get("/servers/:uuid", async (c) => {
 
   if (startupConfigStr) {
     try {
-      const startupConfig = typeof startupConfigStr === "string"
-        ? JSON.parse(startupConfigStr)
-        : startupConfigStr;
+      const startupConfig =
+        typeof startupConfigStr === "string" ? JSON.parse(startupConfigStr) : startupConfigStr;
 
       if (startupConfig.done) {
         if (Array.isArray(startupConfig.done)) {
@@ -349,10 +348,25 @@ remote.post("/servers/:uuid/status", async (c) => {
 
   const newStatus = statusMap[parsed.data.status];
 
+  // Update lastActivityAt when server transitions to RUNNING (for auto-shutdown tracking)
+  const updateData: any = { status: newStatus };
+  if (newStatus === "RUNNING") {
+    updateData.lastActivityAt = new Date();
+  }
+
   await db.server.update({
     where: { id: uuid },
-    data: { status: newStatus as any },
+    data: updateData,
   });
+
+  // Emit plugin hook for status change
+  pluginManager
+    .getHookRegistry()
+    .emit("server:statusChange", {
+      serverId: uuid,
+      data: { previousStatus: server.status, newStatus, reportedBy: "daemon" },
+    })
+    .catch(() => {});
 
   // Emit WebSocket event to notify frontend of status change
   emitServerEvent("server:status", uuid, { id: uuid, status: newStatus });
@@ -411,7 +425,8 @@ remote.get("/servers/:uuid/install", async (c) => {
   // Extract installation script from native format
   const scriptData = (blueprint.scripts as any) || {};
   const installationScript = scriptData.installation?.script;
-  const installationContainer = scriptData.installation?.container || "ghcr.io/ptero-eggs/installers:alpine";
+  const installationContainer =
+    scriptData.installation?.container || "ghcr.io/ptero-eggs/installers:alpine";
   const installationEntrypoint = scriptData.installation?.entrypoint || "ash";
 
   // Return empty script if no install script

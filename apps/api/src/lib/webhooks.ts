@@ -13,6 +13,7 @@ export const WebhookEvents = {
   SERVER_STOPPED: "server.stopped",
   SERVER_CRASHED: "server.crashed",
   SERVER_RESTARTED: "server.restarted",
+  SERVER_AUTO_SHUTDOWN: "server.auto_shutdown",
 
   // Server lifecycle events
   SERVER_CREATED: "server.created",

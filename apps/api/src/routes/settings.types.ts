@@ -59,3 +59,15 @@ export interface BrandingSettings {
   footerText: string;
   customCss?: string;
 }
+
+/**
+ * Auto-shutdown settings (global)
+ *
+ * When enabled globally, all RUNNING servers will be automatically stopped
+ * after the configured inactivity timeout. Individual servers can override
+ * this with their own per-server autoShutdownEnabled/autoShutdownTimeout fields.
+ */
+export interface AutoShutdownSettings {
+  enabled: boolean;
+  timeout: number; // Default inactivity timeout in minutes
+}

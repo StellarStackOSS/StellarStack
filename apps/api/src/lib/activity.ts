@@ -14,6 +14,7 @@ export const ActivityEvents = {
   SERVER_STOP: "server:power.stop",
   SERVER_RESTART: "server:power.restart",
   SERVER_KILL: "server:power.kill",
+  SERVER_AUTO_SHUTDOWN: "server:power.auto-shutdown",
 
   // Server console
   CONSOLE_COMMAND: "server:console.command",

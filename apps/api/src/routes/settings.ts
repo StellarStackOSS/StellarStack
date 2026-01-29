@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "../lib/db";
 import { requireAdmin } from "../middleware/auth";
 import type { Variables } from "../types";
-import type { SmtpConfig, EmailConfig } from "./settings.types";
+import type { SmtpConfig, EmailConfig, AutoShutdownSettings } from "./settings.types";
 
 // Re-export types for backwards compatibility
 export type {
@@ -12,6 +12,7 @@ export type {
   CloudflareSettings,
   SubdomainSettings,
   BrandingSettings,
+  AutoShutdownSettings,
 } from "./settings.types";
 
 const settings = new Hono<{ Variables: Variables }>();
@@ -45,6 +46,11 @@ const emailSettingsSchema = z.object({
     })
     .optional(),
   apiKey: z.string().optional(),
+});
+
+const autoShutdownSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  timeout: z.number().int().min(1).max(10080).optional(), // 1 minute to 7 days (10080 mins)
 });
 
 const brandingSettingsSchema = z.object({
@@ -391,15 +397,48 @@ settings.get("/branding/public", async (c) => {
   });
 });
 
+// === Auto-Shutdown Settings ===
+
+// Get auto-shutdown settings
+settings.get("/auto-shutdown", requireAdmin, async (c) => {
+  const autoShutdown = await getSetting<AutoShutdownSettings>("autoShutdown", {
+    enabled: false,
+    timeout: 60, // Default 60 minutes
+  });
+
+  return c.json(autoShutdown);
+});
+
+// Update auto-shutdown settings
+settings.patch("/auto-shutdown", requireAdmin, async (c) => {
+  const body = await c.req.json();
+  const parsed = autoShutdownSettingsSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.errors }, 400);
+  }
+
+  const current = await getSetting<AutoShutdownSettings>("autoShutdown", {
+    enabled: false,
+    timeout: 60,
+  });
+
+  const updated = { ...current, ...parsed.data };
+  await setSetting("autoShutdown", updated);
+
+  return c.json(updated);
+});
+
 // === General Settings ===
 
 // Get all settings (overview)
 settings.get("/", requireAdmin, async (c) => {
-  const [cloudflare, subdomains, email, branding] = await Promise.all([
+  const [cloudflare, subdomains, email, branding, autoShutdown] = await Promise.all([
     getSetting("cloudflare", { enabled: false, domain: "" }),
     getSetting("subdomains", { enabled: false, baseDomain: "" }),
     getSetting("email", { provider: "smtp", fromEmail: "" }),
     getSetting("branding", { appName: "StellarStack" }),
+    getSetting<AutoShutdownSettings>("autoShutdown", { enabled: false, timeout: 60 }),
   ]);
 
   return c.json({
@@ -417,6 +456,10 @@ settings.get("/", requireAdmin, async (c) => {
     },
     branding: {
       appName: branding.appName,
+    },
+    autoShutdown: {
+      enabled: autoShutdown.enabled,
+      timeout: autoShutdown.timeout,
     },
   });
 });
