@@ -39,6 +39,15 @@ export { startupKeys, useStartup, useStartupMutations } from "./use-startup";
 // Activity queries
 export { activityKeys, useActivity } from "./use-activity";
 
+// Plugin queries
+export {
+  pluginKeys,
+  usePlugins,
+  usePlugin,
+  useServerTabPlugins,
+  usePluginMutations,
+} from "./use-plugins";
+
 // Server member queries
 export {
   memberKeys,
