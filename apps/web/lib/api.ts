@@ -617,3 +617,159 @@ export const setup = {
   createAdmin: (data: SetupData) =>
     request<SetupResponse>("/api/setup", { method: "POST", body: data }),
 };
+
+// ============================================
+// Plugin System
+// ============================================
+
+export interface PluginInfo {
+  id: string;
+  pluginId: string;
+  name: string;
+  version: string;
+  description: string | null;
+  author: string | null;
+  license: string;
+  category: string;
+  icon: string | null;
+  homepage: string | null;
+  repository: string | null;
+  status: string;
+  isBuiltIn: boolean;
+  error: string | null;
+  gameTypes: string[];
+  permissions: string[];
+  config: Record<string, unknown>;
+  defaultConfig: Record<string, unknown>;
+  configSchema: Record<string, unknown> | null;
+  uiMetadata: {
+    serverTabs?: Array<{ id: string; label: string; icon: string }>;
+    adminPages?: Array<{ id: string; label: string; icon: string }>;
+    serverWidgets?: Array<{ id: string; label: string; size: string }>;
+    hasSettingsPanel?: boolean;
+  } | null;
+  manifest: Record<string, unknown>;
+  installedAt: string;
+  enabledAt: string | null;
+  updatedAt: string;
+}
+
+export interface CurseForgeSearchResult {
+  data: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    summary: string;
+    downloadCount: number;
+    logo?: { url: string; thumbnailUrl: string };
+    categories: Array<{ id: number; name: string; iconUrl: string }>;
+    authors: Array<{ id: number; name: string }>;
+    latestFiles: Array<{
+      id: number;
+      displayName: string;
+      fileName: string;
+      fileDate: string;
+      fileLength: number;
+      gameVersions: string[];
+    }>;
+    dateModified: string;
+    dateCreated: string;
+  }>;
+  pagination: {
+    index: number;
+    pageSize: number;
+    resultCount: number;
+    totalCount: number;
+  };
+}
+
+export const pluginsApi = {
+  /** List all plugins */
+  list: () => request<PluginInfo[]>("/api/plugins"),
+
+  /** Get a specific plugin */
+  get: (pluginId: string) => request<PluginInfo>(`/api/plugins/${pluginId}`),
+
+  /** Enable a plugin (admin) */
+  enable: (pluginId: string) =>
+    request<PluginInfo>(`/api/plugins/${pluginId}/enable`, { method: "POST" }),
+
+  /** Disable a plugin (admin) */
+  disable: (pluginId: string) =>
+    request<PluginInfo>(`/api/plugins/${pluginId}/disable`, { method: "POST" }),
+
+  /** Update plugin config (admin) */
+  updateConfig: (pluginId: string, config: Record<string, unknown>) =>
+    request<PluginInfo>(`/api/plugins/${pluginId}/config`, {
+      method: "PATCH",
+      body: config,
+    }),
+
+  /** Uninstall a plugin (admin, non-built-in only) */
+  uninstall: (pluginId: string) =>
+    request<{ success: boolean }>(`/api/plugins/${pluginId}`, { method: "DELETE" }),
+
+  /** Get server tab plugins for a specific server */
+  getServerTabs: (serverId: string) =>
+    request<PluginInfo[]>(`/api/plugins/server/${serverId}/tabs`),
+
+  /** CurseForge-specific API */
+  curseforge: {
+    search: (params: {
+      query?: string;
+      pageSize?: number;
+      index?: number;
+      gameVersion?: string;
+      modLoaderType?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params.query) searchParams.set("query", params.query);
+      if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
+      if (params.index) searchParams.set("index", String(params.index));
+      if (params.gameVersion) searchParams.set("gameVersion", params.gameVersion);
+      if (params.modLoaderType) searchParams.set("modLoaderType", params.modLoaderType);
+      return request<CurseForgeSearchResult>(
+        `/api/plugins/curseforge/search?${searchParams.toString()}`
+      );
+    },
+
+    getMod: (modId: number) =>
+      request<{ data: CurseForgeSearchResult["data"][0] }>(`/api/plugins/curseforge/mod/${modId}`),
+
+    getModFiles: (modId: number, gameVersion?: string) => {
+      const params = new URLSearchParams();
+      if (gameVersion) params.set("gameVersion", gameVersion);
+      return request<{
+        data: CurseForgeSearchResult["data"][0]["latestFiles"];
+      }>(`/api/plugins/curseforge/mod/${modId}/files?${params.toString()}`);
+    },
+
+    install: (serverId: string, modId: number, fileId: number) =>
+      request<{ success: boolean; downloadUrl: string; message: string }>(
+        "/api/plugins/curseforge/install",
+        {
+          method: "POST",
+          body: { serverId, modId, fileId },
+        }
+      ),
+  },
+
+  /** Modrinth-specific API */
+  modrinth: {
+    search: (params: Record<string, string>) => {
+      const searchParams = new URLSearchParams(params);
+      return request<unknown>(`/api/plugins/modrinth/search?${searchParams.toString()}`);
+    },
+
+    getProject: (slugOrId: string) => request<unknown>(`/api/plugins/modrinth/project/${slugOrId}`),
+
+    getProjectVersions: (slugOrId: string) =>
+      request<unknown>(`/api/plugins/modrinth/project/${slugOrId}/versions`),
+
+    install: (serverId: string, projectSlug: string, versionId?: string) =>
+      request<{ success: boolean; message: string }>("/api/plugins/modrinth/install", {
+        method: "POST",
+        body: { serverId, projectSlug, versionId },
+      }),
+  },
+};

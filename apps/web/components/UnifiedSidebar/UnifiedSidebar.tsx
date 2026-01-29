@@ -39,6 +39,7 @@ import {
   LayoutDashboard,
   MapPin,
   Package,
+  Puzzle,
   Plus,
   Server,
   Settings,
@@ -62,6 +63,7 @@ import {
   ArrowLeft01Icon,
   Logout01Icon,
   Search01Icon,
+  PuzzleIcon,
 } from "hugeicons-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useAuth } from "hooks/auth-provider";
@@ -86,6 +88,7 @@ const adminNavItems = [
   { title: "Servers", icon: Server, href: "/admin/servers" },
   { title: "Blueprints", icon: Package, href: "/admin/blueprints" },
   { title: "Users", icon: Users, href: "/admin/users" },
+  { title: "Plugins", icon: Puzzle, href: "/admin/plugins" },
   { title: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
@@ -109,6 +112,7 @@ const appNavItems = [
     icon: PowerServiceIcon,
     href: "/startup",
   },
+  { title: "Plugins", icon: PuzzleIcon, href: "/plugins" },
   { title: "Settings", icon: Settings01Icon, href: "/settings" },
 ];
 
