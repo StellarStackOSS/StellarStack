@@ -19,7 +19,14 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm install:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash('D:\\\\StellarStack\\\\examples\\\\plugins\\\\example-stats-dashboard\\\\package.json' <<'EOF'\n{\n  \"name\": \"example-stats-dashboard\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Example StellarStack plugin demonstrating stats UI schema\",\n  \"type\": \"module\",\n  \"author\": \"StellarStack Community\",\n  \"license\": \"MIT\",\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https://github.com/StellarStackOSS/StellarStack-Plugin-SDK\"\n  },\n  \"keywords\": [\"stellarstack\", \"plugin\", \"example\", \"stats\", \"dashboard\"],\n  \"engines\": {\n    \"node\": \">=18.0.0\"\n  }\n}\nEOF)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash('D:/StellarStack/examples/plugins/example-search-install/package.json' <<'EOF'\n{\"name\":\"example-search-install\",\"version\":\"1.0.0\",\"description\":\"Example search and install plugin\",\"type\":\"module\",\"author\":\"StellarStack Community\",\"license\":\"MIT\",\"keywords\":[\"stellarstack\",\"plugin\",\"example\"],\"engines\":{\"node\":\">=18.0.0\"}}\nEOF)",
+      "Bash('D:/StellarStack/examples/plugins/example-search-install/stellarstack.json' <<'EOF'\n{\"pluginId\":\"example-search-install\",\"name\":\"Search & Install Example\",\"version\":\"1.0.0\",\"description\":\"Example plugin demonstrating search and install pattern\",\"author\":\"StellarStack Community\",\"license\":\"MIT\",\"category\":\"example\",\"gameTypes\":[\"*\"],\"permissions\":[\"files.write\"],\"ui\":{\"serverTabs\":[{\"id\":\"installer\",\"label\":\"Installer\",\"icon\":\"download\",\"uiSchema\":{\"type\":\"search-and-install\",\"searchAction\":\"search-items\",\"detailAction\":\"get-item-details\",\"installAction\":\"install-item\",\"fields\":{\"searchInput\":{\"label\":\"Search Items\",\"placeholder\":\"Search...\"},\"resultCard\":{\"title\":\"name\",\"subtitle\":\"author\",\"image\":\"thumbnail\",\"description\":\"description\",\"metadata\":[{\"label\":\"Downloads\",\"field\":\"downloads\",\"format\":\"number\"},{\"label\":\"Version\",\"field\":\"version\",\"format\":\"text\"}]}}}}]},\"actions\":[{\"id\":\"search-items\",\"name\":\"Search\",\"operations\":[]},{\"id\":\"get-item-details\",\"name\":\"Get Details\",\"operations\":[]},{\"id\":\"install-item\",\"name\":\"Install\",\"inputs\":{\"itemId\":{\"type\":\"string\",\"required\":true}},\"operations\":[{\"type\":\"send-command\",\"command\":\"say Installing...\"}]}]}\nEOF)"
     ]
   }
 }

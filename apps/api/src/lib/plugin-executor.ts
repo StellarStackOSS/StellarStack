@@ -4,11 +4,16 @@
  * Executes plugin actions based on manifest definitions.
  * Processes sequential operations (download, write, delete, command, restart, backup)
  * with context-aware parameter substitution and permission enforcement.
+ *
+ * Built-in plugins execute actions directly in the main process.
+ * Community plugins execute actions in isolated worker processes via IPC.
  */
 
 import type { PluginManifest } from "./plugin-manager";
 import { db } from "./db";
 import type { Server } from "@prisma/client";
+import { pluginWorkerPool } from "./plugin-worker";
+import type { PluginWorker } from "./plugin-worker";
 
 // ============================================
 // Types
@@ -53,6 +58,9 @@ export class PluginActionExecutor {
   /**
    * Execute a plugin action based on its manifest definition.
    * Validates permissions and executes all operations in sequence.
+   *
+   * - Built-in plugins: Execute directly in this process
+   * - Community plugins: Execute in isolated worker process via IPC
    */
   async executeAction(
     pluginId: string,
@@ -108,82 +116,149 @@ export class PluginActionExecutor {
         userId: context.userId,
       };
 
-      // 4. Execute operations sequentially
-      let executedCount = 0;
-      const operations: Operation[] = action.operations || [];
-
-      if (!server) {
-        return {
-          success: false,
-          error: "Server not found",
-        };
+      // 4. Route to built-in or community plugin handler
+      if (plugin.isBuiltIn) {
+        // Built-in plugins execute directly in this process
+        return await this.executeBuiltInAction(
+          actionId,
+          request,
+          action,
+          executorContext
+        );
+      } else {
+        // Community plugins execute in isolated worker process
+        return await this.executeCommunityPluginAction(
+          pluginId,
+          actionId,
+          request,
+          action,
+          executorContext,
+          plugin
+        );
       }
-
-      for (const operation of operations) {
-        try {
-          // Resolve template variables in operation
-          const resolvedOp = this.resolveOperationTemplates(
-            operation,
-            request.inputs,
-            executorContext
-          );
-
-          // Execute based on operation type
-          switch (resolvedOp.type) {
-            case "download-to-server":
-              await this.executeDownload(resolvedOp, executorContext);
-              break;
-            case "write-file":
-              await this.executeWriteFile(resolvedOp, executorContext);
-              break;
-            case "delete-file":
-              await this.executeDeleteFile(resolvedOp, executorContext);
-              break;
-            case "send-command":
-              await this.executeSendCommand(resolvedOp, executorContext);
-              break;
-            case "restart-server":
-              if (!request.options?.skipRestart) {
-                await this.executeRestartServer(executorContext);
-              }
-              break;
-            case "stop-server":
-              await this.executeStopServer(executorContext);
-              break;
-            case "start-server":
-              await this.executeStartServer(executorContext);
-              break;
-            case "create-backup":
-              if (!request.options?.skipBackup) {
-                await this.executeCreateBackup(executorContext);
-              }
-              break;
-            default:
-              console.warn(`Unknown operation type: ${resolvedOp.type}`);
-          }
-
-          executedCount++;
-        } catch (error) {
-          console.error(`[Plugin:${pluginId}] Operation ${operation.type} failed:`, error);
-          return {
-            success: false,
-            error: `Operation failed: ${operation.type} - ${String(error)}`,
-            executedOperations: executedCount,
-          };
-        }
-      }
-
-      // 5. Return success
-      return {
-        success: true,
-        message: `Action completed successfully (${executedCount} operations)`,
-        executedOperations: executedCount,
-      };
     } catch (error) {
       console.error(`[Plugin] Action execution failed:`, error);
       return {
         success: false,
         error: String(error),
+      };
+    }
+  }
+
+  /**
+   * Execute action for built-in plugins (direct execution).
+   */
+  private async executeBuiltInAction(
+    actionId: string,
+    request: ExecuteActionRequest,
+    action: any,
+    context: PluginContext
+  ): Promise<ExecuteActionResponse> {
+    let executedCount = 0;
+    const operations: Operation[] = action.operations || [];
+
+    for (const operation of operations) {
+      try {
+        // Resolve template variables in operation
+        const resolvedOp = this.resolveOperationTemplates(
+          operation,
+          request.inputs,
+          context
+        );
+
+        // Execute based on operation type
+        switch (resolvedOp.type) {
+          case "download-to-server":
+            await this.executeDownload(resolvedOp, context);
+            break;
+          case "write-file":
+            await this.executeWriteFile(resolvedOp, context);
+            break;
+          case "delete-file":
+            await this.executeDeleteFile(resolvedOp, context);
+            break;
+          case "send-command":
+            await this.executeSendCommand(resolvedOp, context);
+            break;
+          case "restart-server":
+            if (!request.options?.skipRestart) {
+              await this.executeRestartServer(context);
+            }
+            break;
+          case "stop-server":
+            await this.executeStopServer(context);
+            break;
+          case "start-server":
+            await this.executeStartServer(context);
+            break;
+          case "create-backup":
+            if (!request.options?.skipBackup) {
+              await this.executeCreateBackup(context);
+            }
+            break;
+          default:
+            console.warn(`Unknown operation type: ${resolvedOp.type}`);
+        }
+
+        executedCount++;
+      } catch (error) {
+        console.error(`[Plugin:${context.pluginId}] Operation ${operation.type} failed:`, error);
+        return {
+          success: false,
+          error: `Operation failed: ${operation.type} - ${String(error)}`,
+          executedOperations: executedCount,
+        };
+      }
+    }
+
+    return {
+      success: true,
+      message: `Action completed successfully (${executedCount} operations)`,
+      executedOperations: executedCount,
+    };
+  }
+
+  /**
+   * Execute action for community plugins (worker process).
+   */
+  private async executeCommunityPluginAction(
+    pluginId: string,
+    actionId: string,
+    request: ExecuteActionRequest,
+    action: any,
+    context: PluginContext,
+    pluginRecord: any
+  ): Promise<ExecuteActionResponse> {
+    try {
+      // Get or create worker for this plugin
+      // Note: pluginPath would come from gitRepoUrl or installed plugin directory
+      const pluginPath = pluginRecord.gitRepoUrl || `/plugins/${pluginId}`;
+
+      const worker = await pluginWorkerPool.getWorker({
+        pluginId,
+        pluginPath,
+        timeout: 30000, // 30 second timeout per action
+      });
+
+      console.log(`[Plugin:${pluginId}] Executing action ${actionId} in worker process`);
+
+      // Execute action in worker process
+      const result = await worker.executeAction(actionId, {
+        serverId: request.serverId,
+        inputs: request.inputs,
+        options: request.options,
+      });
+
+      return {
+        success: true,
+        message: `Community plugin action executed successfully`,
+        data: result,
+      };
+    } catch (error) {
+      console.error(`[Plugin:${pluginId}] Community plugin action failed:`, error);
+      return {
+        success: false,
+        error: `Community plugin action failed: ${String(error)}`,
       };
     }
   }

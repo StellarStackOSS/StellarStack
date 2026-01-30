@@ -410,3 +410,30 @@ pluginManager.initialize().catch((error) => {
 
 // Start auto-shutdown background checker
 startAutoShutdownChecker();
+
+// Graceful shutdown handling
+// Stop all plugin workers when the process is terminating
+process.on("SIGTERM", async () => {
+  console.log("[API] Received SIGTERM, shutting down gracefully...");
+  await pluginManager.shutdown();
+  server.close(() => {
+    console.log("[API] Server closed, exiting process");
+    process.exit(0);
+  });
+});
+
+process.on("SIGINT", async () => {
+  console.log("[API] Received SIGINT, shutting down gracefully...");
+  await pluginManager.shutdown();
+  server.close(() => {
+    console.log("[API] Server closed, exiting process");
+    process.exit(0);
+  });
+});
+
+// Handle uncaught exceptions (log and cleanup before crashing)
+process.on("uncaughtException", async (error) => {
+  console.error("[API] Uncaught exception:", error);
+  await pluginManager.shutdown();
+  process.exit(1);
+});
