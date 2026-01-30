@@ -1,0 +1,60 @@
+{
+  "id": "example-search-install",
+  "name": "Search and Install Example",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating search and install UI schema for discovering and installing content",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "category": "example",
+  "gameTypes": ["*"],
+  "permissions": ["files.write", "console.send"],
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "search-install",
+        "label": "Search & Install",
+        "icon": "download",
+        "uiSchema": {
+          "type": "search-and-install",
+          "searchPlaceholder": "Search for content...",
+          "searchEndpoint": "/api/plugins/example-search-install/search",
+          "installAction": "install-content"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "install-content",
+      "label": "Install Content",
+      "description": "Install selected content to the server",
+      "icon": "download",
+      "params": [
+        {
+          "id": "contentId",
+          "label": "Content ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "contentName",
+          "label": "Content Name",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "download-to-server",
+          "url": "https://example.com/content/{{contentId}}/download",
+          "directory": "mods",
+          "decompress": true
+        },
+        {
+          "type": "send-command",
+          "command": "say Installed {{contentName}}"
+        }
+      ]
+    }
+  ]
+}

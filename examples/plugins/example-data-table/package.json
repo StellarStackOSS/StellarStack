@@ -1,0 +1,12 @@
+{
+  "name": "example-data-table",
+  "version": "1.0.0",
+  "description": "Example StellarStack plugin demonstrating data table UI schema with actions",
+  "type": "module",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "keywords": ["stellarstack", "plugin", "example", "table", "data"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

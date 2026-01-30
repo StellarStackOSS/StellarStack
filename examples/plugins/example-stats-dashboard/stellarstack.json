@@ -1,0 +1,65 @@
+{
+  "id": "example-stats-dashboard",
+  "name": "Stats Dashboard Example",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating stats dashboard UI schema with performance metrics",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "category": "example",
+  "gameTypes": ["*"],
+  "permissions": ["servers.read"],
+  "ui": {
+    "serverWidgets": [
+      {
+        "id": "performance-stats",
+        "label": "Performance Stats",
+        "size": "large",
+        "uiSchema": {
+          "type": "stats",
+          "title": "Server Performance",
+          "refreshInterval": 5000,
+          "layout": "grid",
+          "dataEndpoint": "/api/plugins/example-stats-dashboard/stats",
+          "stats": [
+            {
+              "id": "cpu",
+              "label": "CPU Usage",
+              "unit": "%",
+              "icon": "cpu",
+              "threshold": {
+                "warning": 70,
+                "critical": 90
+              }
+            },
+            {
+              "id": "memory",
+              "label": "Memory Usage",
+              "unit": "MB",
+              "icon": "memory",
+              "threshold": {
+                "warning": 8000,
+                "critical": 15000
+              }
+            },
+            {
+              "id": "players",
+              "label": "Online Players",
+              "unit": "players",
+              "icon": "users"
+            },
+            {
+              "id": "tps",
+              "label": "Ticks Per Second",
+              "unit": "TPS",
+              "icon": "gauge",
+              "threshold": {
+                "warning": 15,
+                "critical": 10
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

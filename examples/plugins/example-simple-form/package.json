@@ -1,0 +1,12 @@
+{
+  "name": "example-simple-form",
+  "version": "1.0.0",
+  "description": "Example StellarStack plugin demonstrating form UI schema",
+  "type": "module",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "keywords": ["stellarstack", "plugin", "example", "form"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

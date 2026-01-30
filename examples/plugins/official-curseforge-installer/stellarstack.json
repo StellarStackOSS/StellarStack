@@ -1,0 +1,98 @@
+{
+  "id": "official-curseforge-installer",
+  "name": "CurseForge Installer",
+  "version": "1.0.0",
+  "description": "Official plugin for searching and installing mods and modpacks from CurseForge",
+  "author": "StellarStack Team",
+  "license": "MIT",
+  "category": "modding",
+  "gameTypes": ["minecraft"],
+  "permissions": ["files.write", "console.send", "http.request"],
+  "homepage": "https://www.curseforge.com",
+  "icon": "https://www.curseforge.com/favicon.ico",
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "curseforge-mods",
+        "label": "CurseForge",
+        "icon": "package",
+        "uiSchema": {
+          "type": "search-and-install",
+          "searchPlaceholder": "Search CurseForge mods and modpacks...",
+          "searchEndpoint": "/api/plugins/official-curseforge-installer/search",
+          "categoryFilters": [
+            {
+              "id": "type",
+              "label": "Type",
+              "options": [
+                { "label": "Mods", "value": "mods" },
+                { "label": "Modpacks", "value": "modpacks" },
+                { "label": "Resource Packs", "value": "texturepacks" }
+              ]
+            },
+            {
+              "id": "sort",
+              "label": "Sort By",
+              "options": [
+                { "label": "Downloads (High to Low)", "value": "downloads" },
+                { "label": "Updated Newest", "value": "updated" },
+                { "label": "Trending", "value": "trending" }
+              ]
+            }
+          ],
+          "installAction": "install-from-curseforge"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "install-from-curseforge",
+      "label": "Install from CurseForge",
+      "description": "Download and install a mod or modpack from CurseForge",
+      "icon": "package",
+      "params": [
+        {
+          "id": "projectId",
+          "label": "Project ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "fileId",
+          "label": "File ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "fileName",
+          "label": "File Name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "type",
+          "label": "Content Type",
+          "type": "select",
+          "options": [
+            { "label": "Mod", "value": "mod" },
+            { "label": "Modpack", "value": "modpack" }
+          ],
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "download-to-server",
+          "url": "https://media.forgecdn.net/files/{{projectId}}/{{fileId}}/{{fileName}}",
+          "directory": "mods",
+          "decompress": false
+        },
+        {
+          "type": "send-command",
+          "command": "say Downloaded {{fileName}} - server restart required"
+        }
+      ]
+    }
+  ]
+}
