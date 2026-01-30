@@ -1,0 +1,1 @@
+{"name":"example-search-install","version":"1.0.0","description":"Example search and install plugin","type":"module","author":"StellarStack Community","license":"MIT","keywords":["stellarstack","plugin","example"],"engines":{"node":">=18.0.0"}}

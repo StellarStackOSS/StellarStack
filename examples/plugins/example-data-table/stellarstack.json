@@ -1,0 +1,158 @@
+{
+  "id": "example-data-table",
+  "name": "Data Table Example",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating data table UI schema with row actions and bulk operations",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "category": "example",
+  "gameTypes": ["*"],
+  "permissions": ["files.read", "console.send"],
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "players",
+        "label": "Players",
+        "icon": "users",
+        "uiSchema": {
+          "type": "data-table",
+          "title": "Online Players",
+          "dataEndpoint": "/api/plugins/example-data-table/players",
+          "columns": [
+            {
+              "id": "name",
+              "label": "Player Name",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "id": "level",
+              "label": "Level",
+              "type": "number",
+              "sortable": true
+            },
+            {
+              "id": "playtime",
+              "label": "Playtime (hours)",
+              "type": "number",
+              "sortable": true
+            },
+            {
+              "id": "status",
+              "label": "Status",
+              "type": "text",
+              "sortable": false
+            }
+          ],
+          "rowActions": [
+            {
+              "id": "kick-player",
+              "label": "Kick",
+              "icon": "ban",
+              "dangerous": true,
+              "action": "kick-player"
+            },
+            {
+              "id": "send-message",
+              "label": "Message",
+              "icon": "message",
+              "action": "send-player-message"
+            }
+          ],
+          "bulkActions": [
+            {
+              "id": "kick-selected",
+              "label": "Kick Selected",
+              "icon": "ban",
+              "dangerous": true,
+              "action": "kick-multiple"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "kick-player",
+      "label": "Kick Player",
+      "description": "Kick a player from the server",
+      "icon": "ban",
+      "dangerous": true,
+      "params": [
+        {
+          "id": "playerName",
+          "label": "Player Name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "reason",
+          "label": "Kick Reason",
+          "type": "string",
+          "required": false,
+          "default": "No reason provided"
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "kick {{playerName}} {{reason}}"
+        }
+      ]
+    },
+    {
+      "id": "send-player-message",
+      "label": "Send Player Message",
+      "description": "Send a message to a specific player",
+      "icon": "message",
+      "params": [
+        {
+          "id": "playerName",
+          "label": "Player Name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "message",
+          "label": "Message",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "msg {{playerName}} {{message}}"
+        }
+      ]
+    },
+    {
+      "id": "kick-multiple",
+      "label": "Kick Multiple Players",
+      "description": "Kick multiple players at once",
+      "icon": "ban",
+      "dangerous": true,
+      "params": [
+        {
+          "id": "playerNames",
+          "label": "Player Names (comma separated)",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "reason",
+          "label": "Kick Reason",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "kick {{playerNames}} {{reason}}"
+        }
+      ]
+    }
+  ]
+}

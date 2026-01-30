@@ -1,0 +1,289 @@
+{
+  "id": "official-server-announcer",
+  "name": "Server Announcer",
+  "version": "1.0.0",
+  "description": "Official plugin for creating and scheduling server announcements and broadcasts",
+  "author": "StellarStack Team",
+  "license": "MIT",
+  "category": "utility",
+  "gameTypes": ["*"],
+  "permissions": ["console.send", "schedules.manage"],
+  "homepage": "https://stellarstack.com",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "announceInterval": {
+        "type": "number",
+        "title": "Announcement Interval (seconds)",
+        "default": 300
+      },
+      "prefix": {
+        "type": "string",
+        "title": "Announcement Prefix",
+        "default": "[ANNOUNCEMENT]"
+      },
+      "broadcastToConsole": {
+        "type": "boolean",
+        "title": "Log to Console",
+        "default": true
+      }
+    }
+  },
+  "defaultConfig": {
+    "announceInterval": 300,
+    "prefix": "[ANNOUNCEMENT]",
+    "broadcastToConsole": true
+  },
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "announcements",
+        "label": "Announcements",
+        "icon": "megaphone",
+        "uiSchema": {
+          "type": "data-table",
+          "title": "Server Announcements",
+          "dataEndpoint": "/api/plugins/official-server-announcer/announcements",
+          "columns": [
+            {
+              "id": "message",
+              "label": "Message",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "id": "interval",
+              "label": "Interval (seconds)",
+              "type": "number",
+              "sortable": true
+            },
+            {
+              "id": "enabled",
+              "label": "Enabled",
+              "type": "text",
+              "sortable": true
+            },
+            {
+              "id": "createdAt",
+              "label": "Created",
+              "type": "text",
+              "sortable": true
+            }
+          ],
+          "rowActions": [
+            {
+              "id": "edit-announcement",
+              "label": "Edit",
+              "icon": "edit",
+              "action": "edit-announcement"
+            },
+            {
+              "id": "toggle-announcement",
+              "label": "Toggle",
+              "icon": "toggle",
+              "action": "toggle-announcement"
+            },
+            {
+              "id": "delete-announcement",
+              "label": "Delete",
+              "icon": "trash",
+              "dangerous": true,
+              "action": "delete-announcement"
+            }
+          ],
+          "bulkActions": [
+            {
+              "id": "enable-selected",
+              "label": "Enable Selected",
+              "icon": "check",
+              "action": "enable-announcements"
+            },
+            {
+              "id": "disable-selected",
+              "label": "Disable Selected",
+              "icon": "x",
+              "action": "disable-announcements"
+            }
+          ]
+        }
+      },
+      {
+        "id": "add-announcement",
+        "label": "Add Announcement",
+        "icon": "plus",
+        "uiSchema": {
+          "type": "form",
+          "fields": [
+            {
+              "name": "message",
+              "type": "textarea",
+              "label": "Announcement Message",
+              "placeholder": "Enter the announcement message...",
+              "required": true
+            },
+            {
+              "name": "interval",
+              "type": "number",
+              "label": "Interval (seconds)",
+              "placeholder": "300",
+              "min": 30,
+              "max": 3600,
+              "required": true
+            },
+            {
+              "name": "enabled",
+              "type": "checkbox",
+              "label": "Enable Immediately",
+              "default": true
+            }
+          ],
+          "submitAction": "create-announcement",
+          "submitLabel": "Create Announcement"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "create-announcement",
+      "label": "Create Announcement",
+      "description": "Create a new server announcement",
+      "params": [
+        {
+          "id": "message",
+          "label": "Message",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "interval",
+          "label": "Interval (seconds)",
+          "type": "number",
+          "required": true,
+          "default": 300
+        },
+        {
+          "id": "enabled",
+          "label": "Enabled",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Announcement created: {{message}}"
+        }
+      ]
+    },
+    {
+      "id": "edit-announcement",
+      "label": "Edit Announcement",
+      "description": "Edit an existing announcement",
+      "params": [
+        {
+          "id": "announcementId",
+          "label": "Announcement ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "message",
+          "label": "Message",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "interval",
+          "label": "Interval (seconds)",
+          "type": "number",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Announcement updated"
+        }
+      ]
+    },
+    {
+      "id": "toggle-announcement",
+      "label": "Toggle Announcement",
+      "description": "Enable or disable an announcement",
+      "params": [
+        {
+          "id": "announcementId",
+          "label": "Announcement ID",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Announcement toggled"
+        }
+      ]
+    },
+    {
+      "id": "delete-announcement",
+      "label": "Delete Announcement",
+      "description": "Delete an announcement",
+      "icon": "trash",
+      "dangerous": true,
+      "params": [
+        {
+          "id": "announcementId",
+          "label": "Announcement ID",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Announcement deleted"
+        }
+      ]
+    },
+    {
+      "id": "enable-announcements",
+      "label": "Enable Announcements",
+      "description": "Enable multiple announcements",
+      "params": [
+        {
+          "id": "announcementIds",
+          "label": "Announcement IDs",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Selected announcements enabled"
+        }
+      ]
+    },
+    {
+      "id": "disable-announcements",
+      "label": "Disable Announcements",
+      "description": "Disable multiple announcements",
+      "params": [
+        {
+          "id": "announcementIds",
+          "label": "Announcement IDs",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "send-command",
+          "command": "say Selected announcements disabled"
+        }
+      ]
+    }
+  ]
+}

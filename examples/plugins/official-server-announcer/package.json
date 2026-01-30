@@ -1,0 +1,12 @@
+{
+  "name": "official-server-announcer",
+  "version": "1.0.0",
+  "description": "Official StellarStack plugin for scheduled server announcements and broadcasts",
+  "type": "module",
+  "author": "StellarStack Team",
+  "license": "MIT",
+  "keywords": ["stellarstack", "plugin", "official", "announcements", "broadcasts", "schedule"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

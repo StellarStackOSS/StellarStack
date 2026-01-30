@@ -1,0 +1,12 @@
+{
+  "name": "example-stats-dashboard",
+  "version": "1.0.0",
+  "description": "Example StellarStack plugin demonstrating stats dashboard UI schema",
+  "type": "module",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "keywords": ["stellarstack", "plugin", "example", "dashboard", "stats"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "official-curseforge-installer",
+  "version": "1.0.0",
+  "description": "Official StellarStack plugin for searching and installing CurseForge mods and modpacks",
+  "type": "module",
+  "author": "StellarStack Team",
+  "license": "MIT",
+  "keywords": ["stellarstack", "plugin", "official", "curseforge", "mods", "modpacks"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "id": "official-modrinth-installer",
+  "name": "Modrinth Installer",
+  "version": "1.0.0",
+  "description": "Official plugin for searching and installing mods and modpacks from Modrinth",
+  "author": "StellarStack Team",
+  "license": "MIT",
+  "category": "modding",
+  "gameTypes": ["minecraft"],
+  "permissions": ["files.write", "console.send", "http.request"],
+  "homepage": "https://modrinth.com",
+  "icon": "https://modrinth.com/favicon.ico",
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "modrinth-mods",
+        "label": "Modrinth",
+        "icon": "package",
+        "uiSchema": {
+          "type": "search-and-install",
+          "searchPlaceholder": "Search Modrinth mods and modpacks...",
+          "searchEndpoint": "/api/plugins/official-modrinth-installer/search",
+          "categoryFilters": [
+            {
+              "id": "type",
+              "label": "Type",
+              "options": [
+                { "label": "Mods", "value": "mod" },
+                { "label": "Modpacks", "value": "modpack" },
+                { "label": "Data Packs", "value": "datapack" },
+                { "label": "Shader Packs", "value": "shader" }
+              ]
+            },
+            {
+              "id": "loaders",
+              "label": "Mod Loaders",
+              "options": [
+                { "label": "Forge", "value": "forge" },
+                { "label": "Fabric", "value": "fabric" },
+                { "label": "Quilt", "value": "quilt" },
+                { "label": "NeoForge", "value": "neoforge" }
+              ]
+            },
+            {
+              "id": "sort",
+              "label": "Sort By",
+              "options": [
+                { "label": "Relevance", "value": "relevance" },
+                { "label": "Downloads", "value": "downloads" },
+                { "label": "Recently Updated", "value": "updated" },
+                { "label": "Newest", "value": "newest" }
+              ]
+            }
+          ],
+          "installAction": "install-from-modrinth"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "install-from-modrinth",
+      "label": "Install from Modrinth",
+      "description": "Download and install a mod or modpack from Modrinth",
+      "icon": "package",
+      "params": [
+        {
+          "id": "projectId",
+          "label": "Project ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "versionId",
+          "label": "Version ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "fileName",
+          "label": "File Name",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "downloadUrl",
+          "label": "Download URL",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "type",
+          "label": "Content Type",
+          "type": "select",
+          "options": [
+            { "label": "Mod", "value": "mod" },
+            { "label": "Modpack", "value": "modpack" },
+            { "label": "Data Pack", "value": "datapack" },
+            { "label": "Shader Pack", "value": "shader" }
+          ],
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "download-to-server",
+          "url": "{{downloadUrl}}",
+          "directory": "mods",
+          "decompress": false
+        },
+        {
+          "type": "send-command",
+          "command": "say Downloaded {{fileName}} from Modrinth - server restart required"
+        }
+      ]
+    }
+  ]
+}
