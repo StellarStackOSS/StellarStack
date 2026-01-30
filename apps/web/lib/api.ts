@@ -724,8 +724,8 @@ export const pluginsApi = {
     }) => {
       const searchParams = new URLSearchParams();
       if (params.query) searchParams.set("query", params.query);
-      if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
-      if (params.index) searchParams.set("index", String(params.index));
+      if (params.pageSize != null) searchParams.set("pageSize", String(params.pageSize));
+      if (params.index != null) searchParams.set("index", String(params.index));
       if (params.gameVersion) searchParams.set("gameVersion", params.gameVersion);
       if (params.modLoaderType) searchParams.set("modLoaderType", params.modLoaderType);
       return request<CurseForgeSearchResult>(
@@ -772,4 +772,106 @@ export const pluginsApi = {
         body: { serverId, projectSlug, versionId },
       }),
   },
+
+  /** Execute a plugin action */
+  executeAction: (
+    pluginId: string,
+    actionId: string,
+    req: {
+      serverId: string;
+      inputs: Record<string, unknown>;
+      options?: {
+        skipBackup?: boolean;
+        skipRestart?: boolean;
+      };
+      confirmed?: boolean;
+    }
+  ) =>
+    request<{
+      success: boolean;
+      message?: string;
+      data?: unknown;
+      error?: string;
+      executedOperations?: number;
+    }>(`/api/plugins/${pluginId}/actions/${actionId}`, {
+      method: "POST",
+      body: req,
+    }),
+
+  /** Get plugin statistics */
+  getPluginStats: (pluginId: string, days?: number) =>
+    request<{
+      totalActions: number;
+      successCount: number;
+      errorCount: number;
+      deniedCount: number;
+      averageDuration: number;
+      lastAction: string;
+      errorRate: number;
+    }>(`/api/plugins/${pluginId}/stats?days=${days || 30}`),
+
+  /** Get plugin audit log */
+  getAuditLog: (filter: {
+    pluginId?: string;
+    userId?: string;
+    serverId?: string;
+    result?: "success" | "error" | "denied";
+    limit?: number;
+    offset?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filter.pluginId) params.set("pluginId", filter.pluginId);
+    if (filter.userId) params.set("userId", filter.userId);
+    if (filter.serverId) params.set("serverId", filter.serverId);
+    if (filter.result) params.set("result", filter.result);
+    if (filter.limit) params.set("limit", String(filter.limit));
+    if (filter.offset) params.set("offset", String(filter.offset));
+
+    return request<any[]>(`/api/plugins/audit?${params.toString()}`);
+  },
+
+  /** Install plugin from Git repository (admin) */
+  installFromGit: (repoUrl: string, branch?: string) =>
+    request<{
+      success: boolean;
+      plugin: PluginInfo;
+      message: string;
+    }>("/api/plugins/install", {
+      method: "POST",
+      body: { repoUrl, branch: branch || "main" },
+    }),
+
+  /** Update an installed plugin from its Git repository (admin) */
+  updatePlugin: (pluginId: string) =>
+    request<{
+      success: boolean;
+      plugin: PluginInfo;
+      message: string;
+    }>(`/api/plugins/${pluginId}/update`, {
+      method: "POST",
+    }),
+
+  /** Get security analysis report for a plugin (admin) */
+  getSecurityReport: (pluginId: string) =>
+    request<{
+      pluginId: string;
+      name: string;
+      trustLevel: string;
+      securityScore: number;
+      securityReport: {
+        score: number;
+        riskLevel: "safe" | "low" | "medium" | "high" | "critical";
+        issues: Array<{
+          severity: "info" | "warning" | "error" | "critical";
+          message: string;
+          file?: string;
+          line?: number;
+        }>;
+        warnings: string[];
+      };
+      analyzedAt: string;
+    }>(`/api/plugins/${pluginId}/security-report`),
+
+  /** List all plugins (alternative to list, for consistency) */
+  listPlugins: () => request<PluginInfo[]>("/api/plugins"),
 };

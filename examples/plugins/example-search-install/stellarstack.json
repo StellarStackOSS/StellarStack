@@ -1,0 +1,147 @@
+{
+  "pluginId": "example-search-install",
+  "name": "Example: Custom Mod Installer",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating a search and install UI schema for browsing and installing mods",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "category": "example",
+  "gameTypes": ["minecraft"],
+  "permissions": ["files.*", "control.restart"],
+  "ui": {
+    "serverTabs": [
+      {
+        "id": "mods",
+        "label": "Mods",
+        "icon": "package",
+        "uiSchema": {
+          "type": "search-and-install",
+          "searchAction": "search-mods",
+          "detailAction": "get-mod-details",
+          "installAction": "install-mod",
+          "fields": {
+            "searchInput": {
+              "label": "Search for Mods",
+              "placeholder": "Search by name, author, or description..."
+            },
+            "resultCard": {
+              "title": "title",
+              "subtitle": "author",
+              "image": "thumbnail",
+              "description": "description",
+              "metadata": [
+                {
+                  "label": "Downloads",
+                  "field": "downloads",
+                  "format": "number"
+                },
+                {
+                  "label": "Updated",
+                  "field": "lastUpdated",
+                  "format": "date"
+                },
+                {
+                  "label": "Version",
+                  "field": "version",
+                  "format": "text"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "search-mods",
+      "label": "Search Mods",
+      "description": "Search for mods in the mod database",
+      "params": [
+        {
+          "id": "query",
+          "label": "Search Query",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": []
+    },
+    {
+      "id": "get-mod-details",
+      "label": "Get Mod Details",
+      "description": "Fetch detailed information about a mod",
+      "params": [
+        {
+          "id": "id",
+          "label": "Mod ID",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": []
+    },
+    {
+      "id": "install-mod",
+      "label": "Install Mod",
+      "description": "Download and install a mod to the server",
+      "dangerous": true,
+      "params": [
+        {
+          "id": "id",
+          "label": "Mod ID",
+          "type": "string",
+          "required": true
+        },
+        {
+          "id": "version",
+          "label": "Version",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "operations": [
+        {
+          "type": "download-to-server",
+          "url": "https://example.com/mods/{{id}}/versions/{{version}}/download",
+          "destPath": "/mods/{{id}}-{{version}}.jar"
+        },
+        {
+          "type": "send-command",
+          "command": "say Installing mod {{id}} version {{version}}"
+        },
+        {
+          "type": "restart-server"
+        }
+      ]
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "modSourceUrl": {
+        "type": "string",
+        "title": "Mod Source URL",
+        "description": "Base URL for mod downloads",
+        "default": "https://example.com/mods"
+      },
+      "autoRestart": {
+        "type": "boolean",
+        "title": "Auto-restart After Install",
+        "description": "Automatically restart server after installing mods",
+        "default": true
+      },
+      "backupBeforeInstall": {
+        "type": "boolean",
+        "title": "Backup Before Install",
+        "description": "Create a backup before installing new mods",
+        "default": true
+      }
+    }
+  },
+  "defaultConfig": {
+    "modSourceUrl": "https://example.com/mods",
+    "autoRestart": true,
+    "backupBeforeInstall": true
+  }
+}

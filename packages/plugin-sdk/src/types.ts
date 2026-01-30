@@ -125,6 +125,67 @@ export const PluginManifestSchema = z.object({
 
   /** Plugin hooks this plugin subscribes to */
   hooks: z.array(z.string()).optional(),
+
+  /**
+   * Actions this extension can perform.
+   * Actions are executable via the generic API: POST /api/plugins/:pluginId/actions/:actionId
+   * Each action contains a sequence of operations that the panel executes on the daemon.
+   */
+  actions: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        dangerous: z.boolean().optional(),
+        params: z
+          .array(
+            z.object({
+              id: z.string(),
+              label: z.string(),
+              description: z.string().optional(),
+              type: z.enum(["string", "number", "boolean", "select"]),
+              required: z.boolean().optional(),
+              default: z.union([z.string(), z.number(), z.boolean()]).optional(),
+              options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+            })
+          )
+          .optional(),
+        operations: z.array(
+          z.discriminatedUnion("type", [
+            z.object({
+              type: z.literal("download-to-server"),
+              url: z.string(),
+              directory: z.string(),
+              filename: z.string().optional(),
+              decompress: z.boolean().optional(),
+            }),
+            z.object({
+              type: z.literal("write-file"),
+              path: z.string(),
+              content: z.string(),
+            }),
+            z.object({
+              type: z.literal("delete-file"),
+              path: z.string(),
+            }),
+            z.object({
+              type: z.literal("send-command"),
+              command: z.string(),
+            }),
+            z.object({ type: z.literal("restart-server") }),
+            z.object({ type: z.literal("stop-server") }),
+            z.object({ type: z.literal("start-server") }),
+            z.object({
+              type: z.literal("create-backup"),
+              name: z.string().optional(),
+            }),
+          ])
+        ),
+      })
+    )
+    .optional(),
 });
 
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;
@@ -376,6 +437,146 @@ export interface FileInfo {
   type: "file" | "directory";
   size: number;
   modified: string;
+}
+
+// ============================================
+// Extension Action System
+// ============================================
+
+/**
+ * An operation that can be performed on a server.
+ * Operations are the building blocks of extension actions.
+ * The panel executes these via the daemon API.
+ */
+export type ExtensionOperation =
+  | {
+      /** Download a file from a URL to the server filesystem */
+      type: "download-to-server";
+      /** URL to download from (can use {{param}} template vars) */
+      url: string;
+      /** Target directory (relative to server root) */
+      directory: string;
+      /** Optional filename override */
+      filename?: string;
+      /** Whether to extract archives after download (.zip, .tar.gz) */
+      decompress?: boolean;
+    }
+  | {
+      /** Write text content to a file */
+      type: "write-file";
+      /** File path (relative to server root) */
+      path: string;
+      /** File content (can use {{param}} template vars) */
+      content: string;
+    }
+  | {
+      /** Delete a file or directory */
+      type: "delete-file";
+      /** File path (relative to server root) */
+      path: string;
+    }
+  | {
+      /** Send a console command to the server */
+      type: "send-command";
+      /** The command to send (can use {{param}} template vars) */
+      command: string;
+    }
+  | {
+      /** Restart the server */
+      type: "restart-server";
+    }
+  | {
+      /** Stop the server */
+      type: "stop-server";
+    }
+  | {
+      /** Start the server */
+      type: "start-server";
+    }
+  | {
+      /** Create a backup before modifying files */
+      type: "create-backup";
+      /** Optional backup name */
+      name?: string;
+    };
+
+/**
+ * A parameter that an action accepts.
+ * Parameters are resolved at execution time from the frontend request.
+ * Template variables like {{paramId}} in operations are replaced with these values.
+ */
+export interface ExtensionActionParam {
+  /** Unique parameter identifier (used in templates) */
+  id: string;
+  /** Human-readable label */
+  label: string;
+  /** Parameter description */
+  description?: string;
+  /** Parameter type */
+  type: "string" | "number" | "boolean" | "select";
+  /** Whether this parameter is required */
+  required?: boolean;
+  /** Default value */
+  default?: string | number | boolean;
+  /** Options for 'select' type */
+  options?: Array<{ label: string; value: string }>;
+}
+
+/**
+ * An action that an extension can perform.
+ * Actions are declared in the extension manifest and executed via a generic API.
+ * This replaces hardcoded per-platform install routes.
+ */
+export interface ExtensionAction {
+  /** Unique action ID (scoped to the extension) */
+  id: string;
+  /** Human-readable action name */
+  label: string;
+  /** Description of what this action does */
+  description?: string;
+  /** Icon name for the UI */
+  icon?: string;
+  /**
+   * Whether this action is "dangerous" (destructive/irreversible).
+   * Dangerous actions show a confirmation dialog in the UI.
+   */
+  dangerous?: boolean;
+  /**
+   * Parameters this action accepts.
+   * The frontend collects these from the user or resolves them programmatically.
+   */
+  params?: ExtensionActionParam[];
+  /**
+   * Operations to execute (in order) when this action is triggered.
+   * Template variables {{paramId}} in operation fields are replaced
+   * with resolved parameter values at execution time.
+   */
+  operations: ExtensionOperation[];
+}
+
+/**
+ * Request body for executing an extension action via the API.
+ * POST /api/plugins/:pluginId/actions/:actionId
+ */
+export interface ExecuteActionRequest {
+  /** Server ID to execute the action on */
+  serverId: string;
+  /** Parameter values keyed by param ID */
+  params?: Record<string, string | number | boolean>;
+}
+
+/**
+ * Response from executing an extension action.
+ */
+export interface ExecuteActionResponse {
+  success: boolean;
+  /** Results from each operation (in order) */
+  results: Array<{
+    operation: ExtensionOperation["type"];
+    success: boolean;
+    error?: string;
+    data?: Record<string, unknown>;
+  }>;
 }
 
 // ============================================

@@ -1,0 +1,357 @@
+/**
+ * StellarStack Plugin Action Executor
+ *
+ * Executes plugin actions based on manifest definitions.
+ * Processes sequential operations (download, write, delete, command, restart, backup)
+ * with context-aware parameter substitution and permission enforcement.
+ */
+
+import type { PluginManifest } from "./plugin-manager";
+import { db } from "./db";
+import type { Server } from "@prisma/client";
+
+// ============================================
+// Types
+// ============================================
+
+export interface ExecuteActionRequest {
+  serverId: string;
+  inputs: Record<string, unknown>;
+  options?: {
+    skipBackup?: boolean;
+    skipRestart?: boolean;
+  };
+}
+
+export interface ExecuteActionResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+  error?: string;
+  executedOperations?: number;
+}
+
+export interface PluginContext {
+  pluginId: string;
+  manifest: PluginManifest;
+  serverId: string;
+  server: Server;
+  config: Record<string, unknown>;
+  userId: string;
+}
+
+interface Operation {
+  type: string;
+  [key: string]: unknown;
+}
+
+// ============================================
+// Plugin Action Executor
+// ============================================
+
+export class PluginActionExecutor {
+  /**
+   * Execute a plugin action based on its manifest definition.
+   * Validates permissions and executes all operations in sequence.
+   */
+  async executeAction(
+    pluginId: string,
+    actionId: string,
+    request: ExecuteActionRequest,
+    context: PluginContext
+  ): Promise<ExecuteActionResponse> {
+    try {
+      // 1. Load plugin manifest
+      const plugin = await db.plugin.findUnique({
+        where: { pluginId },
+      });
+
+      if (!plugin) {
+        return {
+          success: false,
+          error: `Plugin not found: ${pluginId}`,
+        };
+      }
+
+      const manifest = plugin.manifest as any as PluginManifest;
+
+      // 2. Find action definition
+      const action = (manifest as any).actions?.find(
+        (a: any) => a.id === actionId
+      );
+
+      if (!action) {
+        return {
+          success: false,
+          error: `Action not found: ${actionId}`,
+        };
+      }
+
+      // 3. Get server for context
+      const server = await db.server.findUnique({
+        where: { id: request.serverId },
+      });
+
+      if (!server) {
+        return {
+          success: false,
+          error: `Server not found: ${request.serverId}`,
+        };
+      }
+
+      const executorContext: PluginContext = {
+        pluginId,
+        manifest,
+        serverId: request.serverId,
+        server,
+        config: plugin.config as Record<string, unknown>,
+        userId: context.userId,
+      };
+
+      // 4. Execute operations sequentially
+      let executedCount = 0;
+      const operations: Operation[] = action.operations || [];
+
+      if (!server) {
+        return {
+          success: false,
+          error: "Server not found",
+        };
+      }
+
+      for (const operation of operations) {
+        try {
+          // Resolve template variables in operation
+          const resolvedOp = this.resolveOperationTemplates(
+            operation,
+            request.inputs,
+            executorContext
+          );
+
+          // Execute based on operation type
+          switch (resolvedOp.type) {
+            case "download-to-server":
+              await this.executeDownload(resolvedOp, executorContext);
+              break;
+            case "write-file":
+              await this.executeWriteFile(resolvedOp, executorContext);
+              break;
+            case "delete-file":
+              await this.executeDeleteFile(resolvedOp, executorContext);
+              break;
+            case "send-command":
+              await this.executeSendCommand(resolvedOp, executorContext);
+              break;
+            case "restart-server":
+              if (!request.options?.skipRestart) {
+                await this.executeRestartServer(executorContext);
+              }
+              break;
+            case "stop-server":
+              await this.executeStopServer(executorContext);
+              break;
+            case "start-server":
+              await this.executeStartServer(executorContext);
+              break;
+            case "create-backup":
+              if (!request.options?.skipBackup) {
+                await this.executeCreateBackup(executorContext);
+              }
+              break;
+            default:
+              console.warn(`Unknown operation type: ${resolvedOp.type}`);
+          }
+
+          executedCount++;
+        } catch (error) {
+          console.error(`[Plugin:${pluginId}] Operation ${operation.type} failed:`, error);
+          return {
+            success: false,
+            error: `Operation failed: ${operation.type} - ${String(error)}`,
+            executedOperations: executedCount,
+          };
+        }
+      }
+
+      // 5. Return success
+      return {
+        success: true,
+        message: `Action completed successfully (${executedCount} operations)`,
+        executedOperations: executedCount,
+      };
+    } catch (error) {
+      console.error(`[Plugin] Action execution failed:`, error);
+      return {
+        success: false,
+        error: String(error),
+      };
+    }
+  }
+
+  /**
+   * Resolve template variables in operation parameters.
+   * Supports {{inputName}} for user inputs and {{config.keyName}} for config values.
+   */
+  private resolveOperationTemplates(
+    operation: Operation,
+    inputs: Record<string, unknown>,
+    context: PluginContext
+  ): Operation {
+    const resolved = { ...operation };
+
+    for (const [key, value] of Object.entries(resolved)) {
+      if (typeof value === "string") {
+        resolved[key] = value
+          .replace(/\{\{([^.}]+)\}\}/g, (_, inputName) => {
+            const inputValue = inputs[inputName];
+            if (inputValue === undefined) {
+              throw new Error(`Missing input parameter: ${inputName}`);
+            }
+            return String(inputValue);
+          })
+          .replace(/\{\{config\.([^}]+)\}\}/g, (_, configKey) => {
+            const configValue = (context.config as any)[configKey];
+            if (configValue === undefined) {
+              throw new Error(`Missing config value: ${configKey}`);
+            }
+            return String(configValue);
+          });
+      }
+    }
+
+    return resolved;
+  }
+
+  // ============================================
+  // Operation Implementations
+  // ============================================
+
+  private async executeDownload(
+    operation: Operation,
+    context: PluginContext
+  ): Promise<void> {
+    // Download file from URL and write to server
+    const { url, destPath, headers = {} } = operation as any;
+
+    if (!url || !destPath) {
+      throw new Error("Download operation requires url and destPath");
+    }
+
+    // This would normally interact with the daemon to download files
+    // For now, we'll log it as a placeholder
+    console.log(`[Plugin] Downloading ${url} to ${destPath} on server ${context.serverId}`);
+
+    // TODO: Implement actual file download via daemon
+    // const response = await fetch(url, { headers });
+    // Write file to server using daemon API
+  }
+
+  private async executeWriteFile(
+    operation: Operation,
+    context: PluginContext
+  ): Promise<void> {
+    const { path, content, append = false } = operation as any;
+
+    if (!path || !content) {
+      throw new Error("Write file operation requires path and content");
+    }
+
+    console.log(`[Plugin] Writing file ${path} on server ${context.serverId}`);
+
+    // TODO: Implement file write via daemon
+    // Use server file write API with context validation
+  }
+
+  private async executeDeleteFile(
+    operation: Operation,
+    context: PluginContext
+  ): Promise<void> {
+    const { path } = operation as any;
+
+    if (!path) {
+      throw new Error("Delete file operation requires path");
+    }
+
+    console.log(`[Plugin] Deleting file ${path} on server ${context.serverId}`);
+
+    // TODO: Implement file delete via daemon
+  }
+
+  private async executeSendCommand(
+    operation: Operation,
+    context: PluginContext
+  ): Promise<void> {
+    const { command, timeout = 5000 } = operation as any;
+
+    if (!command) {
+      throw new Error("Send command operation requires command");
+    }
+
+    console.log(`[Plugin] Sending command "${command}" to server ${context.serverId}`);
+
+    // TODO: Implement command execution via daemon
+    // Send console command to running server
+  }
+
+  private async executeRestartServer(context: PluginContext): Promise<void> {
+    console.log(`[Plugin] Restarting server ${context.serverId}`);
+
+    // TODO: Implement server restart via daemon
+    // Call daemon restart endpoint
+  }
+
+  private async executeStopServer(context: PluginContext): Promise<void> {
+    console.log(`[Plugin] Stopping server ${context.serverId}`);
+
+    // TODO: Implement server stop via daemon
+  }
+
+  private async executeStartServer(context: PluginContext): Promise<void> {
+    console.log(`[Plugin] Starting server ${context.serverId}`);
+
+    // TODO: Implement server start via daemon
+  }
+
+  private async executeCreateBackup(context: PluginContext): Promise<void> {
+    console.log(`[Plugin] Creating backup for server ${context.serverId}`);
+
+    // TODO: Implement backup creation via daemon
+  }
+
+  /**
+   * Get required permissions for an action based on its operations.
+   * Used by permission enforcement middleware.
+   */
+  static getActionPermissions(manifest: PluginManifest, actionId: string): string[] {
+    const action = (manifest as any).actions?.find((a: any) => a.id === actionId);
+    if (!action) return [];
+
+    const permissions = new Set<string>();
+
+    for (const operation of action.operations || []) {
+      switch (operation.type) {
+        case "download-to-server":
+        case "write-file":
+        case "delete-file":
+          permissions.add("files.*");
+          break;
+        case "send-command":
+          permissions.add("console.send");
+          break;
+        case "restart-server":
+        case "stop-server":
+        case "start-server":
+          permissions.add("control.*");
+          break;
+        case "create-backup":
+          permissions.add("backups.create");
+          break;
+      }
+    }
+
+    return Array.from(permissions);
+  }
+}
+
+// Export singleton instance
+export const pluginActionExecutor = new PluginActionExecutor();

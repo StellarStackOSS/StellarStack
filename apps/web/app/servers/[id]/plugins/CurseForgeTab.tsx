@@ -17,11 +17,11 @@ import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
 import {
   BsSearch,
   BsDownload,
-  BsArrowRepeat,
   BsBox,
   BsClock,
-  BsPeople,
   BsExclamationTriangle,
+  BsChevronLeft,
+  BsChevronRight,
 } from "react-icons/bs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { pluginsApi, type CurseForgeSearchResult } from "@/lib/api";
@@ -34,49 +34,43 @@ interface CurseForgeTabProps {
 
 type ModpackResult = CurseForgeSearchResult["data"][0];
 
+const PAGE_SIZE = 12;
+
 export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginConfig }) => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
   const [selectedMod, setSelectedMod] = useState<ModpackResult | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [installConfirmOpen, setInstallConfirmOpen] = useState(false);
-  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [installTarget, setInstallTarget] = useState<{ mod: ModpackResult; fileId: number } | null>(
+    null
+  );
 
   const hasApiKey = !!(pluginConfig?.apiKey as string);
 
-  // Search modpacks
+  // Single query for both search and popular (empty query = popular by downloads)
   const {
-    data: searchResults,
-    isLoading: isSearching,
-    refetch,
+    data: results,
+    isLoading,
+    isFetching,
   } = useQuery({
-    queryKey: ["curseforge", "search", searchQuery],
+    queryKey: ["curseforge", "search", activeQuery, pageIndex],
     queryFn: () =>
       pluginsApi.curseforge.search({
-        query: searchQuery,
-        pageSize: 20,
+        query: activeQuery || undefined,
+        pageSize: PAGE_SIZE,
+        index: pageIndex * PAGE_SIZE,
       }),
-    enabled: hasApiKey && searchQuery.length > 0,
+    enabled: hasApiKey,
+    placeholderData: (prev) => prev,
   });
 
-  // Popular modpacks (default view)
-  const { data: popularResults, isLoading: isLoadingPopular } = useQuery({
-    queryKey: ["curseforge", "popular"],
-    queryFn: () =>
-      pluginsApi.curseforge.search({
-        pageSize: 12,
-      }),
-    enabled: hasApiKey && searchQuery.length === 0,
-  });
-
-  // Install mutation
   const installMutation = useMutation({
     mutationFn: ({ modId, fileId }: { modId: number; fileId: number }) =>
       pluginsApi.curseforge.install(serverId, modId, fileId),
     onSuccess: (data) => {
       toast.success(data.message || "Modpack installation started");
-      setInstallConfirmOpen(false);
-      setDetailModalOpen(false);
+      setInstallTarget(null);
+      setSelectedMod(null);
     },
     onError: () => {
       toast.error("Failed to install modpack");
@@ -86,34 +80,34 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
   const handleSearch = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      setSearchQuery(searchInput);
+      setActiveQuery(searchInput);
+      setPageIndex(0);
     },
     [searchInput]
   );
 
-  const handleModClick = (mod: ModpackResult) => {
-    setSelectedMod(mod);
-    setDetailModalOpen(true);
-  };
+  const handleClearSearch = useCallback(() => {
+    setSearchInput("");
+    setActiveQuery("");
+    setPageIndex(0);
+  }, []);
 
-  const handleInstallClick = (mod: ModpackResult, fileId?: number) => {
-    setSelectedMod(mod);
+  const handleInstallClick = useCallback((mod: ModpackResult, fileId?: number) => {
     const fId = fileId || mod.latestFiles?.[0]?.id;
     if (!fId) {
       toast.error("No files available for this modpack");
       return;
     }
-    setSelectedFileId(fId);
-    setInstallConfirmOpen(true);
-  };
+    setInstallTarget({ mod, fileId: fId });
+  }, []);
 
-  const confirmInstall = () => {
-    if (!selectedMod || !selectedFileId) return;
+  const confirmInstall = useCallback(() => {
+    if (!installTarget) return;
     installMutation.mutate({
-      modId: selectedMod.id,
-      fileId: selectedFileId,
+      modId: installTarget.mod.id,
+      fileId: installTarget.fileId,
     });
-  };
+  }, [installTarget, installMutation]);
 
   const formatDownloads = (count: number): string => {
     if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
@@ -129,10 +123,12 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
     });
   };
 
-  const displayResults = searchQuery ? searchResults?.data : popularResults?.data;
-  const isLoading = searchQuery ? isSearching : isLoadingPopular;
+  const modpacks = results?.data || [];
+  const totalResults = results?.pagination?.totalCount ?? modpacks.length;
+  const totalPages = Math.ceil(totalResults / PAGE_SIZE);
+  const currentPage = pageIndex + 1;
 
-  // No API key configured
+  // No API key
   if (!hasApiKey) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -155,40 +151,42 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
   }
 
   return (
-    <div className="p-4">
+    <div className="space-y-4 p-4">
       {/* Search Bar */}
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="relative">
-          <BsSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <Input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search CurseForge modpacks..."
-            className="border-zinc-700/50 bg-zinc-900/50 pr-20 pl-9 text-zinc-200 placeholder:text-zinc-600"
-          />
-          <TextureButton
-            type="submit"
-            variant="primary"
-            size="sm"
-            className="absolute top-1/2 right-2 -translate-y-1/2"
-          >
-            Search
+      <form onSubmit={handleSearch} className="flex items-center gap-2">
+        <Input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search CurseForge modpacks..."
+          className="flex-1 border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600"
+        />
+        <TextureButton type="submit" variant="primary" size="sm">
+          Search
+        </TextureButton>
+        {activeQuery && (
+          <TextureButton type="button" variant="minimal" size="sm" onClick={handleClearSearch}>
+            Clear
           </TextureButton>
-        </div>
+        )}
       </form>
 
       {/* Results Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">
-          {searchQuery ? `Results for "${searchQuery}"` : "Popular Modpacks"}
+          {activeQuery ? `Results for "${activeQuery}"` : "Popular Modpacks"}
         </h3>
-        {displayResults && (
-          <span className="text-xs text-zinc-500">{displayResults.length} result(s)</span>
-        )}
+        <div className="flex items-center gap-3">
+          {isFetching && !isLoading && <Spinner className="h-4 w-4 text-zinc-500" />}
+          {totalResults > 0 && (
+            <span className="text-xs text-zinc-500">
+              {totalResults.toLocaleString()} result{totalResults !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
           <Spinner className="h-6 w-6 text-zinc-400" />
@@ -196,27 +194,26 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
       )}
 
       {/* Results Grid */}
-      {!isLoading && displayResults && displayResults.length > 0 && (
+      {!isLoading && modpacks.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {displayResults.map((mod) => (
+          {modpacks.map((mod) => (
             <div
               key={mod.id}
               className={cn(
                 "group flex cursor-pointer flex-col rounded-lg border border-zinc-800/50 bg-zinc-950/30 p-3 transition-all",
                 "hover:border-zinc-700/50 hover:bg-zinc-900/30"
               )}
-              onClick={() => handleModClick(mod)}
+              onClick={() => setSelectedMod(mod)}
             >
-              {/* Mod Header */}
               <div className="mb-2 flex items-start gap-3">
                 {mod.logo?.thumbnailUrl ? (
                   <img
                     src={mod.logo.thumbnailUrl}
                     alt={mod.name}
-                    className="h-10 w-10 rounded object-cover"
+                    className="h-10 w-10 flex-shrink-0 rounded object-cover"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded bg-zinc-800">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-zinc-800">
                     <BsBox className="h-5 w-5 text-zinc-600" />
                   </div>
                 )}
@@ -226,12 +223,10 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
                 </div>
               </div>
 
-              {/* Description */}
               <p className="mb-3 line-clamp-2 flex-1 text-xs leading-relaxed text-zinc-500">
                 {mod.summary}
               </p>
 
-              {/* Footer Stats */}
               <div className="flex items-center justify-between border-t border-zinc-800/50 pt-2">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1 text-xs text-zinc-600">
@@ -246,13 +241,12 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
                 <TextureButton
                   variant="primary"
                   size="sm"
-                  className="w-fit opacity-0 transition-opacity group-hover:opacity-100"
+                  className="w-fit"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleInstallClick(mod);
                   }}
                 >
-                  <BsDownload className="h-3 w-3" />
                   Install
                 </TextureButton>
               </div>
@@ -262,120 +256,192 @@ export const CurseForgeTab: React.FC<CurseForgeTabProps> = ({ serverId, pluginCo
       )}
 
       {/* No Results */}
-      {!isLoading && displayResults && displayResults.length === 0 && (
+      {!isLoading && modpacks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <BsSearch className="mb-4 h-12 w-12 text-zinc-700" />
           <p className="text-sm text-zinc-500">
-            No modpacks found{searchQuery ? ` for "${searchQuery}"` : ""}.
+            No modpacks found{activeQuery ? ` for "${activeQuery}"` : ""}.
           </p>
         </div>
       )}
 
-      {/* Mod Detail Modal */}
-      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 pt-2">
+          <button
+            disabled={pageIndex === 0 || isFetching}
+            onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+            className="flex h-8 w-8 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <BsChevronLeft className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Page numbers */}
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            let page: number;
+            if (totalPages <= 7) {
+              page = i;
+            } else if (pageIndex < 3) {
+              page = i;
+            } else if (pageIndex > totalPages - 4) {
+              page = totalPages - 7 + i;
+            } else {
+              page = pageIndex - 3 + i;
+            }
+            return (
+              <button
+                key={page}
+                onClick={() => setPageIndex(page)}
+                disabled={isFetching}
+                className={cn(
+                  "h-8 w-8 rounded text-xs font-medium transition-colors",
+                  page === pageIndex
+                    ? "bg-zinc-100 text-zinc-900"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                )}
+              >
+                {page + 1}
+              </button>
+            );
+          })}
+
+          <button
+            disabled={pageIndex >= totalPages - 1 || isFetching}
+            onClick={() => setPageIndex((p) => p + 1)}
+            className="flex h-8 w-8 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <BsChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      <Dialog
+        open={!!selectedMod}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMod(null);
+        }}
+      >
         <DialogContent className="max-w-2xl border-zinc-800 bg-zinc-900">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              {selectedMod?.logo?.thumbnailUrl && (
-                <img
-                  src={selectedMod.logo.thumbnailUrl}
-                  alt={selectedMod.name}
-                  className="h-12 w-12 rounded object-cover"
-                />
-              )}
-              <div>
-                <DialogTitle className="text-lg font-semibold text-zinc-100">
-                  {selectedMod?.name}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-zinc-400">
-                  by {selectedMod?.authors?.[0]?.name || "Unknown"}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
           {selectedMod && (
-            <div className="mt-4 space-y-4">
-              {/* Stats */}
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <BsDownload className="h-4 w-4" />
-                  {formatDownloads(selectedMod.downloadCount)} downloads
-                </div>
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <BsClock className="h-4 w-4" />
-                  Updated {formatDate(selectedMod.dateModified)}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="rounded border border-zinc-800 bg-zinc-950/50 p-4">
-                <p className="text-sm leading-relaxed text-zinc-300">{selectedMod.summary}</p>
-              </div>
-
-              {/* Categories */}
-              {selectedMod.categories?.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedMod.categories.map((cat) => (
-                    <Badge
-                      key={cat.id}
-                      variant="outline"
-                      className="border-zinc-700 text-xs text-zinc-400"
-                    >
-                      {cat.name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Available Versions */}
-              {selectedMod.latestFiles?.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium text-zinc-300">Available Versions</h4>
-                  <div className="max-h-48 space-y-2 overflow-y-auto">
-                    {selectedMod.latestFiles.slice(0, 5).map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-950/30 p-3"
-                      >
-                        <div>
-                          <p className="text-sm text-zinc-200">{file.displayName}</p>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="text-xs text-zinc-500">
-                              {file.gameVersions?.slice(0, 3).join(", ")}
-                            </span>
-                            <span className="text-xs text-zinc-600">
-                              {formatDate(file.fileDate)}
-                            </span>
-                          </div>
-                        </div>
-                        <TextureButton
-                          variant="primary"
-                          size="sm"
-                          className="w-fit"
-                          onClick={() => handleInstallClick(selectedMod, file.id)}
-                        >
-                          <BsDownload className="h-3 w-3" />
-                          Install
-                        </TextureButton>
-                      </div>
-                    ))}
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  {selectedMod.logo?.thumbnailUrl && (
+                    <img
+                      src={selectedMod.logo.thumbnailUrl}
+                      alt={selectedMod.name}
+                      className="h-12 w-12 rounded object-cover"
+                    />
+                  )}
+                  <div>
+                    <DialogTitle className="text-lg font-semibold text-zinc-100">
+                      {selectedMod.name}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-zinc-400">
+                      by {selectedMod.authors?.[0]?.name || "Unknown"} &middot;{" "}
+                      {formatDownloads(selectedMod.downloadCount)} downloads
+                    </DialogDescription>
                   </div>
                 </div>
-              )}
-            </div>
+              </DialogHeader>
+
+              <div className="mt-4 space-y-4">
+                {/* Description */}
+                <div className="rounded border border-zinc-800 bg-zinc-950/50 p-4">
+                  <p className="text-sm leading-relaxed text-zinc-300">{selectedMod.summary}</p>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
+                  <span className="flex items-center gap-1.5">
+                    <BsDownload className="h-3.5 w-3.5" />
+                    {selectedMod.downloadCount.toLocaleString()} downloads
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <BsClock className="h-3.5 w-3.5" />
+                    Updated {formatDate(selectedMod.dateModified)}
+                  </span>
+                </div>
+
+                {/* Categories */}
+                {selectedMod.categories?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMod.categories.map((cat) => (
+                      <Badge
+                        key={cat.id}
+                        variant="outline"
+                        className="border-zinc-700 text-xs text-zinc-400"
+                      >
+                        {cat.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick install */}
+                <TextureButton
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => handleInstallClick(selectedMod)}
+                  disabled={installMutation.isPending}
+                >
+                  <BsDownload className="mr-2 h-4 w-4" />
+                  Install Latest Version
+                </TextureButton>
+
+                {/* Version list */}
+                {selectedMod.latestFiles?.length > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium text-zinc-300">Available Versions</h4>
+                    <div className="max-h-48 space-y-2 overflow-y-auto">
+                      {selectedMod.latestFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-950/30 p-3"
+                        >
+                          <div className="mr-3 min-w-0 flex-1">
+                            <p className="truncate text-sm text-zinc-200">{file.displayName}</p>
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className="text-xs text-zinc-500">
+                                {file.gameVersions?.slice(0, 3).join(", ")}
+                              </span>
+                              <span className="text-xs text-zinc-600">
+                                {formatDate(file.fileDate)}
+                              </span>
+                            </div>
+                          </div>
+                          <TextureButton
+                            variant="primary"
+                            size="sm"
+                            className="flex-shrink-0"
+                            onClick={() => handleInstallClick(selectedMod, file.id)}
+                            disabled={installMutation.isPending}
+                          >
+                            Install
+                          </TextureButton>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Install Confirmation */}
       <ConfirmationModal
-        open={installConfirmOpen}
-        onOpenChange={setInstallConfirmOpen}
+        open={!!installTarget}
+        onOpenChange={(open) => {
+          if (!open) setInstallTarget(null);
+        }}
         title="Install Modpack"
-        description={`Are you sure you want to install "${selectedMod?.name}"? This will download the modpack files to your server. ${pluginConfig.backupBeforeInstall ? "A backup will be created first." : ""}`}
+        description={`Are you sure you want to install "${installTarget?.mod.name}"? This will download the modpack files to your server.${pluginConfig?.backupBeforeInstall ? " A backup will be created first." : ""}`}
         confirmLabel={installMutation.isPending ? "Installing..." : "Install"}
         onConfirm={confirmInstall}
+        isLoading={installMutation.isPending}
       />
     </div>
   );

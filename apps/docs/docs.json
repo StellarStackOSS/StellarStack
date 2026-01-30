@@ -44,18 +44,11 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": [
-              "api-reference/introduction",
-              "api-reference/authentication"
-            ]
+            "pages": ["api-reference/introduction", "api-reference/authentication"]
           },
           {
             "group": "Endpoints",
-            "pages": [
-              "api-reference/servers",
-              "api-reference/files",
-              "api-reference/backups"
-            ]
+            "pages": ["api-reference/servers", "api-reference/files", "api-reference/backups"]
           }
         ]
       },
@@ -64,9 +57,7 @@
         "groups": [
           {
             "group": "Releases",
-            "pages": [
-              "changelog/releases"
-            ]
+            "pages": ["changelog/releases"]
           }
         ]
       }
@@ -80,7 +71,7 @@
         },
         {
           "anchor": "Discord",
-          "href": "https://discord.gg/stellarstack",
+          "href": "https://discord.stellarstack.app",
           "icon": "discord"
         }
       ]
@@ -102,7 +93,13 @@
   "footer": {
     "socials": {
       "github": "https://github.com/StellarStackOSS/StellarStack",
-      "discord": "https://discord.gg/stellarstack"
+      "discord": "https://discord.stellarstack.app"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/introduction"
+    }
+  ]
 }

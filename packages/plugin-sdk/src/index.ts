@@ -64,8 +64,37 @@ export type {
   ServerWidgetProps,
   AdminPageProps,
   SettingsPanelProps,
+  // Extension Action System
+  ExtensionOperation,
+  ExtensionAction,
+  ExtensionActionParam,
+  ExecuteActionRequest,
+  ExecuteActionResponse,
 } from "./types";
 
-// UI
+// UI - Legacy UI Registry
 export { createUIRegistry } from "./ui";
 export type { PluginUIRegistry, PluginUIMetadata } from "./ui";
+
+// UI - Declarative Schema System
+export type {
+  UISchema,
+  SearchAndInstallSchema,
+  FormSchema,
+  DataTableSchema,
+  ActionButtonSchema,
+  StatsSchema,
+  CompoundSchema,
+  FieldSchema,
+  StringField,
+  NumberField,
+  BooleanField,
+  SelectField,
+  TextareaField,
+  PasswordField,
+  SearchResult,
+  DetailResult,
+  InstallResult,
+  FormSubmitResult,
+  TableLoadResult,
+} from "./ui-schema";

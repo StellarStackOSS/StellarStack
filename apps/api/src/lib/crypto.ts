@@ -231,3 +231,123 @@ export const verifyHmac = (data: string, signature: string, secret: string): boo
   const expected = generateHmac(data, secret);
   return timingSafeCompare(expected, signature);
 };
+
+// ============================================================================
+// Plugin Config Field Encryption
+// ============================================================================
+
+/**
+ * Encrypt sensitive fields in a config object based on schema.
+ * ConfigSchema should mark sensitive fields with "sensitive": true.
+ */
+export function encryptConfigFields(
+  config: Record<string, unknown>,
+  configSchema?: Record<string, unknown>
+): Record<string, unknown> {
+  if (!configSchema) {
+    return config;
+  }
+
+  const encrypted = { ...config };
+  const properties = (configSchema as any).properties || {};
+
+  for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+    const isSensitive = (fieldSchema as any).sensitive === true;
+
+    if (isSensitive && encrypted[fieldName] !== undefined && encrypted[fieldName] !== null) {
+      const plainValue = encrypted[fieldName];
+
+      // Mark encrypted fields with special prefix so we can identify them later
+      encrypted[fieldName] = {
+        __encrypted: true,
+        value: encrypt(String(plainValue)),
+      };
+    }
+  }
+
+  return encrypted;
+}
+
+/**
+ * Decrypt sensitive fields in a config object based on schema.
+ */
+export function decryptConfigFields(
+  config: Record<string, unknown>,
+  configSchema?: Record<string, unknown>
+): Record<string, unknown> {
+  if (!configSchema) {
+    return config;
+  }
+
+  const decrypted = { ...config };
+  const properties = (configSchema as any).properties || {};
+
+  for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+    const isSensitive = (fieldSchema as any).sensitive === true;
+
+    if (isSensitive && config[fieldName] !== undefined && config[fieldName] !== null) {
+      const value = config[fieldName];
+
+      // Check if this field is encrypted
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        (value as any).__encrypted === true
+      ) {
+        try {
+          decrypted[fieldName] = decrypt((value as any).value);
+        } catch (error) {
+          console.error(`[Crypto] Failed to decrypt field ${fieldName}:`, error);
+          // Return encrypted marker so we know it failed
+          decrypted[fieldName] = "<decryption-failed>";
+        }
+      }
+    }
+  }
+
+  return decrypted;
+}
+
+/**
+ * Mask sensitive fields for logging/display.
+ * Shows only first and last character: "a...y"
+ */
+export function maskSensitiveFields(
+  config: Record<string, unknown>,
+  configSchema?: Record<string, unknown>
+): Record<string, unknown> {
+  if (!configSchema) {
+    return config;
+  }
+
+  const masked = { ...config };
+  const properties = (configSchema as any).properties || {};
+
+  for (const [fieldName] of Object.entries(properties)) {
+    const isSensitive = (properties[fieldName] as any).sensitive === true;
+
+    if (isSensitive && config[fieldName] !== undefined && config[fieldName] !== null) {
+      const value = String(config[fieldName]);
+
+      if (value.length <= 2) {
+        masked[fieldName] = "*";
+      } else {
+        masked[fieldName] = value[0] + "..." + value[value.length - 1];
+      }
+    }
+  }
+
+  return masked;
+}
+
+/**
+ * Check if a value appears to be encrypted (has the encryption wrapper).
+ */
+export function isEncrypted(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as any).__encrypted === true &&
+    typeof (value as any).value === "string"
+  );
+}

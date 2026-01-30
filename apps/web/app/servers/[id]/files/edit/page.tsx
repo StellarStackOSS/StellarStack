@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { ArrowLeft, File, Loader2, Save } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { FadeIn } from "@workspace/ui/components/fade-in";
 import { Spinner } from "@workspace/ui/components/spinner";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
 import { TextureButton } from "@workspace/ui/components/texture-button";
@@ -98,10 +99,12 @@ export default function FileEditPage() {
           // For binary media files, use the download endpoint with token
           try {
             const { token } = await servers.files.getDownloadToken(serverId, filePath);
-            
+
             if (cancelled) return;
-            
-            const downloadUrl = getApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
+
+            const downloadUrl = getApiEndpoint(
+              `/api/servers/${serverId}/files/download?token=${token}`
+            );
             const response = await fetch(downloadUrl, {
               credentials: "include", // Include cookies for auth
             });
@@ -164,117 +167,100 @@ export default function FileEditPage() {
   const isMedia = mediaType !== "unknown";
 
   return (
-    <div className={cn("relative min-h-screen", "bg-black")}>
-      {/* Background is now rendered in the layout for persistence */}
-
-      <div className="relative z-10 flex h-screen flex-col">
-        {/* Header */}
-        <FadeIn>
-          <header
-            className={cn(
-              "flex items-center justify-between border-b px-6 py-4",
-              "border-zinc-800 bg-black/50"
-            )}
-          >
-            <div className="flex items-center gap-4">
-              <TextureButton variant="minimal"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </TextureButton>
-
-              <div className="flex items-center gap-3">
-                <div
+    <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+          {/* Header */}
+          <FadeIn delay={0}>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger
                   className={cn(
-                    "border p-2",
-                    "border-zinc-700 bg-zinc-800"
+                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
                   )}
-                >
-                  <File className={cn("h-5 w-5", "text-zinc-400")} />
-                </div>
-                <div>
-                  <h1
-                    className={cn("text-lg font-medium", "text-white")}
-                  >
-                    {fileName}
-                  </h1>
-                  <p className={cn("text-xs", "text-zinc-500")}>
-                    {filePath}
-                  </p>
-                </div>
-              </div>
-
-              {hasChanges && (
-                <span
-                  className={cn(
-                    "border px-2 py-1 text-xs",
-                    "border-zinc-600 text-zinc-400"
-                  )}
-                >
-                  Unsaved changes
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <TextureBadge variant="accent" className="uppercase">
-                {language}
-              </TextureBadge>
-
-              <TextureButton
-                variant="minimal"
-                onClick={handleSave}
-                disabled={!hasChanges || write.isPending}
-              >
-                {write.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save
-              </TextureButton>
-            </div>
-          </header>
-        </FadeIn>
-
-        {/* Editor */}
-        <div className="flex-1 overflow-hidden">
-          {isLoading ? (
-            <div className="flex h-full items-center justify-center">
-              <Spinner className="h-8 w-8" />
-            </div>
-          ) : error ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className={cn("text-lg", "text-red-400")}>
-                Failed to load file
-              </p>
-              <TextureButton variant="minimal"
-                onClick={handleBack}
-              >
-                Go Back
-              </TextureButton>
-            </div>
-          ) : isMedia ? (
-            <div className="flex h-full overflow-auto p-8">
-              <div className="mx-auto w-full">
-                <MediaViewer
-                  fileName={fileName}
-                  content={originalContent || ""}
-                  blobUrl={blobUrl}
                 />
+                <TextureButton variant="minimal" size="sm" onClick={handleBack}>
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="text-xs tracking-wider uppercase">Back</span>
+                </TextureButton>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-zinc-300">{fileName}</span>
+                  <span className="text-xs text-zinc-600">{filePath}</span>
+                </div>
+                {hasChanges && (
+                  <TextureBadge variant="warning" className="uppercase">
+                    Unsaved
+                  </TextureBadge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <TextureBadge variant="accent" className="uppercase">
+                  {language}
+                </TextureBadge>
+                <TextureButton
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!hasChanges || write.isPending}
+                >
+                  {write.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save
+                </TextureButton>
               </div>
             </div>
-          ) : (
-            <FileEditor
-              value={content}
-              onChange={handleContentChange}
-              filename={fileName}
-              height="100%"
-              className="h-full rounded-none border-0"
-            />
-          )}
+          </FadeIn>
+
+          {/* Editor Card */}
+          <FadeIn delay={0.05} className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
+                <File className="h-3 w-3" />
+                Editor
+              </div>
+              <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                {isLoading ? (
+                  <div className="flex flex-1 items-center justify-center py-12">
+                    <Spinner />
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12">
+                    <File className="mb-4 h-12 w-12 text-zinc-600" />
+                    <h3 className="text-sm font-medium text-zinc-300">Failed to load file</h3>
+                    <p className="text-xs text-zinc-500">
+                      The file could not be read from the server.
+                    </p>
+                    <TextureButton variant="minimal" size="sm" onClick={handleBack}>
+                      Go Back
+                    </TextureButton>
+                  </div>
+                ) : isMedia ? (
+                  <div className="flex flex-1 overflow-auto p-8">
+                    <div className="mx-auto w-full">
+                      <MediaViewer
+                        fileName={fileName}
+                        content={originalContent || ""}
+                        blobUrl={blobUrl}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <FileEditor
+                    value={content}
+                    onChange={handleContentChange}
+                    filename={fileName}
+                    height="100%"
+                    className="h-full rounded-none border-0"
+                  />
+                )}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </div>
-    </div>
+    </FadeIn>
   );
 }

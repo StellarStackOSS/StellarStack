@@ -779,14 +779,15 @@ remote.post("/sftp/auth", async (c) => {
     return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
   }
 
-  // Parse username format: server_uuid.user_uuid
-  const parts = parsed.data.username.split(".");
-  if (parts.length !== 2) {
+  // Parse username format: server_uuid.user_uuid (split only on first dot)
+  const firstDotIndex = parsed.data.username.indexOf(".");
+  if (firstDotIndex === -1) {
     console.error("[SFTP Auth] Invalid username format:", parsed.data.username);
     return c.json({ error: "Invalid username format" }, 400);
   }
 
-  const [serverUuid, userIdentifier] = parts;
+  const serverUuid = parsed.data.username.substring(0, firstDotIndex);
+  const userIdentifier = parsed.data.username.substring(firstDotIndex + 1);
   console.log(
     `[SFTP Auth] Attempting authentication - Server: ${serverUuid}, User: ${userIdentifier}`
   );

@@ -11,6 +11,7 @@ use super::{ConfigParser, ConfigValue, ParserError, ParserResult, ParserType};
 pub struct XmlParser;
 
 impl XmlParser {
+    /// Creates a new XML parser instance.
     pub fn new() -> Self {
         Self
     }

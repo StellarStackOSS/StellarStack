@@ -8,6 +8,7 @@ use super::{ConfigParser, ConfigValue, ParserError, ParserResult, ParserType};
 pub struct JsonParser;
 
 impl JsonParser {
+    /// Creates a new JSON parser instance.
     pub fn new() -> Self {
         Self
     }

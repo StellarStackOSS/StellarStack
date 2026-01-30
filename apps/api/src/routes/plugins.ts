@@ -68,18 +68,24 @@ plugins.get("/server/:serverId/tabs", requireAuth, async (c) => {
   try {
     const serverId = c.req.param("serverId");
 
-    // Get the server's blueprint category
+    // Get the server's blueprint info for game type matching
     const { db } = await import("../lib/db");
     const server = await db.server.findUnique({
       where: { id: serverId },
-      include: { blueprint: { select: { category: true } } },
+      include: { blueprint: { select: { name: true, category: true } } },
     });
 
     if (!server) {
       return c.json({ error: "Server not found" }, 404);
     }
 
-    const plugins = await pluginManager.getServerTabPlugins(server.blueprint.category || undefined);
+    // Pass both blueprint name and category for matching
+    // Blueprint name is more reliable for game identification (e.g. "Paper", "Minecraft Vanilla")
+    // Category is an organizational label (e.g. "gaming", "imported")
+    const plugins = await pluginManager.getServerTabPlugins(
+      server.blueprint?.name || undefined,
+      server.blueprint?.category || undefined
+    );
 
     return c.json(plugins);
   } catch (error) {
@@ -154,6 +160,154 @@ plugins.delete("/:pluginId", requireAdmin, async (c) => {
     console.error("[Plugins] Failed to uninstall plugin:", error);
     const message = error instanceof Error ? error.message : "Failed to uninstall plugin";
     return c.json({ error: message }, 400);
+  }
+});
+
+// ============================================
+// Plugin Action Routes
+// ============================================
+
+/**
+ * POST /api/plugins/:pluginId/actions/:actionId
+ * Execute a plugin action.
+ * Requires plugin permissions and user server access.
+ */
+plugins.post("/:pluginId/actions/:actionId", requireAuth, async (c) => {
+  try {
+    const { pluginActionExecutor } = await import("../lib/plugin-executor");
+    const { requireServerAccess, requirePluginPermissions } = await import(
+      "../middleware/plugin-auth"
+    );
+    const { pluginAuditLogger } = await import("../lib/plugin-audit");
+
+    const pluginId = c.req.param("pluginId");
+    const actionId = c.req.param("actionId");
+    const user = c.get("user");
+    const request = await c.req.json();
+
+    // Verify server access
+    if (!request.serverId) {
+      return c.json({ error: "serverId is required" }, 400);
+    }
+
+    // Check user has admin access or server access
+    const { db } = await import("../lib/db");
+    if (user.role !== "admin") {
+      const member = await db.serverMember.findUnique({
+        where: {
+          serverId_userId: {
+            userId: user.id,
+            serverId: request.serverId,
+          },
+        },
+      });
+
+      if (!member) {
+        await pluginAuditLogger.logDeniedAction(
+          pluginId,
+          actionId,
+          user.id,
+          request.serverId,
+          "User lacks server control permission"
+        );
+        return c.json({ error: "Access denied to this server" }, 403);
+      }
+    }
+
+    // Load plugin
+    const plugin = await db.plugin.findUnique({
+      where: { pluginId },
+    });
+
+    if (!plugin || plugin.status !== "enabled") {
+      return c.json(
+        { error: "Plugin not found or not enabled" },
+        plugin ? 400 : 404
+      );
+    }
+
+    // Check plugin has required permissions for this action
+    const manifest = plugin.manifest as any;
+    const action = manifest.actions?.find((a: any) => a.id === actionId);
+
+    if (!action) {
+      return c.json({ error: "Action not found" }, 404);
+    }
+
+    // Check if action requires confirmation
+    if (action.dangerous && !request.confirmed) {
+      return c.json(
+        {
+          error: "This action is dangerous and requires confirmation",
+          requiresConfirmation: true,
+          action: {
+            id: actionId,
+            label: action.label,
+            description: action.description,
+          },
+        },
+        400
+      );
+    }
+
+    // Execute action with audit logging
+    const startTime = Date.now();
+    const server = await db.server.findUnique({ where: { id: request.serverId } });
+
+    if (!server) {
+      return c.json({ error: "Server not found" }, 404);
+    }
+
+    const context = {
+      pluginId,
+      manifest,
+      serverId: request.serverId,
+      server,
+      config: plugin.config as Record<string, unknown>,
+      userId: user.id,
+    };
+
+    const result = await pluginActionExecutor.executeAction(
+      pluginId,
+      actionId,
+      request,
+      context
+    );
+
+    const duration = Date.now() - startTime;
+
+    // Log audit entry
+    if (result.success) {
+      await pluginAuditLogger.logAction({
+        pluginId,
+        actionId,
+        userId: user.id,
+        serverId: request.serverId,
+        params: request.inputs || {},
+        result: "success",
+        executedOperations: result.executedOperations,
+        duration,
+        timestamp: new Date(),
+      });
+    } else {
+      await pluginAuditLogger.logAction({
+        pluginId,
+        actionId,
+        userId: user.id,
+        serverId: request.serverId,
+        params: request.inputs || {},
+        result: "error",
+        errorMessage: result.error,
+        executedOperations: result.executedOperations,
+        duration,
+        timestamp: new Date(),
+      });
+    }
+
+    return c.json(result, result.success ? 200 : 400);
+  } catch (error) {
+    console.error("[Plugins] Failed to execute action:", error);
+    return c.json({ error: "Failed to execute action" }, 500);
   }
 });
 
@@ -619,5 +773,180 @@ plugins.post("/modrinth/install", requireAuth, async (c) => {
   } catch (error) {
     console.error("[Modrinth] Install error:", error);
     return c.json({ error: "Failed to install modpack" }, 500);
+  }
+});
+
+// ============================================
+// Plugin Audit and Statistics Routes
+// ============================================
+
+/**
+ * GET /api/plugins/:pluginId/stats
+ * Get plugin statistics and usage metrics (admin only).
+ */
+plugins.get("/:pluginId/stats", requireAdmin, async (c) => {
+  try {
+    const pluginId = c.req.param("pluginId");
+    const days = parseInt(c.req.query("days") || "30", 10);
+
+    const { pluginAuditLogger } = await import("../lib/plugin-audit");
+    const stats = await pluginAuditLogger.getPluginStatistics(pluginId, Math.min(days, 365));
+
+    return c.json(stats);
+  } catch (error) {
+    console.error("[Plugins] Failed to get plugin stats:", error);
+    return c.json({ error: "Failed to get plugin statistics" }, 500);
+  }
+});
+
+/**
+ * GET /api/plugins/audit
+ * Query audit log with filtering (admin only).
+ */
+plugins.get("/audit", requireAdmin, async (c) => {
+  try {
+    const { pluginAuditLogger } = await import("../lib/plugin-audit");
+
+    const filter = {
+      pluginId: c.req.query("pluginId"),
+      userId: c.req.query("userId"),
+      serverId: c.req.query("serverId"),
+      result: c.req.query("result") as "success" | "error" | "denied" | undefined,
+      limit: parseInt(c.req.query("limit") || "100", 10),
+      offset: parseInt(c.req.query("offset") || "0", 10),
+    };
+
+    const entries = await pluginAuditLogger.queryAuditLog(filter);
+    return c.json(entries);
+  } catch (error) {
+    console.error("[Plugins] Failed to query audit log:", error);
+    return c.json({ error: "Failed to query audit log" }, 500);
+  }
+});
+
+/**
+ * GET /api/plugins/:pluginId/security
+ * Get plugin security analysis and suspicious activity alerts (admin only).
+ */
+plugins.get("/:pluginId/security", requireAdmin, async (c) => {
+  try {
+    const pluginId = c.req.param("pluginId");
+
+    const { pluginAuditLogger } = await import("../lib/plugin-audit");
+    const alerts = await pluginAuditLogger.detectSuspiciousActivity(pluginId);
+
+    return c.json({ alerts });
+  } catch (error) {
+    console.error("[Plugins] Failed to get plugin security info:", error);
+    return c.json({ error: "Failed to get security information" }, 500);
+  }
+});
+
+// ============================================
+// Plugin Installation Routes (Git-based)
+// ============================================
+
+/**
+ * POST /api/plugins/install
+ * Install a plugin from a Git repository.
+ * Admin only.
+ */
+plugins.post("/install", requireAdmin, async (c) => {
+  try {
+    const { pluginInstaller } = await import("../lib/plugin-installer");
+    const { repoUrl, branch } = await c.req.json();
+
+    if (!repoUrl) {
+      return c.json({ error: "repoUrl is required" }, 400);
+    }
+
+    console.log(`[Plugins] Installing plugin from ${repoUrl}...`);
+
+    const plugin = await pluginInstaller.installFromGit({
+      repoUrl,
+      branch: branch || "main",
+      trustLevel: "community",
+    });
+
+    console.log(`[Plugins] Plugin ${plugin.pluginId} installed successfully`);
+
+    return c.json({
+      success: true,
+      plugin,
+      message: `Plugin "${plugin.name}" installed successfully`,
+    });
+  } catch (error) {
+    console.error("[Plugins] Failed to install plugin:", error);
+    const message = error instanceof Error ? error.message : "Failed to install plugin";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * POST /api/plugins/:pluginId/update
+ * Update an installed plugin from its Git repository.
+ * Admin only.
+ */
+plugins.post("/:pluginId/update", requireAdmin, async (c) => {
+  try {
+    const pluginId = c.req.param("pluginId");
+    const { pluginInstaller } = await import("../lib/plugin-installer");
+
+    console.log(`[Plugins] Updating plugin ${pluginId}...`);
+
+    const plugin = await pluginInstaller.update(pluginId);
+
+    console.log(`[Plugins] Plugin ${pluginId} updated successfully`);
+
+    return c.json({
+      success: true,
+      plugin,
+      message: `Plugin "${plugin.name}" updated successfully`,
+    });
+  } catch (error) {
+    console.error("[Plugins] Failed to update plugin:", error);
+    const message = error instanceof Error ? error.message : "Failed to update plugin";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * GET /api/plugins/:pluginId/security-report
+ * Get the security analysis report for a plugin.
+ * This is distinct from the security alerts (suspicious activity).
+ * Admin only.
+ */
+plugins.get("/:pluginId/security-report", requireAdmin, async (c) => {
+  try {
+    const pluginId = c.req.param("pluginId");
+    const { db } = await import("../lib/db");
+
+    const plugin = await db.plugin.findUnique({
+      where: { pluginId },
+    });
+
+    if (!plugin) {
+      return c.json({ error: "Plugin not found" }, 404);
+    }
+
+    const pluginData = plugin as any;
+    const report = pluginData.securityReport || {
+      score: 100,
+      riskLevel: "safe",
+      issues: [],
+      warnings: [],
+    };
+
+    return c.json({
+      pluginId,
+      name: plugin.name,
+      trustLevel: pluginData.trustLevel || "community",
+      securityScore: pluginData.securityScore || 100,
+      securityReport: report,
+      analyzedAt: pluginData.lastChecked,
+    });
+  } catch (error) {
+    console.error("[Plugins] Failed to get security report:", error);
+    return c.json({ error: "Failed to get security report" }, 500);
   }
 });

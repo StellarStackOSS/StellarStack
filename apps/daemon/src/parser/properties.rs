@@ -10,6 +10,7 @@ use super::{ConfigParser, ConfigValue, ParserError, ParserResult, ParserType};
 pub struct PropertiesParser;
 
 impl PropertiesParser {
+    /// Creates a new properties parser instance.
     pub fn new() -> Self {
         Self
     }

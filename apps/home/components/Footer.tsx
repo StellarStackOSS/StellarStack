@@ -15,9 +15,9 @@ const footerLinks = {
   ],
   resources: [
     { name: "Documentation", href: "https://docs.stellarstack.app" },
-    { name: "API Reference", href: "https://docs.stellarstack.app/api" },
-    { name: "Guides", href: "https://docs.stellarstack.app/guides" },
-    { name: "Community", href: "https://discord.gg/stellarstack" },
+    { name: "API Reference", href: "https://api-docs.stellarstack.app" },
+    { name: "Demo", href: "https://demo.stellarstack.app" },
+    { name: "Community", href: "https://discord.stellarstack.app" },
   ],
   company: [
     { name: "About", href: "/" },
@@ -28,12 +28,7 @@ const footerLinks = {
 
 export const Footer = ({}: FooterProps) => {
   return (
-    <footer
-      className={cn(
-        "relative overflow-hidden border-t",
-        "border-zinc-800 bg-zinc-900/50"
-      )}
-    >
+    <footer className={cn("relative overflow-hidden border-t", "border-zinc-800 bg-zinc-900/50")}>
       <LightBoard gap={2} text="STELLARSTACK" font="default" updateInterval={25} />
       {/* Main Footer Content */}
       <div className="mx-auto max-w-7xl px-6 py-16">
@@ -55,24 +50,18 @@ export const Footer = ({}: FooterProps) => {
             </p>
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/MarquesCoding/StellarStack"
+                href="https://github.com/StellarStackOSS/StellarStack"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(
-                  "transition-colors",
-                  "text-zinc-500 hover:text-zinc-300"
-                )}
+                className={cn("transition-colors", "text-zinc-500 hover:text-zinc-300")}
               >
                 <BsGithub className="h-5 w-5" />
               </a>
               <a
-                href="https://discord.gg/stellarstack"
+                href="https://discord.stellarstack.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(
-                  "transition-colors",
-                  "text-zinc-500 hover:text-zinc-300"
-                )}
+                className={cn("transition-colors", "text-zinc-500 hover:text-zinc-300")}
               >
                 <BsDiscord className="h-5 w-5" />
               </a>
@@ -80,10 +69,7 @@ export const Footer = ({}: FooterProps) => {
                 href="https://twitter.com/stellarstack"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(
-                  "transition-colors",
-                  "text-zinc-500 hover:text-zinc-300"
-                )}
+                className={cn("transition-colors", "text-zinc-500 hover:text-zinc-300")}
               >
                 <BsTwitterX className="h-5 w-5" />
               </a>
@@ -93,10 +79,7 @@ export const Footer = ({}: FooterProps) => {
           {/* Product */}
           <div>
             <h4
-              className={cn(
-                "mb-4 text-xs font-medium tracking-wider uppercase",
-                "text-zinc-400"
-              )}
+              className={cn("mb-4 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
             >
               Product
             </h4>
@@ -105,10 +88,7 @@ export const Footer = ({}: FooterProps) => {
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={cn(
-                      "text-sm transition-colors",
-                      "text-zinc-500 hover:text-zinc-300"
-                    )}
+                    className={cn("text-sm transition-colors", "text-zinc-500 hover:text-zinc-300")}
                   >
                     {item.name}
                   </Link>
@@ -120,10 +100,7 @@ export const Footer = ({}: FooterProps) => {
           {/* Resources */}
           <div>
             <h4
-              className={cn(
-                "mb-4 text-xs font-medium tracking-wider uppercase",
-                "text-zinc-400"
-              )}
+              className={cn("mb-4 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
             >
               Resources
             </h4>
@@ -132,10 +109,7 @@ export const Footer = ({}: FooterProps) => {
                 <li key={item.name}>
                   <a
                     href={item.href}
-                    className={cn(
-                      "text-sm transition-colors",
-                      "text-zinc-500 hover:text-zinc-300"
-                    )}
+                    className={cn("text-sm transition-colors", "text-zinc-500 hover:text-zinc-300")}
                   >
                     {item.name}
                   </a>
@@ -147,10 +121,7 @@ export const Footer = ({}: FooterProps) => {
           {/* Company */}
           <div>
             <h4
-              className={cn(
-                "mb-4 text-xs font-medium tracking-wider uppercase",
-                "text-zinc-400"
-              )}
+              className={cn("mb-4 text-xs font-medium tracking-wider uppercase", "text-zinc-400")}
             >
               Company
             </h4>
@@ -159,10 +130,7 @@ export const Footer = ({}: FooterProps) => {
                 <li key={item.name}>
                   <a
                     href={item.href}
-                    className={cn(
-                      "text-sm transition-colors",
-                      "text-zinc-500 hover:text-zinc-300"
-                    )}
+                    className={cn("text-sm transition-colors", "text-zinc-500 hover:text-zinc-300")}
                   >
                     {item.name}
                   </a>
@@ -187,10 +155,7 @@ export const Footer = ({}: FooterProps) => {
               <a
                 key={item}
                 href="#"
-                className={cn(
-                  "text-xs transition-colors",
-                  "text-zinc-600 hover:text-zinc-400"
-                )}
+                className={cn("text-xs transition-colors", "text-zinc-600 hover:text-zinc-400")}
               >
                 {item}
               </a>

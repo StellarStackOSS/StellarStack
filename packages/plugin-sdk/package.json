@@ -12,7 +12,8 @@
     "./hooks": "./src/hooks.ts",
     "./plugin": "./src/plugin.ts",
     "./context": "./src/context.ts",
-    "./ui": "./src/ui.ts"
+    "./ui": "./src/ui.ts",
+    "./ui-schema": "./src/ui-schema.ts"
   },
   "dependencies": {
     "zod": "^3.24.1"
