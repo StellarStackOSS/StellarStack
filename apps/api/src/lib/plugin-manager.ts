@@ -8,6 +8,7 @@
 
 import { db } from "./db";
 import type { Plugin as PluginRecord } from "@prisma/client";
+import { pluginWorkerPool } from "./plugin-worker";
 
 // ============================================
 // Types (inline to avoid cross-package dependency issues at build time)
@@ -443,6 +444,7 @@ const BUILT_IN_PLUGINS: PluginManifest[] = [
 class PluginManager {
   private hookRegistry: HookRegistry = new HookRegistry();
   private initialized = false;
+  private activeWorkers: Set<string> = new Set();
 
   /**
    * Initialize the plugin system.
@@ -466,6 +468,10 @@ class PluginManager {
     for (const plugin of enabledPlugins) {
       try {
         await this.activatePlugin(plugin);
+        // Start worker process for community plugins
+        if (!plugin.isBuiltIn) {
+          this.activeWorkers.add(plugin.pluginId);
+        }
       } catch (error) {
         console.error(`[Plugins] Failed to activate plugin ${plugin.pluginId}:`, error);
         await db.plugin.update({
@@ -476,7 +482,21 @@ class PluginManager {
     }
 
     this.initialized = true;
-    console.log(`[Plugins] Initialized ${enabledPlugins.length} plugin(s)`);
+    console.log(`[Plugins] Initialized ${enabledPlugins.length} plugin(s) with ${this.activeWorkers.size} worker process(es)`);
+  }
+
+  /**
+   * Shutdown the plugin system gracefully.
+   * Stops all worker processes and cleans up resources.
+   */
+  async shutdown(): Promise<void> {
+    console.log("[Plugins] Shutting down plugin system...");
+
+    // Stop all worker processes
+    pluginWorkerPool.stopAll();
+    this.activeWorkers.clear();
+
+    console.log("[Plugins] Plugin system shutdown complete");
   }
 
   /**
@@ -587,6 +607,7 @@ class PluginManager {
 
   /**
    * Enable a plugin.
+   * Starts worker process for community plugins.
    */
   async enablePlugin(pluginId: string): Promise<PluginInfo> {
     const plugin = await db.plugin.findUnique({
@@ -606,6 +627,19 @@ class PluginManager {
 
     try {
       await this.activatePlugin(updated);
+
+      // Start worker process for community plugins
+      if (!updated.isBuiltIn && !this.activeWorkers.has(pluginId)) {
+        try {
+          const pluginPath = updated.gitRepoUrl || `/plugins/${pluginId}`;
+          console.log(`[Plugins] Starting worker for community plugin ${pluginId}`);
+          // Worker will be started on-demand during first action execution
+          this.activeWorkers.add(pluginId);
+        } catch (error) {
+          console.error(`[Plugins] Failed to start worker for ${pluginId}:`, error);
+          throw error;
+        }
+      }
     } catch (error) {
       await db.plugin.update({
         where: { id: plugin.id },
@@ -625,6 +659,7 @@ class PluginManager {
 
   /**
    * Disable a plugin.
+   * Stops worker process if it's a community plugin.
    */
   async disablePlugin(pluginId: string): Promise<PluginInfo> {
     const plugin = await db.plugin.findUnique({
@@ -635,6 +670,13 @@ class PluginManager {
 
     // Remove hooks
     this.hookRegistry.removePlugin(pluginId);
+
+    // Stop worker process for community plugins
+    if (!plugin.isBuiltIn && this.activeWorkers.has(pluginId)) {
+      console.log(`[Plugins] Stopping worker for ${pluginId}`);
+      pluginWorkerPool.stopWorker(pluginId);
+      this.activeWorkers.delete(pluginId);
+    }
 
     const updated = await db.plugin.update({
       where: { id: plugin.id },
@@ -686,6 +728,7 @@ class PluginManager {
 
   /**
    * Uninstall a plugin (non-built-in only).
+   * Stops worker process before deleting plugin record.
    */
   async uninstallPlugin(pluginId: string): Promise<void> {
     const plugin = await db.plugin.findUnique({
@@ -696,6 +739,13 @@ class PluginManager {
 
     // Remove hooks
     this.hookRegistry.removePlugin(pluginId);
+
+    // Stop worker process
+    if (this.activeWorkers.has(pluginId)) {
+      console.log(`[Plugins] Stopping worker for ${pluginId}`);
+      pluginWorkerPool.stopWorker(pluginId);
+      this.activeWorkers.delete(pluginId);
+    }
 
     // Delete plugin storage
     await db.pluginStorage.deleteMany({
