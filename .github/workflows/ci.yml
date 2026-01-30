@@ -1,0 +1,496 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  PNPM_VERSION: "10.4.1"
+
+jobs:
+  # BUILD JOBS
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API
+        run: pnpm build:api
+
+  build-daemon:
+    name: Build Daemon
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/daemon
+
+      - name: Build Daemon
+        run: |
+          cd apps/daemon
+          cargo build --release
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Web
+        run: pnpm build:web
+
+  build-landing-page:
+    name: Build Landing Page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Landing Page
+        run: pnpm build:home
+
+  build-docs-page:
+    name: Build Docs Page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Docs Page
+        run: pnpm build:docs
+
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm --filter=@workspace/ui run build:storybook
+
+  # TEST JOBS
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    needs: build-api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test API
+        run: pnpm --filter @workspace/api test
+
+  test-daemon:
+    name: Test Daemon
+    runs-on: ubuntu-latest
+    needs: build-daemon
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/daemon
+
+      - name: Test Daemon
+        run: |
+          cd apps/daemon
+          cargo test --release
+
+  test-web:
+    name: Test Web
+    runs-on: ubuntu-latest
+    needs: build-web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test Web
+        run: pnpm --filter web test
+
+  # LINT JOBS
+  lint-api:
+    name: Lint API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint API
+        run: pnpm --filter @workspace/api lint
+
+  lint-daemon:
+    name: Lint Daemon
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/daemon
+
+      - name: Lint Daemon (fmt)
+        run: |
+          cd apps/daemon
+          cargo fmt -- --check
+
+      - name: Lint Daemon (clippy)
+        run: |
+          cd apps/daemon
+          cargo clippy -- -D warnings
+
+  lint-web:
+    name: Lint Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Web
+        run: pnpm --filter web lint
+
+  lint-landing-page:
+    name: Lint Landing Page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Landing Page
+        run: pnpm --filter home lint
+
+  lint-docs-page:
+    name: Lint Docs Page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Docs Page
+        run: pnpm --filter docs lint
+
+  lint-storybook:
+    name: Lint Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Storybook
+        run: pnpm --filter @workspace/ui lint
+
+  # VISUAL REGRESSION TESTS
+  vr-test-landing-page:
+    name: VR Test Landing Page
+    runs-on: ubuntu-latest
+    needs: build-landing-page
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run VR Tests (Landing Page)
+        run: pnpm --filter home test:vr
+
+      - name: Upload VR Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-page-vr-results
+          path: apps/home/test-results/
+          retention-days: 30
+
+  vr-test-storybook:
+    name: VR Test Storybook
+    runs-on: ubuntu-latest
+    needs: build-storybook
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run VR Tests (Storybook)
+        run: pnpm --filter @workspace/ui test:vr
+
+      - name: Upload VR Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-vr-results
+          path: packages/ui/test-results/
+          retention-days: 30
+
+  # CI Success
+  ci-success:
+    name: CI Pipeline Status
+    runs-on: ubuntu-latest
+    needs:
+      - build-api
+      - build-daemon
+      - build-web
+      - build-landing-page
+      - build-docs-page
+      - build-storybook
+      - test-api
+      - test-daemon
+      - test-web
+      - lint-api
+      - lint-daemon
+      - lint-web
+      - lint-landing-page
+      - lint-docs-page
+      - lint-storybook
+      - vr-test-landing-page
+      - vr-test-storybook
+    if: always()
+    steps:
+      - name: Check CI Status
+        run: |
+          if [ "${{ needs.build-api.result }}" != "success" ] || \
+             [ "${{ needs.build-daemon.result }}" != "success" ] || \
+             [ "${{ needs.build-web.result }}" != "success" ] || \
+             [ "${{ needs.build-landing-page.result }}" != "success" ] || \
+             [ "${{ needs.build-docs-page.result }}" != "success" ] || \
+             [ "${{ needs.build-storybook.result }}" != "success" ] || \
+             [ "${{ needs.test-api.result }}" != "success" ] || \
+             [ "${{ needs.test-daemon.result }}" != "success" ] || \
+             [ "${{ needs.test-web.result }}" != "success" ] || \
+             [ "${{ needs.lint-api.result }}" != "success" ] || \
+             [ "${{ needs.lint-daemon.result }}" != "success" ] || \
+             [ "${{ needs.lint-web.result }}" != "success" ] || \
+             [ "${{ needs.lint-landing-page.result }}" != "success" ] || \
+             [ "${{ needs.lint-docs-page.result }}" != "success" ] || \
+             [ "${{ needs.lint-storybook.result }}" != "success" ] || \
+             [ "${{ needs.vr-test-landing-page.result }}" != "success" ] || \
+             [ "${{ needs.vr-test-storybook.result }}" != "success" ]; then
+            echo "❌ CI Pipeline Failed"
+            exit 1
+          fi
+          echo "✅ CI Pipeline Passed"
