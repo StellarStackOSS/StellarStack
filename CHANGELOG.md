@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.9...v1.4.0) (2026-01-30)
+
+
+### Features
+
+* add plugin/extension system with SDK, API, and built-in plugin UIs ([e0bd6bc](https://github.com/StellarStackOSS/StellarStack/commit/e0bd6bcdf4e98e71f537c154d91d885e1559caa1))
+* **api:** add auto-shutdown system and wire up plugin lifecycle hooks ([899578d](https://github.com/StellarStackOSS/StellarStack/commit/899578d7a2905a1762f55c405eb2035876c09448))
+* **home:** create comprehensive landing page with modern design ([7ec44bc](https://github.com/StellarStackOSS/StellarStack/commit/7ec44bc7f87728776b09806acc1b99bd6a99541f))
+* **phase-3:** implement git-based plugin installation system ([5e32ef5](https://github.com/StellarStackOSS/StellarStack/commit/5e32ef56c8072c68532d234617baa009dd51ff04))
+
 ## [1.3.9](https://github.com/StellarStackOSS/StellarStack/compare/v1.3.8...v1.3.9) (2026-01-28)
 
 
