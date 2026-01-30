@@ -653,3 +653,25 @@ export interface WebhookDelivery {
   deliveredAt: string | null;
   createdAt: string;
 }
+
+// ============================================
+// Plugin Action Types
+// ============================================
+
+export interface ExecuteActionRequest {
+  serverId: string;
+  inputs: Record<string, unknown>;
+  options?: {
+    skipBackup?: boolean;
+    skipRestart?: boolean;
+  };
+  confirmed?: boolean;
+}
+
+export interface ExecuteActionResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+  error?: string;
+  executedOperations?: number;
+}

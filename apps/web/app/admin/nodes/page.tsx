@@ -50,7 +50,7 @@ export default function NodesPage() {
   const [formData, setFormData] = useState<CreateNodeData>({
     displayName: "",
     host: "",
-    port: 3001,
+    port: 8080,
     protocol: "HTTP",
     sftpPort: 2022,
     memoryLimit: 8589934592,

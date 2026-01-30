@@ -798,6 +798,16 @@ model Plugin {
   // UI metadata (extracted from manifest for quick access)
   uiMetadata Json?
 
+  // Security and trust
+  trustLevel     String  @default("community") // official or community
+  securityScore  Int?                          // 0-100, from automated analysis
+  securityReport Json?                         // Detailed security findings
+
+  // Git repository info (for community plugins)
+  gitRepoUrl String?   // Source repository URL
+  gitBranch  String?   // Branch/tag installed from
+  lastChecked DateTime? // Last security scan
+
   // Timestamps
   installedAt DateTime @default(now())
   enabledAt   DateTime?
@@ -986,4 +996,38 @@ model AnalyticsAggregate {
   @@index([referenceId])
   @@index([endTime])
   @@map("analytics_aggregates")
+}
+
+// ============================================
+// Plugin Audit Logging
+// ============================================
+
+model PluginAuditLog {
+  id        String   @id @default(cuid())
+
+  // Plugin and action info
+  pluginId  String
+  actionId  String
+
+  // User and server context
+  userId    String
+  serverId  String?
+
+  // Execution details
+  params              Json                 // Input parameters
+  result              String               // "success", "error", "denied"
+  denialReason        String?              // If result == "denied"
+  error               String?              // If result == "error"
+  executedOperations  Int?                 // Number of operations completed
+  duration            Int                  // Milliseconds
+
+  // Timestamp
+  timestamp           DateTime @default(now())
+
+  // Indexes for fast queries
+  @@index([pluginId, timestamp])
+  @@index([userId, timestamp])
+  @@index([serverId, timestamp])
+  @@index([result])
+  @@map("plugin_audit_logs")
 }

@@ -245,6 +245,9 @@ importers:
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      '@stellarstack/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
       '@tanstack/react-query':
         specifier: ^5.90.12
         version: 5.90.12(react@19.2.1)

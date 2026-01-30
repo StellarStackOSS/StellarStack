@@ -270,16 +270,28 @@ const FilesPage = (): JSX.Element | null => {
     setRowSelection({});
   }, [fetchFiles]);
 
-  // Poll disk usage independently to avoid cascading re-renders
+  // Poll disk usage and file list independently to avoid cascading re-renders
   useEffect(() => {
     // Fetch disk usage on component mount
     fetchDiskUsage();
 
     // Poll disk usage every 5 seconds
-    const interval = setInterval(fetchDiskUsage, 5000);
+    const diskInterval = setInterval(fetchDiskUsage, 5000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(diskInterval);
   }, [fetchDiskUsage]);
+
+  // Poll file list for SFTP uploads and external changes
+  useEffect(() => {
+    // Poll files every 3 seconds when not loading
+    const fileInterval = setInterval(() => {
+      if (!isLoading) {
+        fetchFiles();
+      }
+    }, 3000);
+
+    return () => clearInterval(fileInterval);
+  }, [fetchFiles, isLoading]);
 
   // Handle dropped files - upload directly with optimistic updates
   const handleDroppedFiles = useCallback(

@@ -54,3 +54,4 @@ Installer/.env
 # Installer/go.mod
 # Installer/go.sum
 nul
+/.claude/

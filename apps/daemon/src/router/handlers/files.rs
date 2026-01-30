@@ -7,11 +7,13 @@ use axum::{
     Extension, Json,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::filesystem::{FileInfo, Filesystem};
 use crate::server::Server;
 use super::ApiError;
+
+// url crate re-used from Cargo.toml dependency
 
 /// List files request
 #[derive(Debug, Deserialize)]
@@ -307,6 +309,136 @@ pub async fn chmod_file(
     Ok(Json(serde_json::json!({
         "success": true
     })))
+}
+
+/// Pull file from URL request
+#[derive(Debug, Deserialize)]
+pub struct PullFileRequest {
+    /// The remote URL to download from
+    pub url: String,
+    /// Target directory (relative to server root)
+    #[serde(default)]
+    pub directory: String,
+    /// Optional filename override; if not set, derived from URL or Content-Disposition
+    pub filename: Option<String>,
+    /// Whether to decompress the downloaded file (supports .tar.gz, .zip, .tar)
+    #[serde(default)]
+    pub decompress: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PullFileResponse {
+    pub success: bool,
+    pub path: String,
+    pub size: u64,
+}
+
+/// Download a file from a remote URL into the server's filesystem
+pub async fn pull_file(
+    Extension(server): Extension<Arc<Server>>,
+    Json(request): Json<PullFileRequest>,
+) -> Result<Json<PullFileResponse>, ApiError> {
+    // Validate URL
+    let url: url::Url = request.url.parse().map_err(|e| {
+        ApiError::bad_request(format!("Invalid URL: {}", e))
+    })?;
+
+    // Only allow http/https
+    match url.scheme() {
+        "http" | "https" => {}
+        scheme => {
+            return Err(ApiError::bad_request(format!(
+                "Unsupported URL scheme '{}'. Only http and https are allowed.",
+                scheme
+            )));
+        }
+    }
+
+    info!("Pulling file from URL: {} into directory: {}", url, request.directory);
+
+    // Perform the download
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .timeout(std::time::Duration::from_secs(600))
+        .build()
+        .map_err(|e| ApiError::internal(format!("Failed to create HTTP client: {}", e)))?;
+
+    let response = client.get(url.clone()).send().await.map_err(|e| {
+        ApiError::internal(format!("Failed to download file: {}", e))
+    })?;
+
+    if !response.status().is_success() {
+        return Err(ApiError::internal(format!(
+            "Download failed with status: {}",
+            response.status()
+        )));
+    }
+
+    // Determine filename
+    let filename = request.filename.unwrap_or_else(|| {
+        // Try Content-Disposition header first
+        if let Some(cd) = response.headers().get(reqwest::header::CONTENT_DISPOSITION) {
+            if let Ok(cd_str) = cd.to_str() {
+                // Parse filename from Content-Disposition: attachment; filename="foo.jar"
+                if let Some(idx) = cd_str.find("filename=") {
+                    let name = &cd_str[idx + 9..];
+                    let name = name.trim_matches('"').trim_matches('\'');
+                    if !name.is_empty() {
+                        return name.to_string();
+                    }
+                }
+            }
+        }
+
+        // Fall back to last URL path segment
+        url.path_segments()
+            .and_then(|segments| segments.last())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "download".to_string())
+    });
+
+    // Build target path
+    let target_path = if request.directory.is_empty() {
+        filename.clone()
+    } else {
+        format!("{}/{}", request.directory.trim_end_matches('/'), filename)
+    };
+
+    // Read response body
+    let bytes = response.bytes().await.map_err(|e| {
+        ApiError::internal(format!("Failed to read download response: {}", e))
+    })?;
+    let size = bytes.len() as u64;
+
+    let fs = get_filesystem(&server)?;
+
+    // Write the file
+    fs.write_file(&target_path, &bytes).await?;
+
+    info!("Downloaded {} bytes to {}", size, target_path);
+
+    // Optionally decompress
+    if request.decompress {
+        let dest_dir = if request.directory.is_empty() {
+            ".".to_string()
+        } else {
+            request.directory.clone()
+        };
+
+        info!("Decompressing {} to {}", target_path, dest_dir);
+        fs.decompress(&target_path, &dest_dir).await?;
+
+        // Delete the archive after extraction
+        fs.delete(&target_path).await?;
+        info!("Decompressed and cleaned up archive {}", target_path);
+    }
+
+    Ok(Json(PullFileResponse {
+        success: true,
+        path: target_path,
+        size,
+    }))
 }
 
 /// Helper to get filesystem for a server

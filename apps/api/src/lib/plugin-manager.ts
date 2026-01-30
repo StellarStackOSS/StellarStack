@@ -73,12 +73,32 @@ export interface PluginManifest {
   gameTypes?: string[];
   permissions?: string[];
   hooks?: string[];
+  actions?: Array<{
+    id: string;
+    label: string;
+    description?: string;
+    icon?: string;
+    dangerous?: boolean;
+    params?: Array<{
+      id: string;
+      label: string;
+      type: "string" | "number" | "boolean" | "select";
+      required?: boolean;
+      default?: unknown;
+      options?: Array<{ label: string; value: unknown }>;
+    }>;
+    operations: Array<{
+      type: "download-to-server" | "write-file" | "delete-file" | "send-command" | "restart-server" | "stop-server" | "start-server" | "create-backup";
+      [key: string]: unknown;
+    }>;
+  }>;
   ui?: {
     serverTabs?: Array<{
       id: string;
       label: string;
       icon: string;
-      component: string;
+      component?: string;
+      uiSchema?: unknown; // UISchema type from SDK
     }>;
     adminPages?: Array<{
       id: string;
@@ -206,7 +226,36 @@ const BUILT_IN_PLUGINS: PluginManifest[] = [
           id: "modpacks",
           label: "Modpacks",
           icon: "flame",
-          component: "CurseForgeTab",
+          uiSchema: {
+            type: "search-and-install",
+            searchAction: "search-modpacks",
+            detailAction: "get-modpack-details",
+            installAction: "install-modpack",
+            fields: {
+              searchInput: {
+                label: "Search Modpacks",
+                placeholder: "Search by name or author...",
+              },
+              resultCard: {
+                title: "name",
+                subtitle: "authors",
+                image: "logo",
+                description: "summary",
+                metadata: [
+                  {
+                    label: "Downloads",
+                    field: "downloadCount",
+                    format: "number",
+                  },
+                  {
+                    label: "Updated",
+                    field: "dateModified",
+                    format: "date",
+                  },
+                ],
+              },
+            },
+          },
         },
       ],
     },
@@ -258,7 +307,36 @@ const BUILT_IN_PLUGINS: PluginManifest[] = [
           id: "modrinth",
           label: "Modrinth",
           icon: "leaf",
-          component: "ModrinthTab",
+          uiSchema: {
+            type: "search-and-install",
+            searchAction: "search-projects",
+            detailAction: "get-project-details",
+            installAction: "install-project",
+            fields: {
+              searchInput: {
+                label: "Search Modrinth",
+                placeholder: "Search mods, modpacks, or resource packs...",
+              },
+              resultCard: {
+                title: "name",
+                subtitle: "author",
+                image: "icon_url",
+                description: "description",
+                metadata: [
+                  {
+                    label: "Downloads",
+                    field: "downloads",
+                    format: "number",
+                  },
+                  {
+                    label: "Updated",
+                    field: "date_modified",
+                    format: "date",
+                  },
+                ],
+              },
+            },
+          },
         },
       ],
     },
@@ -435,11 +513,11 @@ class PluginManager {
           isBuiltIn: true,
           gameTypes: manifest.gameTypes || ["*"],
           permissions: manifest.permissions || [],
-          manifest: manifest as unknown as Record<string, unknown>,
-          config: manifest.defaultConfig || {},
-          defaultConfig: manifest.defaultConfig || {},
-          configSchema: manifest.configSchema || null,
-          uiMetadata,
+          manifest: manifest as any,
+          config: (manifest.defaultConfig || {}) as any,
+          defaultConfig: (manifest.defaultConfig || {}) as any,
+          configSchema: (manifest.configSchema || null) as any,
+          uiMetadata: (uiMetadata || null) as any,
         },
       });
       console.log(`[Plugins] Registered built-in plugin: ${manifest.name}`);
@@ -459,10 +537,10 @@ class PluginManager {
           repository: manifest.repository,
           gameTypes: manifest.gameTypes || ["*"],
           permissions: manifest.permissions || [],
-          manifest: manifest as unknown as Record<string, unknown>,
-          defaultConfig: manifest.defaultConfig || {},
-          configSchema: manifest.configSchema || null,
-          uiMetadata,
+          manifest: manifest as any,
+          defaultConfig: (manifest.defaultConfig || {}) as any,
+          configSchema: (manifest.configSchema || null) as any,
+          uiMetadata: (uiMetadata || null) as any,
         },
       });
       console.log(`[Plugins] Updated built-in plugin: ${manifest.name} to v${manifest.version}`);
@@ -590,7 +668,7 @@ class PluginManager {
 
     const updated = await db.plugin.update({
       where: { id: plugin.id },
-      data: { config: mergedConfig },
+      data: { config: mergedConfig as any },
     });
 
     // Emit config updated hook
@@ -633,14 +711,58 @@ class PluginManager {
   }
 
   /**
-   * Get plugins that provide server tabs for a specific game type.
+   * Get plugins that provide server tabs for a specific server.
+   * Matches plugin gameTypes against the blueprint name and category.
+   *
+   * Game type matching checks if any of the plugin's gameTypes appear in
+   * the blueprint name or category (case-insensitive). For example:
+   *   - Plugin gameTypes: ["minecraft"] matches blueprint name "Paper" -> no
+   *   - Plugin gameTypes: ["minecraft"] matches blueprint name "Minecraft Vanilla" -> yes
+   *   - Plugin gameTypes: ["*"] matches everything
+   *
+   * Common blueprint names: "Paper", "Minecraft Vanilla", "Forge", "Fabric",
+   * "Rust", "Valheim", "ARK: Survival Evolved", etc.
+   *
+   * To improve matching, we also check known aliases.
    */
-  async getServerTabPlugins(blueprintCategory?: string): Promise<PluginInfo[]> {
+  async getServerTabPlugins(
+    blueprintName?: string,
+    blueprintCategory?: string
+  ): Promise<PluginInfo[]> {
     const plugins = await db.plugin.findMany({
       where: {
         status: "enabled",
       },
     });
+
+    // Known blueprint name -> game type aliases
+    // This allows plugins with gameTypes: ["minecraft"] to match blueprints
+    // named "Paper", "Forge", "Fabric", "Spigot", "Bukkit", "Purpur", etc.
+    const GAME_ALIASES: Record<string, string[]> = {
+      minecraft: [
+        "minecraft",
+        "paper",
+        "spigot",
+        "bukkit",
+        "purpur",
+        "forge",
+        "fabric",
+        "neoforge",
+        "quilt",
+        "sponge",
+        "velocity",
+        "waterfall",
+        "bungeecord",
+        "vanilla",
+      ],
+      rust: ["rust"],
+      "garry-s-mod": ["garry", "gmod", "garrysmod"],
+      valheim: ["valheim"],
+      ark: ["ark", "survival evolved"],
+    };
+
+    const nameLC = blueprintName?.toLowerCase() || "";
+    const categoryLC = blueprintCategory?.toLowerCase() || "";
 
     return plugins
       .filter((p) => {
@@ -648,13 +770,29 @@ class PluginManager {
         if (!uiMeta?.serverTabs?.length) return false;
 
         // Check game type compatibility
-        if (blueprintCategory) {
-          const gameTypes = p.gameTypes;
-          if (!gameTypes.includes("*") && !gameTypes.includes(blueprintCategory.toLowerCase())) {
-            return false;
+        const gameTypes = p.gameTypes;
+        if (gameTypes.includes("*")) return true;
+
+        // No blueprint info means we can't filter -- show all non-wildcard plugins too
+        if (!nameLC && !categoryLC) return true;
+
+        for (const gameType of gameTypes) {
+          const gt = gameType.toLowerCase();
+
+          // Direct match against name or category
+          if (nameLC.includes(gt) || categoryLC.includes(gt)) return true;
+
+          // Check aliases: if the plugin targets "minecraft",
+          // see if the blueprint name contains any minecraft alias
+          const aliases = GAME_ALIASES[gt];
+          if (aliases) {
+            for (const alias of aliases) {
+              if (nameLC.includes(alias)) return true;
+            }
           }
         }
-        return true;
+
+        return false;
       })
       .map((p) => this.serializePlugin(p));
   }

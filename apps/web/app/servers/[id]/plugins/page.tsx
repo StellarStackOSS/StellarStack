@@ -29,6 +29,7 @@ import { CurseForgeTab } from "./CurseForgeTab";
 import { ModrinthTab } from "./ModrinthTab";
 import { SteamWorkshopTab } from "./SteamWorkshopTab";
 import { AnnouncerTab } from "./AnnouncerTab";
+import { SchemaRenderer } from "@/components/plugin-ui/SchemaRenderer";
 import type { PluginInfo } from "@/lib/api";
 
 const PLUGIN_ICONS: Record<string, React.ReactNode> = {
@@ -94,16 +95,29 @@ const ServerPluginsPage = () => {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
-          <h3 className="mb-2 text-sm font-medium text-zinc-400">No Plugin Selected</h3>
+          <h3 className="mb-2 text-sm font-medium text-zinc-400">No Extension Selected</h3>
           <p className="text-xs text-zinc-600">
-            Select a plugin tab from the sidebar to get started.
+            Select an extension tab from the sidebar to get started.
           </p>
         </div>
       );
     }
 
-    // Render built-in plugin components
-    // For community plugins, this would use dynamic loading or iframes
+    // Check if tab has a declarative UI schema (new system)
+    const uiSchema = (activeTab as any)?.uiSchema;
+    if (uiSchema) {
+      return (
+        <SchemaRenderer
+          schema={uiSchema}
+          pluginId={activePlugin.pluginId}
+          serverId={serverId}
+          pluginConfig={activePlugin.config}
+        />
+      );
+    }
+
+    // Fallback to hardcoded components for legacy plugins (temporarily)
+    // These will eventually be migrated to use schemas
     switch (`${activePlugin.pluginId}:${activeTab.id}`) {
       case "curseforge-installer:modpacks":
         return <CurseForgeTab serverId={serverId} pluginConfig={activePlugin.config} />;
@@ -118,7 +132,7 @@ const ServerPluginsPage = () => {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
             <h3 className="mb-2 text-sm font-medium text-zinc-400">{activeTab.label}</h3>
-            <p className="text-xs text-zinc-600">This plugin tab is coming soon.</p>
+            <p className="text-xs text-zinc-600">This extension tab is coming soon.</p>
           </div>
         );
     }
@@ -133,7 +147,7 @@ const ServerPluginsPage = () => {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div>
-                <h1 className="text-lg font-semibold text-zinc-100">Plugins</h1>
+                <h1 className="text-lg font-semibold text-zinc-100">Extensions</h1>
                 <p className="text-xs text-zinc-500">Extensions and integrations for this server</p>
               </div>
             </div>
@@ -150,10 +164,10 @@ const ServerPluginsPage = () => {
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Extensions</div>
               <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] py-20 shadow-lg shadow-black/20">
                 <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
-                <h3 className="mb-2 text-sm font-medium text-zinc-400">No Plugins Available</h3>
+                <h3 className="mb-2 text-sm font-medium text-zinc-400">No Extensions Available</h3>
                 <p className="max-w-sm text-center text-xs text-zinc-600">
-                  No plugins are enabled for this server type. Ask your administrator to enable
-                  plugins in the admin panel.
+                  No extensions are enabled for this server type. Ask your administrator to enable
+                  extensions in the admin panel.
                 </p>
               </div>
             </div>
@@ -188,7 +202,7 @@ const ServerPluginsPage = () => {
             <FadeIn delay={0.1}>
               <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
-                  {activeTab?.label || "Plugin"}
+                  {activeTab?.label || "Extension"}
                 </div>
                 <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
                   {renderActiveTab()}

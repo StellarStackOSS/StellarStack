@@ -1,49 +1,26 @@
 "use client";
 
-import { type JSX, useEffect, useRef, useState } from "react";
+import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   BsArrowRight,
   BsBoxSeam,
-  BsCheck2,
+  BsChevronDown,
   BsCloudArrowUp,
-  BsCodeSlash,
   BsCpu,
   BsDatabase,
-  BsFileEarmarkCode,
-  BsFileEarmarkLock,
   BsGear,
   BsGithub,
-  BsKey,
   BsLayers,
   BsLightningCharge,
   BsLock,
   BsPeople,
-  BsPersonWorkspace,
   BsPlug,
   BsServer,
   BsShieldCheck,
-  BsShieldLock,
   BsTerminal,
 } from "react-icons/bs";
-import {
-  SiDocker,
-  SiGrafana,
-  SiHono,
-  SiNextdotjs,
-  SiNodedotjs,
-  SiPostgresql,
-  SiPrisma,
-  SiPrometheus,
-  SiReact,
-  SiRedis,
-  SiRust,
-  SiTailwindcss,
-  SiTraefikproxy,
-  SiTurborepo,
-  SiTypescript,
-} from "react-icons/si";
 import { Footer } from "@/components/Footer";
 import { Navigation } from "@/components/Navigation";
 import { TextureButton } from "@workspace/ui/components/texture-button";
@@ -52,188 +29,127 @@ import { TextureButton } from "@workspace/ui/components/texture-button";
 // Data
 // ============================================================================
 
-const technologies = [
-  { name: "Next.js", Icon: SiNextdotjs, description: "React Framework" },
-  { name: "React", Icon: SiReact, description: "UI Library" },
-  { name: "TypeScript", Icon: SiTypescript, description: "Type Safety" },
-  { name: "PostgreSQL", Icon: SiPostgresql, description: "Database" },
-  { name: "Prisma", Icon: SiPrisma, description: "ORM" },
-  { name: "Docker", Icon: SiDocker, description: "Containers" },
-  { name: "Traefik", Icon: SiTraefikproxy, description: "Reverse Proxy" },
-  { name: "Tailwind CSS", Icon: SiTailwindcss, description: "Styling" },
-  { name: "Hono", Icon: SiHono, description: "API Framework" },
-  { name: "Redis", Icon: SiRedis, description: "Caching" },
-  { name: "Node.js", Icon: SiNodedotjs, description: "Runtime" },
-  { name: "Turborepo", Icon: SiTurborepo, description: "Monorepo" },
-  { name: "Rust", Icon: SiRust, description: "Daemon" },
-  { name: "Prometheus", Icon: SiPrometheus, description: "Metrics" },
-  { name: "Grafana", Icon: SiGrafana, description: "Dashboards" },
+const CYCLE_DURATION = 5000; // ms per showcase item
+
+interface ShowcaseItem {
+  label: string;
+  heading: string;
+  description: string;
+}
+
+const showcaseItems: ShowcaseItem[] = [
+  {
+    label: "Deploy servers",
+    heading: "One-click game server deployment",
+    description:
+      "Select a game, configure resources, and deploy in seconds. Pre-built blueprints handle all the complexity so you can focus on playing.",
+  },
+  {
+    label: "Monitor performance",
+    heading: "Real-time resource monitoring",
+    description:
+      "Track CPU, memory, disk, and network usage across all your servers with live-updating dashboards and historical metrics.",
+  },
+  {
+    label: "Manage players",
+    heading: "Player management & permissions",
+    description:
+      "View online players, manage bans and whitelists, and assign granular role-based permissions to your team members.",
+  },
+  {
+    label: "Automate backups",
+    heading: "Scheduled & on-demand backups",
+    description:
+      "Configure automatic backup schedules with retention policies. Restore any backup with a single click -- zero downtime.",
+  },
+  {
+    label: "Scale infrastructure",
+    heading: "Multi-node orchestration",
+    description:
+      "Add new nodes to your cluster and distribute game servers across them. Manage your entire fleet from one dashboard.",
+  },
 ];
 
 const features = [
   {
-    icon: BsServer,
-    title: "Multi-Game Support",
+    icon: BsBoxSeam,
+    title: "Docker isolation",
     description:
-      "Deploy and manage servers for Minecraft, Rust, Valheim, ARK, and dozens more games with pre-configured blueprints.",
+      "Every game server runs in its own container with strict resource limits and network isolation.",
   },
   {
     icon: BsShieldCheck,
-    title: "Enterprise Security",
+    title: "Role-based access",
     description:
-      "Role-based access control, API key management, 2FA support, and comprehensive audit logging built in.",
-  },
-  {
-    icon: BsLightningCharge,
-    title: "Instant Deployment",
-    description:
-      "Spin up new game servers in seconds with automated provisioning, Docker orchestration, and configuration.",
-  },
-  {
-    icon: BsTerminal,
-    title: "Real-time Console",
-    description:
-      "Full console access with WebSocket-powered real-time log streaming and command execution.",
-  },
-  {
-    icon: BsDatabase,
-    title: "Database Management",
-    description:
-      "Built-in MySQL and PostgreSQL database provisioning for game servers that need persistent storage.",
-  },
-  {
-    icon: BsCloudArrowUp,
-    title: "Automated Backups",
-    description:
-      "Schedule automatic backups with configurable retention policies. Restore with a single click.",
-  },
-  {
-    icon: BsGear,
-    title: "Resource Management",
-    description:
-      "Set CPU, memory, and disk limits per server. Monitor usage in real-time with detailed metrics.",
+      "Fine-grained permissions system with customizable roles. Control exactly who can do what.",
   },
   {
     icon: BsPlug,
     title: "REST API",
     description:
-      "Comprehensive REST API for automation and integration. Build your own tools or connect existing systems.",
+      "Full-featured API for automation and integration. Build custom tools or connect existing systems.",
   },
-];
-
-const targetUsers = [
   {
-    icon: BsServer,
-    title: "VPS & Dedicated Servers",
+    icon: BsTerminal,
+    title: "Real-time console",
     description:
-      "Got a VPS or dedicated server? Run the install script and have a full game server panel running in minutes.",
+      "WebSocket-powered console with live log streaming and command execution for every server.",
   },
   {
-    icon: BsPeople,
-    title: "Gaming Communities",
-    description:
-      "Self-host servers for your clan or guild with role-based permissions and member access control.",
-  },
-  {
-    icon: BsPersonWorkspace,
-    title: "Homelab Enthusiasts",
-    description:
-      "Run game servers on your own hardware. Perfect for those who prefer full control over their infrastructure.",
-  },
-  {
-    icon: BsCodeSlash,
-    title: "Developers & Contributors",
-    description:
-      "Contribute to the project, build custom blueprints, or extend functionality. It's all open source.",
-  },
-];
-
-const securityFeatures = [
-  {
-    icon: BsKey,
-    title: "Bcrypt Password Hashing",
-    description:
-      "Industry-standard bcrypt algorithm with adaptive cost factor for secure password storage.",
-  },
-  {
-    icon: BsLock,
-    title: "AES-256-CBC Encryption",
-    description:
-      "Military-grade encryption for sensitive data at rest, including API tokens and secrets.",
-  },
-  {
-    icon: BsShieldLock,
-    title: "HTTPS Everywhere",
-    description: "TLS 1.3 support out of the box with automatic certificate management.",
-  },
-  {
-    icon: BsFileEarmarkLock,
-    title: "mTLS Communication",
-    description:
-      "Mutual TLS authentication between control plane and daemon nodes for zero-trust security.",
-  },
-];
-
-const architectureSteps = [
-  {
-    step: "01",
-    title: "Web Interface",
-    description:
-      "Next.js dashboard for managing servers, users, and configurations with a modern UI.",
     icon: BsLayers,
-  },
-  {
-    step: "02",
-    title: "API Layer",
+    title: "Multi-node support",
     description:
-      "Hono-powered REST API handling authentication, authorization, and business logic.",
-    icon: BsFileEarmarkCode,
+      "Distribute servers across multiple machines. Add capacity by connecting new daemon nodes.",
   },
   {
-    step: "03",
-    title: "Daemon Nodes",
-    description: "High-performance Rust daemons running on each node, managing Docker containers.",
-    icon: BsCpu,
-  },
-  {
-    step: "04",
-    title: "Game Servers",
+    icon: BsGear,
+    title: "Blueprint system",
     description:
-      "Isolated Docker containers running your game servers with resource limits and networking.",
-    icon: BsBoxSeam,
+      "Pre-configured templates for dozens of games. Create custom blueprints for any Docker image.",
   },
 ];
 
-const installSteps = [
-  { text: "curl -sSL https://get.stellarstack.app | bash", delay: 0 },
-  { text: "Detecting system architecture... x86_64", delay: 800 },
-  { text: "Downloading StellarStack v1.3.5...", delay: 1200 },
-  { text: "Installing dependencies...", delay: 2000 },
-  { text: "Configuring Docker...", delay: 2800 },
-  { text: "Starting services...", delay: 3400 },
-  { text: "StellarStack is ready! Visit https://localhost:3000", delay: 4200 },
+const faqItems = [
+  {
+    question: "How do I install StellarStack?",
+    answer:
+      "Run a single command on any Linux server: curl -sSL https://get.stellarstack.app | bash. The installer handles Docker, database setup, and service configuration automatically. You'll have a running panel in under five minutes.",
+  },
+  {
+    question: "Which games are supported?",
+    answer:
+      "StellarStack ships with blueprints for Minecraft (Java & Bedrock), Rust, Valheim, ARK, Terraria, CS2, Palworld, and many more. You can also create custom blueprints for any game that can run in Docker.",
+  },
+  {
+    question: "What are the minimum server requirements?",
+    answer:
+      "The panel itself requires 1 CPU core, 1 GB RAM, and 10 GB disk. Game servers need additional resources depending on the game. Any modern Linux distribution with Docker support works.",
+  },
+  {
+    question: "Is it really free?",
+    answer:
+      "Yes. StellarStack is open source under the MIT license. There are no hidden fees, usage limits, or premium tiers. You run it on your own infrastructure.",
+  },
+  {
+    question: "Can I migrate from Pterodactyl or other panels?",
+    answer:
+      "We provide migration guides and tooling to help you transition from Pterodactyl and other popular panels. Your game data, configurations, and user accounts can be imported.",
+  },
+  {
+    question: "How do I get support?",
+    answer:
+      "Join our Discord community for help from maintainers and other users. You can also open issues on GitHub for bug reports and feature requests.",
+  },
 ];
 
 // ============================================================================
-// Animation Variants
+// Animation helpers
 // ============================================================================
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0 },
 };
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-// ============================================================================
-// Components
-// ============================================================================
 
 const AnimatedSection = ({
   children,
@@ -261,39 +177,563 @@ const AnimatedSection = ({
   );
 };
 
-const FeatureCard = ({
-  icon: Icon,
-  title,
-  description,
-  index,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  index: number;
-}) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+// ============================================================================
+// Showcase mock visuals (right-side panels)
+// ============================================================================
+
+const DeployVisual = () => (
+  <div className="space-y-4">
+    {/* Header bar */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
+          <BsServer className="h-4 w-4 text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-zinc-200">New Server</p>
+          <p className="text-xs text-zinc-500">Minecraft - Java Edition</p>
+        </div>
+      </div>
+      <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+        Deploying...
+      </span>
+    </div>
+    {/* Progress */}
+    <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+      {["Pulling image", "Creating container", "Configuring network", "Starting server"].map(
+        (step, i) => (
+          <div key={step} className="flex items-center gap-3">
+            <div
+              className={cn(
+                "h-2 w-2 rounded-full",
+                i < 2 ? "bg-emerald-400" : i === 2 ? "animate-pulse bg-emerald-400" : "bg-zinc-700"
+              )}
+            />
+            <span className={cn("text-sm", i <= 2 ? "text-zinc-300" : "text-zinc-600")}>
+              {step}
+            </span>
+          </div>
+        )
+      )}
+    </div>
+    {/* Config summary */}
+    <div className="grid grid-cols-3 gap-3">
+      {[
+        { label: "CPU", value: "4 Cores" },
+        { label: "Memory", value: "8 GB" },
+        { label: "Disk", value: "50 GB" },
+      ].map((item) => (
+        <div
+          key={item.label}
+          className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-center"
+        >
+          <p className="text-xs text-zinc-500">{item.label}</p>
+          <p className="text-sm font-medium text-zinc-200">{item.value}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const MonitorVisual = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <p className="text-sm font-medium text-zinc-200">Server Metrics</p>
+      <span className="text-xs text-zinc-500">Live</span>
+    </div>
+    {/* Metric bars */}
+    {[
+      { label: "CPU Usage", value: 42, color: "bg-emerald-400" },
+      { label: "Memory", value: 67, color: "bg-blue-400" },
+      { label: "Disk I/O", value: 23, color: "bg-amber-400" },
+      { label: "Network", value: 51, color: "bg-purple-400" },
+    ].map((metric) => (
+      <div key={metric.label} className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-zinc-400">{metric.label}</span>
+          <span className="text-xs font-medium text-zinc-300">{metric.value}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${metric.value}%` }}
+            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+            className={cn("h-full rounded-full", metric.color)}
+          />
+        </div>
+      </div>
+    ))}
+    {/* Uptime */}
+    <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+      <span className="text-xs text-zinc-400">Uptime</span>
+      <span className="text-sm font-medium text-emerald-400">99.98% &middot; 14d 6h</span>
+    </div>
+  </div>
+);
+
+const PlayersVisual = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <p className="text-sm font-medium text-zinc-200">Online Players</p>
+      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+        12 / 64
+      </span>
+    </div>
+    <div className="space-y-2">
+      {[
+        { name: "Alex_Builder", role: "Admin", online: true },
+        { name: "CraftMaster99", role: "Moderator", online: true },
+        { name: "SurvivalPro", role: "Member", online: true },
+        { name: "RedstoneWiz", role: "Member", online: true },
+        { name: "NoobSlayer42", role: "Member", online: false },
+      ].map((player) => (
+        <div
+          key={player.name}
+          className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-2.5"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "h-2 w-2 rounded-full",
+                player.online ? "bg-emerald-400" : "bg-zinc-600"
+              )}
+            />
+            <span className="text-sm text-zinc-200">{player.name}</span>
+          </div>
+          <span
+            className={cn(
+              "text-xs",
+              player.role === "Admin"
+                ? "text-amber-400"
+                : player.role === "Moderator"
+                  ? "text-blue-400"
+                  : "text-zinc-500"
+            )}
+          >
+            {player.role}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const BackupsVisual = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <p className="text-sm font-medium text-zinc-200">Backup Schedule</p>
+      <span className="text-xs text-zinc-500">Next: 2h 14m</span>
+    </div>
+    <div className="space-y-2">
+      {[
+        {
+          name: "Auto Backup",
+          time: "Today, 03:00 AM",
+          size: "2.4 GB",
+          status: "completed",
+        },
+        {
+          name: "Auto Backup",
+          time: "Yesterday, 03:00 AM",
+          size: "2.3 GB",
+          status: "completed",
+        },
+        {
+          name: "Manual Backup",
+          time: "Jan 27, 11:45 AM",
+          size: "2.4 GB",
+          status: "completed",
+        },
+        {
+          name: "Auto Backup",
+          time: "Jan 27, 03:00 AM",
+          size: "2.2 GB",
+          status: "completed",
+        },
+      ].map((backup, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-2.5"
+        >
+          <div>
+            <p className="text-sm text-zinc-200">{backup.name}</p>
+            <p className="text-xs text-zinc-500">{backup.time}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-medium text-zinc-300">{backup.size}</p>
+            <p className="text-xs text-emerald-400">Completed</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const ScaleVisual = () => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <p className="text-sm font-medium text-zinc-200">Node Cluster</p>
+      <span className="text-xs text-zinc-500">3 nodes</span>
+    </div>
+    {[
+      { name: "us-east-1", servers: 8, cpu: 62, mem: 71, status: "healthy" },
+      { name: "eu-west-1", servers: 5, cpu: 45, mem: 58, status: "healthy" },
+      { name: "ap-south-1", servers: 3, cpu: 28, mem: 34, status: "healthy" },
+    ].map((node) => (
+      <div key={node.name} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="text-sm font-medium text-zinc-200">{node.name}</span>
+          </div>
+          <span className="text-xs text-zinc-500">{node.servers} servers</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-[11px] text-zinc-500">CPU</span>
+              <span className="text-[11px] text-zinc-400">{node.cpu}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div
+                className="h-full rounded-full bg-emerald-400"
+                style={{ width: `${node.cpu}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-[11px] text-zinc-500">MEM</span>
+              <span className="text-[11px] text-zinc-400">{node.mem}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-full rounded-full bg-blue-400" style={{ width: `${node.mem}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const showcaseVisuals = [DeployVisual, MonitorVisual, PlayersVisual, BackupsVisual, ScaleVisual];
+
+// ============================================================================
+// Feature Showcase (progress bars + visuals)
+// ============================================================================
+
+const FeatureShowcase = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+
+  const startTimer = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setProgress(0);
+
+    const step = 30; // ms
+    let elapsed = 0;
+
+    intervalRef.current = setInterval(() => {
+      elapsed += step;
+      setProgress(Math.min((elapsed / CYCLE_DURATION) * 100, 100));
+
+      if (elapsed >= CYCLE_DURATION) {
+        setActiveIndex((prev) => (prev + 1) % showcaseItems.length);
+        elapsed = 0;
+        setProgress(0);
+      }
+    }, step);
+  }, []);
+
+  useEffect(() => {
+    if (isInView) startTimer();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isInView, startTimer]);
+
+  const handleSelect = (index: number) => {
+    setActiveIndex(index);
+    startTimer();
+  };
+
+  const ActiveVisual = showcaseVisuals[activeIndex] ?? DeployVisual;
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className={cn(
-        "group relative rounded-xl border p-6 transition-all duration-300",
-        "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/80"
-      )}
-    >
-      <div className="mb-4 inline-flex rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-        <Icon className="h-5 w-5 text-zinc-400 transition-colors group-hover:text-zinc-200" />
+    <section ref={sectionRef} id="showcase" className="relative px-6 py-32">
+      <div className="mx-auto max-w-6xl">
+        <AnimatedSection className="mb-16">
+          <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
+            How it works
+          </span>
+          <h2 className="mb-4 max-w-xl text-3xl font-light text-zinc-100 sm:text-4xl">
+            Everything you need to run game servers, in one panel
+          </h2>
+          <p className="max-w-2xl text-zinc-500">
+            From deployment to scaling, StellarStack handles the full lifecycle of your game server
+            infrastructure.
+          </p>
+        </AnimatedSection>
+
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left: Progress list */}
+          <div className="space-y-1">
+            {showcaseItems.map((item, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleSelect(index)}
+                  className={cn(
+                    "group w-full text-left transition-all duration-300",
+                    "rounded-xl px-5 py-4",
+                    isActive ? "bg-zinc-900/80" : "hover:bg-zinc-900/40"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        "text-sm font-medium transition-colors",
+                        isActive ? "text-zinc-100" : "text-zinc-500 group-hover:text-zinc-300"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                    <BsArrowRight
+                      className={cn(
+                        "h-3.5 w-3.5 transition-all",
+                        isActive
+                          ? "translate-x-0 text-emerald-400 opacity-100"
+                          : "-translate-x-1 text-zinc-600 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
+                      )}
+                    />
+                  </div>
+
+                  {/* Description - only visible when active */}
+                  <AnimatePresence>
+                    {isActive && (
+                      <motion.p
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden text-sm leading-relaxed text-zinc-500"
+                      >
+                        <span className="block pt-2">{item.description}</span>
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Progress bar */}
+                  <div className="mt-3 h-[2px] w-full overflow-hidden rounded-full bg-zinc-800">
+                    <motion.div
+                      className={cn(
+                        "h-full rounded-full",
+                        isActive ? "bg-emerald-400" : "bg-transparent"
+                      )}
+                      style={{
+                        width: isActive ? `${progress}%` : "0%",
+                      }}
+                      transition={{ duration: 0.05, ease: "linear" }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: Visual panel */}
+          <div className="relative">
+            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6">
+              {/* Panel header */}
+              <div className="mb-5 flex items-center gap-2 border-b border-zinc-800/60 pb-4">
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+                <span className="ml-2 text-xs text-zinc-600">
+                  {showcaseItems[activeIndex]?.heading}
+                </span>
+              </div>
+              {/* Content */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ActiveVisual />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </div>
-      <h3 className="mb-2 text-lg font-medium text-zinc-100">{title}</h3>
-      <p className="text-sm leading-relaxed text-zinc-500">{description}</p>
-    </motion.div>
+    </section>
   );
 };
+
+// ============================================================================
+// Features Grid
+// ============================================================================
+
+const FeaturesGrid = () => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <section id="features" className="relative px-6 py-32">
+      <div className="mx-auto max-w-6xl">
+        <AnimatedSection className="mb-16 text-center">
+          <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
+            Features
+          </span>
+          <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">
+            Built for self-hosting.{" "}
+            <span className="text-zinc-500">
+              No vendor lock-in, no monthly fees, complete control.
+            </span>
+          </h2>
+        </AnimatedSection>
+
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.08 },
+            },
+          }}
+          className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
+        >
+          {features.map((feature) => (
+            <motion.div
+              key={feature.title}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
+              }}
+              transition={{ duration: 0.4 }}
+              className={cn(
+                "group relative rounded-xl border p-6 transition-all duration-300",
+                "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
+              )}
+            >
+              <div className="mb-4 inline-flex rounded-lg border border-zinc-800 bg-zinc-900 p-2.5">
+                <feature.icon className="h-4 w-4 text-emerald-400" />
+              </div>
+              <h3 className="mb-2 text-base font-medium text-zinc-100">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-zinc-500">{feature.description}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// FAQ Accordion
+// ============================================================================
+
+const FAQItem = ({
+  item,
+  isOpen,
+  onToggle,
+}: {
+  item: (typeof faqItems)[0];
+  isOpen: boolean;
+  onToggle: () => void;
+}) => (
+  <div className="border-b border-zinc-800/60">
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center justify-between py-5 text-left transition-colors hover:text-zinc-100"
+    >
+      <span
+        className={cn(
+          "text-[15px] font-medium transition-colors",
+          isOpen ? "text-zinc-100" : "text-zinc-300"
+        )}
+      >
+        {item.question}
+      </span>
+      <BsChevronDown
+        className={cn(
+          "h-4 w-4 flex-shrink-0 text-zinc-500 transition-transform duration-200",
+          isOpen && "rotate-180"
+        )}
+      />
+    </button>
+    <AnimatePresence initial={false}>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="overflow-hidden"
+        >
+          <p className="pb-5 text-sm leading-relaxed text-zinc-500">{item.answer}</p>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+
+const FAQSection = () => {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <section id="faq" className="relative px-6 py-32">
+      <div className="mx-auto max-w-3xl">
+        <AnimatedSection className="mb-12 text-center">
+          <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
+            FAQ
+          </span>
+          <h2 className="text-3xl font-light text-zinc-100 sm:text-4xl">Common questions</h2>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.1}>
+          <div>
+            {faqItems.map((item, index) => (
+              <FAQItem
+                key={index}
+                item={item}
+                isOpen={openIndex === index}
+                onToggle={() => setOpenIndex(openIndex === index ? null : index)}
+              />
+            ))}
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// Install / Terminal
+// ============================================================================
+
+const installSteps = [
+  { text: "curl -sSL https://get.stellarstack.app | bash", delay: 0 },
+  { text: "Detecting system architecture... x86_64", delay: 800 },
+  { text: "Downloading StellarStack v1.3.9...", delay: 1200 },
+  { text: "Installing dependencies...", delay: 2000 },
+  { text: "Configuring Docker...", delay: 2800 },
+  { text: "Starting services...", delay: 3400 },
+  {
+    text: "StellarStack is ready! Visit https://localhost:3000",
+    delay: 4200,
+  },
+];
 
 const TerminalWindow = () => {
   const [visibleLines, setVisibleLines] = useState<number>(0);
@@ -303,7 +743,7 @@ const TerminalWindow = () => {
   useEffect(() => {
     if (!isInView) return;
 
-    const timeouts: NodeJS.Timeout[] = [];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     installSteps.forEach((step, index) => {
       const timeout = setTimeout(() => {
         setVisibleLines(index + 1);
@@ -316,14 +756,12 @@ const TerminalWindow = () => {
 
   return (
     <div ref={ref} className="overflow-hidden rounded-xl border border-zinc-800 bg-[#0a0a0a]">
-      {/* Terminal Header */}
       <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
-        <div className="h-3 w-3 rounded-full bg-zinc-700" />
-        <div className="h-3 w-3 rounded-full bg-zinc-700" />
-        <div className="h-3 w-3 rounded-full bg-zinc-700" />
+        <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+        <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+        <div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
         <span className="ml-2 text-xs text-zinc-600">Terminal</span>
       </div>
-      {/* Terminal Content */}
       <div className="p-4 font-mono text-sm">
         {installSteps.slice(0, visibleLines).map((step, index) => (
           <motion.div
@@ -341,7 +779,7 @@ const TerminalWindow = () => {
             <span
               className={cn(
                 index === 0 ? "text-zinc-300" : "text-zinc-500",
-                index === installSteps.length - 1 && "text-emerald-500"
+                index === installSteps.length - 1 && "text-emerald-400"
               )}
             >
               {step.text}
@@ -360,134 +798,6 @@ const TerminalWindow = () => {
   );
 };
 
-const ArchitectureDiagram = () => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <div ref={ref} className="relative">
-      {/* Connection Lines SVG */}
-      <svg className="absolute inset-0 h-full w-full" style={{ zIndex: 0 }}>
-        <defs>
-          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#3f3f46" stopOpacity="0" />
-            <stop offset="50%" stopColor="#3f3f46" stopOpacity="1" />
-            <stop offset="100%" stopColor="#3f3f46" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <div className="relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {architectureSteps.map((step, index) => (
-          <motion.div
-            key={step.step}
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: index * 0.15 }}
-            className="relative"
-          >
-            {/* Connector Arrow (except last) */}
-            {index < architectureSteps.length - 1 && (
-              <div className="absolute top-1/2 right-0 hidden translate-x-1/2 -translate-y-1/2 lg:block">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ duration: 0.3, delay: index * 0.15 + 0.3 }}
-                >
-                  <BsArrowRight className="h-5 w-5 text-zinc-700" />
-                </motion.div>
-              </div>
-            )}
-
-            <div className={cn("relative rounded-xl border p-6", "border-zinc-800 bg-zinc-900/50")}>
-              {/* Step Number */}
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-xs font-medium tracking-wider text-zinc-600">
-                  STEP {step.step}
-                </span>
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2">
-                  <step.icon className="h-4 w-4 text-zinc-500" />
-                </div>
-              </div>
-              <h4 className="mb-2 font-medium text-zinc-200">{step.title}</h4>
-              <p className="text-sm text-zinc-500">{step.description}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const TechStackGrid = () => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
-      variants={staggerContainer}
-      className="grid grid-cols-3 gap-4 sm:grid-cols-5 lg:grid-cols-5"
-    >
-      {technologies.map((tech, index) => (
-        <motion.div
-          key={tech.name}
-          variants={{
-            hidden: { opacity: 0, scale: 0.8 },
-            visible: { opacity: 1, scale: 1 },
-          }}
-          transition={{ duration: 0.3 }}
-          className={cn(
-            "group flex flex-col items-center justify-center rounded-xl border p-4 transition-all duration-300",
-            "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
-          )}
-        >
-          <tech.Icon className="mb-2 h-6 w-6 text-zinc-500 transition-colors group-hover:text-zinc-300" />
-          <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200">
-            {tech.name}
-          </span>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
-const ImagePlaceholder = ({
-  aspectRatio = "16/9",
-  label = "Screenshot",
-}: {
-  aspectRatio?: string;
-  label?: string;
-}) => (
-  <div
-    className={cn(
-      "relative flex items-center justify-center overflow-hidden rounded-xl border",
-      "border-zinc-800 bg-zinc-900/50"
-    )}
-    style={{ aspectRatio }}
-  >
-    {/* Grid Pattern */}
-    <div
-      className="absolute inset-0 opacity-30"
-      style={{
-        backgroundImage: `
-          linear-gradient(to right, #27272a 1px, transparent 1px),
-          linear-gradient(to bottom, #27272a 1px, transparent 1px)
-        `,
-        backgroundSize: "40px 40px",
-      }}
-    />
-    {/* Center Label */}
-    <div className="relative z-10 flex flex-col items-center gap-2">
-      <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
-        <span className="text-sm text-zinc-500">{label}</span>
-      </div>
-    </div>
-  </div>
-);
-
 // ============================================================================
 // Main Page
 // ============================================================================
@@ -502,29 +812,29 @@ const LandingPage = (): JSX.Element => {
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
 
   const homeNavLinks = [
+    { href: "#showcase", label: "How it works", isAnchor: true },
     { href: "#features", label: "Features", isAnchor: true },
-    { href: "#architecture", label: "Architecture", isAnchor: true },
-    { href: "#security", label: "Security", isAnchor: true },
-    { href: "#tech", label: "Tech Stack", isAnchor: true },
+    { href: "#install", label: "Install", isAnchor: true },
+    { href: "#faq", label: "FAQ", isAnchor: true },
   ];
 
   return (
     <div className={cn("relative min-h-svh scroll-smooth", "bg-[#0b0b0a]")}>
       <Navigation links={homeNavLinks} />
 
-      {/* ================================================================== */}
-      {/* Hero Section */}
-      {/* ================================================================== */}
+      {/* ================================================================ */}
+      {/* Hero */}
+      {/* ================================================================ */}
       <section
         ref={heroRef}
         className="relative flex min-h-svh flex-col items-center justify-center px-6 pt-20"
       >
-        {/* Background Gradient */}
+        {/* Background gradient */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            className="absolute top-0 left-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-20 blur-3xl"
+            className="absolute top-0 left-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-15 blur-3xl"
             style={{
-              background: "radial-gradient(circle, #27272a 0%, transparent 70%)",
+              background: "radial-gradient(circle, #34d399 0%, transparent 70%)",
             }}
           />
         </div>
@@ -540,6 +850,7 @@ const LandingPage = (): JSX.Element => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-8 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-2"
           >
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
             <span className="text-xs font-medium text-zinc-400">Open Source</span>
             <span className="h-1 w-1 rounded-full bg-zinc-600" />
             <span className="text-xs text-zinc-500">MIT License</span>
@@ -550,25 +861,12 @@ const LandingPage = (): JSX.Element => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-6 text-4xl leading-[1.1] font-light tracking-tight sm:text-5xl md:text-7xl"
+            className="mb-6 text-4xl leading-[1.08] font-light tracking-tight sm:text-5xl md:text-7xl"
           >
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage: "linear-gradient(135deg, #ffffff 0%, #a1a1aa 50%, #71717a 100%)",
-              }}
-            >
-              Game server infrastructure,
-            </span>
+            <span className="text-zinc-100">The infrastructure behind your</span>
             <br />
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage: "linear-gradient(135deg, #a1a1aa 0%, #71717a 50%, #52525b 100%)",
-              }}
-            >
-              simplified.
-            </span>
+            <span className="text-zinc-100">game servers, </span>
+            <span className="text-zinc-500">simplified.</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -578,8 +876,8 @@ const LandingPage = (): JSX.Element => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-zinc-400"
           >
-            A modern, open-source game server management panel. Deploy on your own infrastructure,
-            manage multiple nodes, and give your community the tools they need.
+            A modern, open-source game server management panel designed for self-hosting on your own
+            infrastructure.
           </motion.p>
 
           {/* CTAs */}
@@ -596,7 +894,7 @@ const LandingPage = (): JSX.Element => {
               </TextureButton>
             </a>
             <a
-              href="https://github.com/stellarstack/stellarstack"
+              href="https://github.com/StellarStackOSS/StellarStack"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -608,7 +906,7 @@ const LandingPage = (): JSX.Element => {
           </motion.div>
         </motion.div>
 
-        {/* Scroll Indicator */}
+        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -617,7 +915,11 @@ const LandingPage = (): JSX.Element => {
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
             className="flex flex-col items-center gap-2"
           >
             <span className="text-xs tracking-wider text-zinc-600 uppercase">Scroll</span>
@@ -626,199 +928,67 @@ const LandingPage = (): JSX.Element => {
         </motion.div>
       </section>
 
-      {/* ================================================================== */}
-      {/* Screenshot Section */}
-      {/* ================================================================== */}
-      <section className="relative px-6 py-20">
+      {/* ================================================================ */}
+      {/* Feature Showcase (Progress Bars + Visuals) */}
+      {/* ================================================================ */}
+      <FeatureShowcase />
+
+      {/* ================================================================ */}
+      {/* Features Grid */}
+      {/* ================================================================ */}
+      <FeaturesGrid />
+
+      {/* ================================================================ */}
+      {/* Install Section */}
+      {/* ================================================================ */}
+      <section id="install" className="relative px-6 py-32">
         <div className="mx-auto max-w-6xl">
-          <AnimatedSection>
-            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30 p-2">
-              <ImagePlaceholder aspectRatio="16/9" label="Dashboard Screenshot" />
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* Features Section */}
-      {/* ================================================================== */}
-      <section id="features" className="relative px-6 py-32">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection className="mb-16 text-center">
-            <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
-              Features
-            </span>
-            <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">
-              Everything you need to manage game servers
-            </h2>
-            <p className="mx-auto max-w-2xl text-zinc-500">
-              Built for self-hosting with enterprise-grade features. No vendor lock-in, no monthly
-              fees, complete control over your infrastructure.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => (
-              <FeatureCard key={feature.title} {...feature} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* Architecture Section */}
-      {/* ================================================================== */}
-      <section id="architecture" className="relative px-6 py-32">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection className="mb-16 text-center">
-            <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
-              Architecture
-            </span>
-            <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">How it works</h2>
-            <p className="mx-auto max-w-2xl text-zinc-500">
-              A distributed architecture designed for reliability and scalability. Run everything on
-              a single server or scale across multiple nodes.
-            </p>
-          </AnimatedSection>
-
-          <ArchitectureDiagram />
-
-          {/* Installation Terminal */}
-          <AnimatedSection delay={0.2} className="mt-16">
-            <div className="mx-auto max-w-2xl">
-              <p className="mb-4 text-center text-sm text-zinc-500">
-                Get started with a single command
-              </p>
-              <TerminalWindow />
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* Security Section */}
-      {/* ================================================================== */}
-      <section id="security" className="relative px-6 py-32">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
-            {/* Left: Content */}
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            {/* Left: content */}
             <AnimatedSection>
               <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
-                Security
+                Get started
               </span>
               <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">
-                Security at every layer
+                Up and running in minutes
               </h2>
-              <p className="mb-8 text-zinc-500">
-                From encrypted communications to isolated containers, security is built into every
-                component. Your game servers and player data stay protected.
+              <p className="mb-6 text-zinc-500">
+                One command installs everything -- Docker, the database, the API, the web panel, and
+                the daemon. No complex configuration required.
               </p>
-
-              <div className="space-y-4">
-                {securityFeatures.map((feature, index) => (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-start gap-4"
-                  >
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-2">
-                      <feature.icon className="h-4 w-4 text-zinc-500" />
+              <div className="space-y-3">
+                {[
+                  "Automated Docker & dependency setup",
+                  "PostgreSQL database provisioned automatically",
+                  "Secure HTTPS with auto-generated certificates",
+                  "Multi-architecture support (x86_64 & ARM64)",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     </div>
-                    <div>
-                      <h4 className="font-medium text-zinc-200">{feature.title}</h4>
-                      <p className="text-sm text-zinc-500">{feature.description}</p>
-                    </div>
-                  </motion.div>
+                    <span className="text-sm text-zinc-400">{item}</span>
+                  </div>
                 ))}
               </div>
             </AnimatedSection>
 
-            {/* Right: Visual */}
-            <AnimatedSection delay={0.2}>
-              <div className="relative">
-                {/* Security Layers Visualization */}
-                <div className="space-y-3">
-                  {[
-                    "Edge Protection",
-                    "Application Security",
-                    "Infrastructure",
-                    "Container Isolation",
-                  ].map((layer, index) => (
-                    <motion.div
-                      key={layer}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: index * 0.1 }}
-                      className={cn("rounded-lg border p-4", "border-zinc-800 bg-zinc-900/50")}
-                      style={{ marginLeft: `${index * 1.5}rem` }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-zinc-300">{layer}</span>
-                        <BsCheck2 className="h-4 w-4 text-zinc-600" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+            {/* Right: terminal */}
+            <AnimatedSection delay={0.15}>
+              <TerminalWindow />
             </AnimatedSection>
           </div>
         </div>
       </section>
 
-      {/* ================================================================== */}
-      {/* Who It's For Section */}
-      {/* ================================================================== */}
-      <section className="relative px-6 py-32">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection className="mb-16 text-center">
-            <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
-              Use Cases
-            </span>
-            <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">
-              Built for self-hosters
-            </h2>
-            <p className="mx-auto max-w-2xl text-zinc-500">
-              Whether you're running servers for friends or managing infrastructure for a gaming
-              community, StellarStack scales with you.
-            </p>
-          </AnimatedSection>
+      {/* ================================================================ */}
+      {/* FAQ */}
+      {/* ================================================================ */}
+      <FAQSection />
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {targetUsers.map((user, index) => (
-              <FeatureCard key={user.title} {...user} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* Tech Stack Section */}
-      {/* ================================================================== */}
-      <section id="tech" className="relative px-6 py-32">
-        <div className="mx-auto max-w-4xl">
-          <AnimatedSection className="mb-16 text-center">
-            <span className="mb-4 inline-block text-xs font-medium tracking-wider text-zinc-500 uppercase">
-              Tech Stack
-            </span>
-            <h2 className="mb-4 text-3xl font-light text-zinc-100 sm:text-4xl">
-              Built with modern tools
-            </h2>
-            <p className="mx-auto max-w-2xl text-zinc-500">
-              A carefully chosen stack for performance, developer experience, and reliability.
-            </p>
-          </AnimatedSection>
-
-          <TechStackGrid />
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* CTA Section */}
-      {/* ================================================================== */}
+      {/* ================================================================ */}
+      {/* CTA */}
+      {/* ================================================================ */}
       <section className="relative px-6 py-32">
         <div className="mx-auto max-w-4xl">
           <AnimatedSection>
@@ -828,11 +998,11 @@ const LandingPage = (): JSX.Element => {
                 "border-zinc-800 bg-zinc-900/50"
               )}
             >
-              {/* Background Pattern */}
+              {/* Dot pattern */}
               <div
-                className="pointer-events-none absolute inset-0 opacity-50"
+                className="pointer-events-none absolute inset-0 opacity-40"
                 style={{
-                  backgroundImage: `radial-gradient(circle at 1px 1px, #27272a 1px, transparent 0)`,
+                  backgroundImage: "radial-gradient(circle at 1px 1px, #27272a 1px, transparent 0)",
                   backgroundSize: "32px 32px",
                 }}
               />
@@ -843,17 +1013,17 @@ const LandingPage = (): JSX.Element => {
                 </h2>
                 <p className="mx-auto mb-8 max-w-xl text-zinc-500">
                   StellarStack is free and open source. Deploy it on your own infrastructure and
-                  take control of your game servers.
+                  take full control of your game servers.
                 </p>
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <a href="https://docs.stellarstack.app" target="_blank" rel="noopener noreferrer">
                     <TextureButton variant="primary">
-                      Read the Documentation
+                      Read the Docs
                       <BsArrowRight className="ml-2 h-4 w-4" />
                     </TextureButton>
                   </a>
                   <a
-                    href="https://github.com/stellarstack/stellarstack"
+                    href="https://github.com/StellarStackOSS/StellarStack"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

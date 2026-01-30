@@ -88,7 +88,7 @@ const adminNavItems = [
   { title: "Servers", icon: Server, href: "/admin/servers" },
   { title: "Blueprints", icon: Package, href: "/admin/blueprints" },
   { title: "Users", icon: Users, href: "/admin/users" },
-  { title: "Plugins", icon: Puzzle, href: "/admin/plugins" },
+  { title: "Extensions", icon: Puzzle, href: "/admin/plugins" },
   { title: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
@@ -112,7 +112,7 @@ const appNavItems = [
     icon: PowerServiceIcon,
     href: "/startup",
   },
-  { title: "Plugins", icon: PuzzleIcon, href: "/plugins" },
+  { title: "Extensions", icon: PuzzleIcon, href: "/plugins" },
   { title: "Settings", icon: Settings01Icon, href: "/settings" },
 ];
 

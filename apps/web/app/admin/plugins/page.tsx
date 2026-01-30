@@ -210,7 +210,7 @@ const PluginsPage = () => {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div>
-                <h1 className="text-lg font-semibold text-zinc-100">Plugins</h1>
+                <h1 className="text-lg font-semibold text-zinc-100">Extensions</h1>
                 <p className="text-xs text-zinc-500">
                   Manage extensions and integrations for StellarStack
                 </p>
@@ -227,34 +227,44 @@ const PluginsPage = () => {
         <div className="space-y-4">
           {/* Search & Filters */}
           <FadeIn delay={0.05}>
-            <div className="flex flex-col gap-4 rounded-lg border border-white/5 bg-[#090909] p-4 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <BsSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                <Input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search plugins..."
-                  className="border-zinc-700/50 bg-zinc-900/50 pl-9 text-zinc-200 placeholder:text-zinc-600"
-                />
+            <div className="flex flex-col gap-4 rounded-lg border border-white/5 bg-[#090909] p-4">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <BsSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search extensions..."
+                    className="border-zinc-700/50 bg-zinc-900/50 pl-9 text-zinc-200 placeholder:text-zinc-600"
+                  />
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <TextureButton
-                  variant={selectedCategory === null ? "primary" : "minimal"}
-                  size="sm"
+              <div className="flex flex-wrap items-center gap-2">
+                <button
                   onClick={() => setSelectedCategory(null)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    selectedCategory === null
+                      ? "bg-zinc-100 text-zinc-900"
+                      : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  )}
                 >
                   All
-                </TextureButton>
+                </button>
                 {categories.map((cat) => (
-                  <TextureButton
+                  <button
                     key={cat}
-                    variant={selectedCategory === cat ? "primary" : "minimal"}
-                    size="sm"
                     onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                      selectedCategory === cat
+                        ? "bg-zinc-100 text-zinc-900"
+                        : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                    )}
                   >
                     {CATEGORY_LABELS[cat] || cat}
-                  </TextureButton>
+                  </button>
                 ))}
               </div>
             </div>
@@ -264,7 +274,7 @@ const PluginsPage = () => {
           <FadeIn delay={0.1}>
             <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
-                Available Plugins ({filteredPlugins.length})
+                Available Extensions ({filteredPlugins.length})
               </div>
               <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
                 {isLoading ? (
@@ -275,7 +285,9 @@ const PluginsPage = () => {
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
                     <p className="text-sm text-zinc-500">
-                      {searchQuery ? "No plugins match your search." : "No plugins available."}
+                      {searchQuery
+                        ? "No extensions match your search."
+                        : "No extensions available."}
                     </p>
                   </div>
                 ) : (
@@ -370,29 +382,30 @@ const PluginsPage = () => {
           {/* Info Section */}
           <FadeIn delay={0.15}>
             <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
-              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Plugin System</div>
+              <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Extension System</div>
               <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg shadow-black/20">
                 <div className="grid gap-6 sm:grid-cols-3">
                   <div>
-                    <h3 className="mb-2 text-sm font-medium text-zinc-300">About Plugins</h3>
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">About Extensions</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Plugins extend StellarStack with additional features like modpack installers,
-                      monitoring tools, and game integrations. Enable or disable them as needed.
+                      Extensions enhance StellarStack with additional features like modpack
+                      installers, monitoring tools, and game integrations. Enable or disable them as
+                      needed.
                     </p>
                   </div>
                   <div>
                     <h3 className="mb-2 text-sm font-medium text-zinc-300">Configuration</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Some plugins require configuration before they can be used. Click the settings
-                      icon on a plugin card to configure it. For example, the CurseForge plugin
-                      requires an API key.
+                      Some extensions require configuration before they can be used. Click the
+                      settings icon on an extension card to configure it. For example, the
+                      CurseForge extension requires an API key.
                     </p>
                   </div>
                   <div>
-                    <h3 className="mb-2 text-sm font-medium text-zinc-300">Community Plugins</h3>
+                    <h3 className="mb-2 text-sm font-medium text-zinc-300">Community Extensions</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Community developers can build plugins using the StellarStack Plugin SDK.
-                      Check the documentation for guides on creating your own plugins.
+                      Community developers can build extensions using the StellarStack Extension
+                      SDK. Check the documentation for guides on creating your own extensions.
                     </p>
                   </div>
                 </div>
@@ -410,7 +423,7 @@ const PluginsPage = () => {
               {selectedPlugin?.name} Settings
             </DialogTitle>
             <DialogDescription className="text-sm text-zinc-400">
-              Configure plugin settings and preferences.
+              Configure extension settings and preferences.
             </DialogDescription>
           </DialogHeader>
           {selectedPlugin?.configSchema && (

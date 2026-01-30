@@ -1,0 +1,16 @@
+{
+  "name": "example-search-install",
+  "version": "1.0.0",
+  "description": "Example StellarStack plugin demonstrating search and install UI schema",
+  "type": "module",
+  "author": "StellarStack Community",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StellarStackOSS/StellarStack-Plugin-SDK"
+  },
+  "keywords": ["stellarstack", "plugin", "example", "search", "install", "mods"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
