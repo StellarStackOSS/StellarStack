@@ -1,283 +1,254 @@
-# Migration to External Plugin SDK Repository
+# Plugin SDK Repository Structure
 
 ## Overview
 
-These example plugins are currently in the StellarStack monorepo but should be moved to the external **StellarStack-Plugin-SDK** repository to serve as official examples and starting points for community developers.
+StellarStack maintains an external **[StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)** repository as the central location for:
+- ✅ Example plugins for developers to learn from
+- ✅ Official plugins maintained by the StellarStack team
+- ✅ Plugin development documentation and guides
+- ✅ Reference implementations and best practices
 
-## What to Move
+## Architecture
 
-### 📦 Example Plugins (Core)
+### Monorepo (StellarStack)
+Contains **core plugin system infrastructure**:
+- Plugin manager, executor, security analyzer
+- Plugin API routes and middleware
+- UI schema renderer components
+- Permission enforcement system
+- Audit logging and monitoring
 
-Move the entire `examples/plugins/` directory to the SDK repository:
+**Does NOT contain plugin implementations** - see SDK repository.
+
+### SDK Repository (StellarStack-Plugin-SDK)
+Contains **all plugin code and examples**:
+- Example plugins (community templates)
+- Official plugins (team-maintained)
+- Plugin development guides
+- Quick start templates
+
+## Directory Structure
+
+### Monorepo: `examples/plugins/` (DOCUMENTATION ONLY)
+
+```
+StellarStack/examples/plugins/
+├── README.md                      # Getting started guide
+├── PLUGIN_DEVELOPMENT_GUIDE.md    # Comprehensive reference
+└── MIGRATION_TO_EXTERNAL_REPO.md  # This file - architecture docs
+```
+
+**Purpose:** Guide developers to the SDK repository.
+
+### SDK Repository: Planned Structure
 
 ```
 StellarStack-Plugin-SDK/
-├── examples/
-│   ├── plugins/
-│   │   ├── example-simple-form/
-│   │   │   ├── stellarstack.json
-│   │   │   └── package.json
-│   │   ├── example-search-install/
-│   │   ├── example-stats-dashboard/
-│   │   ├── example-data-table/
-│   │   ├── README.md
-│   │   ├── PLUGIN_DEVELOPMENT_GUIDE.md
-│   │   └── MIGRATION_TO_EXTERNAL_REPO.md
-│   └── ... other examples
-└── ...
-```
-
-### 📚 Documentation (Core)
-
-- `PLUGIN_DEVELOPMENT_GUIDE.md` - Comprehensive plugin development guide
-- `README.md` - Overview and quick start
-- `MIGRATION_TO_EXTERNAL_REPO.md` - This file
-
-### 🔧 SDK Types (Keep in Monorepo)
-
-The following should **remain** in the StellarStack monorepo:
-
-- `packages/plugin-sdk/src/ui-schema.ts` - Core type definitions
-- `packages/plugin-sdk/src/index.ts` - SDK exports
-- All SDK source files
-
-## Migration Steps
-
-### 1. Create External Repository Structure
-
-```bash
-# Create new structure in StellarStack-Plugin-SDK repo
-mkdir -p examples/plugins
-mkdir -p docs/guides
-```
-
-### 2. Copy Example Plugins
-
-```bash
-# Copy all example plugins
-cp -r examples/plugins/* SDK/examples/plugins/
-
-# Verify all examples
-cd SDK/examples/plugins
-ls -la
-# Should show: example-simple-form, example-search-install, example-stats-dashboard, example-data-table
-```
-
-### 3. Copy Documentation
-
-```bash
-# Copy guides to docs
-cp examples/plugins/PLUGIN_DEVELOPMENT_GUIDE.md SDK/docs/guides/
-cp examples/plugins/README.md SDK/examples/plugins/
-```
-
-### 4. Update README in SDK
-
-Update the main SDK `README.md` to include:
-
-```markdown
-## 📚 Plugin Development
-
-- **[Plugin Development Guide](docs/guides/PLUGIN_DEVELOPMENT_GUIDE.md)** - Complete development reference
-- **[Example Plugins](examples/plugins/README.md)** - Working examples to get started
-
-### Quick Start
-
-1. Read [Plugin Development Guide](docs/guides/PLUGIN_DEVELOPMENT_GUIDE.md)
-2. Copy and customize an [example plugin](examples/plugins/)
-3. Install in StellarStack admin panel
-4. Share with the community!
-```
-
-### 5. Create Getting Started File
-
-Create `SDK/GETTING_STARTED.md`:
-
-```markdown
-# Getting Started with Plugin Development
-
-## 1. Understand the Basics
-
-Read the [Plugin Development Guide](docs/guides/PLUGIN_DEVELOPMENT_GUIDE.md) to understand:
-- Plugin manifest format
-- UI schema types
-- Actions and operations
-- Permissions system
-
-## 2. Choose a Starting Point
-
-Pick an example that matches your needs:
-
-- **Form-based UI?** Start with [`example-simple-form`](examples/plugins/example-simple-form/)
-- **Search & Install?** Start with [`example-search-install`](examples/plugins/example-search-install/)
-- **Metrics display?** Start with [`example-stats-dashboard`](examples/plugins/example-stats-dashboard/)
-- **Data management?** Start with [`example-data-table`](examples/plugins/example-data-table/)
-
-## 3. Customize Your Plugin
-
-1. Copy the example directory
-2. Edit `stellarstack.json`
-3. Update plugin ID, name, and description
-4. Customize actions and UI schema
-5. Test in your StellarStack installation
-
-## 4. Publish
-
-1. Create a public GitHub repository
-2. Push your customized plugin
-3. Submit to plugin registry
-4. Get featured in the marketplace!
-
-See [README.md](examples/plugins/README.md) for detailed examples.
-```
-
-### 6. Update Links in Monorepo
-
-Keep a reference in the monorepo's docs pointing to the external SDK:
-
-In `packages/plugin-sdk/README.md`:
-
-```markdown
-## 📚 Plugin Examples
-
-For working examples and detailed development guides, see the **[StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)** repository:
-
-- [Plugin Development Guide](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/blob/main/docs/guides/PLUGIN_DEVELOPMENT_GUIDE.md)
-- [Example Plugins](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/tree/main/examples/plugins/)
-  - [Simple Form Example](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/tree/main/examples/plugins/example-simple-form)
-  - [Search & Install Example](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/tree/main/examples/plugins/example-search-install)
-  - [Stats Dashboard Example](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/tree/main/examples/plugins/example-stats-dashboard)
-  - [Data Table Example](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/tree/main/examples/plugins/example-data-table)
-```
-
-## What Stays in StellarStack Monorepo
-
-✅ **SDK Type Definitions**
-- `packages/plugin-sdk/src/ui-schema.ts`
-- `packages/plugin-sdk/src/types.ts`
-- `packages/plugin-sdk/src/index.ts`
-- All SDK infrastructure
-
-✅ **Schema Renderers**
-- `apps/web/components/plugin-ui/`
-- Frontend implementation of schema types
-
-✅ **Plugin System Backend**
-- `apps/api/src/lib/plugin-executor.ts`
-- `apps/api/src/lib/plugin-audit.ts`
-- `apps/api/src/middleware/plugin-auth.ts`
-- Core plugin execution system
-
-## What Moves to External SDK Repo
-
-📦 **Example Plugins**
-- `examples/plugins/example-simple-form/`
-- `examples/plugins/example-search-install/`
-- `examples/plugins/example-stats-dashboard/`
-- `examples/plugins/example-data-table/`
-
-📚 **Developer Documentation**
-- `PLUGIN_DEVELOPMENT_GUIDE.md`
-- `examples/plugins/README.md`
-- Getting started guides
-- API documentation (when expanded)
-
-## File Structure After Migration
-
-### StellarStack Monorepo
-
-```
-StellarStack/
-├── packages/
-│   └── plugin-sdk/
-│       ├── src/
-│       │   ├── ui-schema.ts (type definitions)
-│       │   ├── types.ts
-│       │   └── index.ts
-│       └── README.md (links to SDK repo)
-├── apps/
-│   ├── api/
-│   │   └── src/lib/
-│   │       ├── plugin-executor.ts
-│   │       ├── plugin-audit.ts
-│   │       └── plugin-auth.ts
-│   └── web/
-│       └── components/plugin-ui/
-│           ├── SchemaRenderer.tsx
-│           ├── SearchAndInstallRenderer.tsx
-│           ├── FormRenderer.tsx
-│           └── ...
-└── ... rest of monorepo
-```
-
-### StellarStack-Plugin-SDK Repo
-
-```
-StellarStack-Plugin-SDK/
+├── README.md                      # Repository overview
+├── GETTING_STARTED.md             # Quick start
 ├── docs/
 │   └── guides/
-│       └── PLUGIN_DEVELOPMENT_GUIDE.md
+│       └── PLUGIN_DEVELOPMENT_GUIDE.md  # (copied from monorepo)
 ├── examples/
 │   └── plugins/
+│       ├── official/
+│       │   ├── curseforge-installer/
+│       │   │   ├── package.json
+│       │   │   └── stellarstack.json
+│       │   ├── modrinth-installer/
+│       │   │   ├── package.json
+│       │   │   └── stellarstack.json
+│       │   └── server-announcer/
+│       │       ├── package.json
+│       │       └── stellarstack.json
 │       ├── example-simple-form/
+│       │   ├── package.json
+│       │   ├── stellarstack.json
+│       │   └── README.md
 │       ├── example-search-install/
 │       ├── example-stats-dashboard/
 │       ├── example-data-table/
 │       └── README.md
-├── GETTING_STARTED.md
-├── README.md
-└── ... SDK infrastructure
+└── ...
 ```
 
-## Benefits of This Structure
+## What Gets Duplicated?
 
-1. **Clear Separation of Concerns**
-   - Examples live in dedicated SDK repository
-   - Easier for community to find and fork
+### Documentation
+The following files appear in both places:
+- `PLUGIN_DEVELOPMENT_GUIDE.md` - Comprehensive development guide
+- `README.md` - Getting started guide
 
-2. **Easier Community Contributions**
-   - Developers can contribute examples separately
-   - No need to understand full monorepo structure
+**Why duplicate?**
+- Monorepo is accessible to all developers
+- SDK repo is the main hub for plugins
+- Ensures both stay in sync
 
-3. **Better Documentation**
-   - Focused, example-first documentation
-   - Clear path for developers: docs → examples → customize
+### Plugins
+Plugins exist ONLY in the SDK repository:
+- Official plugins (curseforge, modrinth, server-announcer)
+- Example plugins (simple-form, search-install, etc.)
 
-4. **Faster Updates**
-   - Examples can be updated independently
-   - No monorepo build required for documentation changes
+## Migration Timeline
 
-5. **Community Discovery**
-   - GitHub stars and forks on SDK repo
-   - Dedicated space for community plugins
+### Phase 1: ✅ COMPLETE
+- Plugin system infrastructure built in monorepo
+- Git-based installation implemented
+- Security analysis working
+- Documentation guides created
 
-## Verification Checklist
+### Phase 2: 📋 IN PROGRESS
+- Create StellarStack-Plugin-SDK repository (if needed)
+- Populate with example plugins
+- Populate with official plugins
+- Set up CI/CD for plugin validation
 
-After migration:
+### Phase 3: 🔮 PLANNED
+- Official plugins installable from SDK
+- Plugin marketplace/registry
+- Auto-update system
+- Community plugin submissions
 
-- [ ] All example plugins copied to SDK repo
-- [ ] `PLUGIN_DEVELOPMENT_GUIDE.md` copied to SDK docs
-- [ ] `examples/plugins/README.md` copied to SDK examples
-- [ ] `GETTING_STARTED.md` created in SDK root
-- [ ] SDK repo README updated with links
-- [ ] Monorepo plugin-sdk README links to SDK repo examples
-- [ ] All manifest files are valid JSON
-- [ ] Each example has package.json
-- [ ] Each example has proper metadata in stellarstack.json
-- [ ] Links in all documentation are correct
-- [ ] CI/CD configured for SDK repo
-- [ ] Plugin registry points to SDK repo examples
+## How to Access Plugins
 
-## Next Steps
+### As a Developer
+```bash
+# Clone the SDK repository
+git clone https://github.com/StellarStackOSS/StellarStack-Plugin-SDK
+cd StellarStack-Plugin-SDK/examples/plugins
 
-1. **Create the external repository** - StellarStack-Plugin-SDK (if not already done)
-2. **Set up CI/CD** - Validate example manifests
-3. **Create plugin registry** - List official and community plugins
-4. **Launch marketplace** - Allow installation from admin panel
-5. **Collect community contributions** - Set up process for community examples
+# Copy an example
+cp -r example-simple-form my-plugin
+cd my-plugin
 
-## Related Documents
+# Customize stellarstack.json
+nano stellarstack.json
 
-- See [PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md) for comprehensive guide
-- See [README.md](README.md) for example overview
-- See monorepo [packages/plugin-sdk/README.md](../../packages/plugin-sdk/README.md) for SDK info
+# Push to GitHub and install via Git URL in StellarStack
+```
+
+### As a User
+1. Open StellarStack Admin Panel
+2. Navigate to: Admin → Plugins → Marketplace
+3. Enter Git repository URL (e.g., `https://github.com/StellarStackOSS/StellarStack-Plugin-SDK`)
+4. Select desired plugin and click Install
+5. Configure plugin settings
+6. Enable and use
+
+## Plugin Distribution
+
+### Built-in Plugins
+- Shipped with StellarStack installation
+- Cannot be uninstalled
+- Updated with monorepo releases
+- Examples: CurseForge, Modrinth, Server Announcer
+
+### Community Plugins
+- Installed from Git repositories
+- Can be uninstalled anytime
+- Updated independently
+- Can be forked and modified
+- Examples: User-created plugins
+
+### Official Plugins (In SDK)
+- Maintained by StellarStack team
+- Available in SDK repository
+- Can be installed like community plugins
+- Example sources for developers
+- Provide best-practice reference
+
+## Version Management
+
+### Synchronization
+```
+StellarStack v1.3.9
+├── Built-in plugins v1.0.0
+└── SDK Repository v1.3.9
+    ├── Official plugins v1.0.0
+    └── Documentation v1.3.9
+```
+
+Versions are kept synchronized:
+- Plugin versions are fixed (semver)
+- SDK repository has release tags matching StellarStack versions
+- Documentation is updated with each release
+
+### Updates
+- Built-in plugins: Updated via StellarStack releases
+- SDK plugins: Updated independently via Git
+- Developers: Choose which version to use
+
+## Key Principles
+
+### 1. Separation of Concerns
+- **Monorepo:** Plugin system infrastructure
+- **SDK Repo:** Plugin implementations
+
+### 2. Developer-Friendly
+- Clear examples to learn from
+- Easy to fork and customize
+- Well-documented patterns
+- Open-source implementations
+
+### 3. Maintainability
+- Official plugins clearly identified
+- Examples serve as reference implementations
+- Documentation stays with code
+- Easy to contribute improvements
+
+### 4. Security
+- All plugins validated before installation
+- Automatic security scanning
+- Permission system enforced
+- Audit logging enabled
+
+## Getting Started for Developers
+
+### To Create a Plugin
+1. Visit [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)
+2. Read the [Plugin Development Guide](../PLUGIN_DEVELOPMENT_GUIDE.md)
+3. Copy an example plugin
+4. Customize for your needs
+5. Test in StellarStack admin panel
+6. Share with the community!
+
+### To Install Existing Plugins
+1. Find plugin repository URL
+2. Open StellarStack Admin Panel
+3. Navigate to Plugins → Marketplace
+4. Paste Git URL and click Install
+5. Configure plugin settings
+6. Enable and use
+
+## Documentation Location
+
+```
+StellarStack Monorepo (This Repo)
+├── examples/plugins/README.md                    ← You are here
+├── examples/plugins/PLUGIN_DEVELOPMENT_GUIDE.md ← Development reference
+└── examples/plugins/MIGRATION_TO_EXTERNAL_REPO.md ← This file
+
+StellarStack-Plugin-SDK (External Repo)
+├── README.md                           ← Repository overview
+├── GETTING_STARTED.md                  ← Quick start guide
+├── docs/guides/PLUGIN_DEVELOPMENT_GUIDE.md ← Same as above (copied)
+└── examples/plugins/                   ← All plugin code
+```
+
+## Related Repositories
+
+- **[StellarStack](https://github.com/StellarStackOSS/StellarStack)** - Main application (this repo)
+- **[StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)** - Plugin examples and official plugins
+- **[StellarStack Docs](https://docs.stellarstack.io)** - Full documentation
+
+## Questions or Feedback?
+
+- **Plugin Development:** See [PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)
+- **Getting Started:** See [README.md](README.md)
+- **Issues:** Report at [GitHub Issues](https://github.com/StellarStackOSS/StellarStack/issues)
+- **Discussions:** Join [GitHub Discussions](https://github.com/StellarStackOSS/StellarStack/discussions)
+
+---
+
+**Last Updated:** January 30, 2026
+**Status:** Phase 1 Complete, Phase 2 In Progress

@@ -1,17 +1,45 @@
-# StellarStack Plugin Examples
+# StellarStack Plugin Examples & Documentation
 
-Welcome to the StellarStack Plugin Development Examples! These examples demonstrate how to build plugins using the declarative UI schema system.
+This directory contains documentation and guides for StellarStack plugins. **Plugin code and example implementations are located in the external [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) repository.**
 
-## 🚀 Quick Start
+## 📦 Plugin Resources
 
-1. **Choose an example** that matches your use case
-2. **Copy the example directory** to your plugins folder or GitHub
-3. **Customize `stellarstack.json`** for your needs
-4. **Install** in StellarStack admin panel
+All plugin-related code and examples are in the **[StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)** repository:
 
-## 📚 Examples
+### 🌟 Official Plugins (SDK Repository)
+StellarStack ships with several **official plugins** maintained by the team:
+- **CurseForge Installer** - Browse and install Minecraft modpacks from CurseForge
+- **Modrinth Manager** - Open-source mod and modpack installation
+- **Server Announcer** - Send automated announcements to your game servers
 
-### 1. Example: Simple Form (`example-simple-form`)
+📍 Find these in: `StellarStack-Plugin-SDK/examples/official/`
+
+### 📚 Example Plugins (SDK Repository)
+These examples demonstrate plugin development patterns:
+- **Simple Form** - Form fields and validation
+- **Search & Install** - Search and installation workflow
+- **Stats Dashboard** - Metrics and KPI display
+- **Data Table** - Lists with row actions
+
+📍 Find these in: `StellarStack-Plugin-SDK/examples/plugins/`
+
+## 📖 Documentation in This Directory
+
+Comprehensive guides for plugin development:
+
+## Getting Started with Plugin Development
+
+1. **Visit the [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) repository**
+2. **Choose an example** that matches your use case (in `examples/plugins/`)
+3. **Copy the example directory** to your own GitHub repository
+4. **Customize `stellarstack.json`** for your needs
+5. **Install via Git** in the StellarStack admin panel (Admin → Plugins → Install from Git)
+
+## 📚 Example Plugin Types
+
+The SDK repository includes examples for these plugin patterns:
+
+### 1. Simple Form (`example-simple-form`)
 
 A basic form UI for server settings configuration.
 
@@ -29,14 +57,17 @@ A basic form UI for server settings configuration.
 **Key Files:**
 - `stellarstack.json` - Complete manifest with form schema
 
-**View it:**
+**Location:** `StellarStack-Plugin-SDK/examples/plugins/example-simple-form/`
+
+**View the source:**
 ```bash
-cat example-simple-form/stellarstack.json
+git clone https://github.com/StellarStackOSS/StellarStack-Plugin-SDK
+cat StellarStack-Plugin-SDK/examples/plugins/example-simple-form/stellarstack.json
 ```
 
 ---
 
-### 2. Example: Search & Install (`example-search-install`)
+### 2. Search & Install Pattern (`example-search-install`)
 
 A complete mod/plugin browser with search and install functionality.
 
@@ -55,14 +86,11 @@ A complete mod/plugin browser with search and install functionality.
 - `stellarstack.json` - Search and install schema
 - Action definitions for search, detail, install
 
-**View it:**
-```bash
-cat example-search-install/stellarstack.json
-```
+**Location:** `StellarStack-Plugin-SDK/examples/plugins/example-search-install/`
 
 ---
 
-### 3. Example: Stats Dashboard (`example-stats-dashboard`)
+### 3. Stats Dashboard (`example-stats-dashboard`)
 
 A server metrics and statistics display dashboard.
 
@@ -81,14 +109,11 @@ A server metrics and statistics display dashboard.
 **Key Files:**
 - `stellarstack.json` - Stats schema with 8 different metrics
 
-**View it:**
-```bash
-cat example-stats-dashboard/stellarstack.json
-```
+**Location:** `StellarStack-Plugin-SDK/examples/plugins/example-stats-dashboard/`
 
 ---
 
-### 4. Example: Data Table (`example-data-table`)
+### 4. Data Table (`example-data-table`)
 
 A player management UI with searchable table and row actions.
 
@@ -108,16 +133,25 @@ A player management UI with searchable table and row actions.
 **Key Files:**
 - `stellarstack.json` - Data table schema with actions
 
-**View it:**
-```bash
-cat example-data-table/stellarstack.json
-```
+**Location:** `StellarStack-Plugin-SDK/examples/plugins/example-data-table/`
 
 ---
 
-## 🛠️ How to Customize
+## 🛠️ How to Create Your Own Plugin
 
-Each example can be customized by editing `stellarstack.json`:
+1. **Clone the SDK repository:**
+   ```bash
+   git clone https://github.com/StellarStackOSS/StellarStack-Plugin-SDK
+   cd StellarStack-Plugin-SDK/examples/plugins
+   ```
+
+2. **Copy an example that matches your use case:**
+   ```bash
+   cp -r example-simple-form my-custom-plugin
+   cd my-custom-plugin
+   ```
+
+3. **Customize `stellarstack.json`** for your needs:
 
 ### Change Plugin Identity
 
@@ -298,10 +332,23 @@ For detailed information, see:
 
 ## 🚀 Publishing Your Plugin
 
-1. **Create a GitHub repository** for your plugin
-2. **Add your customized `stellarstack.json`** and any supporting files
-3. **Submit to plugin registry** - Coming soon!
-4. **Get listed in marketplace** for all users to discover
+1. **Create a GitHub repository** for your plugin (on your personal or organization account)
+2. **Add your customized `stellarstack.json`** and supporting files
+3. **Copy the repository URL**
+4. **Install in StellarStack:** Admin Panel → Plugins → Install from Git Repository
+5. **Share with others:** Post your plugin URL in the community forums or on GitHub
+
+### Creating Your Plugin Repository
+Your plugin repository should have this structure:
+```
+my-plugin/
+├── package.json              # NPM metadata (optional)
+├── stellarstack.json         # Plugin manifest (required)
+├── README.md                 # Documentation (optional)
+└── ...other files...
+```
+
+The only required file is `stellarstack.json`. See the examples in the [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) for reference.
 
 ## ⚠️ Important Notes
 

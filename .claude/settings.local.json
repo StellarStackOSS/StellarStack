@@ -18,7 +18,8 @@
       "Bash(find:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
