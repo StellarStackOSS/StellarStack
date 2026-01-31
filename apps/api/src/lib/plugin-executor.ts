@@ -14,6 +14,7 @@ import { db } from "./db";
 import type { Server } from "@prisma/client";
 import { pluginWorkerPool } from "./plugin-worker";
 import type { PluginWorker } from "./plugin-worker";
+import { DaemonClient } from "./daemon-client";
 
 // ============================================
 // Types
@@ -310,14 +311,19 @@ export class PluginActionExecutor {
         `[Plugin:${context.pluginId}] Creating backup "${name}" before destructive operation`
       );
 
-      // TODO: Implement actual backup creation via daemon
-      // const backup = await backupManager.create(context.serverId, { name });
-      // return backup.id;
+      const result = await DaemonClient.createBackup(context.serverId, {
+        name,
+        description: `Automatic backup before plugin destructive operation: ${context.pluginId}`,
+      });
 
-      console.warn(
-        `[Plugin] Backup creation not yet implemented. Proceeding without backup.`
+      if (!result.success) {
+        throw new Error("Backup creation failed");
+      }
+
+      console.log(
+        `[Plugin:${context.pluginId}] Backup created: ${result.backup_id}`
       );
-      return null;
+      return result.backup_id;
     } catch (error) {
       console.error(`[Plugin] Failed to create backup:`, error);
       throw new Error(
@@ -369,50 +375,90 @@ export class PluginActionExecutor {
     context: PluginContext
   ): Promise<void> {
     // Download file from URL and write to server
-    const { url, destPath, headers = {} } = operation as any;
+    const { url, dest_path, destPath, directory, decompress = false, headers = {} } = operation as any;
+    const finalPath = dest_path || destPath;
 
-    if (!url || !destPath) {
-      throw new Error("Download operation requires url and destPath");
+    if (!url || !finalPath) {
+      throw new Error("Download operation requires url and dest_path");
     }
 
-    // This would normally interact with the daemon to download files
-    // For now, we'll log it as a placeholder
-    console.log(`[Plugin] Downloading ${url} to ${destPath} on server ${context.serverId}`);
+    console.log(
+      `[Plugin:${context.pluginId}] Downloading ${url} to ${finalPath} on server ${context.serverId}`
+    );
 
-    // TODO: Implement actual file download via daemon
-    // const response = await fetch(url, { headers });
-    // Write file to server using daemon API
+    const result = await DaemonClient.downloadFile(context.serverId, {
+      url,
+      dest_path: finalPath,
+      directory,
+      decompress,
+      headers,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Download failed");
+    }
+
+    console.log(
+      `[Plugin:${context.pluginId}] Download complete: ${result.message}`
+    );
   }
 
   private async executeWriteFile(
     operation: Operation,
     context: PluginContext
   ): Promise<void> {
-    const { path, content, append = false } = operation as any;
+    const { path, content, append = false, mode } = operation as any;
 
-    if (!path || !content) {
+    if (!path || content === undefined) {
       throw new Error("Write file operation requires path and content");
     }
 
-    console.log(`[Plugin] Writing file ${path} on server ${context.serverId}`);
+    console.log(
+      `[Plugin:${context.pluginId}] Writing file ${path} on server ${context.serverId}`
+    );
 
-    // TODO: Implement file write via daemon
-    // Use server file write API with context validation
+    const result = await DaemonClient.writeFile(context.serverId, {
+      path,
+      content: String(content),
+      append,
+      mode,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Write failed");
+    }
+
+    console.log(
+      `[Plugin:${context.pluginId}] File write complete: ${result.message}`
+    );
   }
 
   private async executeDeleteFile(
     operation: Operation,
     context: PluginContext
   ): Promise<void> {
-    const { path } = operation as any;
+    const { path, recursive = false } = operation as any;
 
     if (!path) {
       throw new Error("Delete file operation requires path");
     }
 
-    console.log(`[Plugin] Deleting file ${path} on server ${context.serverId}`);
+    console.log(
+      `[Plugin:${context.pluginId}] Deleting file ${path} on server ${context.serverId}`
+    );
 
-    // TODO: Implement file delete via daemon
+    const result = await DaemonClient.deleteFile(context.serverId, {
+      path,
+      recursive,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Delete failed");
+    }
+
+    console.log(
+      `[Plugin:${context.pluginId}] File delete complete: ${result.message}`
+    );
   }
 
   private async executeSendCommand(
@@ -425,35 +471,85 @@ export class PluginActionExecutor {
       throw new Error("Send command operation requires command");
     }
 
-    console.log(`[Plugin] Sending command "${command}" to server ${context.serverId}`);
+    console.log(
+      `[Plugin:${context.pluginId}] Sending command "${command}" to server ${context.serverId}`
+    );
 
-    // TODO: Implement command execution via daemon
-    // Send console command to running server
+    const result = await DaemonClient.sendCommand(context.serverId, {
+      command,
+      timeout,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Command send failed");
+    }
+
+    console.log(
+      `[Plugin:${context.pluginId}] Command sent: ${result.message}`
+    );
   }
 
   private async executeRestartServer(context: PluginContext): Promise<void> {
-    console.log(`[Plugin] Restarting server ${context.serverId}`);
+    console.log(`[Plugin:${context.pluginId}] Restarting server ${context.serverId}`);
 
-    // TODO: Implement server restart via daemon
-    // Call daemon restart endpoint
+    const result = await DaemonClient.controlServer(context.serverId, {
+      action: "restart",
+      timeout: 30000,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Restart failed");
+    }
+
+    console.log(`[Plugin:${context.pluginId}] Server restart: ${result.message}`);
   }
 
   private async executeStopServer(context: PluginContext): Promise<void> {
-    console.log(`[Plugin] Stopping server ${context.serverId}`);
+    console.log(`[Plugin:${context.pluginId}] Stopping server ${context.serverId}`);
 
-    // TODO: Implement server stop via daemon
+    const result = await DaemonClient.controlServer(context.serverId, {
+      action: "stop",
+      timeout: 30000,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Stop failed");
+    }
+
+    console.log(`[Plugin:${context.pluginId}] Server stop: ${result.message}`);
   }
 
   private async executeStartServer(context: PluginContext): Promise<void> {
-    console.log(`[Plugin] Starting server ${context.serverId}`);
+    console.log(`[Plugin:${context.pluginId}] Starting server ${context.serverId}`);
 
-    // TODO: Implement server start via daemon
+    const result = await DaemonClient.controlServer(context.serverId, {
+      action: "start",
+      timeout: 30000,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || "Start failed");
+    }
+
+    console.log(`[Plugin:${context.pluginId}] Server start: ${result.message}`);
   }
 
   private async executeCreateBackup(context: PluginContext): Promise<void> {
-    console.log(`[Plugin] Creating backup for server ${context.serverId}`);
+    console.log(`[Plugin:${context.pluginId}] Creating backup for server ${context.serverId}`);
 
-    // TODO: Implement backup creation via daemon
+    const timestamp = new Date().toISOString().split("T")[0];
+    const backupName = `plugin-${context.pluginId}-${timestamp}-${Date.now().toString().slice(-6)}`;
+
+    const result = await DaemonClient.createBackup(context.serverId, {
+      name: backupName,
+      description: `Automatic backup before plugin action: ${context.pluginId}`,
+    });
+
+    if (!result.success) {
+      throw new Error("Backup creation failed");
+    }
+
+    console.log(`[Plugin:${context.pluginId}] Backup created: ${result.backup_id}`);
   }
 
   /**

@@ -127,6 +127,9 @@ fn server_routes() -> Router<AppState> {
 
         // Schedule routes
         .nest("/schedules", schedule_routes())
+
+        // Plugin operations routes
+        .nest("/plugins", plugin_routes())
 }
 
 /// Routes for server transfer operations
@@ -174,4 +177,21 @@ fn schedule_routes() -> Router<AppState> {
         .route("/", post(handlers::schedules::create_schedule))
         .route("/", axum::routing::patch(handlers::schedules::update_schedule))
         .route("/", delete(handlers::schedules::delete_schedule))
+}
+
+/// Routes for plugin operations
+fn plugin_routes() -> Router<AppState> {
+    Router::new()
+        // File download for plugins
+        .route("/download", post(handlers::plugins::download_file))
+        // File write for plugins
+        .route("/write", post(handlers::plugins::write_file))
+        // File delete for plugins
+        .route("/delete", delete(handlers::plugins::delete_file))
+        // Backup creation
+        .route("/backup", post(handlers::plugins::create_backup))
+        // Server control (start, stop, restart)
+        .route("/control", post(handlers::plugins::control_server))
+        // Send console command
+        .route("/command", post(handlers::plugins::send_command))
 }
