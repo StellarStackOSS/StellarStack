@@ -7,17 +7,18 @@ use std::sync::Arc;
 use std::path::Path;
 
 use axum::{
-    extract::Query,
+    extract::{Query, State},
     Extension, Json,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 use reqwest::Client as HttpClient;
 use uuid::Uuid;
 
 use crate::filesystem::Filesystem;
-use crate::server::Server;
+use crate::server::{Server, BackupCompressionLevel};
 use crate::backup::BackupManager;
+use crate::router::AppState;
 use super::ApiError;
 
 // ============================================
@@ -296,8 +297,17 @@ pub async fn write_file(
 
     // Write or append file
     if request.append {
-        // TODO: Implement append operation
-        // fs.append_file(&request.path, request.content.as_bytes()).await?;
+        // For append, read existing content and concatenate
+        let mut content = match fs.read_file(&request.path).await {
+            Ok(data) => String::from_utf8_lossy(&data).into_owned(),
+            Err(_) => String::new(), // File doesn't exist, start fresh
+        };
+        content.push('\n');
+        content.push_str(&request.content);
+
+        fs.write_file(&request.path, content.as_bytes())
+            .await
+            .map_err(|e| ApiError::internal(format!("Failed to append to file: {}", e)))?;
     } else {
         fs.write_file(&request.path, request.content.as_bytes())
             .await
@@ -306,8 +316,14 @@ pub async fn write_file(
 
     // Set file permissions if provided
     if let Some(mode) = request.mode {
-        // TODO: Implement chmod operation
-        // fs.chmod(&request.path, &mode).await?;
+        // Parse octal mode string (e.g., "644") to u32
+        if let Ok(mode_num) = u32::from_str_radix(&mode, 8) {
+            fs.chmod(&request.path, mode_num)
+                .await
+                .map_err(|e| ApiError::internal(format!("Failed to set file permissions: {}", e)))?;
+        } else {
+            return Err(ApiError::bad_request(format!("Invalid file mode: {}", mode)));
+        }
     }
 
     Ok(Json(PluginResponse {
@@ -332,12 +348,17 @@ pub async fn delete_file(
 
     let fs = get_filesystem(&server)?;
 
-    // TODO: Implement actual delete with recursive option
-    // fs.delete(&request.path, request.recursive).await?;
+    // The filesystem delete method handles both files and directories
+    // and uses remove_dir_all for recursive deletion
+    fs.delete(&request.path)
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to delete file/directory: {}", e)))?;
+
+    info!("[Plugin] Successfully deleted {} on server {}", request.path, server.id);
 
     Ok(Json(PluginResponse {
         success: true,
-        message: Some("File deleted successfully".to_string()),
+        message: Some("File/directory deleted successfully".to_string()),
         data: None,
     }))
 }
@@ -348,6 +369,7 @@ pub async fn delete_file(
 
 /// Create a backup before destructive operations
 pub async fn create_backup(
+    State(state): State<Arc<AppState>>,
     Extension(server): Extension<Arc<Server>>,
     Json(request): Json<PluginBackupRequest>,
 ) -> Result<Json<PluginBackupResponse>, ApiError> {
@@ -356,16 +378,40 @@ pub async fn create_backup(
         request.name, server.id
     );
 
-    // TODO: Integrate with existing backup manager
-    // let backup_manager = BackupManager::new(&server.path);
-    // let backup = backup_manager.create(&request.name, request.description.as_deref()).await?;
+    let server_uuid = server.uuid();
+    let backup_uuid = format!("plugin-{}", Uuid::new_v4());
+    let data_dir = server.data_dir();
+    let backup_dir = state.config.system.backup_directory.join(&server_uuid);
+    let event_bus = server.events();
+    let rate_limit = state.config.system.backup_rate_limit_mibps;
 
-    // Placeholder response
+    // Create backup with daemon configuration
+    let result = crate::server::create_backup_with_config(
+        &server_uuid,
+        &backup_uuid,
+        data_dir,
+        &backup_dir,
+        &[],
+        event_bus,
+        BackupCompressionLevel::default(),
+        rate_limit,
+    )
+    .await
+    .map_err(|e| {
+        error!("[Plugin] Backup creation failed: {}", e);
+        ApiError::internal(format!("Backup creation failed: {}", e))
+    })?;
+
+    info!(
+        "[Plugin] Backup created successfully: {} ({})",
+        backup_uuid, request.name
+    );
+
     Ok(Json(PluginBackupResponse {
         success: true,
-        backup_id: format!("backup-{}", Uuid::new_v4()),
+        backup_id: backup_uuid,
         name: request.name,
-        size_bytes: None,
+        size_bytes: Some(result.size),
     }))
 }
 
@@ -383,31 +429,48 @@ pub async fn control_server(
         request.action, server.id
     );
 
-    match request.action.as_str() {
+    let action_result = match request.action.as_str() {
         "start" => {
-            // TODO: Implement server start
-            // server.start().await?;
+            use crate::server::power::PowerAction;
+            server.handle_power_action(PowerAction::Start, std::time::Duration::from_millis(request.timeout))
+                .await
         }
         "stop" => {
-            // TODO: Implement server stop with timeout
-            // server.stop(request.timeout).await?;
+            use crate::server::power::PowerAction;
+            server.handle_power_action(PowerAction::Stop, std::time::Duration::from_millis(request.timeout))
+                .await
         }
         "restart" => {
-            // TODO: Implement server restart
-            // server.restart(request.timeout).await?;
+            use crate::server::power::PowerAction;
+            server.handle_power_action(PowerAction::Restart, std::time::Duration::from_millis(request.timeout))
+                .await
+        }
+        "kill" => {
+            use crate::server::power::PowerAction;
+            server.handle_power_action(PowerAction::Kill, std::time::Duration::from_millis(request.timeout))
+                .await
         }
         _ => {
             return Err(ApiError::bad_request(
                 format!("Unknown action: {}", request.action),
             ));
         }
-    }
+    };
 
-    Ok(Json(PluginResponse {
-        success: true,
-        message: Some(format!("Server {} action completed", request.action)),
-        data: None,
-    }))
+    match action_result {
+        Ok(_) => {
+            info!("[Plugin] Server {} action completed successfully", request.action);
+            Ok(Json(PluginResponse {
+                success: true,
+                message: Some(format!("Server {} action completed", request.action)),
+                data: None,
+            }))
+        }
+        Err(e) => {
+            error!("[Plugin] Server {} action failed: {}", request.action, e);
+            Err(ApiError::internal(format!("Server control action failed: {}", e)))
+        }
+    }
 }
 
 // ============================================
@@ -424,8 +487,15 @@ pub async fn send_command(
         server.id, request.command
     );
 
-    // TODO: Implement command sending
-    // server.send_command(&request.command).await?;
+    // Send command to the server
+    server.send_command(&request.command)
+        .await
+        .map_err(|e| {
+            error!("[Plugin] Failed to send command to server: {}", e);
+            ApiError::internal(format!("Failed to send command: {}", e))
+        })?;
+
+    info!("[Plugin] Command sent successfully to server {}", server.id);
 
     Ok(Json(PluginResponse {
         success: true,
