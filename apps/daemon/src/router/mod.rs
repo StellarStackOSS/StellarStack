@@ -188,6 +188,8 @@ fn plugin_routes() -> Router<AppState> {
         .route("/write", post(handlers::plugins::write_file))
         // File delete for plugins
         .route("/delete", delete(handlers::plugins::delete_file))
+        // Delete all files for plugins
+        .route("/delete-all", delete(handlers::plugins::delete_all_files))
         // Backup creation
         .route("/backup", post(handlers::plugins::create_backup))
         // Server control (start, stop, restart)

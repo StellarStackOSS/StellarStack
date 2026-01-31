@@ -190,6 +190,33 @@ export class DaemonClient {
   }
 
   /**
+   * Delete all files on the server (for clean modpack installation)
+   */
+  static async deleteAllFiles(serverId: string): Promise<DaemonResponse> {
+    const daemonUrl = await this.getDaemonUrl(serverId);
+    const token = await this.getDaemonToken(serverId);
+
+    const response = await fetch(
+      `${daemonUrl}/api/servers/${serverId}/plugins/delete-all`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Delete all files failed");
+    }
+
+    return response.json();
+  }
+
+  /**
    * Create a backup of the server before destructive operations
    */
   static async createBackup(

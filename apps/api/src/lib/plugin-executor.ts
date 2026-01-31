@@ -196,6 +196,9 @@ export class PluginActionExecutor {
           case "delete-file":
             await this.executeDeleteFile(resolvedOp, context);
             break;
+          case "delete-all-files":
+            await this.executeDeleteAllFiles(resolvedOp, context);
+            break;
           case "send-command":
             await this.executeSendCommand(resolvedOp, context);
             break;
@@ -289,7 +292,7 @@ export class PluginActionExecutor {
   static isActionDestructive(action: any): boolean {
     if (!action.operations) return false;
 
-    const destructiveTypes = ["download-to-server", "write-file", "delete-file"];
+    const destructiveTypes = ["download-to-server", "write-file", "delete-file", "delete-all-files"];
     return action.operations.some((op: Operation) => destructiveTypes.includes(op.type));
   }
 
@@ -461,6 +464,25 @@ export class PluginActionExecutor {
     );
   }
 
+  private async executeDeleteAllFiles(
+    operation: Operation,
+    context: PluginContext
+  ): Promise<void> {
+    console.log(
+      `[Plugin:${context.pluginId}] Deleting all files on server ${context.serverId}`
+    );
+
+    const result = await DaemonClient.deleteAllFiles(context.serverId);
+
+    if (!result.success) {
+      throw new Error(result.message || "Delete all files failed");
+    }
+
+    console.log(
+      `[Plugin:${context.pluginId}] All files deleted: ${result.message}`
+    );
+  }
+
   private async executeSendCommand(
     operation: Operation,
     context: PluginContext
@@ -567,6 +589,7 @@ export class PluginActionExecutor {
         case "download-to-server":
         case "write-file":
         case "delete-file":
+        case "delete-all-files":
           permissions.add("files.*");
           break;
         case "send-command":

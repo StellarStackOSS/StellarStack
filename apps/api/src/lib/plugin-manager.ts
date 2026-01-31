@@ -84,12 +84,13 @@ export interface PluginManifest {
       id: string;
       label: string;
       type: "string" | "number" | "boolean" | "select";
+      description?: string;
       required?: boolean;
       default?: unknown;
       options?: Array<{ label: string; value: unknown }>;
     }>;
     operations: Array<{
-      type: "download-to-server" | "write-file" | "delete-file" | "send-command" | "restart-server" | "stop-server" | "start-server" | "create-backup";
+      type: "download-to-server" | "write-file" | "delete-file" | "delete-all-files" | "send-command" | "restart-server" | "stop-server" | "start-server" | "create-backup";
       [key: string]: unknown;
     }>;
   }>;
@@ -260,6 +261,68 @@ const BUILT_IN_PLUGINS: PluginManifest[] = [
         },
       ],
     },
+    actions: [
+      {
+        id: "install-modpack",
+        label: "Install Modpack",
+        description: "Download and install a CurseForge modpack",
+        dangerous: true,
+        params: [
+          {
+            id: "modId",
+            label: "Mod ID",
+            type: "number",
+            required: true,
+          },
+          {
+            id: "fileId",
+            label: "File ID",
+            type: "number",
+            required: true,
+          },
+          {
+            id: "cleanupExisting",
+            label: "Clean Existing Files",
+            type: "boolean",
+            required: false,
+            default: false,
+            description: "Delete all existing server files before installing the modpack",
+          },
+        ],
+        operations: [
+          {
+            type: "delete-all-files",
+            // Only executed if cleanupExisting is true
+            // This is a placeholder - actual conditional logic handled by frontend
+          },
+          {
+            type: "download-to-server",
+            url: "https://api.curseforge.com/v1/mods/{{modId}}/files/{{fileId}}/download",
+            dest_path: "modpack.zip",
+            decompress: true,
+            directory: ".",
+            headers: {
+              "x-api-key": "{{config.apiKey}}",
+            },
+          },
+          {
+            type: "restart-server",
+          },
+        ],
+      },
+      {
+        id: "search-modpacks",
+        label: "Search Modpacks",
+        description: "Search for available CurseForge modpacks",
+        operations: [],
+      },
+      {
+        id: "get-modpack-details",
+        label: "Get Modpack Details",
+        description: "Fetch detailed information about a modpack",
+        operations: [],
+      },
+    ],
     configSchema: {
       type: "object",
       properties: {

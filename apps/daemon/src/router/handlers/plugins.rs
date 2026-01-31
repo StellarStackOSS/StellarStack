@@ -363,6 +363,30 @@ pub async fn delete_file(
     }))
 }
 
+/// Delete all files in server directory (for clean modpack installation)
+pub async fn delete_all_files(
+    Extension(server): Extension<Arc<Server>>,
+    Json(_request): Json<serde_json::Value>,
+) -> Result<Json<PluginResponse>, ApiError> {
+    info!("[Plugin] Deleting all files on server {}", server.id);
+
+    let fs = get_filesystem(&server)?;
+
+    // Delete the entire server directory contents
+    // This safely clears all files for a fresh modpack installation
+    fs.delete(".")
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to delete all files: {}", e)))?;
+
+    info!("[Plugin] Successfully deleted all files on server {}", server.id);
+
+    Ok(Json(PluginResponse {
+        success: true,
+        message: Some("All files deleted successfully".to_string()),
+        data: None,
+    }))
+}
+
 // ============================================
 // Backup Operation
 // ============================================
