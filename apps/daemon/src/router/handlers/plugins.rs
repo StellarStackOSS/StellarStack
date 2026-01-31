@@ -17,7 +17,6 @@ use uuid::Uuid;
 
 use crate::filesystem::Filesystem;
 use crate::server::{Server, BackupCompressionLevel};
-use crate::backup::BackupManager;
 use crate::router::AppState;
 use super::ApiError;
 
@@ -191,7 +190,8 @@ fn validate_server_path(path: &str) -> Result<(), ApiError> {
 
 /// Get the filesystem handler for a server
 fn get_filesystem(server: &Server) -> Result<Filesystem, ApiError> {
-    Ok(Filesystem::new(server.path.clone()))
+    Filesystem::new(server.data_dir().clone(), u64::MAX, vec![])
+        .map_err(|e| ApiError::internal(format!("Failed to initialize filesystem: {}", e)))
 }
 
 // ============================================
@@ -211,7 +211,7 @@ pub async fn download_file(
         "[Plugin] Downloading from {} to {} on server {}",
         request.url,
         request.dest_path,
-        server.id
+        server.uuid()
     );
 
     let fs = get_filesystem(&server)?;
@@ -259,7 +259,7 @@ pub async fn download_file(
             .cloned()
             .unwrap_or_else(|| "mods".to_string());
 
-        fs.decompress_file(&request.dest_path, &extract_dir)
+        fs.decompress(&request.dest_path, &extract_dir)
             .await
             .map_err(|e| ApiError::internal(format!("Decompression failed: {}", e)))?;
 
@@ -284,7 +284,7 @@ pub async fn write_file(
 ) -> Result<Json<PluginResponse>, ApiError> {
     validate_server_path(&request.path)?;
 
-    info!("[Plugin] Writing file {} on server {}", request.path, server.id);
+    info!("[Plugin] Writing file {} on server {}", request.path, server.uuid());
 
     let fs = get_filesystem(&server)?;
 
@@ -344,7 +344,7 @@ pub async fn delete_file(
 ) -> Result<Json<PluginResponse>, ApiError> {
     validate_server_path(&request.path)?;
 
-    info!("[Plugin] Deleting {} on server {}", request.path, server.id);
+    info!("[Plugin] Deleting {} on server {}", request.path, server.uuid());
 
     let fs = get_filesystem(&server)?;
 
@@ -354,7 +354,7 @@ pub async fn delete_file(
         .await
         .map_err(|e| ApiError::internal(format!("Failed to delete file/directory: {}", e)))?;
 
-    info!("[Plugin] Successfully deleted {} on server {}", request.path, server.id);
+    info!("[Plugin] Successfully deleted {} on server {}", request.path, server.uuid());
 
     Ok(Json(PluginResponse {
         success: true,
@@ -368,7 +368,7 @@ pub async fn delete_all_files(
     Extension(server): Extension<Arc<Server>>,
     Json(_request): Json<serde_json::Value>,
 ) -> Result<Json<PluginResponse>, ApiError> {
-    info!("[Plugin] Deleting all files on server {}", server.id);
+    info!("[Plugin] Deleting all files on server {}", server.uuid());
 
     let fs = get_filesystem(&server)?;
 
@@ -378,7 +378,7 @@ pub async fn delete_all_files(
         .await
         .map_err(|e| ApiError::internal(format!("Failed to delete all files: {}", e)))?;
 
-    info!("[Plugin] Successfully deleted all files on server {}", server.id);
+    info!("[Plugin] Successfully deleted all files on server {}", server.uuid());
 
     Ok(Json(PluginResponse {
         success: true,
@@ -393,13 +393,13 @@ pub async fn delete_all_files(
 
 /// Create a backup before destructive operations
 pub async fn create_backup(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     Extension(server): Extension<Arc<Server>>,
     Json(request): Json<PluginBackupRequest>,
 ) -> Result<Json<PluginBackupResponse>, ApiError> {
     info!(
         "[Plugin] Creating backup '{}' for server {}",
-        request.name, server.id
+        request.name, server.uuid()
     );
 
     let server_uuid = server.uuid();
@@ -450,28 +450,26 @@ pub async fn control_server(
 ) -> Result<Json<PluginResponse>, ApiError> {
     info!(
         "[Plugin] Server control action '{}' for server {}",
-        request.action, server.id
+        request.action, server.uuid()
     );
+
+    use crate::server::PowerAction;
 
     let action_result = match request.action.as_str() {
         "start" => {
-            use crate::server::power::PowerAction;
-            server.handle_power_action(PowerAction::Start, std::time::Duration::from_millis(request.timeout))
+            server.handle_power_action(PowerAction::Start, true)
                 .await
         }
         "stop" => {
-            use crate::server::power::PowerAction;
-            server.handle_power_action(PowerAction::Stop, std::time::Duration::from_millis(request.timeout))
+            server.handle_power_action(PowerAction::Stop, true)
                 .await
         }
         "restart" => {
-            use crate::server::power::PowerAction;
-            server.handle_power_action(PowerAction::Restart, std::time::Duration::from_millis(request.timeout))
+            server.handle_power_action(PowerAction::Restart, true)
                 .await
         }
         "kill" => {
-            use crate::server::power::PowerAction;
-            server.handle_power_action(PowerAction::Kill, std::time::Duration::from_millis(request.timeout))
+            server.handle_power_action(PowerAction::Kill, false)
                 .await
         }
         _ => {
@@ -508,7 +506,7 @@ pub async fn send_command(
 ) -> Result<Json<PluginResponse>, ApiError> {
     info!(
         "[Plugin] Sending command to server {}: {}",
-        server.id, request.command
+        server.uuid(), request.command
     );
 
     // Send command to the server
@@ -519,7 +517,7 @@ pub async fn send_command(
             ApiError::internal(format!("Failed to send command: {}", e))
         })?;
 
-    info!("[Plugin] Command sent successfully to server {}", server.id);
+    info!("[Plugin] Command sent successfully to server {}", server.uuid());
 
     Ok(Json(PluginResponse {
         success: true,
