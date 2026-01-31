@@ -3,6 +3,7 @@
 pub mod backup;
 pub mod download;
 pub mod files;
+pub mod plugins;
 pub mod schedules;
 pub mod servers;
 pub mod system;
