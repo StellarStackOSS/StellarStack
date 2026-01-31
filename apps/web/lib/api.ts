@@ -783,6 +783,8 @@ export const pluginsApi = {
       options?: {
         skipBackup?: boolean;
         skipRestart?: boolean;
+        createBackup?: boolean; // Create backup before destructive operations
+        backupName?: string; // Custom backup name
       };
       confirmed?: boolean;
     }
