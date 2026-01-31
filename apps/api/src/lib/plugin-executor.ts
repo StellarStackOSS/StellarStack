@@ -25,6 +25,8 @@ export interface ExecuteActionRequest {
   options?: {
     skipBackup?: boolean;
     skipRestart?: boolean;
+    createBackup?: boolean; // Create backup before destructive operations
+    backupName?: string; // Custom backup name
   };
 }
 
@@ -156,6 +158,22 @@ export class PluginActionExecutor {
   ): Promise<ExecuteActionResponse> {
     let executedCount = 0;
     const operations: Operation[] = action.operations || [];
+    let backupId: string | null = null;
+
+    // Create backup before destructive operations if requested
+    if (PluginActionExecutor.isActionDestructive(action) && request.options?.createBackup) {
+      try {
+        backupId = await this.createPreActionBackup(context, request.options?.backupName);
+        if (backupId) {
+          console.log(`[Plugin:${context.pluginId}] Backup created: ${backupId}`);
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: `Backup failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }
 
     for (const operation of operations) {
       try {
@@ -260,6 +278,51 @@ export class PluginActionExecutor {
         success: false,
         error: `Community plugin action failed: ${String(error)}`,
       };
+    }
+  }
+
+  /**
+   * Check if an action has destructive operations (file writes, deletes, downloads).
+   * Destructive operations should prompt for backup before execution.
+   */
+  static isActionDestructive(action: any): boolean {
+    if (!action.operations) return false;
+
+    const destructiveTypes = ["download-to-server", "write-file", "delete-file"];
+    return action.operations.some((op: Operation) => destructiveTypes.includes(op.type));
+  }
+
+  /**
+   * Create a backup before executing destructive operations.
+   * Used to protect against accidental data loss.
+   */
+  private async createPreActionBackup(
+    context: PluginContext,
+    backupName?: string
+  ): Promise<string | null> {
+    try {
+      const timestamp = new Date().toISOString().split("T")[0];
+      const name =
+        backupName ||
+        `plugin-${context.pluginId}-${timestamp}-${Date.now().toString().slice(-6)}`;
+
+      console.log(
+        `[Plugin:${context.pluginId}] Creating backup "${name}" before destructive operation`
+      );
+
+      // TODO: Implement actual backup creation via daemon
+      // const backup = await backupManager.create(context.serverId, { name });
+      // return backup.id;
+
+      console.warn(
+        `[Plugin] Backup creation not yet implemented. Proceeding without backup.`
+      );
+      return null;
+    } catch (error) {
+      console.error(`[Plugin] Failed to create backup:`, error);
+      throw new Error(
+        `Backup creation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
