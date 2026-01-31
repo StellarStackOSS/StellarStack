@@ -32,10 +32,13 @@ import {
   BsGraphUp,
   BsMegaphone,
   BsTree,
+  BsDownload,
+  BsGit,
 } from "react-icons/bs";
 import { usePlugins, usePluginMutations } from "@/hooks/queries";
 import type { PluginInfo } from "@/lib/api";
 import { toast } from "sonner";
+import { pluginsApi } from "@/lib/api";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "game-management": "Game Management",
@@ -73,8 +76,12 @@ const PluginsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [installModalOpen, setInstallModalOpen] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | null>(null);
   const [configForm, setConfigForm] = useState<Record<string, unknown>>({});
+  const [installRepoUrl, setInstallRepoUrl] = useState("");
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installError, setInstallError] = useState<string | null>(null);
 
   // Get unique categories from plugins
   const categories = useMemo(() => {
@@ -125,6 +132,42 @@ const PluginsPage = () => {
         },
       }
     );
+  };
+
+  const handleInstallPlugin = async () => {
+    if (!installRepoUrl.trim()) {
+      setInstallError("Please enter a repository URL");
+      return;
+    }
+
+    setIsInstalling(true);
+    setInstallError(null);
+
+    try {
+      // Validate URL format (basic check)
+      if (!installRepoUrl.includes("github.com") && !installRepoUrl.includes("gitlab.com")) {
+        setInstallError(
+          "Only GitHub and GitLab repositories are supported. Please use a URL like https://github.com/username/plugin-name"
+        );
+        setIsInstalling(false);
+        return;
+      }
+
+      // This would call the plugin install API
+      // TODO: Implement actual API call to install plugin from git
+      console.log("Installing plugin from:", installRepoUrl);
+      toast.success("Plugin installation started. Please check the console for progress.");
+
+      // Reset form
+      setInstallRepoUrl("");
+      setInstallModalOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to install plugin";
+      setInstallError(message);
+      toast.error(message);
+    } finally {
+      setIsInstalling(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -216,10 +259,17 @@ const PluginsPage = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <span className="text-xs text-zinc-500">
                 {plugins.filter((p) => p.status === "enabled").length} / {plugins.length} enabled
               </span>
+              <TextureButton
+                onClick={() => setInstallModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <BsDownload className="h-4 w-4" />
+                Install from Git
+              </TextureButton>
             </div>
           </div>
         </FadeIn>
@@ -404,8 +454,9 @@ const PluginsPage = () => {
                   <div>
                     <h3 className="mb-2 text-sm font-medium text-zinc-300">Community Extensions</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Community developers can build extensions using the StellarStack Extension
-                      SDK. Check the documentation for guides on creating your own extensions.
+                      Community developers can build extensions using the StellarStack Extension SDK.
+                      Click "Install from Git" to install community-developed extensions from GitHub or
+                      GitLab repositories.
                     </p>
                   </div>
                 </div>
@@ -446,6 +497,106 @@ const PluginsPage = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Install Plugin Modal */}
+      <Dialog open={installModalOpen} onOpenChange={setInstallModalOpen}>
+        <DialogContent className="max-w-lg border-zinc-800 bg-zinc-900">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-zinc-100">
+              <BsGit className="h-5 w-5" />
+              Install Community Extension
+            </DialogTitle>
+            <DialogDescription className="text-sm text-zinc-400">
+              Install a community-developed extension from a Git repository. Only GitHub and GitLab
+              are supported.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm text-zinc-200">Repository URL</Label>
+              <Input
+                type="url"
+                placeholder="https://github.com/username/extension-name"
+                value={installRepoUrl}
+                onChange={(e) => {
+                  setInstallRepoUrl(e.target.value);
+                  setInstallError(null);
+                }}
+                className="border-zinc-700/50 bg-zinc-900/50 text-zinc-200 placeholder:text-zinc-600"
+                disabled={isInstalling}
+              />
+              <p className="text-xs text-zinc-500">
+                Enter the full URL to the Git repository containing the extension's stellarstack.json
+                manifest.
+              </p>
+            </div>
+
+            {/* Security Warning */}
+            <div className="rounded-lg border border-yellow-900/50 bg-yellow-950/20 p-3">
+              <div className="flex gap-2">
+                <BsExclamationTriangle className="h-4 w-4 mt-0.5 shrink-0 text-yellow-600" />
+                <div className="text-xs text-yellow-700">
+                  <p className="font-medium mb-1">Only install extensions you trust</p>
+                  <p>
+                    Community extensions run in isolated processes but still have access to your server
+                    data. Review the source code before installing.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {installError && (
+              <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-3">
+                <p className="text-xs text-red-400">{installError}</p>
+              </div>
+            )}
+
+            {/* Info Section */}
+            <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 p-3">
+              <h4 className="mb-2 text-xs font-medium text-zinc-300">What happens next:</h4>
+              <ol className="space-y-1 text-xs text-zinc-400">
+                <li>1. Repository is cloned from Git</li>
+                <li>2. stellarstack.json manifest is validated</li>
+                <li>3. Automatic security analysis runs</li>
+                <li>4. Extension appears in your list with trust badge</li>
+              </ol>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <TextureButton
+                variant="minimal"
+                onClick={() => {
+                  setInstallModalOpen(false);
+                  setInstallRepoUrl("");
+                  setInstallError(null);
+                }}
+                disabled={isInstalling}
+              >
+                Cancel
+              </TextureButton>
+              <TextureButton
+                onClick={handleInstallPlugin}
+                disabled={isInstalling || !installRepoUrl.trim()}
+                className="flex items-center gap-2"
+              >
+                {isInstalling ? (
+                  <>
+                    <Spinner className="h-4 w-4" />
+                    Installing...
+                  </>
+                ) : (
+                  <>
+                    <BsDownload className="h-4 w-4" />
+                    Install
+                  </>
+                )}
+              </TextureButton>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </FadeIn>

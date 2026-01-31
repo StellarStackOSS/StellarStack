@@ -268,6 +268,7 @@ const BUILT_IN_PLUGINS: PluginManifest[] = [
           title: "CurseForge API Key",
           description:
             "Your CurseForge API key for accessing the CurseForge API. Get one at https://console.curseforge.com/",
+          sensitive: true, // SECURITY: Mark as sensitive to prevent exposure in API responses
         },
         autoRestart: {
           type: "boolean",
@@ -931,10 +932,44 @@ class PluginManager {
   }
 
   // ============================================
-  // Serialization
+  // Serialization & Security
   // ============================================
 
+  /**
+   * Filter out sensitive config fields before sending to frontend.
+   * Identifies sensitive fields from configSchema and masks values.
+   * Never expose API keys, passwords, or other secrets to the client.
+   */
+  private filterSensitiveConfig(
+    config: Record<string, unknown>,
+    configSchema: Record<string, unknown> | null
+  ): Record<string, unknown> {
+    if (!config || !configSchema) {
+      return {};
+    }
+
+    const filtered = { ...config };
+    const schema = configSchema as any;
+
+    // Check if schema defines sensitive properties
+    if (schema.properties && typeof schema.properties === "object") {
+      for (const [key, propertySchema] of Object.entries(schema.properties)) {
+        const prop = propertySchema as any;
+
+        // Check for sensitive field marker in schema
+        if (prop.sensitive === true || prop.type === "password") {
+          // Remove sensitive fields entirely - don't send to frontend
+          delete filtered[key];
+        }
+      }
+    }
+
+    return filtered;
+  }
+
   private serializePlugin(plugin: PluginRecord): PluginInfo {
+    const configSchema = plugin.configSchema as Record<string, unknown> | null;
+
     return {
       id: plugin.id,
       pluginId: plugin.pluginId,
@@ -952,9 +987,16 @@ class PluginManager {
       error: plugin.error,
       gameTypes: plugin.gameTypes,
       permissions: plugin.permissions,
-      config: plugin.config as Record<string, unknown>,
-      defaultConfig: plugin.defaultConfig as Record<string, unknown>,
-      configSchema: plugin.configSchema as Record<string, unknown> | null,
+      // SECURITY: Filter out sensitive config fields before sending to client
+      config: this.filterSensitiveConfig(
+        plugin.config as Record<string, unknown>,
+        configSchema
+      ),
+      defaultConfig: this.filterSensitiveConfig(
+        plugin.defaultConfig as Record<string, unknown>,
+        configSchema
+      ),
+      configSchema,
       uiMetadata: plugin.uiMetadata as Record<string, unknown> | null,
       manifest: plugin.manifest as unknown as PluginManifest,
       installedAt: plugin.installedAt.toISOString(),
