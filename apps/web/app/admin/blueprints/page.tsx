@@ -2,16 +2,16 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Input from "@stellarUI/components/Input/Input";
+import Label from "@stellarUI/components/Label/Label";
+import Textarea from "@stellarUI/components/Textarea";
 import {
   BsBox,
   BsPlus,

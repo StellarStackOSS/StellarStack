@@ -15,7 +15,7 @@ const getGitCommitHash = () => {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disable to prevent double WebSocket connections in dev
-  transpilePackages: ["@workspace/ui"],
+  transpilePackages: ["@stellarUI"],
   env: {
     NEXT_PUBLIC_GIT_COMMIT_HASH: getGitCommitHash(),
   },

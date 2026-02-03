@@ -1,6 +1,6 @@
 import { Server } from "@/lib/api.types";
 import React from "react";
-import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
+import { TextureBadge } from "@stellarUI/components/TextureBadge/TextureBadge";
 
 interface ServerStatusBadgeProps {
   server: Server | null;

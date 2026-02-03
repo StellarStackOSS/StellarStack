@@ -2,7 +2,7 @@
 
 import {ReactNode} from "react";
 import {Download, Loader2, RotateCcw, Server, Wrench} from "lucide-react";
-import {cn} from "@workspace/ui/lib/utils";
+import {cn} from "@stellarUI/lib/utils";
 import {motion} from "framer-motion";
 import {CgDanger} from "react-icons/cg";
 

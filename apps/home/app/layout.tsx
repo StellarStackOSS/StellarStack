@@ -1,7 +1,7 @@
 import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import type { Metadata } from "next";
 
-import "@workspace/ui/globals.css";
+import "@stellarUI/globals.css";
 import { Providers } from "@/components/providers";
 import { ScrollToTop } from "@/components/ScrollToTop";
 

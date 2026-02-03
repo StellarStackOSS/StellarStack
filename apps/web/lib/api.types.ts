@@ -62,6 +62,7 @@ export interface Node {
   isOnline: boolean;
   lastHeartbeat?: string;
   heartbeatLatency?: number; // ms
+  status?: string;
   locationId?: string;
   location?: Location;
   allocations?: Allocation[];
@@ -71,28 +72,61 @@ export interface Node {
   updatedAt: string;
 }
 
+/**
+ * Hardware statistics response from daemon
+ */
 export interface NodeStats {
+  /** CPU statistics including cores, usage, and load average */
   cpu: {
+    /** Number of CPU cores */
     cores: number;
+    /** CPU usage as percentage (0-100) */
     usage_percent: number;
-    load_avg: { one: number; five: number; fifteen: number };
+    /** Load average metrics */
+    load_avg: {
+      /** 1-minute load average */
+      one: number;
+      /** 5-minute load average */
+      five: number;
+      /** 15-minute load average */
+      fifteen: number;
+    };
   };
+  /** Memory/RAM statistics */
   memory: {
+    /** Total memory in bytes */
     total: number;
+    /** Used memory in bytes */
     used: number;
+    /** Available memory in bytes */
     available: number;
+    /** Memory usage as percentage (0-100) */
     usage_percent: number;
   };
+  /** Disk storage statistics */
   disk: {
+    /** Total disk space in bytes */
     total: number;
+    /** Used disk space in bytes */
     used: number;
+    /** Available disk space in bytes */
     available: number;
+    /** Disk usage as percentage (0-100) */
     usage_percent: number;
   };
+  /** System uptime in seconds */
   uptime: number;
+  /** Hostname of the node */
   hostname: string;
-  os: { name: string; version: string; arch: string };
-  api: { connected: boolean; latency_ms?: number };
+  /** Operating system information */
+  os: {
+    /** OS name (Windows, Linux, macOS) */
+    name: string;
+    /** OS version string */
+    version: string;
+    /** CPU architecture (x86_64, aarch64, etc.) */
+    arch: string;
+  };
 }
 
 export interface CreateNodeData {

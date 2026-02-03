@@ -142,7 +142,7 @@ importers:
       '@types/three':
         specifier: ^0.182.0
         version: 0.182.0
-      '@workspace/ui':
+      '@stellarUI':
         specifier: workspace:*
         version: link:../../packages/ui
       framer-motion:
@@ -260,7 +260,7 @@ importers:
       '@types/dagre':
         specifier: ^0.7.53
         version: 0.7.53
-      '@workspace/ui':
+      '@stellarUI':
         specifier: workspace:*
         version: link:../../packages/ui
       '@xyflow/react':

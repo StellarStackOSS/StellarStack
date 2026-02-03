@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { cn } from "@workspace/ui/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@stellarUI/components/Dialog/Dialog";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { cn } from "@stellarUI/lib/utils";
 import { getMediaType } from "@/lib/media-utils";
 import { getApiEndpoint } from "@/lib/public-env";
 import { MediaViewer } from "../../MediaViewer/MediaViewer";

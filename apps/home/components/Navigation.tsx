@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { Button } from "@workspace/ui/components/button";
+import { cn } from "@stellarUI/lib/utils";
+import { Button } from "@stellarUI/components/Button/Button";
 import { BsGithub, BsList, BsX } from "react-icons/bs";
 
 interface NavLink {

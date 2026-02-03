@@ -2,7 +2,7 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { signIn } from "@/lib/auth-client";
 import { useAuth } from "hooks/auth-provider";
 import { toast } from "sonner";

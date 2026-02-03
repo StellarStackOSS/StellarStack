@@ -3,13 +3,13 @@
 import { type JSX, useState } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import Input from "@stellarUI/components/Input/Input";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
   BsCloudDownload,
   BsDownload,
@@ -25,8 +25,8 @@ import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Label } from "@workspace/ui/components/label";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Label from "@stellarUI/components/Label/Label";
 import ServerBackupStatusBadge, {
   convertServerBackupStatusToIcon,
 } from "@/components/ServerBackupStatusBadge/ServerBackupStatusBadge";

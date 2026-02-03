@@ -2,13 +2,13 @@
 
 import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Input } from "@workspace/ui/components";
-import { Badge } from "@workspace/ui/components/badge";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Input from "@stellarUI/components/Input/Input";
+import { Badge } from "@stellarUI/components/Badge/Badge";
 import {
   BsSearch,
   BsBox,

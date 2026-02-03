@@ -14,7 +14,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@workspace/ui/components/sidebar";
+} from "@stellarUI/components/Sidebar/Sidebar";
 import {
   CommandDialog,
   CommandEmpty,
@@ -22,7 +22,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@workspace/ui/components/command";
+} from "@stellarUI/components/Command/Command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +30,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
+} from "@stellarUI/components/DropdownMenu/DropdownMenu";
 import {
   Bell,
   ChevronDown,
@@ -65,9 +65,9 @@ import {
   Search01Icon,
   PuzzleIcon,
 } from "hugeicons-react";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { useAuth } from "hooks/auth-provider";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 import { AnimatePresence, motion } from "framer-motion";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";

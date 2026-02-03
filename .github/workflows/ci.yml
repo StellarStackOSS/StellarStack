@@ -152,7 +152,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Storybook
-        run: pnpm --filter=@workspace/ui run build:storybook
+        run: pnpm --filter=@stellarUI run build:storybook
 
   # TEST JOBS
   test-api:
@@ -372,7 +372,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint Storybook
-        run: pnpm --filter @workspace/ui lint
+        run: pnpm --filter @stellarUI lint
 
   # VISUAL REGRESSION TESTS
   vr-test-landing-page:
@@ -437,7 +437,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Run VR Tests (Storybook)
-        run: pnpm --filter @workspace/ui test:vr
+        run: pnpm --filter @stellarUI test:vr
 
       - name: Upload VR Test Results
         if: always()

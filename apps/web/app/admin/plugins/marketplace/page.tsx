@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Badge } from '@workspace/ui/components/badge';
+import { Button } from '@stellarUI/components/button';
+import { Input } from '@stellarUI/components/input';
+import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@stellarUI/components/card';
+import { Badge } from '@stellarUI/components/badge';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@workspace/ui/components/dialog';
+} from '@stellarUI/components/dialog';
 import { BsDownload, BsCheckCircle, BsExclamationTriangle, BsShield, BsX } from 'react-icons/bs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pluginsApi } from '@/lib/api';

@@ -2,15 +2,15 @@
 
 import { type JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Switch } from "@workspace/ui/components/switch";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Input from "@stellarUI/components/Input/Input";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import { Switch } from "@stellarUI/components/Switch/Switch";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
   BsArrowRepeat,
   BsCalendar,
@@ -34,7 +34,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { useServerWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
+import Label from "@stellarUI/components/Label/Label";
 import { ScheduleVisualizer } from "./components/ScheduleVisualizer";
 
 type ActionType = "power_start" | "power_stop" | "power_restart" | "backup" | "command";

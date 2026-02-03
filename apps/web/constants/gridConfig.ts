@@ -1,4 +1,4 @@
-import type { GridItemConfig } from "@workspace/ui/components/drag-drop-grid";
+import type { GridItemConfig } from "@stellarUI/components/DragDropGrid/DragDropGrid";
 
 export const defaultGridItems: GridItemConfig[] = [
   { i: "instance-name", size: "xxl-wide", minSize: "xxl-wide", maxSize: "xxl-wide" },

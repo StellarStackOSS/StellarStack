@@ -6,9 +6,11 @@ import {
   TextureCardHeader,
   TextureCardStyled,
   TextureSeparator,
-} from "@workspace/ui/components/texture-card";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { FadeIn, Input, Spinner } from "@workspace/ui/components";
+} from "@stellarUI/components/TextureCard/TextureCard";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import FadeIn from "@stellarUI/components/FadeIn/FadeIn";
+import Input from "@stellarUI/components/Input/Input";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { BsApple, BsDiscord, BsGoogle } from "react-icons/bs";
 import { ArrowRight } from "lucide-react";
 
@@ -23,9 +25,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@workspace/ui/components/form";
+} from "@stellarUI/components/Form/Form";
 import { FunctionComponent, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { LiquidMetal } from "@paper-design/shaders-react";
 import { Turnstile } from "@/components/Turnstile/Turnstile";
 

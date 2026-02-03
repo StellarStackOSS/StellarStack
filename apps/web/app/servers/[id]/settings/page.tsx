@@ -3,29 +3,29 @@
 import { type JSX, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Slider } from "@workspace/ui/components/slider";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
+} from "@stellarUI/components/Dialog/Dialog";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { Slider } from "@stellarUI/components/Slider/Slider";
+import Label from "@stellarUI/components/Label/Label";
+import Input from "@stellarUI/components/Input/Input";
+import Textarea from "@stellarUI/components/Textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@stellarUI/components/Select";
 import {
   BsCheck,
   BsCheckCircle,
@@ -40,7 +40,7 @@ import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { toast } from "sonner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 
 interface ServerSettings {
   name: string;

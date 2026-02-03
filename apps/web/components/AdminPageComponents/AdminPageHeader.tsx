@@ -2,8 +2,8 @@
 
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import {TextureButton} from "@workspace/ui/components/texture-button";
+import { cn } from "@stellarUI/lib/utils";
+import {TextureButton} from "@stellarUI/components/TextureButton";
 import { ArrowLeft } from "lucide-react";
 
 interface AdminPageHeaderProps {

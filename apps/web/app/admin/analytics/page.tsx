@@ -8,18 +8,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
+} from "@stellarUI/components/Card/Card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@workspace/ui/components/chart";
+} from "@stellarUI/components/Chart/Chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 import {
   BsGraphUp,
   BsArrowRepeat,

@@ -4,17 +4,17 @@ import { useState } from "react";
 import type { SearchAndInstallSchema } from "@stellarstack/plugin-sdk";
 import { usePluginAction } from "@/hooks/queries/use-plugin-actions";
 import { pluginsApi } from "@/lib/api";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components";
-import { Badge } from "@workspace/ui/components/badge";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Input from "@stellarUI/components/Input/Input";
+import { Badge } from "@stellarUI/components/Badge/Badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@stellarUI/components/Dialog/Dialog";
+import { cn } from "@stellarUI/lib/utils";
 import { BsSearch, BsArrowClockwise, BsExclamationTriangle } from "react-icons/bs";
 
 // ============================================

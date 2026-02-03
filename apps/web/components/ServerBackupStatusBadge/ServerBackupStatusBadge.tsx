@@ -1,8 +1,8 @@
 import { type Backup } from "@/lib/api.types";
 import React from "react";
-import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
+import { TextureBadge } from "@stellarUI/components/TextureBadge/TextureBadge";
 import { BsCheckCircle, BsCloudDownload, BsTrash } from "react-icons/bs";
-import { Spinner } from "@workspace/ui/components";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 
 interface ServerBackupStatusBadgeProps {
   status: Backup["status"];

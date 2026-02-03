@@ -2,12 +2,12 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { Spinner } from "@workspace/ui/components/spinner";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { BsGlobe, BsPencil, BsPlus, BsTrash } from "react-icons/bs";
 import { TbWand } from "react-icons/tb";
 import { useServer } from "components/ServerStatusPages/server-provider";
@@ -17,8 +17,8 @@ import { WebhookEventSelector } from "./WebhookEventSelector";
 import { WebhookUrlField } from "./WebhookUrlField";
 import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
-import { SidebarTrigger } from "@workspace/ui/components";
+import Label from "@stellarUI/components/Label/Label";
+import { SidebarTrigger } from "@stellarUI/components";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },

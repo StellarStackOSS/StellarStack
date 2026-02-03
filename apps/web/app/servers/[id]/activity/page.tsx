@@ -3,10 +3,10 @@
 import { useState, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
   BsPlayFill,
   BsStopFill,

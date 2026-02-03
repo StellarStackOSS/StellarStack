@@ -1,7 +1,7 @@
 import * as React from "react";
 import {Slot} from "@radix-ui/react-slot";
 import {cva, type VariantProps} from "class-variance-authority";
-import {cn} from "@workspace/ui/lib/utils";
+import {cn} from "@stellarUI/lib/utils";
 
 const textureBadgeOuter = cva("", {
   variants: {
@@ -79,4 +79,4 @@ const TextureBadge = ({
   );
 };
 
-export { TextureBadge };
+export default TextureBadge

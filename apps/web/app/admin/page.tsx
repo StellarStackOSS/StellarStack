@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { cn } from "@stellarUI/lib/utils";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { Cpu, MapPin, Package, Server, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import type { Blueprint, Location, Node, User } from "@/lib/api";

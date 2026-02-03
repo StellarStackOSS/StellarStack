@@ -15,7 +15,7 @@ import {
   BsCheckCircle,
   BsClock,
 } from "react-icons/bs";
-import { Label } from "@workspace/ui/components/label";
+import Label from "@stellarUI/components/Label/Label";
 import { JSX } from "react";
 
 const nodeBaseClasses =

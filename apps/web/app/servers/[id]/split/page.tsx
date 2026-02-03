@@ -2,21 +2,21 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Input from "@stellarUI/components/Input/Input";
+import Label from "@stellarUI/components/Label/Label";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { BsArrowRight, BsExclamationTriangle, BsPlus, BsServer, BsTrash } from "react-icons/bs";
 import { useServer } from "components/ServerStatusPages/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
-import { Spinner } from "@workspace/ui/components";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
 const formatMiB = (mib: number): string => {

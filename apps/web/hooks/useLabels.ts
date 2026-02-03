@@ -1,16 +1,16 @@
 "use client";
 
 import { t } from "../lib/i18n";
-import type { CpuCardLabels } from "@workspace/ui/components/cpu-card";
-import type { UsageMetricCardLabels } from "@workspace/ui/components/usage-metric-card";
-import type { NetworkUsageCardLabels } from "@workspace/ui/components/network-usage-card";
-import type { NetworkInfoCardLabels } from "@workspace/ui/components/network-info-card";
-import type { SystemInfoCardLabels } from "@workspace/ui/components/system-information-card";
-import type { ContainerControlsCardLabels } from "@workspace/ui/components/container-controls-card";
-import type { ContainerUptimeCardLabels } from "@workspace/ui/components/container-uptime-card";
-import type { PlayersOnlineCardLabels } from "@workspace/ui/components/players-online-card";
-import type { RecentLogsCardLabels } from "@workspace/ui/components/recent-logs-card";
-import type { RemoveConfirmLabels } from "@workspace/ui/components/drag-drop-grid";
+import type { CpuCardLabels } from "@stellarUI/components/CpuCard/CpuCard";
+import type { UsageMetricCardLabels } from "@stellarUI/components/UsageMetricCard/UsageMetricCard";
+import type { NetworkUsageCardLabels } from "@stellarUI/components/NetworkUsageCard/NetworkUsageCard";
+import type { NetworkInfoCardLabels } from "@stellarUI/components/NetworkInfoCard/NetworkInfoCard";
+import type { SystemInfoCardLabels } from "@stellarUI/components/SystemInformationCard/SystemInformationCard";
+import type { ContainerControlsCardLabels } from "@stellarUI/components/ContainerControlsCard/ContainerControlsCard";
+import type { ContainerUptimeCardLabels } from "@stellarUI/components/ContainerUptimeCard/ContainerUptimeCard";
+import type { PlayersOnlineCardLabels } from "@stellarUI/components/PlayersOnlineCard/PlayersOnlineCard";
+import type { RecentLogsCardLabels } from "@stellarUI/components/RecentLogsCard/RecentLogsCard";
+import type { RemoveConfirmLabels } from "@stellarUI/components/DragDropGrid/DragDropGrid";
 
 interface DashboardLabels {
   editLayout: string;

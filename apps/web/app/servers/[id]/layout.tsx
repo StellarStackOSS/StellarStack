@@ -2,14 +2,14 @@
 
 import { useParams } from "next/navigation";
 import { memo } from "react";
-import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
+import { SidebarInset, SidebarProvider } from "@stellarUI/components/Sidebar/Sidebar";
 import { ServerProvider, useServer } from "components/ServerStatusPages/server-provider";
 import { ServerMaintenancePlaceholder } from "@/components/ServerStatusPages/server-maintenance-placeholder/server-maintenance-placeholder";
 import { ServerSuspendedPlaceholder } from "@/components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { ServerRestoringPlaceholder } from "@/components/ServerStatusPages/server-restoring-placeholder/server-restoring-placeholder";
 import { UploadProgressIndicator } from "@/components/UploadProgressIndicator/UploadProgressIndicator";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
-import {UploadProvider} from "@/components/providers/UploadProvider/UploadProvider";
+import { UploadProvider } from "@/components/providers/UploadProvider/UploadProvider";
 
 // Memoized background component to prevent re-renders
 const PersistentBackground = memo(function PersistentBackground() {

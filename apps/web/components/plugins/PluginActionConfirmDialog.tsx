@@ -8,10 +8,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Switch } from "@workspace/ui/components/switch";
-import { Label } from "@workspace/ui/components/label";
+} from "@stellarUI/components/Dialog/Dialog";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { Switch } from "@stellarUI/components/Switch/Switch";
+import Label from "@stellarUI/components/Label/Label";
 
 export interface PluginActionConfirmDialogProps {
   open: boolean;

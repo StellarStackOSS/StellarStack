@@ -2,14 +2,14 @@
 
 import { type JSX, useCallback, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Input from "@stellarUI/components/Input/Input";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
   BsClock,
   BsEnvelope,
@@ -32,8 +32,8 @@ import {
   useServerMembers,
 } from "@/hooks/queries";
 import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
-import { Label } from "@workspace/ui/components/label";
-import { Checkbox } from "@workspace/ui/components";
+import Label from "@stellarUI/components/Label/Label";
+import { Checkbox } from "@stellarUI/components";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();

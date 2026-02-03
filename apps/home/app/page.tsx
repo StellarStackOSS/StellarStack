@@ -2,7 +2,7 @@
 
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import {
   BsArrowRight,
   BsBoxSeam,
@@ -23,7 +23,7 @@ import {
 } from "react-icons/bs";
 import { Footer } from "@/components/Footer";
 import { Navigation } from "@/components/Navigation";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 
 // ============================================================================
 // Data
