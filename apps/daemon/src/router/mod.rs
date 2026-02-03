@@ -55,6 +55,7 @@ pub fn build_router(state: AppState) -> Router {
     let api_routes = Router::new()
         // System routes
         .route("/system", get(handlers::system::system_info))
+        .route("/stats", get(handlers::system::hardware_stats))
 
         // Server collection routes
         .route("/servers", get(handlers::servers::list_servers))

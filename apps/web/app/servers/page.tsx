@@ -2,16 +2,16 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 import { BsChevronRight } from "react-icons/bs";
 import type { Server } from "@/lib/api";
 import { servers as serversApi } from "@/lib/api";
 import { useAuth } from "hooks/auth-provider";
 import { toast } from "sonner";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
-import { Spinner } from "@workspace/ui/components";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { renderVersion } from "@/components/UnifiedSidebar/UnifiedSidebar";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 
 type ServerStatus =
   | "INSTALLING"

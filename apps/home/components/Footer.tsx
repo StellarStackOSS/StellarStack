@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
-import { LightBoard } from "@workspace/ui/components/LightBoard/LightBoard";
+import { LightBoard } from "@stellarUI/components/LightBoard/LightBoard";
 
 interface FooterProps {}
 

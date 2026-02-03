@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 
 interface HoverWaveTextProps {
   text: string;

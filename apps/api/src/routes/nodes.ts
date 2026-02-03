@@ -333,6 +333,15 @@ nodes.get("/:id/stats", requireAdmin, async (c) => {
 
   const node = await db.node.findUnique({
     where: { id },
+    select: {
+      id: true,
+      isOnline: true,
+      lastHeartbeat: true,
+      token: true,
+      protocol: true,
+      host: true,
+      port: true,
+    },
   });
 
   if (!node) {
@@ -343,25 +352,35 @@ nodes.get("/:id/stats", requireAdmin, async (c) => {
     return c.json({ error: "Node is offline" }, 400);
   }
 
+  if (!node.token) {
+    return c.json({ error: "Node token not configured" }, 500);
+  }
+
   // Proxy request to daemon
   const protocol = node.protocol === "HTTP" ? "http" : "https";
-  const url = `${protocol}://${node.host}:${node.port}/stats`;
+  const url = `${protocol}://${node.host}:${node.port}/api/stats`;
 
   try {
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${node.token}`,
+        Authorization: `Bearer ${node.id}.${node.token}`,
       },
     });
 
     if (!response.ok) {
-      return c.json({ error: "Failed to fetch stats from daemon" }, 500);
+      const errorText = await response.text().catch(() => "");
+      console.error(`Daemon stats request failed: ${response.status} ${response.statusText}`, errorText);
+      return c.json(
+        { error: "Failed to fetch stats from daemon", details: `${response.status} ${response.statusText}` },
+        500
+      );
     }
 
     const stats = await response.json();
     return c.json(stats);
   } catch (error) {
-    return c.json({ error: "Failed to connect to daemon" }, 500);
+    console.error("Failed to connect to daemon:", error);
+    return c.json({ error: "Failed to connect to daemon", details: error instanceof Error ? error.message : String(error) }, 500);
   }
 });
 

@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Input } from "@workspace/ui/components/input";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Input from "@stellarUI/components/Input/Input";
 import {
   BsServer,
   BsPlus,

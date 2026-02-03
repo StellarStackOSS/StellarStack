@@ -1,22 +1,22 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Switch } from "@workspace/ui/components/switch";
-import { Input } from "@workspace/ui/components";
-import { Label } from "@workspace/ui/components/label";
-import { Badge } from "@workspace/ui/components/badge";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import { Switch } from "@stellarUI/components/Switch/Switch";
+import Input from "@stellarUI/components/Input/Input";
+import Label from "@stellarUI/components/Label/Label";
+import { Badge } from "@stellarUI/components/Badge/Badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
+} from "@stellarUI/components/Dialog/Dialog";
 import {
   BsSearch,
   BsGear,

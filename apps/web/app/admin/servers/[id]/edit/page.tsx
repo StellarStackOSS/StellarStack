@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+import { cn } from "@stellarUI/lib/utils";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import {
   BsArrowLeft,
   BsBoxArrowRight,
@@ -20,16 +20,16 @@ import {
   BsPencil,
 } from "react-icons/bs";
 import { useServer, useServerMutations } from "@/hooks/queries";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
+import Label from "@stellarUI/components/Label/Label";
+import Input from "@stellarUI/components/Input/Input";
+import Textarea from "@stellarUI/components/Textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@stellarUI/components/Select";
 import { toast } from "sonner";
 import type { Node } from "@/lib/api";
 import { Allocation, Blueprint, blueprints, nodes, servers } from "@/lib/api";

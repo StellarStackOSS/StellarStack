@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { GridItemConfig, Layouts } from "../components/drag-drop-grid";
+import type { GridItemConfig, Layouts } from "../components/DragDropGrid/DragDropGrid";
 
 export interface GridStorageData {
   items: GridItemConfig[];

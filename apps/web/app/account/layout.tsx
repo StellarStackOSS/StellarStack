@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar";
+import { SidebarInset, SidebarProvider } from "@stellarUI/components/Sidebar/Sidebar";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders

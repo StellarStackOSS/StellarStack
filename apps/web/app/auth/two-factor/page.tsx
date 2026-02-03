@@ -2,13 +2,13 @@
 
 import { type JSX, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Input } from "@workspace/ui/components/input";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Input from "@stellarUI/components/Input/Input";
 import { BsArrowLeft, BsShieldCheck } from "react-icons/bs";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
+import Label from "@stellarUI/components/Label/Label";
 
 const TwoFactorPage = (): JSX.Element | null => {
   const router = useRouter();

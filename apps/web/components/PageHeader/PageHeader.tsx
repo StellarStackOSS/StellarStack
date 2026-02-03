@@ -1,8 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { cn } from "@stellarUI/lib/utils";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 
 interface PageHeaderProps {
   title: string;

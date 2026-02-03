@@ -1,14 +1,14 @@
 "use client";
 
 import { type JSX, useEffect, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import { cn } from "@stellarUI/lib/utils";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import Input from "@stellarUI/components/Input/Input";
+import Label from "@stellarUI/components/Label/Label";
 import {
   BsCheckCircle,
   BsDiscord,

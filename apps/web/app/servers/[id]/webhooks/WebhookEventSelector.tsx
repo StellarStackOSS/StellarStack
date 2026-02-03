@@ -1,10 +1,10 @@
 "use client";
 
 import { type WebhookEvent } from "@/lib/api";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { BsCheck2 } from "react-icons/bs";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import {Checkbox} from "@workspace/ui/components";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import {Checkbox} from "@stellarUI/components";
 
 interface WebhookEventSelectorProps {
   events: Array<{ value: WebhookEvent; label: string; description: string }>;

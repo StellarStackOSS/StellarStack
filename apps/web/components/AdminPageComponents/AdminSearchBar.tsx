@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { Search } from "lucide-react";
-import { Input } from "@workspace/ui/components";
+import Input from "@stellarUI/components/Input/Input";
 
 interface AdminSearchBarProps {
   value: string;

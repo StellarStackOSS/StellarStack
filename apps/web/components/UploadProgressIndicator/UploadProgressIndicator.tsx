@@ -2,9 +2,9 @@
 
 import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
 import { ArrowUp, Upload, X } from "lucide-react";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@stellarUI/lib/utils";
 import { motion } from "framer-motion";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 
 export function UploadProgressIndicator() {
   const { uploads, removeUpload } = useUploads();

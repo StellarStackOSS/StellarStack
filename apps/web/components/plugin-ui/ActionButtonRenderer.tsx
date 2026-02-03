@@ -1,7 +1,7 @@
 "use client";
 
 import type { ActionButtonSchema } from "@stellarstack/plugin-sdk";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 
 interface ActionButtonRendererProps {
   schema: ActionButtonSchema;

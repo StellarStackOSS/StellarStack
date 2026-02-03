@@ -2,15 +2,15 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Label } from "@workspace/ui/components/label";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import Label from "@stellarUI/components/Label/Label";
+import Input from "@stellarUI/components/Input/Input";
+import Textarea from "@stellarUI/components/Textarea";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
 import type { DockerImageOption, StartupVariable } from "@/lib/api";
 import { servers } from "@/lib/api";

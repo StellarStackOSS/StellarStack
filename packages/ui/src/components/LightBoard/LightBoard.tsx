@@ -456,7 +456,7 @@ function LightBoard({
   );
 }
 
-export { LightBoard };
+export default LightBoard;
 
 const sevenSegmentFont: { [key: string]: Pattern } = {
   "0": [

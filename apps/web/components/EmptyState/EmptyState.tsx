@@ -1,8 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 
 interface EmptyStateProps {
   icon: ReactNode;

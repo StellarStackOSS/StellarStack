@@ -14,28 +14,28 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { cn } from "@workspace/ui/lib/utils";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Checkbox } from "@workspace/ui/components/checkbox";
+import { cn } from "@stellarUI/lib/utils";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { Checkbox } from "@stellarUI/components/Checkbox/Checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
-import { FormModal } from "@workspace/ui/components/form-modal";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { FadeIn } from "@workspace/ui/components/fade-in";
+} from "@stellarUI/components/DropdownMenu/DropdownMenu";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
+import FormModal from "@stellarUI/components/FormModal/FormModal";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
+} from "@stellarUI/components/Dialog/Dialog";
 import {
   BsArrowLeft,
   BsChevronDown,
@@ -65,8 +65,8 @@ import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
 import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
-import { DataTable, Input } from "@workspace/ui/components";
-import { Label } from "@workspace/ui/components/label";
+import { DataTable, Input } from "@stellarUI/components";
+import Label from "@stellarUI/components/Label/Label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
 import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
 import FilledFolder from "@/components/FilledFolder/FilledFolder";
@@ -153,6 +153,9 @@ const FilesPage = (): JSX.Element | null => {
   const [rowSelection, setRowSelection] = useState({});
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const filesRef = useRef<FileItem[]>([]);
+  const diskUsageRef = useRef<{ used: number; total: number }>({ used: 0, total: 0 });
+  const isPollingRef = useRef(false);
 
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -230,18 +233,28 @@ const FilesPage = (): JSX.Element | null => {
       const totalBytes = usage.limit_bytes || (server?.disk ? server.disk * 1024 * 1024 : 0);
       const usedBytes = usage.used_bytes || 0;
 
-      setDiskUsage({ used: usedBytes, total: totalBytes });
+      // Only update if the data actually changed
+      if (diskUsageRef.current.used !== usedBytes || diskUsageRef.current.total !== totalBytes) {
+        diskUsageRef.current = { used: usedBytes, total: totalBytes };
+        setDiskUsage({ used: usedBytes, total: totalBytes });
+      }
     } catch (error) {
       console.error("[Disk Usage] Failed to fetch disk usage:", error);
       // Fall back to server config if daemon request fails
       if (server?.disk) {
-        setDiskUsage({ used: 0, total: server.disk * 1024 * 1024 });
+        const fallbackUsage = { used: 0, total: server.disk * 1024 * 1024 };
+        if (diskUsageRef.current.used !== 0 || diskUsageRef.current.total !== fallbackUsage.total) {
+          diskUsageRef.current = fallbackUsage;
+          setDiskUsage(fallbackUsage);
+        }
       }
     }
   }, [serverId, server?.disk]);
 
-  const fetchFiles = useCallback(async () => {
-    setIsLoading(true);
+  const fetchFiles = useCallback(async (isPolling: boolean = false) => {
+    if (!isPolling) {
+      setIsLoading(true);
+    }
     try {
       const data = await servers.files.list(
         serverId,
@@ -256,12 +269,28 @@ const FilesPage = (): JSX.Element | null => {
         modified: new Date(f.modified).toLocaleString(),
         path: f.path,
       }));
-      setFiles(mappedFiles);
+
+      // Only update if the file list actually changed
+      const hasChanged =
+        filesRef.current.length !== mappedFiles.length ||
+        !filesRef.current.every((f, i) => f.id === mappedFiles[i]?.id);
+
+      if (hasChanged) {
+        filesRef.current = mappedFiles;
+        setFiles(mappedFiles);
+      }
     } catch (error) {
-      toast.error("Failed to fetch files");
-      setFiles([]);
+      if (!isPolling) {
+        toast.error("Failed to fetch files");
+      }
+      if (filesRef.current.length > 0) {
+        filesRef.current = [];
+        setFiles([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (!isPolling) {
+        setIsLoading(false);
+      }
     }
   }, [serverId, displayPath]);
 
@@ -283,15 +312,13 @@ const FilesPage = (): JSX.Element | null => {
 
   // Poll file list for SFTP uploads and external changes
   useEffect(() => {
-    // Poll files every 3 seconds when not loading
+    // Poll files every 3 seconds
     const fileInterval = setInterval(() => {
-      if (!isLoading) {
-        fetchFiles();
-      }
+      fetchFiles(true); // Pass true to indicate this is a polling call
     }, 3000);
 
     return () => clearInterval(fileInterval);
-  }, [fetchFiles, isLoading]);
+  }, [fetchFiles]);
 
   // Handle dropped files - upload directly with optimistic updates
   const handleDroppedFiles = useCallback(
@@ -412,20 +439,20 @@ const FilesPage = (): JSX.Element | null => {
   }, [mediaPreviewOpen, uploadModalOpen, handleDroppedFiles]);
 
   // Navigation helpers - updates local state to trigger row animations
-  const navigateToFolder = (folderName: string) => {
+  const navigateToFolder = useCallback((folderName: string) => {
     const newPath = displayPath === "/" ? `/${folderName}` : `${displayPath}/${folderName}`;
     router.push(`/servers/${serverId}/files${newPath}`, undefined);
-  };
+  }, [displayPath, serverId, router]);
 
-  const navigateUp = () => {
+  const navigateUp = useCallback(() => {
     if (displayPath === "/") return;
     const segments = displayPath.split("/").filter(Boolean);
     segments.pop();
     const parentPath = segments.length > 0 ? `/${segments.join("/")}` : "/";
     router.push(`/servers/${serverId}/files${parentPath}`, undefined);
-  };
+  }, [displayPath, serverId, router]);
 
-  const getBasePath = () => `/servers/${serverId}/files`;
+  const getBasePath = useCallback(() => `/servers/${serverId}/files`, [serverId]);
 
   // Build breadcrumb segments
   const breadcrumbSegments = useMemo(() => {
@@ -433,16 +460,16 @@ const FilesPage = (): JSX.Element | null => {
     return displayPath.split("/").filter(Boolean);
   }, [displayPath]);
 
-  const isEditable = (fileName: string) => {
+  const isEditable = useCallback((fileName: string) => {
     return EDITABLE_EXTENSIONS.some((ext) => fileName.toLowerCase().endsWith(ext));
-  };
+  }, []);
 
-  const handleDelete = (file: FileItem) => {
+  const handleDelete = useCallback((file: FileItem) => {
     setFileToDelete(file);
     setDeleteModalOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!fileToDelete) return;
     const deletePath = fileToDelete.path;
     try {
@@ -457,13 +484,13 @@ const FilesPage = (): JSX.Element | null => {
       setFileToDelete(null);
       setDeleteModalOpen(false);
     }
-  };
+  }, [fileToDelete, serverId, fetchDiskUsage]);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = useCallback(() => {
     setBulkDeleteModalOpen(true);
-  };
+  }, []);
 
-  const confirmBulkDelete = async () => {
+  const confirmBulkDelete = useCallback(async () => {
     const selectedIds = Object.keys(rowSelection);
     try {
       await Promise.all(selectedIds.map((path) => servers.files.delete(serverId, path)));
@@ -479,15 +506,15 @@ const FilesPage = (): JSX.Element | null => {
     } finally {
       setBulkDeleteModalOpen(false);
     }
-  };
+  }, [rowSelection, serverId, fetchDiskUsage, fetchFiles]);
 
-  const handleRename = (file: FileItem) => {
+  const handleRename = useCallback((file: FileItem) => {
     setFileToRename(file);
     setNewFileName(file.name);
     setRenameModalOpen(true);
-  };
+  }, []);
 
-  const confirmRename = async () => {
+  const confirmRename = useCallback(async () => {
     if (!fileToRename || !newFileName.trim()) return;
     const oldPath = fileToRename.path;
     const newPath =
@@ -509,9 +536,9 @@ const FilesPage = (): JSX.Element | null => {
       setFileToRename(null);
       setNewFileName("");
     }
-  };
+  }, [fileToRename, newFileName, currentPath, serverId]);
 
-  const handleEditPermissions = (file: FileItem) => {
+  const handleEditPermissions = useCallback((file: FileItem) => {
     setFileToEditPermissions(file);
     // TODO: Fetch current permissions from API and set them
     // For now, use default permissions (644 for files, 755 for folders)
@@ -529,9 +556,9 @@ const FilesPage = (): JSX.Element | null => {
       });
     }
     setPermissionsModalOpen(true);
-  };
+  }, []);
 
-  const confirmPermissions = async () => {
+  const confirmPermissions = useCallback(async () => {
     if (!fileToEditPermissions) return;
     // Convert permissions to octal
     const toOctal = (p: { read: boolean; write: boolean; execute: boolean }) =>
@@ -547,14 +574,14 @@ const FilesPage = (): JSX.Element | null => {
     } catch (error) {
       toast.error(parseDaemonError(error));
     }
-  };
+  }, [fileToEditPermissions, permissions, serverId, playSound]);
 
-  const handleNewFolder = () => {
+  const handleNewFolder = useCallback(() => {
     setNewFolderName("");
     setNewFolderModalOpen(true);
-  };
+  }, []);
 
-  const confirmNewFolder = async () => {
+  const confirmNewFolder = useCallback(async () => {
     if (!newFolderName.trim()) return;
     const folderPath =
       displayPath === "/" ? `/${newFolderName.trim()}` : `${displayPath}/${newFolderName.trim()}`;
@@ -591,14 +618,14 @@ const FilesPage = (): JSX.Element | null => {
       setNewFolderModalOpen(false);
       setNewFolderName("");
     }
-  };
+  }, [newFolderName, displayPath, serverId, playSound]);
 
-  const handleNewFile = () => {
+  const handleNewFile = useCallback(() => {
     setNewFileNameInput("");
     setNewFileModalOpen(true);
-  };
+  }, []);
 
-  const confirmNewFile = async () => {
+  const confirmNewFile = useCallback(async () => {
     if (!newFileNameInput.trim()) return;
     const filePath =
       displayPath === "/"
@@ -640,36 +667,36 @@ const FilesPage = (): JSX.Element | null => {
     } catch (error) {
       toast.error(parseDaemonError(error));
     }
-  };
+  }, [newFileNameInput, displayPath, serverId, playSound, isEditable, router]);
 
-  const handleEdit = (file: FileItem) => {
+  const handleEdit = useCallback((file: FileItem) => {
     // Navigate to the dedicated file edit page
     router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(file.path)}`);
-  };
+  }, [serverId, router]);
 
-  const handleUploadClick = () => {
+  const handleUploadClick = useCallback(() => {
     setUploadFiles([]);
     setUploadModalOpen(true);
-  };
+  }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setUploadFiles(Array.from(e.target.files));
     }
-  };
+  }, []);
 
-  const handleFileDrop = (e: React.DragEvent) => {
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files) {
       setUploadFiles(Array.from(e.dataTransfer.files));
     }
-  };
+  }, []);
 
-  const removeUploadFile = (index: number) => {
+  const removeUploadFile = useCallback((index: number) => {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const isBinaryFile = (filename: string): boolean => {
+  const isBinaryFile = useCallback((filename: string): boolean => {
     const binaryExtensions = [
       "jpg",
       "jpeg",
@@ -712,9 +739,17 @@ const FilesPage = (): JSX.Element | null => {
     ];
     const ext = filename.split(".").pop()?.toLowerCase() || "";
     return binaryExtensions.includes(ext);
-  };
+  }, []);
 
-  const confirmUpload = async () => {
+  const calculateSpeed = useCallback((startTime: number, totalBytes: number, currentTime: number): string => {
+    const elapsed = (currentTime - startTime) / 1000;
+    if (elapsed === 0) return "0 KB/s";
+    const speed = totalBytes / elapsed / 1024;
+    if (speed < 1024) return `${speed.toFixed(1)} KB/s`;
+    return `${(speed / 1024).toFixed(1)} MB/s`;
+  }, []);
+
+  const confirmUpload = useCallback(async () => {
     if (uploadFiles.length === 0) return;
     setIsUploading(true);
     const newFiles: FileItem[] = [];
@@ -791,15 +826,7 @@ const FilesPage = (): JSX.Element | null => {
     setUploadFiles([]);
     fetchDiskUsage();
     setIsUploading(false);
-  };
-
-  const calculateSpeed = (startTime: number, totalBytes: number, currentTime: number): string => {
-    const elapsed = (currentTime - startTime) / 1000;
-    if (elapsed === 0) return "0 KB/s";
-    const speed = totalBytes / elapsed / 1024;
-    if (speed < 1024) return `${speed.toFixed(1)} KB/s`;
-    return `${(speed / 1024).toFixed(1)} MB/s`;
-  };
+  }, [uploadFiles, displayPath, serverId, isBinaryFile, addUpload, updateUpload, removeUpload, formatFileSize, calculateSpeed, playSound, fetchDiskUsage]);
 
   const columns: ColumnDef<FileItem>[] = useMemo(
     () => [
@@ -1037,7 +1064,7 @@ const FilesPage = (): JSX.Element | null => {
         },
       },
     ],
-    [displayPath, serverId]
+    [displayPath, serverId, navigateToFolder, handleEdit, handleDelete, handleRename, handleEditPermissions, isEditable]
   );
 
   // Toggle hidden files visibility

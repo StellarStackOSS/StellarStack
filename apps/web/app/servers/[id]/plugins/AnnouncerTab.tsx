@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Input } from "@workspace/ui/components";
-import { Badge } from "@workspace/ui/components/badge";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import Input from "@stellarUI/components/Input/Input";
+import { Badge } from "@stellarUI/components/Badge/Badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+} from "@stellarUI/components/Dialog/Dialog";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import {
   BsMegaphone,
   BsPlus,

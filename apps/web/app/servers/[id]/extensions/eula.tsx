@@ -9,9 +9,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@workspace/ui/components/dialog";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@stellarUI/components/Dialog/Dialog";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { cn } from "@stellarUI/lib/utils";
 import { toast } from "sonner";
 import { servers } from "@/lib/api";
 import type { ConsoleLine } from "@/hooks/useServerWebSocket";

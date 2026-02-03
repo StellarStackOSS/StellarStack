@@ -22,17 +22,12 @@ import {
   useNodes,
 } from "@xyflow/react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import {
-  Button,
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  Input,
-  Switch,
-} from "@workspace/ui/components";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import Button from "@stellarUI/components/Button/Button";
+import ContextMenu, { ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@stellarUI/components/ContextMenu/ContextMenu";
+import Input from "@stellarUI/components/Input/Input";
+import Switch from "@stellarUI/components/Switch/Switch";
+import Label from "@stellarUI/components/Label/Label";
+import Textarea from "@stellarUI/components/Textarea";
 import { Download, Layout, Upload, X, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/api.types";

@@ -16,7 +16,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
     "@types/three": "^0.182.0",
-    "@workspace/ui": "workspace:*",
+    "@stellarUI": "workspace:*",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.475.0",
     "next": "^15.5.9",

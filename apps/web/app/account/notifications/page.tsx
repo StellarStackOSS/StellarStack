@@ -1,10 +1,10 @@
 "use client";
 
 import { type JSX, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { cn } from "@stellarUI/lib/utils";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import {
   BsBell,
   BsCheck,

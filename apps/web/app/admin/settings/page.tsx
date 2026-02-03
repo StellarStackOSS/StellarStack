@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@workspace/ui/lib/utils";
-import { FadeIn } from "@workspace/ui/components/fade-in";
-import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { TextureButton } from "@workspace/ui/components/texture-button";
+import { cn } from "@stellarUI/lib/utils";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import Spinner from "@stellarUI/components/Spinner/Spinner";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 import {
   BsCloud,
   BsGlobe,
@@ -23,16 +23,16 @@ import {
   type SubdomainSettings,
 } from "@/lib/api";
 import { toast } from "sonner";
-import { Label } from "@workspace/ui/components/label";
-import { Input, Switch } from "@workspace/ui/components";
-import { Textarea } from "@workspace/ui/components/textarea";
+import Label from "@stellarUI/components/Label/Label";
+import { Input, Switch } from "@stellarUI/components";
+import Textarea from "@stellarUI/components/Textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@stellarUI/components/Select";
 
 const SettingsSection = ({
   title,

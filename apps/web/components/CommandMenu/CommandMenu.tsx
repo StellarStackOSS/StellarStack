@@ -11,8 +11,8 @@ import {
   CommandGroup,
   CommandItem,
   CommandShortcut,
-} from "@workspace/ui/components/command";
-import { ConfirmationModal } from "@workspace/ui/components/confirmation-modal";
+} from "@stellarUI/components/Command/Command";
+import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import {
   Command,
   CommandContext,
