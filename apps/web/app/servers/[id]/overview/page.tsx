@@ -2,7 +2,7 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { servers } from "@/lib/api";
+import { servers, type Server, type Allocation } from "@/lib/api";
 import DragDropGrid, { GridItem } from "@stellarUI/components/DragDropGrid/DragDropGrid";
 import { useGridStorage } from "@stellarUI/hooks/useGridStorage";
 import Console from "@stellarUI/components/Console/Console";
@@ -30,7 +30,7 @@ import { TextureButton } from "@stellarUI/components/TextureButton";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 
-const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
+const buildDisplayData = (server: Server | null, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
   const stats = statsData.current;
 
   const cpuPercent = stats?.cpu_absolute ?? 0;
@@ -101,7 +101,7 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsag
     networkConfig: {
       publicIp: server?.allocations?.[0]?.ip || "0.0.0.0",
       privateIp: "10.0.0.1",
-      openPorts: server?.allocations?.map((a: any) => ({ port: a.port, protocol: "TCP" })) || [],
+      openPorts: server?.allocations?.map((a: Allocation) => ({ port: a.port, protocol: "TCP" })) || [],
       macAddress: "00:00:00:00:00:00",
       ipAddress: server?.allocations?.[0]?.ip || "0.0.0.0",
       port: server?.allocations?.[0]?.port || 25565,
@@ -118,7 +118,7 @@ const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsag
     node: server?.node
       ? {
           id: server.node.id || "unknown",
-          shortId: server.node.shortId || server.node.id?.substring(0, 8) || "unknown",
+          shortId: String((server.node as unknown as Record<string, unknown>).shortId || server.node.id?.substring(0, 8) || "unknown"),
           name: server.node.displayName || "Node",
           location: getLocationString(),
           region: server.node.location?.country || "Unknown",

@@ -41,7 +41,11 @@
       "Bash(xargs:*)",
       "Bash(npm run build:ui:*)",
       "Bash(pnpm run build:ui:*)",
-      "Bash(pnpm tsc:*)"
+      "Bash(pnpm tsc:*)",
+      "Bash(npm ls:*)",
+      "Bash(pnpm list:*)",
+      "Bash(git diff:*)",
+      "Bash(git reset:*)"
     ]
   }
 }

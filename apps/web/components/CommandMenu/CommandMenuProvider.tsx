@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { Command, CommandMenuState, CommandMenuContextType } from "./commands/types";
+import { Command, CommandMenuState, CommandMenuContextType, CommandContext } from "./commands/types";
 
 /** Context for command menu state and methods */
 export const CommandMenuContext = createContext<CommandMenuContextType | undefined>(undefined);
@@ -63,7 +63,7 @@ export const CommandMenuProvider = ({ children }: CommandMenuProviderProps) => {
     setState((prev) => ({ ...prev, isOpen: false, search: "" }));
   }, []);
 
-  const openForm = useCallback((formType: string, context: any) => {
+  const openForm = useCallback((formType: string, context: CommandContext) => {
     setState((prev) => ({
       ...prev,
       activeForm: { type: formType, context },

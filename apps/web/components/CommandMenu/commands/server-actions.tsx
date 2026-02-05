@@ -6,13 +6,13 @@ import { Power, StopCircle, RotateCcw, Zap, Lock, Clock, Upload } from "lucide-r
  * Check if server is currently running
  * @param ctx Command context
  */
-const isServerRunning = (ctx: CommandContext) => ctx.server?.status === "running";
+const isServerRunning = (ctx: CommandContext) => ctx.server?.status === "RUNNING";
 
 /**
  * Check if server is currently stopped
  * @param ctx Command context
  */
-const isServerStopped = (ctx: CommandContext) => ctx.server?.status === "stopped";
+const isServerStopped = (ctx: CommandContext) => ctx.server?.status === "STOPPED";
 
 /**
  * Check if user can control the current server
