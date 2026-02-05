@@ -1,7 +1,7 @@
 "use client";
 
 import type { JSX } from "react";
-import { useServer } from "../ServerStatusPages/server-provider";
+import { useServer } from "../ServerStatusPages/server-provider/server-provider";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import {

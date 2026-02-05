@@ -20,12 +20,12 @@ import InstanceNameCard from "@stellarUI/components/InstanceNameCard/InstanceNam
 import type { ContainerStatus } from "@stellarUI/components/dashboard-cards-types/types";
 import { useLabels } from "@/hooks";
 import { defaultGridItems, defaultHiddenCards } from "@/constants";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { EulaExtension } from "../extensions/eula";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
-import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder/server-maintenance-placeholder";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";

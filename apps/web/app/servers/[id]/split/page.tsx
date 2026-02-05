@@ -11,9 +11,9 @@ import ConfirmationModal from "@stellarUI/components/ConfirmationModal/Confirmat
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { BsArrowRight, BsExclamationTriangle, BsPlus, BsServer, BsTrash } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
 import Spinner from "@stellarUI/components/Spinner/Spinner";

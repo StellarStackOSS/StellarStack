@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useAuth } from "hooks/auth-provider";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import {
   hasPermission,
   hasAnyPermission,

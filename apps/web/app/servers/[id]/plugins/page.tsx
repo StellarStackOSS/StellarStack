@@ -21,10 +21,10 @@ import {
   BsMegaphone,
   BsTree,
 } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { useServerTabPlugins } from "@/hooks/queries";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { CurseForgeTab } from "./CurseForgeTab";
 import { ModrinthTab } from "./ModrinthTab";
 import { SteamWorkshopTab } from "./SteamWorkshopTab";

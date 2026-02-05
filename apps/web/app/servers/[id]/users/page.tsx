@@ -21,10 +21,10 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { toast } from "sonner";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { useAuth } from "hooks/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import {
   usePermissionDefinitions,
   useServerInvitations,
