@@ -19,7 +19,7 @@ import {
   BsTrash,
   BsPencil,
 } from "react-icons/bs";
-import { useServer, useServerMutations } from "@/hooks/queries";
+import { useServer, useServerMutations } from "@/hooks/queries/use-servers";
 import GetErrorMessage from "@/lib/error-utils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";

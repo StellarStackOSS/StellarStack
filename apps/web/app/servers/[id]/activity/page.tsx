@@ -27,7 +27,7 @@ import {
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { useActivity } from "@/hooks/queries";
+import { useActivity } from "@/hooks/queries/use-activity";
 import type { ActivityLog } from "@/lib/api";
 
 // Map API event types to display configuration

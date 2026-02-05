@@ -18,8 +18,8 @@ import SystemInformationCard from "@stellarUI/components/SystemInformationCard/S
 import NetworkInfoCard from "@stellarUI/components/NetworkInfoCard/NetworkInfoCard";
 import InstanceNameCard from "@stellarUI/components/InstanceNameCard/InstanceNameCard";
 import type { ContainerStatus } from "@stellarUI/components/dashboard-cards-types/types";
-import { useLabels } from "@/hooks";
-import { defaultGridItems, defaultHiddenCards } from "@/constants";
+import { useLabels } from "@/hooks/useLabels";
+import { defaultGridItems, defaultHiddenCards } from "@/constants/gridConfig";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { EulaExtension } from "../extensions/eula";

@@ -64,13 +64,13 @@ import {
   PuzzleIcon,
 } from "hugeicons-react";
 import { cn } from "@stellarUI/lib/utils";
-import { useAuth } from "hooks/auth-provider";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { AnimatePresence, motion } from "framer-motion";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { WaveText } from "@/components/WaveText/WaveText";
-import { useServers } from "@/hooks/queries";
+import { useServers } from "@/hooks/queries/use-servers";
 
 type SidebarVariant = "account" | "admin" | "app";
 

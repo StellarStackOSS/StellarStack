@@ -32,7 +32,7 @@ import Select, {
   SelectTrigger,
   SelectValue,
 } from "@stellarUI/components/Select";
-import { useNode, useNodeMutations } from "@/hooks/queries";
+import { useNode, useNodeMutations } from "@/hooks/queries/use-nodes";
 import GetErrorMessage from "@/lib/error-utils";
 
 export default function NodeDetailPage() {

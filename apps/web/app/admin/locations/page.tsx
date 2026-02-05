@@ -12,7 +12,8 @@ import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import Textarea from "@stellarUI/components/Textarea";
 import { BsGeoAlt, BsPlus, BsPencil, BsTrash } from "react-icons/bs";
-import { useLocationMutations, useLocations } from "@/hooks/queries";
+import { useLocationMutations } from "@/hooks/queries/use-locations";
+import { useLocations } from "@/hooks/queries/use-locations";
 import type { CreateLocationData, Location } from "@/lib/api";
 import { toast } from "sonner";
 

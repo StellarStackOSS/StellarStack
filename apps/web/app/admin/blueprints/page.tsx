@@ -24,7 +24,8 @@ import {
   BsPerson,
   BsDiagram3,
 } from "react-icons/bs";
-import { useBlueprintMutations, useBlueprints } from "@/hooks/queries";
+import { useBlueprintMutations } from "@/hooks/queries/use-blueprints";
+import { useBlueprints } from "@/hooks/queries/use-blueprints";
 import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
 import { toast } from "sonner";
 

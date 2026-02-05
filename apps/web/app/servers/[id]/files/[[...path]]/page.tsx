@@ -57,7 +57,7 @@ import {
 import type { FileInfo } from "@/lib/api";
 import { servers } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useAuth } from "hooks/auth-provider";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { useSoundEffects } from "@/hooks/useSoundEffects";

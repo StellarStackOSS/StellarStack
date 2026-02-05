@@ -34,7 +34,7 @@ import {
   BsDownload,
   BsGit,
 } from "react-icons/bs";
-import { usePlugins, usePluginMutations } from "@/hooks/queries";
+import { usePlugins, usePluginMutations } from "@/hooks/queries/use-plugins";
 import type { PluginInfo } from "@/lib/api";
 import { toast } from "sonner";
 import { pluginsApi } from "@/lib/api";

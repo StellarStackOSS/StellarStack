@@ -19,7 +19,7 @@ import {
   BsPencil,
   BsTrash,
 } from "react-icons/bs";
-import { useServerMutations, useServers } from "@/hooks/queries";
+import { useServerMutations, useServers } from "@/hooks/queries/use-servers";
 import type { Server as ServerType } from "@/lib/api";
 import { toast } from "sonner";
 
