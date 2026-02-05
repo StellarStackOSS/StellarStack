@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Sidebar,
+import Sidebar, {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -23,8 +22,7 @@ import {
   CommandItem,
   CommandList,
 } from "@stellarUI/components/Command/Command";
-import {
-  DropdownMenu,
+import DropdownMenu, {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,

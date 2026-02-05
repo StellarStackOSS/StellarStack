@@ -2,15 +2,13 @@
 
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
+import Card, {
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@stellarUI/components/Card/Card";
-import {
-  ChartContainer,
+import ChartContainer, {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@stellarUI/lib/utils";
-import { Button } from "@stellarUI/components/Button/Button";
+import Button from "@stellarUI/components/Button/Button";
 import { BsGithub, BsList, BsX } from "react-icons/bs";
 
 interface NavLink {

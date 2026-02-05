@@ -12,7 +12,7 @@ import {
   ConnectionLineType,
 } from "@xyflow/react";
 import React, { useMemo } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@stellarUI/components/Sheet/Sheet";
+import Sheet, { SheetContent, SheetHeader, SheetTitle } from "@stellarUI/components/Sheet/Sheet";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { ZoomIn, LayoutGrid } from "lucide-react";
 

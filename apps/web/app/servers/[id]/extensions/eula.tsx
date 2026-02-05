@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

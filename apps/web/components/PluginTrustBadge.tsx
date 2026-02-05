@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@stellarUI/components/Badge/Badge";
+import Badge from "@stellarUI/components/Badge/Badge";
 import { BsCheckCircle, BsExclamationTriangle, BsShield } from "react-icons/bs";
 
 // ============================================

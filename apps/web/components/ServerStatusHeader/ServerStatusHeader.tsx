@@ -2,8 +2,8 @@
 
 import type { JSX } from "react";
 import { useServer } from "../ServerStatusPages/server-provider";
-import { TextureButton } from "@workspace/ui/components/texture-button";
-import { TextureBadge } from "@workspace/ui/components/TextureBadge/TextureBadge";
+import { TextureButton } from "@stellarUI/components/TextureButton";
+import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import {
   BsPlayFill,
   BsPauseFill,

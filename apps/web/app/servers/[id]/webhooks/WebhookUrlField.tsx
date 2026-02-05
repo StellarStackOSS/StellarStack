@@ -1,8 +1,8 @@
 "use client";
 
 import {cn} from "@stellarUI/lib/utils";
-import {Input} from "@stellarUI/components/Input/Input";
-import {Label} from "@stellarUI/components/Label/Label";
+import Input from "@stellarUI/components/Input/Input";
+import Label from "@stellarUI/components/Label/Label";
 
 interface WebhookUrlFieldProps {
   value: string;

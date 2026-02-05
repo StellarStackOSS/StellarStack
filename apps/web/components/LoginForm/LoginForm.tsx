@@ -6,9 +6,9 @@ import {
   TextureCardHeader,
   TextureCardStyled,
   TextureSeparator,
-} from "@stellarUI/components/TextureCard/TextureCard";
+} from "@stellarUI/components/TextureCard";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import FadeIn from "@stellarUI/components/FadeIn/FadeIn";
+import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import Input from "@stellarUI/components/Input/Input";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { BsApple, BsDiscord, BsGoogle } from "react-icons/bs";
@@ -25,7 +25,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@stellarUI/components/Form/Form";
+} from "@stellarUI/components/Form";
 import { FunctionComponent, useState } from "react";
 import { cn } from "@stellarUI/lib/utils";
 import { LiquidMetal } from "@paper-design/shaders-react";

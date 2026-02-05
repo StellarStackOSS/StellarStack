@@ -2,7 +2,7 @@ import { Geist_Mono, Space_Grotesk } from "next/font/google";
 
 import "@stellarUI/globals.css";
 import { Providers } from "@/components/providers/providers";
-import { Toaster } from "@stellarUI/components/Sonner/Sonner";
+import Toaster from "@stellarUI/components/Sonner/Sonner";
 import { PublicEnv } from "@/lib/public-env";
 
 const fontSans = Space_Grotesk({

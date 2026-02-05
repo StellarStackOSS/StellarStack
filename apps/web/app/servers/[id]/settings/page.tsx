@@ -7,20 +7,18 @@ import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@stellarUI/components/Dialog/Dialog";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
-import { Slider } from "@stellarUI/components/Slider/Slider";
+import Slider from "@stellarUI/components/Slider/Slider";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

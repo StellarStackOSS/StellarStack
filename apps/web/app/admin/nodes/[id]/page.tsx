@@ -26,8 +26,7 @@ import { nodes } from "@/lib/api";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@stellarUI/components/card';
-import { Badge } from '@stellarUI/components/badge';
+import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@stellarUI/components/Card/Card';
+import Badge from '@stellarUI/components/Badge/Badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { AnalyticsComparison } from '@/lib/types/analytics';
 

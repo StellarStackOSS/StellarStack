@@ -33,7 +33,7 @@ import {
 } from "@/hooks/queries";
 import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
 import Label from "@stellarUI/components/Label/Label";
-import { Checkbox } from "@stellarUI/components";
+import Checkbox from "@stellarUI/components/Checkbox/Checkbox";
 
 const UsersPage = (): JSX.Element | null => {
   const params = useParams();

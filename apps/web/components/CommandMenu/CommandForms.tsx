@@ -5,7 +5,7 @@ import { useCommandMenu } from "./hooks/useCommandMenu";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
-import { Switch } from "@stellarUI/components/Switch/Switch";
+import Switch from "@stellarUI/components/Switch/Switch";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { servers } from "@/lib/api";
 import { toast } from "sonner";
