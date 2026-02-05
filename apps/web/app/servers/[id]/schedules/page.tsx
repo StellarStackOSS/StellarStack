@@ -29,9 +29,9 @@ import {
 } from "react-icons/bs";
 import type { CreateScheduleData, Schedule } from "@/lib/api";
 import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { useServerWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";

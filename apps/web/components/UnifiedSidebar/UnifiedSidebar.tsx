@@ -67,7 +67,7 @@ import { cn } from "@stellarUI/lib/utils";
 import { useAuth } from "hooks/auth-provider";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { AnimatePresence, motion } from "framer-motion";
-import { useServer } from "components/ServerStatusPages/server-provider";
+import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { useServerWebSocket } from "@/hooks/useServerWebSocket";
 import { WaveText } from "@/components/WaveText/WaveText";
 import { useServers } from "@/hooks/queries";
