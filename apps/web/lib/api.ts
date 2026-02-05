@@ -42,6 +42,8 @@ import {
   WebhookEvent,
   Webhook,
   WebhookDelivery,
+  FirewallRule,
+  PluginAuditLog,
 } from "./api.types";
 
 // Re-export all types
@@ -440,7 +442,7 @@ export const servers = {
 
   // Firewall rules
   firewall: {
-    list: (serverId: string) => request<any[]>(`/api/servers/${serverId}/firewall`),
+    list: (serverId: string) => request<FirewallRule[]>(`/api/servers/${serverId}/firewall`),
     create: (
       serverId: string,
       data: {
@@ -454,7 +456,7 @@ export const servers = {
         isActive?: boolean;
       }
     ) =>
-      request<{ success: boolean; rule: any }>(`/api/servers/${serverId}/firewall`, {
+      request<{ success: boolean; rule: FirewallRule }>(`/api/servers/${serverId}/firewall`, {
         method: "POST",
         body: data,
       }),
@@ -472,7 +474,7 @@ export const servers = {
         isActive?: boolean;
       }>
     ) =>
-      request<{ success: boolean; rule: any }>(`/api/servers/${serverId}/firewall/${ruleId}`, {
+      request<{ success: boolean; rule: FirewallRule }>(`/api/servers/${serverId}/firewall/${ruleId}`, {
         method: "PATCH",
         body: data,
       }),
@@ -829,7 +831,7 @@ export const pluginsApi = {
     if (filter.limit) params.set("limit", String(filter.limit));
     if (filter.offset) params.set("offset", String(filter.offset));
 
-    return request<any[]>(`/api/plugins/audit?${params.toString()}`);
+    return request<PluginAuditLog[]>(`/api/plugins/audit?${params.toString()}`);
   },
 
   /** Install plugin from Git repository (admin) */

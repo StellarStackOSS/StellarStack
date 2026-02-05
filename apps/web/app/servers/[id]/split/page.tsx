@@ -16,6 +16,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { type ChildServer, servers } from "@/lib/api";
 import { toast } from "sonner";
+import GetErrorMessage from "@/lib/error-utils";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
@@ -135,8 +136,8 @@ const SplitPage = (): JSX.Element | null => {
       resetForm();
       fetchChildren();
       refetch(); // Refresh parent server data
-    } catch (error: any) {
-      toast.error(error.message || "Failed to split server");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to split server"));
     } finally {
       setSplitting(false);
     }
@@ -152,8 +153,8 @@ const SplitPage = (): JSX.Element | null => {
       setSelectedChild(null);
       fetchChildren();
       refetch(); // Refresh parent to update resources
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete child server");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to delete child server"));
     }
   };
 

@@ -15,6 +15,7 @@ import Dialog, {
 import { BsDownload, BsCheckCircle, BsExclamationTriangle, BsShield, BsX } from 'react-icons/bs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pluginsApi } from '@/lib/api';
+import type { PluginInfo } from '@/lib/api';
 
 interface SecurityReport {
   score: number;
@@ -291,7 +292,7 @@ export default function PluginMarketplacePage() {
             <p className="text-gray-500 py-8 text-center">No plugins installed yet. Install one from a Git repository above.</p>
           ) : (
             <div className="grid gap-4">
-              {installedPlugins.map((plugin: any) => (
+              {installedPlugins.map((plugin: PluginInfo) => (
                 <div key={plugin.pluginId} className="border rounded-lg p-4 hover:bg-gray-50 transition">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -300,20 +301,15 @@ export default function PluginMarketplacePage() {
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline">{plugin.version}</Badge>
                         <Badge
-                          variant={plugin.trustLevel === 'official' ? 'default' : 'secondary'}
+                          variant={plugin.isBuiltIn ? 'default' : 'secondary'}
                           className={
-                            plugin.trustLevel === 'official'
+                            plugin.isBuiltIn
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-gray-100 text-gray-800'
                           }
                         >
-                          {plugin.trustLevel === 'official' ? '✓ Official' : 'Community'}
+                          {plugin.isBuiltIn ? '✓ Official' : 'Community'}
                         </Badge>
-                        {plugin.securityScore !== undefined && (
-                          <Badge className={getRiskColor(plugin.riskLevel || 'safe')}>
-                            Score: {plugin.securityScore}/100
-                          </Badge>
-                        )}
                       </div>
                     </div>
                     <div className="text-right">

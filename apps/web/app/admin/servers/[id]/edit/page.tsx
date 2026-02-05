@@ -20,6 +20,7 @@ import {
   BsPencil,
 } from "react-icons/bs";
 import { useServer, useServerMutations } from "@/hooks/queries";
+import GetErrorMessage from "@/lib/error-utils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
@@ -119,8 +120,8 @@ export default function EditServerPage() {
       try {
         const list = await blueprints.list();
         setBlueprintList(list);
-      } catch (error: any) {
-        toast.error("Failed to load blueprints");
+      } catch (error: unknown) {
+        toast.error(GetErrorMessage(error, "Failed to load blueprints"));
       } finally {
         setIsLoadingBlueprints(false);
       }
@@ -135,8 +136,8 @@ export default function EditServerPage() {
       try {
         const list = await nodes.list();
         setNodesList(list);
-      } catch (error: any) {
-        toast.error("Failed to load nodes");
+      } catch (error: unknown) {
+        toast.error(GetErrorMessage(error, "Failed to load nodes"));
       } finally {
         setIsLoadingNodes(false);
       }
@@ -151,8 +152,8 @@ export default function EditServerPage() {
     try {
       const allocs = await servers.allocations.list(serverId);
       setAllocations(allocs);
-    } catch (error: any) {
-      toast.error("Failed to load allocations");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to load allocations"));
     } finally {
       setIsLoadingAllocations(false);
     }
@@ -164,8 +165,8 @@ export default function EditServerPage() {
     try {
       const available = await servers.allocations.available(serverId);
       setAvailableAllocations(available);
-    } catch (error: any) {
-      toast.error("Failed to load available allocations");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to load available allocations"));
     }
   };
 
@@ -179,8 +180,8 @@ export default function EditServerPage() {
       setShowAddAllocation(false);
       setSelectedAllocationId("");
       loadAllocations();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add allocation");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to add allocation"));
     } finally {
       setIsAddingAllocation(false);
     }
@@ -194,8 +195,8 @@ export default function EditServerPage() {
       await servers.allocations.remove(serverId, allocationId);
       toast.success("Allocation removed successfully");
       loadAllocations();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to remove allocation");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to remove allocation"));
     } finally {
       setRemovingAllocationId(null);
     }
@@ -211,8 +212,8 @@ export default function EditServerPage() {
       setShowTransferModal(false);
       setSelectedTargetNodeId("");
       fetchTransferStatus();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate transfer");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to initiate transfer"));
     } finally {
       setIsTransferring(false);
     }
@@ -223,7 +224,7 @@ export default function EditServerPage() {
     try {
       const status = await servers.transfer.get(serverId);
       setTransferStatus(status);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch transfer status", error);
     }
   };
@@ -234,8 +235,8 @@ export default function EditServerPage() {
       await servers.transfer.cancel(serverId);
       toast.success("Transfer cancelled");
       setTransferStatus(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to cancel transfer");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to cancel transfer"));
     }
   };
 
@@ -255,8 +256,8 @@ export default function EditServerPage() {
       toast.success("Server reinstall initiated");
       setReinstallModalOpen(false);
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to reinstall server");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to reinstall server"));
     } finally {
       setIsReinstalling(false);
     }
@@ -268,8 +269,8 @@ export default function EditServerPage() {
       toast.success(`Server status set to ${newStatus}`);
       setSelectedStatus(newStatus);
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update server status");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to update server status"));
     }
   };
 
@@ -285,8 +286,8 @@ export default function EditServerPage() {
       setShowBlueprintModal(false);
       setReinstallOnBlueprintChange(false);
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to change server blueprint");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to change server blueprint"));
     } finally {
       setIsChangingBlueprint(false);
     }
@@ -311,8 +312,8 @@ export default function EditServerPage() {
       });
       toast.success("Server updated successfully");
       router.push("/admin/servers");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update server");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to update server"));
     }
   };
 

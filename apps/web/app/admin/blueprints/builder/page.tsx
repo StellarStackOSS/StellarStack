@@ -9,11 +9,13 @@ import {
   ConnectionLineType,
   Controls,
   Edge,
+  EdgeChange,
   EdgeProps,
   getBezierPath,
   Handle,
   MiniMap,
   Node,
+  NodeChange,
   Panel,
   Position,
   ReactFlow,
@@ -1101,12 +1103,12 @@ const BlueprintBuilderPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onNodesChange = useCallback(
-    (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
   );
 
   const onEdgesChange = useCallback(
-    (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
 

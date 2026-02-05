@@ -20,8 +20,9 @@ import {
   BsGear,
 } from "react-icons/bs";
 import { useBlueprints, useNode, useNodes, useServerMutations, useUsers } from "@/hooks/queries";
-import type { CreateServerData } from "@/lib/api";
+import type { CreateServerData, BlueprintVariable } from "@/lib/api";
 import { toast } from "sonner";
+import GetErrorMessage from "@/lib/error-utils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
@@ -140,8 +141,8 @@ export default function NewServerPage() {
       await create.mutateAsync(data);
       toast.success("Server created successfully");
       router.push("/admin/servers");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create server");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to create server"));
     }
   };
 
@@ -622,8 +623,8 @@ export default function NewServerPage() {
                           </h3>
                           <div className="space-y-4">
                             {selectedBlueprint.variables
-                              .filter((v: any) => v.user_viewable !== false)
-                              .map((variable: any) => (
+                              .filter((v: BlueprintVariable) => v.user_viewable !== false)
+                              .map((variable: BlueprintVariable) => (
                                 <div key={variable.env_variable}>
                                   <div className="mb-1 flex items-center gap-2">
                                     <Label>{variable.name}</Label>
