@@ -22,7 +22,7 @@ import {
   BsTree,
 } from "react-icons/bs";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useServerTabPlugins } from "@/hooks/queries";
+import { useServerTabPlugins } from "@/hooks/queries/use-plugins";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { CurseForgeTab } from "./CurseForgeTab";

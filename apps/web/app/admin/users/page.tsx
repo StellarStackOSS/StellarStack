@@ -17,8 +17,8 @@ import Select, {
   SelectValue,
 } from "@stellarUI/components/Select";
 import { BsPerson, BsShield, BsPlus, BsPencil, BsTrash } from "react-icons/bs";
-import { useUserMutations, useUsers } from "@/hooks/queries";
-import { useAuth } from "hooks/auth-provider";
+import { useUserMutations, useUsers } from "@/hooks/queries/use-users";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import type { User as UserType } from "@/lib/api";
 import { toast } from "sonner";
 

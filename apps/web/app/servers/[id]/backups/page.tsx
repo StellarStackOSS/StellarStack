@@ -19,7 +19,7 @@ import {
   BsUnlock,
   BsArchive,
 } from "react-icons/bs";
-import { useBackupMutations, useBackups } from "@/hooks/queries";
+import { useBackupMutations, useBackups } from "@/hooks/queries/use-backups";
 import type { Backup } from "@/lib/api";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";

@@ -9,9 +9,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries";
-import { useServerWebSocket } from "@/hooks/useWebSocket";
-import { useAuth } from "@/hooks/auth-provider";
+import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries/use-servers";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import type { Server, ConsoleInfo } from "@/lib/api";
 import { servers } from "@/lib/api";
 import { playSoundEffect } from "@/hooks/useSoundEffects";
@@ -78,7 +78,7 @@ export const ServerProvider = ({ serverId, children }: ServerProviderProps) => {
   const [serverAccess, setServerAccess] = useState<ServerAccessContext | null>(null);
 
   // WebSocket connection for real-time updates
-  const { isConnected: wsConnected } = useServerWebSocket(serverId);
+  const { isConnected: wsConnected } = useWebSocket({ serverIds: [serverId] });
 
   // React Query hooks - poll less frequently when WebSocket is connected
   const {

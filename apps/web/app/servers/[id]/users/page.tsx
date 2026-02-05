@@ -22,7 +22,7 @@ import {
 } from "react-icons/bs";
 import { toast } from "sonner";
 import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useAuth } from "hooks/auth-provider";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import {
@@ -30,7 +30,7 @@ import {
   useServerInvitations,
   useServerMemberMutations,
   useServerMembers,
-} from "@/hooks/queries";
+} from "@/hooks/queries/use-server-members";
 import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
 import Label from "@stellarUI/components/Label/Label";
 import Checkbox from "@stellarUI/components/Checkbox/Checkbox";

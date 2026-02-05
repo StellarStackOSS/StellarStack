@@ -10,7 +10,7 @@ import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
-import { useFileContent, useFileMutations } from "@/hooks/queries";
+import { useFileContent, useFileMutations } from "@/hooks/queries/use-files";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import { MediaViewer } from "@/components/MediaViewer/MediaViewer";

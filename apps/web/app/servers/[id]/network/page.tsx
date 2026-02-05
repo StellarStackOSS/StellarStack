@@ -16,7 +16,7 @@ import { useServer } from "components/ServerStatusPages/server-provider/server-p
 import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
 import { type Allocation, features, servers, type SubdomainFeatureStatus } from "@/lib/api";
-import { useAuth } from "hooks/auth-provider";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import Label from "@stellarUI/components/Label/Label";
 
 interface Subdomain {

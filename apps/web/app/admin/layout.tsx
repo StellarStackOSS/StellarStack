@@ -3,7 +3,7 @@
 import { memo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarInset, SidebarProvider } from "@stellarUI/components/Sidebar/Sidebar";
-import { useAuth } from "hooks/auth-provider";
+import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import { cn } from "@stellarUI/lib/utils";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 

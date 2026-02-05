@@ -19,7 +19,10 @@ import {
   BsServer,
   BsGear,
 } from "react-icons/bs";
-import { useBlueprints, useNode, useNodes, useServerMutations, useUsers } from "@/hooks/queries";
+import { useBlueprints } from "@/hooks/queries/use-blueprints";
+import { useNode, useNodes } from "@/hooks/queries/use-nodes";
+import { useServerMutations } from "@/hooks/queries/use-servers";
+import { useUsers } from "@/hooks/queries/use-users";
 import type { CreateServerData, BlueprintVariable } from "@/lib/api";
 import { toast } from "sonner";
 import GetErrorMessage from "@/lib/error-utils";

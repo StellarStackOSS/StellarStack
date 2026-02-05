@@ -24,7 +24,8 @@ import Select, {
   SelectValue,
 } from "@stellarUI/components/Select";
 import { BsCpu, BsPlus, BsGear, BsPencil, BsTrash, BsCheck, BsClipboard } from "react-icons/bs";
-import { useLocations, useNodeMutations, useNodes } from "@/hooks/queries";
+import { useLocations } from "@/hooks/queries/use-locations";
+import { useNodeMutations, useNodes } from "@/hooks/queries/use-nodes";
 import type { CreateNodeData, Node } from "@/lib/api";
 import { toast } from "sonner";
 
