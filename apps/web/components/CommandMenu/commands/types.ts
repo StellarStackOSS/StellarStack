@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import type { Server } from "@/lib/api";
 
 /** Category types for command grouping */
 export type CommandCategory =
@@ -19,7 +21,7 @@ export interface CommandContext {
   /** Current server ID if on server page */
   serverId?: string;
   /** Current server object if available */
-  server?: any;
+  server?: Server | null;
   /** Whether current user is admin */
   isAdmin: boolean;
   /** User's permissions */
@@ -27,7 +29,7 @@ export interface CommandContext {
   /** Current pathname */
   pathname: string;
   /** Next router instance */
-  router: any;
+  router: AppRouterInstance;
   /** Current user ID */
   userId?: string;
 }

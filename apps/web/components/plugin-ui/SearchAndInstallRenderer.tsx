@@ -32,6 +32,12 @@ interface SearchResult {
   [key: string]: unknown;
 }
 
+interface MetadataConfig {
+  field: string;
+  label: string;
+  format?: string;
+}
+
 // ============================================
 // Component
 // ============================================
@@ -186,7 +192,7 @@ export function SearchAndInstallRenderer({
             )}
             {resultCard.metadata && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {(resultCard.metadata as any[]).map((meta: any) => (
+                {(resultCard.metadata as MetadataConfig[]).map((meta: MetadataConfig) => (
                   <Badge key={meta.field} variant="secondary" className="text-xs">
                     {meta.label}: {formatMetadataValue(item[meta.field], meta.format)}
                   </Badge>
@@ -227,7 +233,7 @@ export function SearchAndInstallRenderer({
 
               {resultCard.metadata && (
                 <div className="space-y-2">
-                  {(resultCard.metadata as any[]).map((meta: any) => (
+                  {(resultCard.metadata as MetadataConfig[]).map((meta: MetadataConfig) => (
                     <div key={meta.field} className="flex items-center justify-between rounded bg-white/5 p-2">
                       <span className="text-sm text-gray-400">{meta.label}</span>
                       <Badge variant="secondary" className="text-xs">

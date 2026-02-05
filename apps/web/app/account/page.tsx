@@ -33,6 +33,19 @@ interface Passkey {
   credentialId: string;
 }
 
+/**
+ * Safely extract error message from unknown error types
+ */
+const GetErrorMessage = (error: Error | unknown, defaultMessage: string = "An error occurred"): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as Record<string, unknown>).message);
+  }
+  return defaultMessage;
+};
+
 const AccountPage = (): JSX.Element | null => {
   const queryClient = useQueryClient();
   const { data: session, isPending: sessionLoading } = useSession();
@@ -122,8 +135,8 @@ const AccountPage = (): JSX.Element | null => {
         }
         setShowTotpSetup(true);
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to enable 2FA");
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, "Failed to enable 2FA"));
     }
   };
 
@@ -141,8 +154,8 @@ const AccountPage = (): JSX.Element | null => {
         queryClient.invalidateQueries({ queryKey: ["session"] });
         toast.success("Two-factor authentication enabled");
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Invalid verification code");
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, "Invalid verification code"));
     }
   };
 
@@ -160,8 +173,8 @@ const AccountPage = (): JSX.Element | null => {
       setPasswordForAction("");
       queryClient.invalidateQueries({ queryKey: ["session"] });
       toast.success("Two-factor authentication disabled");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to disable 2FA");
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, "Failed to disable 2FA"));
     }
   };
 
@@ -177,8 +190,8 @@ const AccountPage = (): JSX.Element | null => {
         setNewPasskeyName("");
         toast.success("Passkey added successfully");
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to add passkey");
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, "Failed to add passkey"));
     }
   };
 
@@ -192,8 +205,8 @@ const AccountPage = (): JSX.Element | null => {
       setDeletePasskeyModalOpen(false);
       setSelectedPasskey(null);
       toast.success("Passkey deleted");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to delete passkey");
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, "Failed to delete passkey"));
     }
   };
 
@@ -209,8 +222,8 @@ const AccountPage = (): JSX.Element | null => {
         provider,
         callbackURL: window.location.href,
       });
-    } catch (error: any) {
-      toast.error(error?.message || `Failed to connect ${provider}`);
+    } catch (error: Error | unknown) {
+      toast.error(GetErrorMessage(error, `Failed to connect ${provider}`));
     }
   };
 
