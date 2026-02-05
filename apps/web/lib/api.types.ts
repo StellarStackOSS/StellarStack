@@ -709,3 +709,37 @@ export interface ExecuteActionResponse {
   error?: string;
   executedOperations?: number;
 }
+
+// ============================================
+// Firewall Rule Types
+// ============================================
+
+export interface FirewallRule {
+  id: string;
+  name: string;
+  description?: string;
+  direction: "INBOUND" | "OUTBOUND";
+  action: "ALLOW" | "DENY";
+  port: number;
+  protocol: "tcp" | "udp" | "both";
+  sourceIp?: string;
+  isActive: boolean;
+  serverId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// Plugin Types
+// ============================================
+
+export interface PluginAuditLog {
+  id: string;
+  pluginId: string;
+  userId?: string;
+  serverId?: string;
+  action: string;
+  result: "success" | "error" | "denied";
+  timestamp: string;
+}
+

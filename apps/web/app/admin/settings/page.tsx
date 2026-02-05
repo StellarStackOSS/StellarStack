@@ -23,6 +23,7 @@ import {
   type SubdomainSettings,
 } from "@/lib/api";
 import { toast } from "sonner";
+import GetErrorMessage from "@/lib/error-utils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Switch from "@stellarUI/components/Switch/Switch";
@@ -222,8 +223,8 @@ export default function AdminSettingsPage() {
           ? `Connected to zone: ${result.zone?.name} (${result.zone?.status})`
           : result.error,
       });
-    } catch (error: any) {
-      setCloudflareTestResult({ success: false, message: error.message });
+    } catch (error: unknown) {
+      setCloudflareTestResult({ success: false, message: GetErrorMessage(error) });
     } finally {
       setTestingCloudflare(false);
     }
@@ -271,8 +272,8 @@ export default function AdminSettingsPage() {
         success: result.success,
         message: result.success ? result.message : result.error,
       });
-    } catch (error: any) {
-      setEmailTestResult({ success: false, message: error.message });
+    } catch (error: unknown) {
+      setEmailTestResult({ success: false, message: GetErrorMessage(error) });
     } finally {
       setTestingEmail(false);
     }

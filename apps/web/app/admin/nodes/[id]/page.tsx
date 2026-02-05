@@ -33,6 +33,7 @@ import Select, {
   SelectValue,
 } from "@stellarUI/components/Select";
 import { useNode, useNodeMutations } from "@/hooks/queries";
+import GetErrorMessage from "@/lib/error-utils";
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -118,8 +119,8 @@ export default function NodeDetailPage() {
       });
       toast.success("Node updated successfully");
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update node");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to update node"));
     }
   };
 
@@ -129,8 +130,8 @@ export default function NodeDetailPage() {
       setNewToken(result);
       setShowRegenerateConfirm(false);
       toast.success("Token regenerated successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to regenerate token");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to regenerate token"));
     }
   };
 
@@ -148,8 +149,8 @@ export default function NodeDetailPage() {
       setShowAddAllocation(false);
       setAllocationForm({ ip: "", port: 25565, alias: "" });
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add allocation");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to add allocation"));
     }
   };
 
@@ -167,8 +168,8 @@ export default function NodeDetailPage() {
       setShowAddRange(false);
       setRangeForm({ ip: "", startPort: 25565, endPort: 25575 });
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add allocation range");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to add allocation range"));
     }
   };
 
@@ -178,8 +179,8 @@ export default function NodeDetailPage() {
       await deleteAllocation.mutateAsync({ nodeId, allocationId });
       toast.success("Allocation deleted successfully");
       await refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete allocation");
+    } catch (error: unknown) {
+      toast.error(GetErrorMessage(error, "Failed to delete allocation"));
     } finally {
       setDeletingAllocationId(null);
     }

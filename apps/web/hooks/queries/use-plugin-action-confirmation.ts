@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { pluginsApi } from "@/lib/api";
-import type { ExecuteActionRequest } from "@/lib/api";
+import type { ExecuteActionRequest, ExecuteActionResponse } from "@/lib/api";
 
 /**
  * Hook for handling plugin action execution with safety confirmations.
@@ -46,7 +46,7 @@ export interface ActionConfirmationOptions {
   defaultBackup?: boolean; // Default backup state
   warnings?: string[]; // Additional warnings
   inputs: Record<string, unknown>; // Action inputs
-  onSuccess?: (result: any) => void;
+  onSuccess?: (result: ExecuteActionResponse) => void;
   onError?: (error: Error) => void;
 }
 

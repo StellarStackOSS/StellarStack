@@ -32,7 +32,7 @@ import {
 } from "react-icons/bs";
 import AnalyticsCard from "@/components/Analytics/AnalyticsCard";
 import { analyticsClient } from "@/lib/analytics-client";
-import type { AnalyticsTimeRange, AnalyticsDashboardData } from "@/lib/types/analytics";
+import type { AnalyticsTimeRange, AnalyticsDashboardData, NodeMetrics, BackupStorageMetrics } from "@/lib/types/analytics";
 
 /**
  * Time range selector options
@@ -368,7 +368,7 @@ const DiskUsageChart: React.FC<{ data: AnalyticsDashboardData }> = ({ data }) =>
 /**
  * Node Health Section Component
  */
-const NodeHealthSection: React.FC<{ nodes: any[] }> = ({ nodes }) => {
+const NodeHealthSection: React.FC<{ nodes: NodeMetrics[] }> = ({ nodes }) => {
   return (
     <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -407,7 +407,7 @@ const NodeHealthSection: React.FC<{ nodes: any[] }> = ({ nodes }) => {
 /**
  * Backup Storage Section Component
  */
-const BackupStorageSection: React.FC<{ backup: any }> = ({ backup }) => {
+const BackupStorageSection: React.FC<{ backup: BackupStorageMetrics }> = ({ backup }) => {
   return (
     <div className="mt-6 rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
       <div className="mb-4">
