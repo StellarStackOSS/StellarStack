@@ -6,12 +6,11 @@ import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
-import { Switch } from "@stellarUI/components/Switch/Switch";
+import Switch from "@stellarUI/components/Switch/Switch";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
-import { Badge } from "@stellarUI/components/Badge/Badge";
-import {
-  Dialog,
+import Badge from "@stellarUI/components/Badge/Badge";
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,

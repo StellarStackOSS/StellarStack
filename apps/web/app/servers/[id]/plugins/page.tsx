@@ -8,7 +8,7 @@ import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
-import { Badge } from "@stellarUI/components/Badge/Badge";
+import Badge from "@stellarUI/components/Badge/Badge";
 import {
   BsSearch,
   BsBox,

@@ -16,9 +16,8 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { Checkbox } from "@stellarUI/components/Checkbox/Checkbox";
-import {
-  DropdownMenu,
+import Checkbox from "@stellarUI/components/Checkbox/Checkbox";
+import DropdownMenu, {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -29,8 +28,7 @@ import ConfirmationModal from "@stellarUI/components/ConfirmationModal/Confirmat
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -65,7 +63,8 @@ import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { toast } from "sonner";
 import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
-import { DataTable, Input } from "@stellarUI/components";
+import DataTable from "@stellarUI/components/data-table/DataTable";
+import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
 import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";

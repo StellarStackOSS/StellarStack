@@ -5,9 +5,8 @@ import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import Input from "@stellarUI/components/Input/Input";
-import { Badge } from "@stellarUI/components/Badge/Badge";
-import {
-  Dialog,
+import Badge from "@stellarUI/components/Badge/Badge";
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,

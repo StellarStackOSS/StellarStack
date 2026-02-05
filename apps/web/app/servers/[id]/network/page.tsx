@@ -6,7 +6,7 @@ import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
-import { Switch } from "@stellarUI/components/Switch/Switch";
+import Switch from "@stellarUI/components/Switch/Switch";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";

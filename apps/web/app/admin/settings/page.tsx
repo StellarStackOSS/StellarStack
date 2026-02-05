@@ -24,10 +24,10 @@ import {
 } from "@/lib/api";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
-import { Input, Switch } from "@stellarUI/components";
+import Input from "@stellarUI/components/Input/Input";
+import Switch from "@stellarUI/components/Switch/Switch";
 import Textarea from "@stellarUI/components/Textarea";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

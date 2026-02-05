@@ -11,15 +11,13 @@ import ConfirmationModal from "@stellarUI/components/ConfirmationModal/Confirmat
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@stellarUI/components/Dialog/Dialog";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

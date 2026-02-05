@@ -4,7 +4,7 @@ import { type WebhookEvent } from "@/lib/api";
 import { cn } from "@stellarUI/lib/utils";
 import { BsCheck2 } from "react-icons/bs";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import {Checkbox} from "@stellarUI/components";
+import Checkbox from "@stellarUI/components/Checkbox/Checkbox";
 
 interface WebhookEventSelectorProps {
   events: Array<{ value: WebhookEvent; label: string; description: string }>;

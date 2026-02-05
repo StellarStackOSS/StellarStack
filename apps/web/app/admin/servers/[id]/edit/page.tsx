@@ -23,8 +23,7 @@ import { useServer, useServerMutations } from "@/hooks/queries";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

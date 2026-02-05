@@ -6,9 +6,8 @@ import { usePluginAction } from "@/hooks/queries/use-plugin-actions";
 import { pluginsApi } from "@/lib/api";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
-import { Badge } from "@stellarUI/components/Badge/Badge";
-import {
-  Dialog,
+import Badge from "@stellarUI/components/Badge/Badge";
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,

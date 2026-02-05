@@ -7,8 +7,8 @@ import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@stellarUI/components/Tabs/Tabs";
-import { Switch } from "@stellarUI/components/Switch/Switch";
+import Tabs, { TabsContent, TabsList, TabsTrigger } from "@stellarUI/components/Tabs/Tabs";
+import Switch from "@stellarUI/components/Switch/Switch";
 import {
   BsArrowLeft,
   BsBox,
@@ -25,8 +25,7 @@ import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

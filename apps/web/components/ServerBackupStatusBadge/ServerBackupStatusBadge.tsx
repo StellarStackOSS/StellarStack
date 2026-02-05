@@ -1,6 +1,6 @@
 import { type Backup } from "@/lib/api.types";
 import React from "react";
-import { TextureBadge } from "@stellarUI/components/TextureBadge/TextureBadge";
+import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import { BsCheckCircle, BsCloudDownload, BsTrash } from "react-icons/bs";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 

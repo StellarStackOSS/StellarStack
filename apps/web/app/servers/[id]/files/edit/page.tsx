@@ -12,7 +12,7 @@ import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
 import { useFileContent, useFileMutations } from "@/hooks/queries";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { TextureBadge } from "@stellarUI/components/TextureBadge/TextureBadge";
+import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import { MediaViewer } from "@/components/MediaViewer/MediaViewer";
 import { getMediaType } from "@/lib/media-utils";
 import { getApiEndpoint } from "@/lib/public-env";

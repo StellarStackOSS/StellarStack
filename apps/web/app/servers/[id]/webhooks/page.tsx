@@ -18,7 +18,7 @@ import { WebhookUrlField } from "./WebhookUrlField";
 import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
-import { SidebarTrigger } from "@stellarUI/components";
+import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },

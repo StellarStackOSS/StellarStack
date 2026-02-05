@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useServerStore } from "../stores/connectionStore";
-import { generateInitialLines, generateRandomLine, generateStartupSequence, type ConsoleLine } from "@stellarUI/components/Console/Console";
+import { generateInitialLines, generateRandomLine, generateStartupSequence } from "@stellarUI/components/Console/mock-data";
+import type { ConsoleLine } from "@stellarUI/components/Console/types";
 import { t } from "../lib/i18n";
 
 interface UseSimulatedConsoleReturn {

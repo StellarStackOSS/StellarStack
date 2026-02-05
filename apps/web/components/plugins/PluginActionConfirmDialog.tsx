@@ -2,15 +2,14 @@
 
 import React, { useState } from "react";
 import { BsExclamationTriangle, BsShieldCheck, BsCheckCircle } from "react-icons/bs";
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@stellarUI/components/Dialog/Dialog";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { Switch } from "@stellarUI/components/Switch/Switch";
+import Switch from "@stellarUI/components/Switch/Switch";
 import Label from "@stellarUI/components/Label/Label";
 
 export interface PluginActionConfirmDialogProps {

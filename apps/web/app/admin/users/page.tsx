@@ -10,8 +10,7 @@ import ConfirmationModal from "@stellarUI/components/ConfirmationModal/Confirmat
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
-import {
-  Select,
+import Select, {
   SelectContent,
   SelectItem,
   SelectTrigger,

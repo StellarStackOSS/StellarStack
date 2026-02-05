@@ -3,21 +3,21 @@
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { servers } from "@/lib/api";
-import { DragDropGrid, GridItem } from "@stellarUI/components/DragDropGrid/DragDropGrid";
+import DragDropGrid, { GridItem } from "@stellarUI/components/DragDropGrid/DragDropGrid";
 import { useGridStorage } from "@stellarUI/hooks/useGridStorage";
-import { Console } from "@stellarUI/components/Console/Console";
+import Console from "@stellarUI/components/Console/Console";
 import { cn } from "@stellarUI/lib/utils";
 import { BsExclamationTriangle } from "react-icons/bs";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
-import { CpuCard } from "@stellarUI/components/CpuCard/CpuCard";
-import { UsageMetricCard } from "@stellarUI/components/UsageMetricCard/UsageMetricCard";
-import { NetworkUsageCard } from "@stellarUI/components/NetworkUsageCard/NetworkUsageCard";
-import { SystemInformationCard } from "@stellarUI/components/SystemInformationCard/SystemInformationCard";
-import { NetworkInfoCard } from "@stellarUI/components/NetworkInfoCard/NetworkInfoCard";
-import { InstanceNameCard } from "@stellarUI/components/InstanceNameCard/InstanceNameCard";
-import type { ContainerStatus } from "@stellarUI/components/dashboard-cards-types/dashboard-cards-types";
+import CpuCard from "@stellarUI/components/CpuCard/CpuCard";
+import UsageMetricCard from "@stellarUI/components/UsageMetricCard/UsageMetricCard";
+import NetworkUsageCard from "@stellarUI/components/NetworkUsageCard/NetworkUsageCard";
+import SystemInformationCard from "@stellarUI/components/SystemInformationCard/SystemInformationCard";
+import NetworkInfoCard from "@stellarUI/components/NetworkInfoCard/NetworkInfoCard";
+import InstanceNameCard from "@stellarUI/components/InstanceNameCard/InstanceNameCard";
+import type { ContainerStatus } from "@stellarUI/components/dashboard-cards-types/types";
 import { useLabels } from "@/hooks";
 import { defaultGridItems, defaultHiddenCards } from "@/constants";
 import { useServer } from "components/ServerStatusPages/server-provider";
@@ -27,7 +27,7 @@ import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server
 import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder";
 import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { LightBoard } from "@stellarUI/components/LightBoard/LightBoard";
+import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 
 const buildDisplayData = (server: any, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
