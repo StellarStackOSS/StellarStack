@@ -14,7 +14,6 @@ const CTA = () => {
       y: 0,
       transition: {
         duration: 0.6,
-        ease: 'easeOut',
         staggerChildren: 0.1,
         delayChildren: 0,
       },
@@ -28,7 +27,6 @@ const CTA = () => {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: 'easeOut',
       },
     },
   };

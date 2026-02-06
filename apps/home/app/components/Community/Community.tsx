@@ -24,7 +24,6 @@ const TestimonialCard = ({ name, role, content, avatar, index }: TestimonialProp
       transition: {
         delay: index * 0.1,
         duration: 0.5,
-        ease: 'easeOut',
       },
     },
   };

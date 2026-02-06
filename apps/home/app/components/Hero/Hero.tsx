@@ -14,7 +14,6 @@ const Hero = () => {
       transition: {
         delay: custom * 0.15,
         duration: 0.6,
-        ease: 'easeOut',
       },
     }),
   };
@@ -28,7 +27,6 @@ const Hero = () => {
       transition: {
         delay: 0.4,
         duration: 0.7,
-        ease: 'easeOut',
       },
     },
   };
@@ -51,7 +49,6 @@ const Hero = () => {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: 'easeOut',
       },
     },
   };
@@ -94,7 +91,7 @@ const Hero = () => {
           className="w-full h-full object-cover"
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
+          transition={{ delay: 0.4, duration: 0.8 }}
         />
         {/*    PLACE THE HERO IMAGE WITH IT BEING CUT OFF ON THE RIGHT SIDE OF THE IMAGE*/}
         <motion.div

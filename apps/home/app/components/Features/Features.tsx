@@ -30,7 +30,6 @@ const FeatureCard = ({
       transition: {
         delay: index * 0.1,
         duration: 0.5,
-        ease: 'easeOut',
       },
     },
   };
@@ -41,7 +40,6 @@ const FeatureCard = ({
       y: -8,
       transition: {
         duration: 0.3,
-        ease: 'easeOut',
       },
     },
   };
@@ -54,7 +52,6 @@ const FeatureCard = ({
       viewport={{ once: true, margin: '-50px' }}
       variants={cardVariants}
       whileHover="hover"
-      initial_="rest"
       className="flex flex-col gap-4 group bg-[#141414] border border-white/20 overflow-hidden transition-shadow hover:shadow-lg hover:shadow-white/10"
     >
       <motion.div variants={hoverVariants} className="w-full">
