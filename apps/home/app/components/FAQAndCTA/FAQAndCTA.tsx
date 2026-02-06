@@ -136,8 +136,8 @@ const FAQAndCTA = () => {
   };
 
   return (
-    <div className="w-full border-b border-white/20 px-16 py-16">
-      <div className="grid grid-cols-2 gap-16">
+    <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
         {/* FAQ Section */}
         <motion.div
           initial="hidden"
@@ -151,7 +151,7 @@ const FAQAndCTA = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-6xl"
+            className="text-3xl sm:text-4xl lg:text-6xl"
           >
             Frequently Asked Questions
           </motion.h2>
@@ -186,7 +186,7 @@ const FAQAndCTA = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-6xl leading-tight"
+            className="text-3xl sm:text-4xl lg:text-6xl leading-tight"
           >
             Ready to simplify your game server infrastructure?
           </motion.h2>

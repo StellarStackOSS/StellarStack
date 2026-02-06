@@ -11,7 +11,7 @@ import Footer from "@/app/components/Footer/Footer";
 
 const page = () => {
   return (
-    <div className="flex flex-col items-center justify-center bg-[#101010] px-16">
+    <div className="flex flex-col items-center justify-center bg-[#101010] px-4 sm:px-8 lg:px-16">
         <div className="w-full h-full border-l border-r border-white/20">
             <Header/>
             <Hero/>

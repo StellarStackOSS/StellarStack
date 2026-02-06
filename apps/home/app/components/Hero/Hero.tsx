@@ -54,7 +54,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row items-center justify-center text-white w-full h-[calc(100vh-4rem)]">
+    <div className="flex flex-col-reverse lg:flex-row items-center justify-center text-white w-full h-screen lg:h-[calc(100vh-4rem)]">
       <div className="flex flex-col justify-end px-8 py-8 lg:w-1/2 h-full gap-8">
         <motion.h1
           initial="hidden"

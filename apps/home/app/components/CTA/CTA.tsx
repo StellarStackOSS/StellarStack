@@ -56,7 +56,7 @@ const CTA = () => {
         variants={containerVariants}
         className="flex flex-col gap-8 items-center text-center"
       >
-        <motion.h2 variants={itemVariants} className="text-6xl max-w-3xl">
+        <motion.h2 variants={itemVariants} className="text-3xl sm:text-4xl lg:text-6xl max-w-3xl">
           Ready to simplify your game server infrastructure?
         </motion.h2>
 
