@@ -22,7 +22,6 @@ const ComparisonRow = ({ feature, index }: { feature: ComparisonFeature; index: 
       transition: {
         delay: index * 0.05,
         duration: 0.4,
-        ease: 'easeOut',
       },
     },
   };

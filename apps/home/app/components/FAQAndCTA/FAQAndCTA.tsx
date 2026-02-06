@@ -20,7 +20,7 @@ const FAQItem = ({ item, isOpen, onClick }: { item: FAQItemData; isOpen: boolean
       height: 'auto',
       opacity: 1,
       transition: {
-        height: { duration: 0.3, ease: 'easeInOut' },
+        height: { duration: 0.3 },
         opacity: { duration: 0.25, delay: 0.05 },
       },
     },
@@ -28,7 +28,7 @@ const FAQItem = ({ item, isOpen, onClick }: { item: FAQItemData; isOpen: boolean
 
   const chevronVariants = {
     collapsed: { rotate: 0 },
-    expanded: { rotate: 180, transition: { duration: 0.3, ease: 'easeInOut' } },
+    expanded: { rotate: 180, transition: { duration: 0.3 } },
   };
 
   const itemVariants = {
