@@ -29,8 +29,8 @@ interface LightBoardColors {
 
 const defaultColors: LightBoardColors = {
   drawLine: "rgba(160, 160, 200, 0.7)",
-  background: "rgba(30, 30, 40, 0.3)",
-  textDim: "rgba(100, 100, 140, 0.5)",
+  background: "rgba(0, 0, 0, 0)",
+  textDim: "rgba(0, 0, 0, 0)",
   textBright: "rgba(220, 220, 255, 0.9)",
 };
 
@@ -86,9 +86,9 @@ const textToPattern = (
   const bottomPadding = totalRows - patternRows - topPadding;
 
   const paddedPattern = [
-    ...Array(topPadding).fill(Array(fullPattern?.[0]?.length).fill("0")),
+    ...Array(topPadding).fill(Array(fullPattern?.[0]?.length).fill("3")),
     ...fullPattern,
-    ...Array(bottomPadding).fill(Array(fullPattern?.[0]?.length).fill("0")),
+    ...Array(bottomPadding).fill(Array(fullPattern?.[0]?.length).fill("3")),
   ];
 
   return paddedPattern.map((row) => {
@@ -122,7 +122,7 @@ function LightBoard({
   lightSize = 4,
   rows = 5,
   font = "default",
-  updateInterval = 10,
+  updateInterval = 500,
   colors = {},
   controlledDrawState,
   disableDrawing = true,
@@ -194,15 +194,12 @@ function LightBoard({
         const state = row[patternColIndex];
 
         ctx.fillStyle = getLightColor(state as PatternCell, mergedColors);
-        ctx.beginPath();
-        ctx.arc(
-          colIndex * (lightSize + gap) + lightSize / 2,
-          rowIndex * (lightSize + gap) + lightSize / 2,
-          lightSize / 2,
-          0,
-          2 * Math.PI
+        ctx.fillRect(
+          colIndex * (lightSize + gap),
+          rowIndex * (lightSize + gap),
+          lightSize,
+          lightSize
         );
-        ctx.fill();
       }
     });
   }, [basePattern, offset, columns, lightSize, gap, mergedColors]);
@@ -212,10 +209,8 @@ function LightBoard({
     let animationFrameId: number;
 
     const animate = () => {
-      if (!isHovered) {
-        // If the mouse isn't over the board, we move the text
-        setOffset((prevOffset) => (prevOffset + 1) % (basePattern?.[0]?.length ?? 0));
-      }
+      // If the mouse isn't over the board, we move the text
+      setOffset((prevOffset) => (prevOffset + 1) % (basePattern?.[0]?.length ?? 0));
       drawToCanvas();
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -224,7 +219,7 @@ function LightBoard({
 
     // We clean up our animation when we're done
     return () => cancelAnimationFrame(animationFrameId);
-  }, [basePattern, isHovered, drawToCanvas]);
+  }, [basePattern, drawToCanvas]);
 
   // This updates our light pattern when the text changes
   useEffect(() => {
@@ -234,12 +229,12 @@ function LightBoard({
   // This is another way we make our text move
   const animate = useCallback(() => {
     const currentTime = Date.now();
-    if (currentTime - lastUpdateTime >= updateInterval && !isHovered) {
+    if (currentTime - lastUpdateTime >= updateInterval) {
       setOffset((prevOffset) => (prevOffset + 1) % (basePattern?.[0]?.length ?? 0));
       setLastUpdateTime(currentTime);
     }
     drawToCanvas();
-  }, [updateInterval, isHovered, basePattern, drawToCanvas, lastUpdateTime]);
+  }, [updateInterval, basePattern, drawToCanvas, lastUpdateTime]);
 
   // This keeps our animation going
   useEffect(() => {
@@ -299,15 +294,12 @@ function LightBoard({
             // We draw the new light on our board
             ctx.fillStyle = getLightColor(drawState, mergedColors);
 
-            ctx.beginPath();
-            ctx.arc(
-              colIndex * (lightSize + gap) + lightSize / 2,
-              rowIndex * (lightSize + gap) + lightSize / 2,
-              lightSize / 2,
-              0,
-              2 * Math.PI
+            ctx.fillRect(
+              colIndex * (lightSize + gap),
+              rowIndex * (lightSize + gap),
+              lightSize,
+              lightSize
             );
-            ctx.fill();
           }
         }
 

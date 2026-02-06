@@ -2,8 +2,6 @@ import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import type { Metadata } from "next";
 
 import "@stellarUI/globals.css";
-import { Providers } from "@/components/providers";
-import { ScrollToTop } from "@/components/ScrollToTop";
 
 const fontSans = Space_Grotesk({
   subsets: ["latin"],
@@ -51,11 +49,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
-      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}>
-        <Providers>
-          <ScrollToTop />
-          {children}
-        </Providers>
+      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased overflow-x-hidden bg-[#101010] text-white`}>
+        {children}
       </body>
     </html>
   );
