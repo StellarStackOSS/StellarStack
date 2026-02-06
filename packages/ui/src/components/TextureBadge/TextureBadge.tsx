@@ -18,6 +18,8 @@ const textureBadgeOuter = cva("", {
         "bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px]",
       warning:
         "bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px]",
+      ghost:
+        "border border-transparent bg-transparent p-[1px]",
     },
     size: {
       sm: "rounded-[4px]",
@@ -44,6 +46,7 @@ const textureBadgeInner = cva(
         destructive: "bg-gradient-to-b from-red-400/60 to-red-500/60 text-white/90",
         success: "bg-gradient-to-b from-emerald-400 to-emerald-600 text-white/95",
         warning: "bg-gradient-to-b from-amber-400 to-amber-600 text-black/90",
+        ghost: "bg-transparent text-neutral-400 dark:text-neutral-400",
       },
       size: {
         sm: "rounded-[3px]",

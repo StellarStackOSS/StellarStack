@@ -36,13 +36,8 @@ const GridCard = ({ backgroundImage, title, description, index }: GridCardProps)
   };
 
   const borderVariants = {
-    rest: { borderColor: 'rgba(255, 255, 255, 0.2)' },
-    hover: {
-      borderColor: 'rgba(255, 255, 255, 0.4)',
-      transition: {
-        duration: 0.3,
-      },
-    },
+    rest: {},
+    hover: {},
   };
 
   return (
@@ -53,7 +48,7 @@ const GridCard = ({ backgroundImage, title, description, index }: GridCardProps)
       viewport={{ once: true, margin: '-50px' }}
       variants={cardVariants}
       whileHover="hover"
-      className="flex flex-col gap-4 group bg-[#141414] border border-white/20  overflow-hidden transition-shadow hover:shadow-lg hover:shadow-white/10"
+      className="flex flex-col gap-4 group bg-[#141414] border border-white/20 overflow-hidden"
     >
       <motion.div variants={hoverVariants} className="w-full">
         <div className="w-full h-72 bg-orange-500/20 relative overflow-hidden">
