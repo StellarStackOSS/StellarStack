@@ -116,7 +116,7 @@ const Features = () => {
   };
 
   return (
-    <div className="w-full border-b border-white/20 px-16 py-16">
+    <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -132,9 +132,9 @@ const Features = () => {
           className="flex flex-col gap-4"
         >
           <span className="text-sm opacity-60 uppercase tracking-wider">Benefits</span>
-          <h2 className="text-6xl">The benefits that matter most to you</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl">The benefits that matter most to you</h2>
         </motion.div>
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}

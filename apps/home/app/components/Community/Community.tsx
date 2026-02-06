@@ -107,7 +107,7 @@ const Community = () => {
   };
 
   return (
-    <div className="w-full border-b border-white/20 px-16 py-16">
+    <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -120,11 +120,11 @@ const Community = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-6xl"
+          className="text-3xl sm:text-4xl lg:text-6xl"
         >
           Loved by the Community
         </motion.h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {testimonials.map((testimonial) => (
             <TestimonialCard key={testimonial.name} {...testimonial} />
           ))}

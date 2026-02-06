@@ -162,7 +162,7 @@ const FAQ = () => {
   };
 
   return (
-    <div className="w-full border-b border-white/20 px-16 py-16">
+    <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

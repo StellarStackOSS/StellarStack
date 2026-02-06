@@ -89,7 +89,7 @@ const Comparison = () => {
   };
 
   return (
-    <div className="w-full border-b border-white/20 px-16 py-16">
+    <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -105,13 +105,13 @@ const Comparison = () => {
           className="flex flex-col gap-4"
         >
           <span className="text-sm opacity-60 uppercase tracking-wider">Comparison</span>
-          <h2 className="text-6xl">How StellarStack Stacks Up</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl">How StellarStack Stacks Up</h2>
           <p className="text-lg opacity-80 max-w-2xl">
             See how StellarStack compares to other game server management solutions
           </p>
         </motion.div>
 
-        <div className="overflow-x-auto border border-white/20">
+        <div className="w-full overflow-x-auto border border-white/20">
           <table className="w-full">
             <thead>
               <tr className="border-b-2 border-white/20">

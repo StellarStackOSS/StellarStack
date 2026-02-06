@@ -31,7 +31,7 @@ export const Footer = ({}: FooterProps) => {
     <footer className={cn("relative overflow-hidden border-t", "border-white/20 bg-[#101010]")}>
       <LightBoard gap={2} text="STELLARSTACK" font="default" updateInterval={300000} rows={7} />
       {/* Main Footer Content */}
-      <div className="mx-auto w-full px-16 py-16">
+      <div className="mx-auto w-full px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">

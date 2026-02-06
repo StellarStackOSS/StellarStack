@@ -123,7 +123,7 @@ const Grid = () => {
       whileInView="visible"
       viewport={{ once: true, margin: '-100px' }}
       variants={containerVariants}
-      className="grid grid-cols-3 w-full gap-8 border-y border-white/20 py-6 px-6"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full gap-8 border-y border-white/20 py-6 px-4 sm:px-8 lg:px-6"
     >
       {cards.map((card, index) => (
         <GridCard
