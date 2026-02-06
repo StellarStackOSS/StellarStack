@@ -4,6 +4,7 @@ import "@stellarUI/globals.css";
 import { Providers } from "@/components/providers/providers";
 import Toaster from "@stellarUI/components/Sonner/Sonner";
 import { PublicEnv } from "@/lib/public-env";
+import TitleBar from "@/components/desktop/TitleBar";
 
 const fontSans = Space_Grotesk({
   subsets: ["latin"],
@@ -43,8 +44,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
         <meta name="theme-color" content="#000000" />
       </head>
-      <body className={`${fontSans.variable} ${fontMono.variable} dark font-sans antialiased`}>
+      <body className={`${fontSans.variable} ${fontMono.variable} dark font-sans antialiased${process.env.NEXT_PUBLIC_DESKTOP_MODE === "true" ? " pt-8" : ""}`}>
         <PublicEnv />
+        {process.env.NEXT_PUBLIC_DESKTOP_MODE === "true" && <TitleBar />}
         <Providers>
           {children}
           <Toaster position="bottom-right" />

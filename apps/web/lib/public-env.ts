@@ -1,13 +1,29 @@
 import { createPublicEnv } from "next-public-env";
 
-export const { getPublicEnv, PublicEnv } = createPublicEnv({
+/** Whether the app is running inside the Tauri desktop shell. */
+const IS_DESKTOP = process.env.NEXT_PUBLIC_DESKTOP_MODE === "true";
+
+export const { getPublicEnv, PublicEnv: _PublicEnv } = createPublicEnv({
   API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
 });
 
 /**
- * Get the API URL at runtime
+ * PublicEnv component — renders nothing in desktop mode since the API URL
+ * is baked in at build time. In normal web deployments the runtime script
+ * tag is rendered as usual.
+ */
+export const PublicEnv = IS_DESKTOP
+  ? () => null
+  : _PublicEnv;
+
+/**
+ * Get the API URL at runtime.
+ * Desktop mode returns a hardcoded localhost URL.
  */
 export const getApiUrl = (): string => {
+  if (IS_DESKTOP) {
+    return "http://localhost:3001";
+  }
   const env = getPublicEnv();
   return env.API_URL;
 };

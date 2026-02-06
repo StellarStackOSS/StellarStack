@@ -12,13 +12,22 @@ const getGitCommitHash = () => {
   }
 };
 
+const isDesktop = process.env.DESKTOP_BUILD === "true";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disable to prevent double WebSocket connections in dev
   transpilePackages: ["@stellarUI"],
   env: {
     NEXT_PUBLIC_GIT_COMMIT_HASH: getGitCommitHash(),
+    ...(isDesktop && {
+      NEXT_PUBLIC_API_URL: "http://localhost:3001",
+      NEXT_PUBLIC_DESKTOP_MODE: "true",
+    }),
   },
+  ...(isDesktop && {
+    images: { unoptimized: true },
+  }),
 }
 
 export default nextConfig

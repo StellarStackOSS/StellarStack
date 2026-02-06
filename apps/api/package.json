@@ -37,6 +37,7 @@
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^7.0.4",
     "@types/ws": "^8.18.1",
+    "esbuild": "^0.24.2",
     "prisma": "6.19.2",
     "typescript": "^5.7.2"
   }
