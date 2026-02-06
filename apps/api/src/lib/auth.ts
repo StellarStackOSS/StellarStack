@@ -80,7 +80,9 @@ const authConfig = {
       enabled: !!process.env.DISCORD_CLIENT_ID,
     },
   },
-  trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000"],
+  trustedOrigins: process.env.DESKTOP_MODE === "true"
+    ? ["http://localhost:3000", "http://localhost:3001", "http://localhost:1420", "tauri://localhost"]
+    : [process.env.FRONTEND_URL || "http://localhost:3000"],
   user: {
     additionalFields: {
       role: {

@@ -17,7 +17,9 @@
     "start:web": "pnpm --filter web start",
     "start:docs": "pnpm --filter docs start -p 8080",
     "start:home": "pnpm --filter home start -p 8080",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "build:desktop": "node apps/desktop/build.mjs",
+    "dev:desktop": "node apps/desktop/build.mjs --dev"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",

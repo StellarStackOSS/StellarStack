@@ -33,6 +33,12 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
 // Get frontend URL with production safety
 const FRONTEND_URL = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
+const IS_DESKTOP = process.env.DESKTOP_MODE === "true";
+
+// In desktop mode, allow any localhost origin (Vite dev server, Next.js, etc.)
+const corsOrigin = IS_DESKTOP
+  ? (origin: string) => origin.startsWith("http://localhost:") ? origin : FRONTEND_URL
+  : FRONTEND_URL;
 
 // Middleware
 app.use("*", logger());
@@ -42,7 +48,7 @@ app.use("*", securityHeaders());
 app.use(
   "/api/auth/*",
   cors({
-    origin: FRONTEND_URL,
+    origin: corsOrigin,
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     credentials: true,
@@ -63,7 +69,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 app.use(
   "/api/*",
   cors({
-    origin: FRONTEND_URL,
+    origin: corsOrigin,
     credentials: true,
   })
 );
@@ -387,7 +393,7 @@ app.onError((err, c) => {
 
 // Start server
 const port = parseInt(process.env.PORT || "3001");
-const hostname = process.env.HOSTNAME || "::";
+const hostname = process.env.HOST || "0.0.0.0";
 
 console.log(`Starting API server on port ${port}...`);
 

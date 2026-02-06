@@ -38,6 +38,9 @@ npm-debug.log*
 # Rust
 target/
 
+# Desktop build artifacts
+apps/desktop/src-tauri/resources/
+
 # Daemon local data
 .stellar/
 apps/daemon/config.yml
