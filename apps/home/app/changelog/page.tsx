@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 interface ChangelogSection {
   version: string;
@@ -113,8 +115,10 @@ const ChangelogPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#101010] text-white py-16 px-4 sm:px-8 lg:px-16">
-      <div className="max-w-4xl mx-auto">
+    <>
+      <Header />
+      <div className="min-h-screen bg-[#101010] text-white py-16 px-4 sm:px-8 lg:px-16">
+        <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -187,8 +191,10 @@ const ChangelogPage = () => {
             <li>⏳ Enterprise features planned for v2.0</li>
           </ul>
         </motion.div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 
