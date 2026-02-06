@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ArrowRight, Github } from 'lucide-react';
+import {SiGithub} from "react-icons/si";
 
 interface FAQItemData {
   id: number;
@@ -208,31 +209,15 @@ const FAQAndCTA = () => {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="flex flex-col gap-4 mt-6"
           >
-            <motion.a
-              href="#"
-              whileHover="hover"
-              initial="rest"
-              variants={buttonVariants}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-white text-black font-semibold hover:bg-white/90 transition-colors"
-            >
-              <span>Get Started</span>
-              <motion.div variants={arrowVariants}>
-                <ArrowRight size={20} />
-              </motion.div>
-            </motion.a>
-
-            <motion.a
+            <a
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              whileHover="hover"
-              initial="rest"
-              variants={buttonVariants}
               className="flex items-center justify-center gap-2 px-8 py-3 border border-white/40 font-semibold hover:bg-white/5 transition-colors"
             >
-              <Github size={20} />
+              <SiGithub size={20} />
               <span>View on GitHub</span>
-            </motion.a>
+            </a>
           </motion.div>
 
           <motion.div

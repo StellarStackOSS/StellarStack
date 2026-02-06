@@ -1,82 +1,150 @@
 'use client';
 
+import type { JSX } from "react";
 import { motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@stellarUI/components/Table";
 
+/**
+ * Competitors displayed in the comparison table.
+ */
+const COMPETITORS = [
+  "Pelican",
+  "Pterodactyl",
+  "PufferPanel",
+  "Crafty Controller",
+  "Multicraft",
+  "TCAdmin",
+  "AMP",
+] as const;
+
+type Competitor = (typeof COMPETITORS)[number];
+
+/**
+ * A single feature row with support flags per competitor.
+ */
 interface ComparisonFeature {
+  /** Feature name displayed in the first column */
   name: string;
+  /** Whether StellarStack supports this feature */
   stellarStack: boolean;
-  pterodactyl: boolean;
-  other: boolean;
+  /** Support flags keyed by competitor name */
+  competitors: Record<Competitor, boolean>;
 }
 
 /**
- * Feature comparison row component.
+ * Static comparison data for all features across all panels.
  */
-const ComparisonRow = ({ feature, index }: { feature: ComparisonFeature; index: number }) => {
-  const variants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        delay: index * 0.05,
-        duration: 0.4,
-      },
-    },
-  };
+const COMPARISON_DATA: ComparisonFeature[] = [
+  {
+    name: "File Manager",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: true, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Scheduled Tasks",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Free and Open Source",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: true, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: false },
+  },
+  {
+    name: "Multilingual",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Database Management",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "OAuth",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: true },
+  },
+  {
+    name: "Webhooks",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: true },
+  },
+  {
+    name: "Roles & Permissions",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Announcements",
+    stellarStack: true,
+    competitors: { Pelican: false, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Themes",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": false, Multicraft: true, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Plugins",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Self Update",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+  },
+  {
+    name: "Captcha Login",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: false, AMP: false },
+  },
+  {
+    name: "Remote Backups",
+    stellarStack: true,
+    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: false, AMP: true },
+  },
+];
 
-  const FeatureCell = ({ hasFeature }: { hasFeature: boolean }) => (
-    <div className="flex items-center justify-center py-4">
-      {hasFeature ? (
-        <Check size={20} className="text-white" />
-      ) : (
-        <X size={20} className="text-white/20" />
-      )}
-    </div>
-  );
+/**
+ * Renders a check or cross icon for a feature cell.
+ *
+ * @param props - Whether the feature is supported
+ * @returns Check or X icon element
+ */
+const FeatureIcon = ({ supported }: { supported: boolean }): JSX.Element => {
+  if (supported) {
+    return (
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/20">
+        <Check size={14} className="text-emerald-400" />
+      </span>
+    );
+  }
 
   return (
-    <motion.tr
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-50px' }}
-      variants={variants}
-      className="border-b border-white/20 hover:bg-white/5 transition-colors"
-    >
-      <td className="px-6 py-4 text-left font-medium">{feature.name}</td>
-      <td className="px-6 text-center border-l border-white/20">
-        <FeatureCell hasFeature={feature.stellarStack} />
-      </td>
-      <td className="px-6 text-center border-l border-white/20">
-        <FeatureCell hasFeature={feature.pterodactyl} />
-      </td>
-      <td className="px-6 text-center border-l border-white/20">
-        <FeatureCell hasFeature={feature.other} />
-      </td>
-    </motion.tr>
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20">
+      <X size={14} className="text-red-400" />
+    </span>
   );
 };
 
 /**
- * Comparison section showcasing StellarStack features vs competitors.
+ * Comparison section showcasing StellarStack features vs 7 competitors
+ * in a horizontally scrollable table.
+ *
+ * @component
+ * @returns Comparison table section
  */
-const Comparison = () => {
-  const comparisonData: ComparisonFeature[] = [
-    { name: 'Self-Hosted', stellarStack: true, pterodactyl: true, other: true },
-    { name: 'Open Source', stellarStack: true, pterodactyl: true, other: false },
-    { name: 'RESTful API', stellarStack: true, pterodactyl: true, other: true },
-    { name: 'Multi-Server Support', stellarStack: true, pterodactyl: true, other: true },
-    { name: 'Docker Integration', stellarStack: true, pterodactyl: true, other: true },
-    { name: 'Modern UI', stellarStack: true, pterodactyl: false, other: true },
-    { name: 'Mobile Responsive', stellarStack: true, pterodactyl: false, other: true },
-    { name: 'Real-time Updates', stellarStack: true, pterodactyl: false, other: false },
-    { name: 'Advanced Security', stellarStack: true, pterodactyl: true, other: false },
-    { name: 'Database Backup', stellarStack: true, pterodactyl: true, other: true },
-    { name: 'Zero Licensing Cost', stellarStack: true, pterodactyl: true, other: false },
-    { name: 'Active Development', stellarStack: true, pterodactyl: true, other: false },
-  ];
-
+const Comparison = (): JSX.Element => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -85,6 +153,15 @@ const Comparison = () => {
         staggerChildren: 0.05,
         delayChildren: 0,
       },
+    },
+  };
+
+  const rowVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.4 },
     },
   };
 
@@ -111,28 +188,59 @@ const Comparison = () => {
           </p>
         </motion.div>
 
-        <div className="w-full overflow-x-auto border border-white/20">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b-2 border-white/20">
-                <th className="px-6 py-4 text-left font-semibold">Feature</th>
-                <th className="px-6 py-4 text-center font-semibold border-l border-white/20">
+        <div className="border border-white/20 overflow-hidden">
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow className="border-b-2 border-white/20 hover:bg-transparent">
+                <TableHead className="px-6 py-4 text-left font-semibold text-white min-w-[180px]">
+                  Feature
+                </TableHead>
+                <TableHead className="px-4 py-4 text-center font-semibold text-white border-l border-white/20 bg-white/5">
                   StellarStack
-                </th>
-                <th className="px-6 py-4 text-center font-semibold border-l border-white/20">
-                  Pterodactyl
-                </th>
-                <th className="px-6 py-4 text-center font-semibold border-l border-white/20">
-                  Other Panels
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparisonData.map((feature, index) => (
-                <ComparisonRow key={feature.name} feature={feature} index={index} />
+                </TableHead>
+                {COMPETITORS.map((name) => (
+                  <TableHead
+                    key={name}
+                    className="px-4 py-4 text-center font-semibold text-white/60 border-l border-white/20"
+                  >
+                    {name}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {COMPARISON_DATA.map((feature, index) => (
+                <motion.tr
+                  key={feature.name}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-30px' }}
+                  variants={rowVariants}
+                  transition={{ delay: index * 0.03, duration: 0.4 }}
+                  className="border-b border-white/20 hover:bg-white/5 transition-colors"
+                >
+                  <TableCell className="px-6 py-3 text-left font-medium text-white/90">
+                    {feature.name}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-center border-l border-white/20 bg-white/5">
+                    <div className="flex items-center justify-center">
+                      <FeatureIcon supported={feature.stellarStack} />
+                    </div>
+                  </TableCell>
+                  {COMPETITORS.map((name) => (
+                    <TableCell
+                      key={name}
+                      className="px-4 py-3 text-center border-l border-white/20"
+                    >
+                      <div className="flex items-center justify-center">
+                        <FeatureIcon supported={feature.competitors[name]} />
+                      </div>
+                    </TableCell>
+                  ))}
+                </motion.tr>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </motion.div>
     </div>

@@ -54,7 +54,7 @@ const SIZE_ORDER: GridSize[] = ["xxs", "xxs-wide", "xs", "sm", "md", "lg", "xl",
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
 const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 };
 
-const DragDropGridContext = createContext<DragDropGridContextValue | null>(null);
+export const DragDropGridContext = createContext<DragDropGridContextValue | null>(null);
 
 export const useDragDropGrid = () => {
   const context = useContext(DragDropGridContext);

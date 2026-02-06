@@ -8,7 +8,7 @@ const LineSpacer = () => {
                     rgba(255, 255, 255, 0.2) 0px,
                     rgba(255, 255, 255, 0.2) 1px,
                     transparent 1px,
-                    transparent calc(100% / 100)
+                    transparent 20px
                 )`,
             }}
         />

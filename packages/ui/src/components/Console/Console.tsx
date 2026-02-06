@@ -290,7 +290,7 @@ const Console = ({
               onKeyDown={handleKeyDown}
               placeholder={isOffline ? "Connection lost..." : "Enter command..."}
               disabled={isOffline}
-              className={cn("mt-0 bg-orange-500", isOffline && "cursor-not-allowed")}
+              className={cn("mt-0", isOffline && "cursor-not-allowed")}
             />
           </div>
           {showSendButton && (

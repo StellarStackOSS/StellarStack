@@ -68,7 +68,7 @@ import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import { getMediaType, isMediaFile } from "@/lib/media-utils";
 import { MediaPreviewModal } from "@/components/Modals/MediaPreviewModal/MediaPreviewModal";
-import FilledFolder from "@/components/FilledFolder/FilledFolder";
+import FilledFolder from "@stellarUI/components/FilledFolder/FilledFolder";
 import { File, FileImage, FileVolume, Folder } from "lucide-react";
 
 interface FileItem {
