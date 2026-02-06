@@ -50,6 +50,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/daemon
+          prefix-key: ${{ matrix.os }}
 
       - name: Build daemon
         working-directory: apps/daemon
@@ -127,6 +128,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
+          prefix-key: ${{ matrix.os }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
