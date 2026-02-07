@@ -155,7 +155,7 @@ jobs:
       - name: Stage daemon binary (Windows)
         if: runner.os == 'Windows'
         run: |
-          Move-Item `
+          Move-Item -Force `
             apps/desktop/src-tauri/binaries/stellar-daemon.exe `
             apps/desktop/src-tauri/binaries/stellar-daemon-${{ matrix.daemon_target }}.exe
 
@@ -172,6 +172,9 @@ jobs:
 
       - name: Build Tauri app
         run: pnpm --filter desktop tauri build --target ${{ matrix.target }}
+        env:
+          # Ad-hoc sign on macOS so Gatekeeper doesn't flag the app as "damaged"
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && '-' || '' }}
 
       - name: Upload Windows installers
         if: matrix.platform == 'windows-x64'
