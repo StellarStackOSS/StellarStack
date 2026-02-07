@@ -55,10 +55,16 @@ const App = (): JSX.Element => {
       setStatus(e.payload as string);
     });
 
+    // Listen for sidecar logs (for debugging)
+    const unlistenLogs = listen("sidecar-log", (e) => {
+      console.log("[Sidecar]", e.payload);
+    });
+
     startup();
 
     return () => {
       unlisten.then((fn) => fn());
+      unlistenLogs.then((fn) => fn());
     };
   }, []);
 

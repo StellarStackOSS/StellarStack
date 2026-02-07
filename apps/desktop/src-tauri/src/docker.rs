@@ -26,10 +26,42 @@ pub struct DockerManager {
 }
 
 impl DockerManager {
-    /// Connect to the local Docker daemon (auto-detects socket type).
+    /// Connect to the local Docker daemon.
+    /// Checks multiple socket locations to support Docker Desktop, Colima, and others.
     pub fn connect() -> Result<Self> {
-        let client =
-            Docker::connect_with_local_defaults().context("Failed to connect to Docker daemon")?;
+        // First, check if DOCKER_HOST is set (user override)
+        if std::env::var("DOCKER_HOST").is_ok() {
+            let client = Docker::connect_with_local_defaults()
+                .context("Failed to connect to Docker daemon via DOCKER_HOST")?;
+            return Ok(Self { client });
+        }
+
+        // Try common socket paths in order of preference
+        let socket_paths = [
+            // Docker Desktop (macOS/Linux)
+            "/var/run/docker.sock",
+            // Colima default
+            &format!("{}/.colima/default/docker.sock", std::env::var("HOME").unwrap_or_default()),
+            // Colima with custom profile
+            &format!("{}/.colima/docker/docker.sock", std::env::var("HOME").unwrap_or_default()),
+            // Rancher Desktop
+            &format!("{}/.rd/docker.sock", std::env::var("HOME").unwrap_or_default()),
+            // Podman
+            &format!("{}/podman/podman.sock", std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string())),
+        ];
+
+        for path in &socket_paths {
+            if std::path::Path::new(path).exists() {
+                info!("Found Docker socket at: {}", path);
+                let client = Docker::connect_with_socket(path, 120, bollard::API_DEFAULT_VERSION)
+                    .with_context(|| format!("Failed to connect to Docker at {}", path))?;
+                return Ok(Self { client });
+            }
+        }
+
+        // Fall back to defaults (will check DOCKER_HOST and platform defaults)
+        let client = Docker::connect_with_local_defaults()
+            .context("Failed to connect to Docker daemon. Is Docker/Colima running?")?;
         Ok(Self { client })
     }
 

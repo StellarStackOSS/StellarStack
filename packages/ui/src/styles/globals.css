@@ -137,3 +137,25 @@ html.macos body {
   border-radius: 10px;
   overflow: hidden;
 }
+
+/* Desktop mode: offset sidebar for titlebar */
+html.desktop-mode [data-slot="sidebar-container"] {
+  top: 32px;
+  height: calc(100vh - 32px);
+}
+
+html.desktop-mode.macos [data-slot="sidebar-container"] {
+  top: 44px;
+  height: calc(100vh - 44px);
+}
+
+/* Desktop mode: offset main content for titlebar and add bottom padding */
+html.desktop-mode [data-slot="sidebar-inset"] {
+  padding-top: calc(32px + 1rem);
+  padding-bottom: 1rem;
+}
+
+html.desktop-mode.macos [data-slot="sidebar-inset"] {
+  padding-top: calc(44px + 1rem);
+  padding-bottom: 1rem;
+}

@@ -24,7 +24,7 @@ const run = (cmd, cwd = root, extraEnv = {}) => {
 
 if (isDev) {
   // Dev mode: no build steps, Tauri sidecars start live dev servers
-  run("pnpm --filter desktop tauri dev");
+  run("pnpm --filter desktop tauri dev", root, { RUST_LOG: "debug" });
 } else {
   // Production: full build pipeline
   run("pnpm --filter web build:desktop", root, { DESKTOP_BUILD: "true" });

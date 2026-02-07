@@ -14,10 +14,17 @@ const TitleBar = (): React.JSX.Element => {
   useEffect(() => {
     const mac = navigator.platform.startsWith("Mac");
     setIsMac(mac);
-    // Tag root element for platform-specific CSS (rounded corners on macOS)
+
+    // Tag root element for platform-specific CSS
+    // Sidebar offset is handled via CSS in globals.css
+    document.documentElement.classList.add("desktop-mode");
     if (mac) {
       document.documentElement.classList.add("macos");
     }
+
+    return () => {
+      document.documentElement.classList.remove("desktop-mode", "macos");
+    };
   }, []);
 
   const HandleMinimize = (): void => {
@@ -33,42 +40,10 @@ const TitleBar = (): React.JSX.Element => {
   };
 
   if (isMac) {
+    // On macOS with native decorations enabled, the OS renders the traffic lights.
+    // We just provide a draggable titlebar region.
     return (
-      <div style={barStyle}>
-        {/* macOS traffic lights */}
-        <div
-          style={trafficLightGroupStyle}
-          onMouseEnter={(e) => {
-            e.currentTarget.querySelectorAll<SVGElement>("svg").forEach((svg) => {
-              svg.style.opacity = "1";
-            });
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.querySelectorAll<SVGElement>("svg").forEach((svg) => {
-              svg.style.opacity = "0";
-            });
-          }}
-        >
-          <button onClick={HandleClose} title="Close" style={{ ...dotStyle, background: "#ff5f57" }}>
-            <svg width="6" height="6" viewBox="0 0 6 6" style={{ opacity: 0, transition: "opacity 0.15s" }}>
-              <line x1="0.5" y1="0.5" x2="5.5" y2="5.5" stroke="rgba(0,0,0,0.6)" strokeWidth="1.2" />
-              <line x1="5.5" y1="0.5" x2="0.5" y2="5.5" stroke="rgba(0,0,0,0.6)" strokeWidth="1.2" />
-            </svg>
-          </button>
-          <button onClick={HandleMinimize} title="Minimize" style={{ ...dotStyle, background: "#febc2e" }}>
-            <svg width="6" height="1" viewBox="0 0 6 1" style={{ opacity: 0, transition: "opacity 0.15s" }}>
-              <line x1="0.5" y1="0.5" x2="5.5" y2="0.5" stroke="rgba(0,0,0,0.6)" strokeWidth="1.2" />
-            </svg>
-          </button>
-          <button onClick={HandleMaximize} title="Maximize" style={{ ...dotStyle, background: "#28c840" }}>
-            <svg width="6" height="6" viewBox="0 0 6 6" style={{ opacity: 0, transition: "opacity 0.15s" }}>
-              <polyline points="1,3.5 1,1 3.5,1" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.2" />
-              <polyline points="5,2.5 5,5 2.5,5" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.2" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Draggable region fills the rest */}
+      <div style={barStyleMac}>
         <div data-tauri-drag-region style={{ flex: 1, height: "100%" }} />
       </div>
     );
@@ -154,26 +129,18 @@ const barStyle: React.CSSProperties = {
   WebkitUserSelect: "none",
 };
 
-/** macOS traffic light group */
-const trafficLightGroupStyle: React.CSSProperties = {
+/** macOS bar style - taller to match native titlebar */
+const barStyleMac: React.CSSProperties = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  height: 44,
+  zIndex: 9999,
   display: "flex",
   alignItems: "center",
-  gap: 8,
-  paddingLeft: 12,
-  height: "100%",
-};
-
-/** macOS traffic light dot */
-const dotStyle: React.CSSProperties = {
-  width: 12,
-  height: 12,
-  borderRadius: "50%",
-  border: "none",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 0,
+  userSelect: "none",
+  WebkitUserSelect: "none",
 };
 
 /** Windows / Linux button style */
