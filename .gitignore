@@ -58,3 +58,4 @@ Installer/.env
 # Installer/go.sum
 nul
 /.claude/
+/.idea/
