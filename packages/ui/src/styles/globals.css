@@ -127,3 +127,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* macOS desktop: transparent html for rounded window corners */
+html.macos {
+  background: transparent;
+}
+
+html.macos body {
+  border-radius: 10px;
+  overflow: hidden;
+}

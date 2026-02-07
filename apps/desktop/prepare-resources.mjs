@@ -1,5 +1,5 @@
 /**
- * Copies API bundle and Prisma files into src-tauri/resources/.
+ * Copies API bundle, Prisma files, and Prisma CLI into src-tauri/resources/.
  * The web frontend runs via `next start` from its own directory,
  * so it doesn't need to be copied here.
  */
@@ -7,9 +7,13 @@
 import { cpSync, mkdirSync, existsSync, rmSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const resourceDir = join(__dirname, "src-tauri", "resources");
+
+// Resolve packages from the API workspace (follows pnpm symlinks)
+const apiRequire = createRequire(join(__dirname, "..", "api", "package.json"));
 
 // Clean and recreate
 if (existsSync(resourceDir)) {
@@ -46,6 +50,31 @@ if (existsSync(prismaDir)) {
   }
 } else {
   console.warn("[prepare] WARNING: apps/api/prisma/ not found, skipping.");
+}
+
+// 3. Copy Prisma CLI → resources/node_modules/prisma/
+//    Required for `prisma migrate deploy` at runtime.
+try {
+  const prismaCliPkg = apiRequire.resolve("prisma/package.json");
+  const prismaCliDir = dirname(prismaCliPkg);
+  const prismaCliDest = join(resourceDir, "node_modules", "prisma");
+  console.log("[prepare] Copying Prisma CLI from", prismaCliDir);
+  cpSync(prismaCliDir, prismaCliDest, { recursive: true });
+} catch (e) {
+  console.error("[prepare] ERROR: Could not resolve prisma CLI package:", e.message);
+  process.exit(1);
+}
+
+// 4. Copy @prisma/engines → resources/node_modules/@prisma/engines/
+//    Contains the platform-specific schema engine binary for migrations.
+try {
+  const enginesPkg = apiRequire.resolve("@prisma/engines/package.json");
+  const enginesDir = dirname(enginesPkg);
+  const enginesDest = join(resourceDir, "node_modules", "@prisma", "engines");
+  console.log("[prepare] Copying @prisma/engines from", enginesDir);
+  cpSync(enginesDir, enginesDest, { recursive: true });
+} catch (e) {
+  console.warn("[prepare] WARNING: @prisma/engines not found, migrations may fail:", e.message);
 }
 
 console.log("[prepare] Done.");
