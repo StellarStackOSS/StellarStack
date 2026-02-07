@@ -20,7 +20,9 @@ import {
   BsTrash,
   BsPerson,
   BsLink45Deg,
+  BsPalette,
 } from "react-icons/bs";
+import ThemeSelector from "@/components/ThemeSelector/ThemeSelector";
 import { authClient, useSession } from "@/lib/auth-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -300,8 +302,30 @@ const AccountPage = (): JSX.Element | null => {
                   </div>
                 </FadeIn>
 
+                {/* Appearance Section */}
+                <FadeIn delay={0.12}>
+                  <div className="mb-8">
+                    <div className="mb-4 flex items-center gap-2">
+                      <BsPalette className="h-4 w-4 text-zinc-400" />
+                      <h2 className="text-sm font-medium tracking-wider text-zinc-100 uppercase">
+                        Appearance
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4 rounded-lg border border-zinc-700/50 bg-zinc-800/20 p-4">
+                      <div>
+                        <Label>Theme</Label>
+                        <p className="mb-2 text-xs text-zinc-500">
+                          Choose a color theme for the interface
+                        </p>
+                        <ThemeSelector className="max-w-xs" />
+                      </div>
+                    </div>
+                  </div>
+                </FadeIn>
+
                 {/* Connected Accounts Section */}
-                <FadeIn delay={0.15}>
+                <FadeIn delay={0.17}>
                   <div className="mb-8">
                     <div className="mb-4 flex items-center gap-2">
                       <BsLink45Deg className="h-4 w-4 text-zinc-400" />
@@ -349,7 +373,7 @@ const AccountPage = (): JSX.Element | null => {
                 </FadeIn>
 
                 {/* Passkeys Section */}
-                <FadeIn delay={0.2}>
+                <FadeIn delay={0.22}>
                   <div className="mb-8">
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -409,7 +433,7 @@ const AccountPage = (): JSX.Element | null => {
                 </FadeIn>
 
                 {/* Two-Factor Authentication Section */}
-                <FadeIn delay={0.25}>
+                <FadeIn delay={0.27}>
                   <div>
                     <div className="mb-4 flex items-center gap-2">
                       <BsShieldCheck className="h-4 w-4 text-zinc-400" />

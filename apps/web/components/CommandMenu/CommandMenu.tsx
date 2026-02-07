@@ -22,6 +22,9 @@ import { navigationCommands } from "./commands/navigation";
 import { serverActionCommands } from "./commands/server-actions";
 import { adminActionCommands } from "./commands/admin-actions";
 import { accountActionCommands } from "./commands/account-actions";
+import { themeActionCommands } from "./commands/theme-actions";
+import { UseTheme } from "@/contexts/ThemeContext";
+import { type ThemeId } from "@/lib/themes";
 import { CommandForms } from "./CommandForms";
 import { useAuth } from "@/hooks/auth-provider/auth-provider";
 import { useRouter } from "next/navigation";
@@ -36,6 +39,7 @@ export const CommandMenu = () => {
   const context = useCommandContext();
   const { signOut } = useAuth();
   const router = useRouter();
+  const { setTheme } = UseTheme();
   const [search, setSearch] = useState("");
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -55,6 +59,7 @@ export const CommandMenu = () => {
       ...serverActionCommands,
       ...adminActionCommands,
       ...accountActionCommands,
+      ...themeActionCommands,
     ];
     return allCommands
       .filter((command) => command.isAvailable(context))
@@ -84,6 +89,7 @@ export const CommandMenu = () => {
       "server-management": [],
       admin: [],
       account: [],
+      appearance: [],
     };
 
     // Add recent commands if no search
@@ -136,6 +142,15 @@ export const CommandMenu = () => {
     if (command.id === "account-logout") {
       close();
       await signOut();
+      return;
+    }
+
+    // Handle theme switching
+    if (command.id.startsWith("theme-")) {
+      const themeId = command.id.replace("theme-", "") as ThemeId;
+      setTheme(themeId);
+      toast.success(`Theme changed to ${command.label}`);
+      close();
       return;
     }
 
@@ -217,6 +232,7 @@ export const CommandMenu = () => {
     "server-management": "Server Management",
     admin: "Admin",
     account: "Account",
+    appearance: "Appearance",
   };
 
   return (
