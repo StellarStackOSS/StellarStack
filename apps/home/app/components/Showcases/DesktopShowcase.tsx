@@ -143,20 +143,23 @@ const DesktopShowcase = (): JSX.Element => {
           className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
         >
           {platforms.map((platform) => (
-            <motion.div
+            <motion.a
               key={platform.name}
+              href={platform.href}
               variants={buttonVariants}
-              className="group flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 opacity-50 cursor-not-allowed select-none"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
             >
-              <span className="opacity-60">
+              <span className="opacity-80 group-hover:opacity-100 transition-opacity">
                 {platform.icon}
               </span>
               <span className="flex flex-col items-start">
                 <span className="text-sm font-medium">{platform.name}</span>
-                <span className="text-xs opacity-50">Coming Soon</span>
+                <span className="text-xs opacity-50">{platform.extension}</span>
               </span>
-              <HiDownload className="w-4 h-4 opacity-30 ml-2" />
-            </motion.div>
+              <HiDownload className="w-4 h-4 opacity-40 group-hover:opacity-70 transition-opacity ml-2" />
+            </motion.a>
           ))}
         </motion.div>
 
