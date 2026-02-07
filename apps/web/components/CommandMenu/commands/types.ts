@@ -9,7 +9,6 @@ export type CommandCategory =
   | "server-management"
   | "admin"
   | "account"
-  | "appearance"
   | "recent";
 
 /** Types of commands defining how they execute */
