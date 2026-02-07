@@ -4,6 +4,39 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Detect the Docker socket path for the current system.
+fn detect_docker_socket() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        "npipe:////./pipe/docker_engine".into()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Check for Colima socket first (common on macOS)
+        if let Some(home) = std::env::var_os("HOME") {
+            let colima_socket = PathBuf::from(&home).join(".colima/default/docker.sock");
+            if colima_socket.exists() {
+                return colima_socket.to_string_lossy().to_string();
+            }
+
+            // Check for Docker Desktop on macOS
+            let docker_desktop = PathBuf::from(&home).join(".docker/run/docker.sock");
+            if docker_desktop.exists() {
+                return docker_desktop.to_string_lossy().to_string();
+            }
+
+            // Rancher Desktop
+            let rancher = PathBuf::from(&home).join(".rd/docker.sock");
+            if rancher.exists() {
+                return rancher.to_string_lossy().to_string();
+            }
+        }
+
+        // Fall back to system socket
+        "/var/run/docker.sock".into()
+    }
+}
+
 /// Persistent desktop application configuration stored on disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -104,50 +137,70 @@ impl AppConfig {
 
     /// Generate the daemon config.toml contents.
     pub fn daemon_config_toml(&self, data_dir: &Path) -> String {
-        let uploads_dir = data_dir.join("uploads");
-        let backups_dir = data_dir.join("backups");
+        let root_dir = data_dir.join("stellar");
+        let data_directory = root_dir.join("volumes");
+        let backup_dir = data_dir.join("backups");
+        let archive_dir = root_dir.join("archives");
+        let tmp_dir = root_dir.join("tmp");
         let logs_dir = data_dir.join("logs");
+        let host_key = data_dir.join("ssh_host_key");
+        let docker_socket = detect_docker_socket();
 
         format!(
             r#"# StellarStack Daemon Configuration (auto-generated)
+
+[api]
+host = "127.0.0.1"
+port = {daemon_port}
+upload_limit = 100
+
+[system]
+root_directory = "{root_dir}"
+data_directory = "{data_dir}"
+backup_directory = "{backup_dir}"
+archive_directory = "{archive_dir}"
+tmp_directory = "{tmp_dir}"
+log_directory = "{log_dir}"
+username = "stellar"
+timezone = "UTC"
+disk_check_interval = 60
+
+[docker]
+socket = "{docker_socket}"
+tmpfs_size = 100
+container_pid_limit = 512
 
 [remote]
 url = "http://localhost:{api_port}"
 token_id = "{token_id}"
 token = "{token}"
-
-[server]
-port = {daemon_port}
-host = "127.0.0.1"
+timeout = 30
 
 [sftp]
 enabled = true
-port = {sftp_port}
-host = "0.0.0.0"
-
-[docker]
-socket = ""
-
-[storage]
-uploads = "{uploads}"
-backups = "{backups}"
-
-[logging]
-directory = "{logs}"
-level = "info"
+bind_address = "0.0.0.0"
+bind_port = {sftp_port}
+read_only = false
+host_key = "{host_key}"
 
 [redis]
 enabled = true
 url = "redis://127.0.0.1:6379"
+prefix = "stellar"
 "#,
+            daemon_port = self.daemon_port,
+            root_dir = root_dir.to_string_lossy().replace('\\', "/"),
+            data_dir = data_directory.to_string_lossy().replace('\\', "/"),
+            backup_dir = backup_dir.to_string_lossy().replace('\\', "/"),
+            archive_dir = archive_dir.to_string_lossy().replace('\\', "/"),
+            tmp_dir = tmp_dir.to_string_lossy().replace('\\', "/"),
+            log_dir = logs_dir.to_string_lossy().replace('\\', "/"),
+            docker_socket = docker_socket,
             api_port = self.api_port,
             token_id = self.daemon_token_id,
             token = self.daemon_token,
-            daemon_port = self.daemon_port,
             sftp_port = self.sftp_port,
-            uploads = uploads_dir.to_string_lossy().replace('\\', "/"),
-            backups = backups_dir.to_string_lossy().replace('\\', "/"),
-            logs = logs_dir.to_string_lossy().replace('\\', "/"),
+            host_key = host_key.to_string_lossy().replace('\\', "/"),
         )
     }
 
@@ -157,8 +210,12 @@ url = "redis://127.0.0.1:6379"
         let contents = self.daemon_config_toml(data_dir);
         fs::write(&config_path, contents)?;
 
-        // Ensure storage directories exist
-        fs::create_dir_all(data_dir.join("uploads"))?;
+        // Ensure all directories the daemon expects exist
+        let root_dir = data_dir.join("stellar");
+        fs::create_dir_all(&root_dir)?;
+        fs::create_dir_all(root_dir.join("volumes"))?;
+        fs::create_dir_all(root_dir.join("archives"))?;
+        fs::create_dir_all(root_dir.join("tmp"))?;
         fs::create_dir_all(data_dir.join("backups"))?;
         fs::create_dir_all(data_dir.join("logs"))?;
 

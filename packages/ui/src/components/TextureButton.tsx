@@ -9,33 +9,33 @@ const buttonVariantsOuter = cva("transition-all duration-300", {
   variants: {
     variant: {
       primary:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border border-[1px] dark:border-[2px] border-black/10 dark:border-black bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border border-[1px] dark:border-[2px] border-black/10 dark:border-black bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px] ease-in-out",
 
       accent:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px] ease-in-out",
 
       destructive:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px] ease-in-out",
 
       secondary:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/20 bg-white/50 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border-[1px] dark:border-[2px] border-black/20 bg-white/50 dark:border-neutral-950 dark:bg-neutral-600/50 p-[1px] ease-in-out",
 
       minimal:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group w-full border-[1px] dark:border-[1px] border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 group border-[1px] dark:border-[1px] border-black/20 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/80 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-600/50 dark:hover:to-neutral-600/70 active:bg-neutral-200 dark:active:bg-neutral-800",
 
-      icon: "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 group rounded-full border border-black/10 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/50 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-700 dark:hover:to-neutral-600 active:bg-neutral-200 dark:active:bg-neutral-800",
+      icon: "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 group rounded-full border border-black/10 dark:border-neutral-950 bg-white/50 dark:bg-neutral-600/50 p-[1px] hover:bg-gradient-to-t hover:from-neutral-100 hover:to-white dark:hover:from-neutral-700 dark:hover:to-neutral-600 active:bg-neutral-200 dark:active:bg-neutral-800",
 
       ghost:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border border-transparent bg-transparent p-[1px] hover:bg-neutral-100/40 dark:hover:bg-neutral-800/40",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border border-transparent bg-transparent p-[1px] hover:bg-neutral-100/40 dark:hover:bg-neutral-800/40",
 
       success:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px] ease-in-out",
 
       warning:
-        "transition-all disabled:opacity-50 disabled:cursor-not-allowed  duration-300 w-full border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px] ease-in-out",
+        "transition-all disabled:opacity-50 disabled:cursor-not-allowed duration-300 border-[1px] dark:border-[2px] border-black/10 dark:border-neutral-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px] ease-in-out",
 
       disabled:
-        "w-full border disabled:opacity-50 disabled:cursor-not-allowed  border-black/10 dark:border-neutral-900 bg-neutral-200/60 dark:bg-neutral-800/60 p-[1px] opacity-60 cursor-not-allowed pointer-events-none",
+        "border disabled:opacity-50 disabled:cursor-not-allowed border-black/10 dark:border-neutral-900 bg-neutral-200/60 dark:bg-neutral-800/60 p-[1px] opacity-60 cursor-not-allowed pointer-events-none",
     },
     size: {
       sm: "rounded-[8px] text-xs",

@@ -44,7 +44,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
         <meta name="theme-color" content="#000000" />
       </head>
-      <body className={`${fontSans.variable} ${fontMono.variable} dark font-sans antialiased${process.env.NEXT_PUBLIC_DESKTOP_MODE === "true" ? " pt-8" : ""}`}>
+      <body className={`${fontSans.variable} ${fontMono.variable} dark font-sans antialiased`}>
         <PublicEnv />
         {process.env.NEXT_PUBLIC_DESKTOP_MODE === "true" && <TitleBar />}
         <Providers>

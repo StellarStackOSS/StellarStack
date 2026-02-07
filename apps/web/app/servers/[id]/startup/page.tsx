@@ -250,7 +250,6 @@ const StartupPage = (): JSX.Element | null => {
                           key={img.image}
                           variant={selectedDockerImage === img.image ? "primary" : "minimal"}
                           size="sm"
-                          className="w-fit"
                           onClick={() => handleDockerImageChange(img.image)}
                         >
                           {img.label}

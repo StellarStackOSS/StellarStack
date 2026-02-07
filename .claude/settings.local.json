@@ -76,7 +76,14 @@
       "Bash(cmd /c \"taskkill /PID 42088 /F 2>&1\")",
       "Bash(MSYS_NO_PATHCONV=1 taskkill:*)",
       "Bash(docker volume ls:*)",
-      "Bash(^- \")"
+      "Bash(^- \")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh api:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(npm info:*)"
     ]
   }
 }

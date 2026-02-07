@@ -6,10 +6,15 @@ use std::sync::Arc;
 use tauri::Manager;
 use tokio::sync::Mutex;
 
+#[cfg(target_os = "macos")]
+use cocoa;
+
 use stellar_desktop_lib::config::AppConfig;
 use stellar_desktop_lib::docker::DockerManager;
+#[cfg(target_os = "macos")]
+use stellar_desktop_lib::macos;
 use stellar_desktop_lib::setup;
-use stellar_desktop_lib::sidecar::SidecarManager;
+use stellar_desktop_lib::sidecar::{cleanup_stale_processes, SidecarManager};
 use stellar_desktop_lib::tray;
 
 /// Shared application state accessible from IPC commands.
@@ -209,11 +214,29 @@ fn main() {
                     api.prevent_close();
                     let _ = window.hide();
                 }
+                // macOS: Update titlebar style on fullscreen toggle
+                #[cfg(target_os = "macos")]
+                tauri::WindowEvent::Resized(_) => {
+                    if let Ok(is_fullscreen) = window.is_fullscreen() {
+                        if let Ok(ns_window) = window.ns_window() {
+                            unsafe {
+                                let ns_window = ns_window as cocoa::base::id;
+                                stellar_desktop_lib::macos::set_titlebar_style(
+                                    ns_window,
+                                    is_fullscreen,
+                                );
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
         })
         .setup(move |app| {
             let app_handle = app.handle().clone();
+
+            // Clean up any stale processes from previous runs
+            cleanup_stale_processes();
 
             // Resolve data and resource directories
             let data_dir = app
@@ -258,7 +281,11 @@ fn main() {
                 let target_triple = if cfg!(target_os = "windows") {
                     "x86_64-pc-windows-msvc"
                 } else if cfg!(target_os = "macos") {
-                    "x86_64-apple-darwin"
+                    if cfg!(target_arch = "aarch64") {
+                        "aarch64-apple-darwin"
+                    } else {
+                        "x86_64-apple-darwin"
+                    }
                 } else {
                     "x86_64-unknown-linux-gnu"
                 };
@@ -299,6 +326,23 @@ fn main() {
 
             // System tray
             let _ = tray::create_tray(&app_handle);
+
+            // macOS: Configure transparent titlebar with native traffic lights
+            #[cfg(target_os = "macos")]
+            {
+                use tauri::WebviewWindow;
+
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(ns_window) = window.ns_window() {
+                        unsafe {
+                            let ns_window = ns_window as cocoa::base::id;
+                            macos::set_titlebar_style(ns_window, false);
+                            macos::lock_app_theme(1); // Dark theme
+                        }
+                        info!("Applied macOS titlebar customizations");
+                    }
+                }
+            }
 
             Ok(())
         })

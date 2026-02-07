@@ -4,6 +4,7 @@ import Grid from "@/app/components/Grid/Grid";
 import OverviewShowcase from "@/app/components/Showcases/OverviewShowcase";
 import FilesShowcase from "@/app/components/Showcases/FilesShowcase";
 import SchedulesShowcase from "@/app/components/Showcases/SchedulesShowcase";
+import DesktopShowcase from "@/app/components/Showcases/DesktopShowcase";
 import Features from "@/app/components/Features/Features";
 import Stats from "@/app/components/Stats/Stats";
 import Comparison from "@/app/components/Comparison/Comparison";
@@ -27,6 +28,8 @@ const page = () => {
             <OverviewShowcase/>
             <FilesShowcase/>
             <SchedulesShowcase/>
+            <LineSpacer/>
+            <DesktopShowcase/>
             <LineSpacer/>
             <Features/>
             <Stats/>

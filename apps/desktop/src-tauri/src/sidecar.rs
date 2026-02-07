@@ -8,6 +8,59 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
+/// Clean up any stale processes from previous runs.
+/// Kills processes on API (3001), Web (3000), and Daemon (8080) ports.
+pub fn cleanup_stale_processes() {
+    info!("Cleaning up stale processes from previous runs...");
+    kill_process_on_port(3000); // Web
+    kill_process_on_port(3001); // API
+    kill_process_on_port(8080); // Daemon
+}
+
+/// Kill any process using the specified port.
+/// This is used to clean up stale processes from previous runs.
+fn kill_process_on_port(port: u16) {
+    #[cfg(unix)]
+    {
+        // Use lsof to find process on port, then kill it
+        if let Ok(output) = std::process::Command::new("lsof")
+            .args(["-ti", &format!(":{}", port)])
+            .output()
+        {
+            let pids = String::from_utf8_lossy(&output.stdout);
+            for pid in pids.lines() {
+                if let Ok(pid_num) = pid.trim().parse::<i32>() {
+                    info!("Killing stale process {} on port {}", pid_num, port);
+                    let _ = std::process::Command::new("kill")
+                        .args(["-9", &pid_num.to_string()])
+                        .output();
+                }
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        // Use netstat to find process, then taskkill
+        if let Ok(output) = std::process::Command::new("netstat")
+            .args(["-ano"])
+            .output()
+        {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            for line in output_str.lines() {
+                if line.contains(&format!(":{}", port)) && line.contains("LISTENING") {
+                    if let Some(pid) = line.split_whitespace().last() {
+                        info!("Killing stale process {} on port {}", pid, port);
+                        let _ = std::process::Command::new("taskkill")
+                            .args(["/F", "/PID", pid])
+                            .output();
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Maximum restart attempts before giving up on a sidecar.
 #[allow(dead_code)]
 const MAX_RESTARTS: u32 = 3;
@@ -62,6 +115,14 @@ impl SidecarManager {
         working_dir: PathBuf,
     ) -> Result<()> {
         let _ = app.emit("startup-status", format!("Starting API server from {:?}...", working_dir));
+        info!("Starting API server from {:?}", working_dir);
+
+        // Kill any stale process on the API port
+        kill_process_on_port(3001);
+
+        // Find node binary - check common locations on macOS
+        let node_path = find_node_binary();
+        info!("Using node binary: {:?}", node_path);
 
         let mut cmd = if cfg!(debug_assertions) {
             // Dev mode: call node directly with tsx CLI to avoid cmd /c npx chain
@@ -70,11 +131,19 @@ impl SidecarManager {
                 .join("tsx")
                 .join("dist")
                 .join("cli.mjs");
+
+            info!("Looking for tsx CLI at: {:?}", tsx_cli);
+            if !tsx_cli.exists() {
+                let err_msg = format!("tsx CLI not found at {:?}. Run 'pnpm install' in the api directory.", tsx_cli);
+                let _ = app.emit("sidecar-log", format!("[API] ERROR: {}", err_msg));
+                anyhow::bail!(err_msg);
+            }
+
             let _ = app.emit(
                 "sidecar-log",
                 format!("[API] Using tsx CLI at: {:?}", tsx_cli),
             );
-            let mut c = tokio::process::Command::new("node");
+            let mut c = tokio::process::Command::new(&node_path);
             c.arg(tsx_cli.to_string_lossy().to_string());
             c.arg("src/index.ts");
             c.current_dir(&working_dir);
@@ -82,7 +151,13 @@ impl SidecarManager {
         } else {
             // Production: run the esbuild-bundled CJS file
             let bundle_path = working_dir.join("api-bundle").join("api-bundle.cjs");
-            let mut c = tokio::process::Command::new("node");
+            info!("Looking for API bundle at: {:?}", bundle_path);
+            if !bundle_path.exists() {
+                let err_msg = format!("API bundle not found at {:?}", bundle_path);
+                let _ = app.emit("sidecar-log", format!("[API] ERROR: {}", err_msg));
+                anyhow::bail!(err_msg);
+            }
+            let mut c = tokio::process::Command::new(&node_path);
             c.arg(bundle_path.to_string_lossy().to_string());
             c
         };
@@ -91,9 +166,14 @@ impl SidecarManager {
             cmd.env(key, value);
         }
 
+        // Log PATH for debugging
+        info!("Current PATH: {:?}", std::env::var("PATH").unwrap_or_default());
+
         cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
-        let mut child = cmd.spawn().context("Failed to spawn API sidecar")?;
+        let mut child = cmd.spawn().with_context(|| {
+            format!("Failed to spawn API sidecar. Node path: {:?}, Working dir: {:?}", node_path, working_dir)
+        })?;
 
         // Stream stdout/stderr to logs
         let stdout = child.stdout.take();
@@ -123,8 +203,15 @@ impl SidecarManager {
         api_port: u16,
     ) -> Result<()> {
         let _ = app.emit("startup-status", "Starting frontend server...");
+        info!("Starting frontend server from {:?}", web_dir);
+
+        // Kill any stale process on the web port
+        kill_process_on_port(3000);
 
         let next_cmd = if cfg!(debug_assertions) { "dev" } else { "start" };
+
+        // Find node binary
+        let node_path = find_node_binary();
 
         // Call node directly with the Next.js CLI
         let next_cli = web_dir
@@ -133,7 +220,15 @@ impl SidecarManager {
             .join("dist")
             .join("bin")
             .join("next");
-        let mut cmd = tokio::process::Command::new("node");
+
+        info!("Looking for Next.js CLI at: {:?}", next_cli);
+        if !next_cli.exists() {
+            let err_msg = format!("Next.js CLI not found at {:?}. Run 'pnpm install' in the web directory.", next_cli);
+            let _ = app.emit("sidecar-log", format!("[Web] ERROR: {}", err_msg));
+            anyhow::bail!(err_msg);
+        }
+
+        let mut cmd = tokio::process::Command::new(&node_path);
         cmd.arg(next_cli.to_string_lossy().to_string());
         cmd.args([next_cmd, "-p", "3000"]);
         cmd.current_dir(&web_dir)
@@ -268,6 +363,82 @@ fn spawn_log_reader(
             }
         });
     }
+}
+
+/// Find the node binary, checking common installation paths on macOS.
+fn find_node_binary() -> String {
+    // First check if node is in PATH
+    if let Ok(output) = std::process::Command::new("which").arg("node").output() {
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() && std::path::Path::new(&path).exists() {
+                info!("Found node via which: {}", path);
+                return path;
+            }
+        }
+    }
+
+    let home = std::env::var("HOME").unwrap_or_default();
+
+    // Check nvm versions directory (nvm uses versioned paths, not a 'current' symlink)
+    if let Some(nvm_node) = find_nvm_node(&home) {
+        info!("Found node via nvm: {}", nvm_node);
+        return nvm_node;
+    }
+
+    // Common Node.js installation paths on macOS
+    let common_paths = [
+        "/opt/homebrew/bin/node".to_string(),        // Homebrew Apple Silicon
+        "/usr/local/bin/node".to_string(),           // Homebrew Intel
+        "/usr/bin/node".to_string(),                 // System
+        format!("{}/.nvm/current/bin/node", home),   // nvm current symlink (if exists)
+        format!("{}/.volta/bin/node", home),         // volta
+        format!("{}/.asdf/shims/node", home),        // asdf
+        format!("{}/.local/bin/node", home),         // local
+        "/opt/local/bin/node".to_string(),           // MacPorts
+    ];
+
+    for path in &common_paths {
+        if std::path::Path::new(path).exists() {
+            info!("Found node at common path: {}", path);
+            return path.clone();
+        }
+    }
+
+    // Fall back to just "node" and hope it's in PATH
+    warn!("Could not find node binary, falling back to 'node'");
+    "node".to_string()
+}
+
+/// Find node binary in nvm's versioned directory structure.
+fn find_nvm_node(home: &str) -> Option<String> {
+    let nvm_dir = format!("{}/.nvm/versions/node", home);
+    let nvm_path = std::path::Path::new(&nvm_dir);
+
+    if !nvm_path.exists() {
+        return None;
+    }
+
+    // Read the directory and find the most recent version
+    let mut versions: Vec<_> = std::fs::read_dir(nvm_path)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .map(|e| e.path())
+        .collect();
+
+    // Sort by version (simple string sort works for semver with 'v' prefix)
+    versions.sort();
+    versions.reverse(); // Most recent first
+
+    for version_dir in versions {
+        let node_bin = version_dir.join("bin").join("node");
+        if node_bin.exists() {
+            return Some(node_bin.to_string_lossy().to_string());
+        }
+    }
+
+    None
 }
 
 /// Minimal HTTP GET that returns Ok(true) when the response status is 2xx.
