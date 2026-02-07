@@ -176,6 +176,25 @@ async fn get_config(state: tauri::State<'_, AppState>) -> Result<serde_json::Val
 fn main() {
     env_logger::init();
 
+    // macOS / Linux: apps launched from Finder / desktop entries have a minimal PATH
+    // that excludes common Node.js install locations. Resolve the full PATH from a
+    // login shell so child processes (node, prisma, etc.) can be found.
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(output) = std::process::Command::new("/bin/sh")
+            .args(["-l", "-c", "echo $PATH"])
+            .output()
+        {
+            if output.status.success() {
+                let shell_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !shell_path.is_empty() {
+                    std::env::set_var("PATH", &shell_path);
+                    info!("Resolved PATH from login shell");
+                }
+            }
+        }
+    }
+
     // Keep a handle to sidecars for shutdown (std::sync::Mutex since setup runs outside Tokio)
     let sidecars_for_shutdown: Arc<std::sync::Mutex<Option<Arc<SidecarManager>>>> =
         Arc::new(std::sync::Mutex::new(None));

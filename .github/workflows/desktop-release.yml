@@ -170,11 +170,56 @@ jobs:
       - name: Prepare resources
         run: node apps/desktop/prepare-resources.mjs
 
+      - name: Import Apple certificate
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          # Decode certificate
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Add to keychain search list
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+      - name: Write Apple API key
+        if: runner.os == 'macOS' && env.APPLE_API_KEY_PATH != ''
+        env:
+          APPLE_API_KEY_PATH: ${{ secrets.APPLE_API_KEY_PATH }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/apple-keys"
+          echo "$APPLE_API_KEY_PATH" > "$RUNNER_TEMP/apple-keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8"
+
       - name: Build Tauri app
         run: pnpm --filter desktop tauri build --target ${{ matrix.target }}
         env:
-          # Ad-hoc sign on macOS so Gatekeeper doesn't flag the app as "damaged"
-          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos') && '-' || '' }}
+          # macOS code signing — falls back to ad-hoc ("-") if no certificate is configured
+          APPLE_SIGNING_IDENTITY: ${{ (startsWith(matrix.platform, 'macos') && secrets.APPLE_SIGNING_IDENTITY) || (startsWith(matrix.platform, 'macos') && '-') || '' }}
+          # macOS notarization (only when API key secrets are set)
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER || '' }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY || '' }}
+          APPLE_API_KEY_PATH: ${{ secrets.APPLE_API_KEY != '' && format('{0}/apple-keys/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) || '' }}
+
+      - name: Clean up Apple keychain
+        if: runner.os == 'macOS' && always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/apple-keys" "$RUNNER_TEMP/certificate.p12" 2>/dev/null || true
 
       - name: Upload Windows installers
         if: matrix.platform == 'windows-x64'
