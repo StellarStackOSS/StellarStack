@@ -83,8 +83,7 @@
       "Bash(gh api:*)",
       "Bash(lsof:*)",
       "Bash(kill:*)",
-      "Bash(npm info:*)",
-      "Bash(git config:*)"
+      "Bash(npm info:*)"
     ]
   }
 }

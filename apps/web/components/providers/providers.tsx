@@ -6,7 +6,6 @@ import { QueryProvider } from "@/components/providers/QueryProvider/QueryProvide
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider/WebSocketProvider";
 import { CommandMenuProvider } from "@/components/CommandMenu/CommandMenuProvider";
 import { CommandMenu } from "@/components/CommandMenu/CommandMenu";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 
 /**
  * Root providers component
@@ -14,17 +13,15 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
  */
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ThemeProvider>
-      <QueryProvider>
-        <AuthProvider>
-          <CommandMenuProvider>
-            <WebSocketProvider>
-              {children}
-              <CommandMenu />
-            </WebSocketProvider>
-          </CommandMenuProvider>
-        </AuthProvider>
-      </QueryProvider>
-    </ThemeProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <CommandMenuProvider>
+          <WebSocketProvider>
+            {children}
+            <CommandMenu />
+          </WebSocketProvider>
+        </CommandMenuProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
 };
