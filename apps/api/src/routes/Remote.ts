@@ -1,0 +1,1289 @@
+/**
+ * Remote API routes for daemon-to-panel communication
+ *
+ * These endpoints are called by the Rust daemon to:
+ * - Fetch server configurations
+ * - Report server status
+ * - Get installation scripts
+ * - Manage backups
+ * - Handle transfers
+ * - Authenticate SFTP users
+ * - Log activity
+ */
+
+import { Hono } from "hono";
+import { z } from "zod";
+import type { ServerStatus } from "@prisma/client";
+import { db } from "../lib/Db";
+import { RequireDaemon } from "../middleware/Auth";
+import { EmitServerEvent } from "../lib/Ws";
+import { pluginManager } from "../lib/PluginManager";
+import type { Variables } from "../Types";
+
+const remote = new Hono<{ Variables: Variables }>();
+
+// All remote routes require daemon authentication
+remote.use("*", RequireDaemon);
+
+/**
+ * Blueprint variable as stored in Prisma JSON field.
+ */
+interface BlueprintVariable {
+  name: string;
+  description?: string;
+  env_variable: string;
+  default_value?: string;
+  user_viewable?: boolean;
+  user_editable?: boolean;
+  rules?: string;
+  field_type?: string;
+}
+
+/**
+ * Blueprint config as stored in Prisma JSON field.
+ */
+interface BlueprintConfig {
+  files?: string;
+  startup?: string | { done?: string | string[]; user_interaction?: string[] };
+  logs?: string;
+  stop?: string;
+}
+
+/**
+ * Blueprint scripts as stored in Prisma JSON field.
+ */
+interface BlueprintScripts {
+  installation?: {
+    script: string;
+    container?: string;
+    entrypoint?: string;
+  };
+}
+
+/**
+ * Stop configuration for daemon communication.
+ */
+interface StopConfig {
+  type: "signal" | "command";
+  value: string;
+}
+
+/**
+ * Server record with BigInt fields requiring serialization.
+ */
+interface SerializableServer {
+  memory: bigint | number;
+  disk: bigint | number;
+  swap: bigint | number;
+  [key: string]: unknown;
+}
+
+/**
+ * Config file entry for daemon config file modifications.
+ */
+interface ConfigFileEntry {
+  parser: string;
+  file: string;
+  replace: Array<{ match: string; replace_with: unknown }>;
+}
+
+/**
+ * Config file value from blueprint JSON with parser and find map.
+ */
+interface ConfigFileValue {
+  parser?: string;
+  find?: Record<string, unknown>;
+}
+
+/**
+ * Prisma-compatible server update data for status reporting.
+ */
+interface ServerStatusUpdateData {
+  status: ServerStatus;
+  lastActivityAt?: Date;
+}
+
+/**
+ * Helper to serialize BigInt fields for JSON responses.
+ *
+ * @param server - Server record from Prisma with BigInt fields
+ * @returns Server with numeric fields
+ */
+const serializeServer = (server: SerializableServer): Record<string, unknown> => {
+  return {
+    ...server,
+    memory: Number(server.memory),
+    disk: Number(server.disk),
+    swap: Number(server.swap),
+  };
+};
+
+// ============================================================================
+// Server Configuration Endpoints
+// ============================================================================
+
+/**
+ * GET /api/remote/servers
+ * Fetch all servers for this node with pagination
+ */
+remote.get("/servers", async (c) => {
+  const node = c.get("node");
+  const page = parseInt(c.req.query("page") || "1");
+  const perPage = parseInt(c.req.query("per_page") || "50");
+
+  const skip = (page - 1) * perPage;
+
+  const [servers, total] = await Promise.all([
+    db.server.findMany({
+      where: { nodeId: node.id },
+      include: {
+        blueprint: true,
+        allocations: true,
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      skip,
+      take: perPage,
+      orderBy: { createdAt: "asc" },
+    }),
+    db.server.count({ where: { nodeId: node.id } }),
+  ]);
+
+  const lastPage = Math.ceil(total / perPage);
+
+  // Transform to daemon-expected format
+  const data = servers.map((server) => {
+    const blueprint = server.blueprint;
+    const blueprintConfig = (blueprint.config as unknown as BlueprintConfig) || {};
+    const blueprintVariables = (blueprint.variables as unknown as BlueprintVariable[]) || [];
+    const serverVariables = (server.variables as Record<string, string>) || {};
+
+    // Build environment variables
+    const environment: Record<string, string> = {};
+    for (const v of blueprintVariables) {
+      environment[v.env_variable] = serverVariables[v.env_variable] ?? v.default_value ?? "";
+    }
+    environment["SERVER_MEMORY"] = String(server.memory);
+
+    // Determine docker image from native format
+    let dockerImage = server.dockerImage;
+    if (!dockerImage) {
+      const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+      const images = Object.values(dockerImages);
+      dockerImage = images.length > 0 ? images[0] : "alpine:latest";
+    }
+
+    // Build stop configuration from native format
+    let stopConfig: StopConfig = { type: "signal", value: "SIGTERM" };
+    const configData = (blueprint.config as unknown as BlueprintConfig) || {};
+    if (configData.stop) {
+      const stopCommand = configData.stop;
+      stopConfig = stopCommand.toUpperCase().startsWith("SIG")
+        ? { type: "signal", value: stopCommand }
+        : { type: "command", value: stopCommand };
+    }
+
+    // Build startup detection from native format (config.startup JSON)
+    let donePatterns: string[] = [];
+    const startupConfigStr = configData.startup;
+
+    if (startupConfigStr) {
+      try {
+        const startupConfig =
+          typeof startupConfigStr === "string" ? JSON.parse(startupConfigStr) : startupConfigStr;
+
+        if (startupConfig.done) {
+          if (Array.isArray(startupConfig.done)) {
+            donePatterns = startupConfig.done.filter((p: unknown): p is string => typeof p === "string");
+          } else if (typeof startupConfig.done === "string") {
+            donePatterns = [startupConfig.done];
+          }
+        }
+      } catch {
+        // If parsing fails, continue with empty patterns
+      }
+    }
+
+    // Clean up Windows line endings from patterns
+    donePatterns = donePatterns.map((p) => p.replace(/\r\n/g, "\n").replace(/\r/g, ""));
+
+    return {
+      uuid: server.id,
+      settings: {
+        uuid: server.id,
+        name: server.name,
+        suspended: server.suspended,
+        invocation: buildStartupCommand(blueprint.startup, environment),
+        skip_egg_scripts: false,
+        build: {
+          memory_limit: Number(server.memory),
+          swap: Number(server.swap),
+          io_weight: 500,
+          cpu_limit: Math.round(server.cpu),
+          threads: server.cpuPinning || null,
+          disk_space: Number(server.disk),
+          oom_disabled: server.oomKillDisable,
+        },
+        container: {
+          image: dockerImage,
+          oom_disabled: server.oomKillDisable,
+          requires_rebuild: false,
+        },
+        allocations: {
+          default: {
+            ip: server.allocations[0]?.ip || "0.0.0.0",
+            port: server.allocations[0]?.port || 25565,
+          },
+          mappings: buildAllocationMappings(server.allocations),
+        },
+        egg: {
+          id: blueprint.id,
+          file_denylist: blueprint.fileDenylist || [],
+        },
+        mounts: [],
+      },
+      process_configuration: {
+        startup: {
+          done: donePatterns,
+          user_interaction: [],
+          strip_ansi: false,
+        },
+        stop: stopConfig,
+        configs: [],
+      },
+    };
+  });
+
+  return c.json({
+    data,
+    meta: {
+      current_page: page,
+      last_page: lastPage,
+      per_page: perPage,
+      total,
+    },
+  });
+});
+
+/**
+ * GET /api/remote/servers/:uuid
+ * Get configuration for a specific server
+ */
+remote.get("/servers/:uuid", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+    include: {
+      blueprint: true,
+      allocations: true,
+    },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  const blueprint = server.blueprint;
+  const blueprintVariables = (blueprint.variables as unknown as BlueprintVariable[]) || [];
+  const serverVariables = (server.variables as Record<string, string>) || {};
+
+  // Build environment
+  const environment: Record<string, string> = {};
+  for (const v of blueprintVariables) {
+    environment[v.env_variable] = serverVariables[v.env_variable] ?? v.default_value ?? "";
+  }
+  environment["SERVER_MEMORY"] = String(server.memory);
+
+  // Determine docker image from native format
+  let dockerImage = server.dockerImage;
+  if (!dockerImage) {
+    const dockerImages = (blueprint.dockerImages as Record<string, string>) || {};
+    const images = Object.values(dockerImages);
+    dockerImage = images.length > 0 ? images[0] : "alpine:latest";
+  }
+
+  // Build stop configuration from native format
+  let stopConfig: StopConfig = { type: "signal", value: "SIGTERM" };
+  const configData = (blueprint.config as unknown as BlueprintConfig) || {};
+  if (configData.stop) {
+    const stopCommand = configData.stop;
+    stopConfig = stopCommand.toUpperCase().startsWith("SIG")
+      ? { type: "signal", value: stopCommand }
+      : { type: "command", value: stopCommand };
+  }
+
+  // Build startup detection from native format (config.startup JSON)
+  let donePatterns: string[] = [];
+  const startupConfigStr = configData.startup;
+
+  if (startupConfigStr) {
+    try {
+      const startupConfig =
+        typeof startupConfigStr === "string" ? JSON.parse(startupConfigStr) : startupConfigStr;
+
+      if (startupConfig.done) {
+        if (Array.isArray(startupConfig.done)) {
+          donePatterns = startupConfig.done.filter((p: unknown): p is string => typeof p === "string");
+        } else if (typeof startupConfig.done === "string") {
+          donePatterns = [startupConfig.done];
+        }
+      }
+    } catch {
+      // If parsing fails, continue with empty patterns
+    }
+  }
+
+  // Clean up Windows line endings from patterns
+  donePatterns = donePatterns.map((p) => p.replace(/\r\n/g, "\n").replace(/\r/g, ""));
+
+  return c.json({
+    data: {
+      uuid: server.id,
+      name: server.name,
+      suspended: server.suspended,
+      invocation: buildStartupCommand(blueprint.startup, environment),
+      skip_egg_scripts: false,
+      build: {
+        memory_limit: Number(server.memory),
+        swap: Number(server.swap),
+        io_weight: 500,
+        cpu_limit: Math.round(server.cpu),
+        threads: server.cpuPinning || null,
+        disk_space: Number(server.disk),
+        oom_disabled: server.oomKillDisable,
+      },
+      container: {
+        image: dockerImage,
+        oom_disabled: server.oomKillDisable,
+        requires_rebuild: false,
+      },
+      allocations: {
+        default: {
+          ip: server.allocations[0]?.ip || "0.0.0.0",
+          port: server.allocations[0]?.port || 25565,
+        },
+        mappings: buildAllocationMappings(server.allocations),
+      },
+      egg: {
+        id: blueprint.id,
+        file_denylist: blueprint.fileDenylist || [],
+      },
+      mounts: [],
+      process_configuration: {
+        startup: {
+          done: donePatterns,
+          user_interaction: [],
+          strip_ansi: false,
+        },
+        stop: stopConfig,
+        configs: [],
+      },
+    },
+  });
+});
+
+/**
+ * POST /api/remote/servers/:uuid/status
+ * Update server status from daemon
+ */
+const statusSchema = z.object({
+  status: z.enum(["installing", "starting", "running", "stopping", "stopped", "offline", "error"]),
+});
+
+remote.post("/servers/:uuid/status", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = statusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid status", details: parsed.error.errors }, 400);
+  }
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Don't update status if server is suspended or in maintenance (admin override)
+  if (server.status === "SUSPENDED" || server.status === "MAINTENANCE") {
+    return c.json({
+      success: true,
+      message: `Server is ${server.status.toLowerCase()}, status not updated`,
+    });
+  }
+
+  // Map daemon status to our schema
+  const statusMap: Record<string, string> = {
+    installing: "INSTALLING",
+    starting: "STARTING",
+    running: "RUNNING",
+    stopping: "STOPPING",
+    stopped: "STOPPED",
+    offline: "STOPPED",
+    error: "ERROR",
+  };
+
+  const newStatus = statusMap[parsed.data.status] as ServerStatus;
+
+  // Update lastActivityAt when server transitions to RUNNING (for auto-shutdown tracking)
+  const updateData: ServerStatusUpdateData = { status: newStatus };
+  if (newStatus === "RUNNING") {
+    updateData.lastActivityAt = new Date();
+  }
+
+  await db.server.update({
+    where: { id: uuid },
+    data: updateData,
+  });
+
+  // Emit plugin hook for status change
+  pluginManager
+    .getHookRegistry()
+    .emit("server:statusChange", {
+      serverId: uuid,
+      data: { previousStatus: server.status, newStatus, reportedBy: "daemon" },
+    })
+    .catch(() => {});
+
+  // Emit WebSocket event to notify frontend of status change
+  EmitServerEvent("server:status", uuid, { id: uuid, status: newStatus });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Installation Endpoints
+// ============================================================================
+
+/**
+ * GET /api/remote/servers/:uuid/install
+ * Get installation script for a server
+ */
+remote.get("/servers/:uuid/install", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+    include: {
+      blueprint: true,
+      allocations: true,
+    },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  const blueprint = server.blueprint;
+
+  // Build environment variables for the install script
+  const environment: Record<string, string> = {};
+
+  // Add server variables (these are the egg variables configured by the user)
+  const serverVariables = (server.variables as Record<string, string>) || {};
+  for (const [key, value] of Object.entries(serverVariables)) {
+    environment[key] = String(value);
+  }
+
+  // Add allocation information
+  const primaryAllocation = server.allocations?.[0];
+  if (primaryAllocation) {
+    environment["SERVER_IP"] = primaryAllocation.ip;
+    environment["SERVER_PORT"] = String(primaryAllocation.port);
+    environment["P_SERVER_ALLOCATION_LIMIT"] = String(server.allocations?.length || 1);
+  }
+
+  // Add server identity
+  environment["P_SERVER_UUID"] = server.id;
+  environment["SERVER_MEMORY"] = String(server.memory);
+  environment["SERVER_DISK"] = String(server.disk);
+
+  // Extract installation script from native format
+  const scriptData = (blueprint.scripts as unknown as BlueprintScripts) || {};
+  const installationScript = scriptData.installation?.script;
+  const installationContainer =
+    scriptData.installation?.container || "ghcr.io/ptero-eggs/installers:alpine";
+  const installationEntrypoint = scriptData.installation?.entrypoint || "ash";
+
+  // Return empty script if no install script
+  if (!installationScript || installationScript.trim().length === 0) {
+    return c.json({
+      data: {
+        container_image: "alpine:latest",
+        entrypoint: "ash",
+        script: "#!/bin/ash\necho 'No installation script'",
+        environment,
+      },
+    });
+  }
+
+  return c.json({
+    data: {
+      container_image: installationContainer,
+      entrypoint: installationEntrypoint,
+      script: installationScript,
+      environment,
+    },
+  });
+});
+
+/**
+ * POST /api/remote/servers/:uuid/install
+ * Report installation status
+ */
+const installStatusSchema = z.object({
+  successful: z.boolean(),
+  reinstall: z.boolean().optional().default(false),
+});
+
+remote.post("/servers/:uuid/install", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = installStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Don't update status if server is suspended or in maintenance (admin override)
+  if (server.status === "SUSPENDED" || server.status === "MAINTENANCE") {
+    return c.json({
+      success: true,
+      message: `Server is ${server.status.toLowerCase()}, status not updated`,
+    });
+  }
+
+  // Update server status based on installation result
+  const newStatus = parsed.data.successful ? "STOPPED" : "ERROR";
+
+  await db.server.update({
+    where: { id: uuid },
+    data: { status: newStatus },
+  });
+
+  // Emit WebSocket event to notify frontend of installation completion
+  EmitServerEvent("server:status", uuid, { id: uuid, status: newStatus });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Backup Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/backups/:uuid
+ * Update backup status
+ */
+const backupStatusSchema = z.object({
+  successful: z.boolean(),
+  checksum: z.string().optional(),
+  checksum_type: z.string().optional(),
+  size: z.number(),
+  parts: z
+    .array(
+      z.object({
+        part_number: z.number(),
+        etag: z.string(),
+      })
+    )
+    .optional(),
+});
+
+remote.post("/backups/:uuid", async (c) => {
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = backupStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Find and update backup
+  const backup = await db.backup.findUnique({
+    where: { id: uuid },
+  });
+
+  if (!backup) {
+    return c.json({ error: "Backup not found" }, 404);
+  }
+
+  await db.backup.update({
+    where: { id: uuid },
+    data: {
+      status: parsed.data.successful ? "COMPLETED" : "FAILED",
+      size: parsed.data.size,
+      checksum: parsed.data.checksum,
+      checksumType: parsed.data.checksum_type || "sha256",
+      completedAt: parsed.data.successful ? new Date() : null,
+    },
+  });
+
+  return c.json({ success: true });
+});
+
+/**
+ * GET /api/remote/backups/:uuid/upload
+ * Get pre-signed upload URLs for backup (S3)
+ */
+remote.get("/backups/:uuid/upload", async (c) => {
+  const { uuid } = c.req.param();
+  const size = parseInt(c.req.query("size") || "0");
+
+  // TODO: Implement S3 pre-signed URLs when S3 is configured
+  // For now, return local upload endpoint
+
+  return c.json({
+    parts: [
+      {
+        part_number: 1,
+        url: `/api/remote/backups/${uuid}/upload/local`,
+      },
+    ],
+    upload_id: null,
+  });
+});
+
+/**
+ * POST /api/remote/backups/:uuid/restore
+ * Report backup restoration status
+ */
+const restoreStatusSchema = z.object({
+  successful: z.boolean(),
+});
+
+remote.post("/backups/:uuid/restore", async (c) => {
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = restoreStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Find and update backup
+  const backup = await db.backup.findUnique({
+    where: { id: uuid },
+  });
+
+  if (!backup) {
+    return c.json({ error: "Backup not found" }, 404);
+  }
+
+  // Update backup status (restore complete, revert to COMPLETED)
+  await db.backup.update({
+    where: { id: uuid },
+    data: {
+      status: parsed.data.successful ? "COMPLETED" : "FAILED",
+    },
+  });
+
+  // Log activity
+  await db.activityLog.create({
+    data: {
+      event: "server:backup.restore",
+      serverId: backup.serverId,
+      metadata: {
+        backup_id: uuid,
+        successful: parsed.data.successful,
+      },
+    },
+  });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Schedule Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/servers/:serverId/schedule-executing
+ * Report schedule task execution status
+ */
+const scheduleExecutingSchema = z.object({
+  schedule_id: z.string(),
+  task_index: z.number().nullable().optional(),
+});
+
+remote.post("/servers/:serverId/schedule-executing", async (c) => {
+  const node = c.get("node");
+  const { serverId } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = scheduleExecutingSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Verify server exists on this node
+  const server = await db.server.findFirst({
+    where: { id: serverId, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Broadcast schedule execution status to WebSocket clients
+  EmitServerEvent("schedule:executing", serverId, {
+    schedule_id: parsed.data.schedule_id,
+    task_index: parsed.data.task_index ?? null,
+  });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Transfer Endpoints
+// ============================================================================
+
+/**
+ * GET /api/remote/servers/:uuid/archive
+ * Get transfer archive download URL
+ */
+remote.get("/servers/:uuid/archive", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // TODO: Implement server transfer archive
+  return c.json({
+    url: "",
+    checksum: "",
+  });
+});
+
+/**
+ * POST /api/remote/servers/:uuid/archive
+ * Report archive creation status
+ */
+const archiveStatusSchema = z.object({
+  successful: z.boolean(),
+});
+
+remote.post("/servers/:uuid/archive", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = archiveStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // TODO: Update transfer status
+
+  return c.json({ success: true });
+});
+
+/**
+ * POST /api/remote/servers/:uuid/transfer
+ * Report transfer completion status
+ */
+const transferStatusSchema = z.object({
+  successful: z.boolean(),
+});
+
+remote.post("/servers/:uuid/transfer", async (c) => {
+  const node = c.get("node");
+  const { uuid } = c.req.param();
+  const body = await c.req.json();
+
+  const parsed = transferStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  const server = await db.server.findFirst({
+    where: { id: uuid, nodeId: node.id },
+  });
+
+  if (!server) {
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // TODO: Handle transfer completion
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// SFTP Authentication
+// ============================================================================
+
+/**
+ * POST /api/remote/sftp/auth
+ * Validate SFTP credentials
+ */
+const sftpAuthSchema = z.object({
+  username: z.string(), // Format: server_uuid.user_uuid
+  password: z.string(),
+});
+
+remote.post("/sftp/auth", async (c) => {
+  const node = c.get("node");
+  const body = await c.req.json();
+
+  const parsed = sftpAuthSchema.safeParse(body);
+  if (!parsed.success) {
+    console.error("[SFTP Auth] Invalid request body:", parsed.error.errors);
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Parse username format: server_uuid.user_uuid (split only on first dot)
+  const firstDotIndex = parsed.data.username.indexOf(".");
+  if (firstDotIndex === -1) {
+    console.error("[SFTP Auth] Invalid username format:", parsed.data.username);
+    return c.json({ error: "Invalid username format" }, 400);
+  }
+
+  const serverUuid = parsed.data.username.substring(0, firstDotIndex);
+  const userIdentifier = parsed.data.username.substring(firstDotIndex + 1);
+  console.log(
+    `[SFTP Auth] Attempting authentication - Server: ${serverUuid}, User: ${userIdentifier}`
+  );
+
+  // Find server
+  const server = await db.server.findFirst({
+    where: { id: serverUuid, nodeId: node.id },
+    include: { owner: true },
+  });
+
+  if (!server) {
+    console.error(`[SFTP Auth] Server not found: ${serverUuid} on node ${node.id}`);
+    return c.json({ error: "Server not found" }, 404);
+  }
+
+  // Find user - can be by ID or email
+  const user = await db.user.findFirst({
+    where: {
+      OR: [{ id: userIdentifier }, { email: userIdentifier }],
+    },
+    include: {
+      accounts: {
+        where: { providerId: "credential" },
+      },
+    },
+  });
+
+  if (!user) {
+    console.error(`[SFTP Auth] User not found: ${userIdentifier}`);
+    return c.json({ error: "Invalid credentials" }, 401);
+  }
+
+  // Verify password (using Better Auth's credential account)
+  const credentialAccount = user.accounts.find((a) => a.providerId === "credential");
+  if (!credentialAccount?.password) {
+    console.error(`[SFTP Auth] No credential account found for user: ${user.id} (${user.email})`);
+    return c.json({ error: "Invalid credentials" }, 401);
+  }
+
+  // Verify password using bcrypt (industry standard like Pterodactyl)
+  const { VerifyPassword } = await import("../lib/Crypto");
+  const isValidPassword = await VerifyPassword(parsed.data.password, credentialAccount.password);
+
+  if (!isValidPassword) {
+    console.error(`[SFTP Auth] Invalid password for user: ${user.id} (${user.email})`);
+    return c.json({ error: "Invalid credentials" }, 401);
+  }
+
+  // Check if user owns the server or is admin
+  if (server.ownerId !== user.id && user.role !== "admin") {
+    console.error(`[SFTP Auth] Access denied - User ${user.id} does not own server ${server.id}`);
+    return c.json({ error: "Access denied" }, 403);
+  }
+
+  console.log(
+    `[SFTP Auth] Authentication successful for user ${user.email} on server ${server.id}`
+  );
+
+  // Return permissions
+  const permissions = [
+    "control.console",
+    "control.start",
+    "control.stop",
+    "control.restart",
+    "file.create",
+    "file.read",
+    "file.read-content",
+    "file.update",
+    "file.delete",
+    "file.archive",
+    "file.sftp",
+  ];
+
+  // Admins get all permissions
+  if (user.role === "admin") {
+    permissions.push("admin.websocket.install", "admin.websocket.errors");
+  }
+
+  return c.json({
+    server: serverUuid,
+    permissions,
+  });
+});
+
+// ============================================================================
+// Maintenance Mode
+// ============================================================================
+
+/**
+ * POST /api/remote/maintenance/enter
+ * Set all servers on this node to MAINTENANCE mode
+ * Stores their current status for restoration later
+ */
+remote.post("/maintenance/enter", async (c) => {
+  const node = c.get("node");
+
+  // Get all servers on this node that are not already in maintenance or suspended
+  const servers = await db.server.findMany({
+    where: {
+      nodeId: node.id,
+      status: {
+        notIn: ["MAINTENANCE", "SUSPENDED"],
+      },
+    },
+    select: { id: true, status: true },
+  });
+
+  // Update each server to MAINTENANCE and store previous status
+  const updated = await Promise.all(
+    servers.map((server) =>
+      db.server.update({
+        where: { id: server.id },
+        data: {
+          previousStatus: server.status,
+          status: "MAINTENANCE",
+        },
+      })
+    )
+  );
+
+  // Emit WebSocket events for all affected servers
+  for (const server of updated) {
+    EmitServerEvent("server:status", server.id, { id: server.id, status: "MAINTENANCE" });
+  }
+
+  return c.json({
+    success: true,
+    affected: updated.length,
+    message: `Set ${updated.length} servers to maintenance mode`,
+  });
+});
+
+/**
+ * POST /api/remote/maintenance/exit
+ * Restore all servers on this node from MAINTENANCE to their previous status
+ */
+remote.post("/maintenance/exit", async (c) => {
+  const node = c.get("node");
+
+  // Get all servers in maintenance mode with a stored previous status
+  const servers = await db.server.findMany({
+    where: {
+      nodeId: node.id,
+      status: "MAINTENANCE",
+      previousStatus: { not: null },
+    },
+    select: { id: true, previousStatus: true },
+  });
+
+  // Restore each server to its previous status
+  const updated = await Promise.all(
+    servers.map((server) =>
+      db.server.update({
+        where: { id: server.id },
+        data: {
+          status: server.previousStatus!,
+          previousStatus: null,
+        },
+      })
+    )
+  );
+
+  // Emit WebSocket events for all affected servers
+  for (const server of updated) {
+    EmitServerEvent("server:status", server.id, { id: server.id, status: server.status });
+  }
+
+  return c.json({
+    success: true,
+    affected: updated.length,
+    message: `Restored ${updated.length} servers from maintenance mode`,
+  });
+});
+
+// ============================================================================
+// Activity Logging
+// ============================================================================
+
+/**
+ * POST /api/remote/activity
+ * Receive activity logs from daemon
+ */
+// Safe metadata schema - only allow primitive values and arrays/objects of primitives
+const safeMetadataSchema = z
+  .record(
+    z.union([
+      z.string().max(1000),
+      z.number(),
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])),
+    ])
+  )
+  .optional();
+
+const activityLogSchema = z.object({
+  data: z
+    .array(
+      z.object({
+        server: z.string().uuid(),
+        event: z
+          .string()
+          .max(100)
+          .regex(/^[a-z0-9:._-]+$/i), // Only allow safe event names
+        metadata: safeMetadataSchema,
+        ip: z.string().ip().optional(),
+        timestamp: z.string().datetime(),
+      })
+    )
+    .max(100), // Limit batch size
+});
+
+remote.post("/activity", async (c) => {
+  const body = await c.req.json();
+
+  const parsed = activityLogSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request", details: parsed.error.errors }, 400);
+  }
+
+  // Store activity logs in database
+  const logs = parsed.data.data.map((log) => ({
+    event: log.event,
+    serverId: log.server,
+    ip: log.ip,
+    metadata: log.metadata,
+    timestamp: new Date(log.timestamp),
+  }));
+
+  await db.activityLog.createMany({
+    data: logs,
+  });
+
+  return c.json({ success: true });
+});
+
+// ============================================================================
+// Metrics Endpoints
+// ============================================================================
+
+/**
+ * POST /api/remote/metrics
+ * Receive node metrics from daemon
+ */
+const nodeMetricsSchema = z.object({
+  cpu_usage: z.number().min(0).max(100),
+  memory_usage: z.number().min(0),
+  memory_limit: z.number().min(0),
+  disk_usage: z.number().min(0),
+  disk_limit: z.number().min(0),
+  active_containers: z.number().min(0),
+  total_containers: z.number().min(0),
+});
+
+const serverMetricsSchema = z.object({
+  server_id: z.string().uuid(),
+  cpu_usage: z.number().min(0).max(100),
+  memory_usage: z.number().min(0),
+  memory_limit: z.number().min(0),
+  disk_usage: z.number().min(0),
+  disk_limit: z.number().min(0),
+  uptime: z.number().min(0),
+  status: z.string(),
+  players: z.number().optional(),
+  fps: z.number().optional(),
+  tps: z.number().optional(),
+});
+
+const metricsPayloadSchema = z.object({
+  node: nodeMetricsSchema,
+  servers: z.array(serverMetricsSchema).optional(),
+});
+
+remote.post("/metrics", async (c) => {
+  try {
+    const node = c.get("node");
+    const body = await c.req.json();
+
+    const parsed = metricsPayloadSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid metrics payload", details: parsed.error.errors }, 400);
+    }
+
+    const { node: nodeMetrics, servers: serverMetrics } = parsed.data;
+
+    // Store node metrics snapshot
+    await db.nodeMetricsSnapshot.create({
+      data: {
+        nodeId: node.id,
+        cpuUsage: nodeMetrics.cpu_usage,
+        memoryUsage: BigInt(nodeMetrics.memory_usage),
+        memoryLimit: BigInt(nodeMetrics.memory_limit),
+        diskUsage: BigInt(nodeMetrics.disk_usage),
+        diskLimit: BigInt(nodeMetrics.disk_limit),
+        activeContainers: nodeMetrics.active_containers,
+        totalContainers: nodeMetrics.total_containers,
+      },
+    });
+
+    // Store server metrics snapshots if provided
+    if (serverMetrics && serverMetrics.length > 0) {
+      await Promise.all(
+        serverMetrics.map((metrics) =>
+          db.serverMetricsSnapshot.create({
+            data: {
+              serverId: metrics.server_id,
+              cpuUsage: metrics.cpu_usage,
+              memoryUsage: BigInt(metrics.memory_usage),
+              memoryLimit: BigInt(metrics.memory_limit),
+              diskUsage: BigInt(metrics.disk_usage),
+              diskLimit: BigInt(metrics.disk_limit),
+              uptime: metrics.uptime,
+              status: metrics.status,
+              players: metrics.players || null,
+              fps: metrics.fps || null,
+              tps: metrics.tps || null,
+            },
+          })
+        )
+      );
+    }
+
+    return c.json({ success: true, metricsStored: 1 + (serverMetrics?.length || 0) });
+  } catch (error) {
+    console.error("Failed to store metrics:", error);
+    return c.json({ error: "Failed to store metrics" }, 500);
+  }
+});
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Build startup command with variable substitution
+ */
+const buildStartupCommand = (
+  template: string | null,
+  variables: Record<string, string>
+): string => {
+  if (!template) return "";
+
+  let cmd = template;
+
+  // Substitute {{VARIABLE}} patterns
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+    cmd = cmd.replace(regex, value);
+  }
+
+  return cmd;
+};
+
+/**
+ * Build allocation mappings for additional ports
+ */
+const buildAllocationMappings = (
+  allocations: Array<{ ip: string; port: number }>
+): Record<string, number[]> => {
+  const mappings: Record<string, number[]> = {};
+
+  // Skip the first allocation (it's the default)
+  for (let i = 1; i < allocations.length; i++) {
+    const alloc = allocations[i];
+    if (!mappings[alloc.ip]) {
+      mappings[alloc.ip] = [];
+    }
+    mappings[alloc.ip].push(alloc.port);
+  }
+
+  return mappings;
+};
+
+/**
+ * Build config file modifications for daemon
+ */
+/**
+ * Build config file modifications for daemon from blueprint config files JSON.
+ *
+ * @param configFiles - Config files object from blueprint
+ * @returns Array of config file entries for daemon
+ */
+const buildConfigFiles = (configFiles: unknown): ConfigFileEntry[] => {
+  if (!configFiles) return [];
+
+  const configs: ConfigFileEntry[] = [];
+
+  // configFiles format: { "server.properties": { "parser": "properties", "find": {...} } }
+  for (const [file, config] of Object.entries(configFiles as Record<string, unknown>)) {
+    if (!config || typeof config !== "object") continue;
+
+    const configValue = config as ConfigFileValue;
+    const replacements: Array<{ match: string; replace_with: unknown }> = [];
+    const find = configValue.find || {};
+
+    for (const [key, value] of Object.entries(find)) {
+      replacements.push({
+        match: key,
+        replace_with: typeof value === "object" ? value : String(value),
+      });
+    }
+
+    if (replacements.length > 0) {
+      configs.push({
+        parser: configValue.parser || "file",
+        file,
+        replace: replacements,
+      });
+    }
+  }
+
+  return configs;
+};
+
+export { remote };

@@ -1,8 +1,8 @@
 "use client";
 
 import NumberFlow from "@number-flow/react";
-import { cn } from "@stellarUI/lib/utils";
-import type { AnimatedNumberProps, CounterDigitProps, MechanicalCounterProps } from "../animations-types/types";
+import { cn } from "@stellarUI/lib/Utils";
+import type { AnimatedNumberProps, CounterDigitProps, MechanicalCounterProps } from "../AnimationsTypes/Types";
 
 export type { AnimatedNumberProps, CounterDigitProps, MechanicalCounterProps };
 

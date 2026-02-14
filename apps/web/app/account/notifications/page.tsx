@@ -1,10 +1,10 @@
 "use client";
 
 import { type JSX, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+
 import {
   BsBell,
   BsCheck,
@@ -124,8 +124,7 @@ const NotificationsPage = (): JSX.Element | null => {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <TextureButton

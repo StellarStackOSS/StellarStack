@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {type JSX, useCallback, useEffect, useRef, useState} from "react";
 
 export type PatternCell = "0" | "1" | "2" | "3";
 type Pattern = PatternCell[][];
@@ -99,7 +99,7 @@ const textToPattern = (
   });
 };
 
-function getLightColor(state: PatternCell, colors: Partial<LightBoardColors>): string {
+const getLightColor = (state: PatternCell, colors: Partial<LightBoardColors>): string => {
   const mergedColors = { ...defaultColors, ...colors };
 
   switch (state) {
@@ -112,11 +112,11 @@ function getLightColor(state: PatternCell, colors: Partial<LightBoardColors>): s
     default:
       return mergedColors.background;
   }
-}
+};
 
 const defaultDrawState: PatternCell = "2";
 
-function LightBoard({
+const LightBoard = ({
   text,
   gap = 1,
   lightSize = 4,
@@ -128,7 +128,7 @@ function LightBoard({
   disableDrawing = true,
   controlledHoverState,
   onHoverStateChange,
-}: LightBoardProps) {
+}: LightBoardProps): JSX.Element => {
   // We decide how many rows and columns of lights we need
   const containerRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
@@ -446,7 +446,7 @@ function LightBoard({
       )}
     </div>
   );
-}
+};
 
 export default LightBoard;
 

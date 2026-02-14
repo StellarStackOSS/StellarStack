@@ -2,7 +2,7 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
@@ -10,15 +10,14 @@ import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { BsGlobe, BsPencil, BsPlus, BsTrash } from "react-icons/bs";
 import { TbWand } from "react-icons/tb";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import { WebhookEventSelector } from "./WebhookEventSelector";
 import { WebhookUrlField } from "./WebhookUrlField";
-import { type Webhook, type WebhookEvent, webhooks } from "@/lib/api";
+import { type Webhook, type WebhookEvent, webhooks } from "@/lib/Api";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 
 const webhookEvents: { value: WebhookEvent; label: string; description: string }[] = [
   { value: "server.started", label: "Server Started", description: "When the server starts" },
@@ -191,17 +190,10 @@ const WebhooksPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <TextureButton variant="primary" size="sm" className="w-fit" onClick={openAddModal}>
                   <BsPlus className="h-4 w-4" />
@@ -213,11 +205,11 @@ const WebhooksPage = (): JSX.Element | null => {
 
           {/* Webhooks Card */}
           <FadeIn delay={0.05}>
-            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                 Webhooks {webhookList.length > 0 && `(${webhookList.length})`}
               </div>
-              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Spinner />

@@ -12,7 +12,7 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@stellarUI/components",
-    "utils": "@stellarUI/lib/utils",
+    "utils": "@stellarUI/lib/Utils",
     "hooks": "@stellarUI/hooks",
     "lib": "@stellarUI/lib",
     "ui": "@stellarUI/components"

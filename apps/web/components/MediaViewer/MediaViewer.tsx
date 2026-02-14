@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createMediaDataUrl } from "@/lib/media-utils";
+import { CreateMediaDataUrl } from "@/lib/MediaUtils";
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css'
 import Card from "@stellarUI/components/Card/Card";
@@ -72,7 +72,7 @@ export const MediaViewer = ({
   }, []);
 
   if (isImage) {
-    const src = blobUrl || (content ? createMediaDataUrl(fileName, content) : "");
+    const src = blobUrl || (content ? CreateMediaDataUrl(fileName, content) : "");
 
     console.log(blobUrl);
 

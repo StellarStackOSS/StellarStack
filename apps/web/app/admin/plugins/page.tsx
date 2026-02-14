@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Switch from "@stellarUI/components/Switch/Switch";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
@@ -34,10 +33,10 @@ import {
   BsDownload,
   BsGit,
 } from "react-icons/bs";
-import { usePlugins, usePluginMutations } from "@/hooks/queries/use-plugins";
-import type { PluginInfo } from "@/lib/api";
+import { usePlugins, usePluginMutations } from "@/hooks/queries/UsePlugins";
+import type { PluginInfo } from "@/lib/Api";
 import { toast } from "sonner";
-import { pluginsApi } from "@/lib/api";
+import { pluginsApi } from "@/lib/Api";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "game-management": "Game Management",
@@ -250,7 +249,6 @@ const PluginsPage = () => {
         <FadeIn delay={0}>
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div>
                 <h1 className="text-lg font-semibold text-zinc-100">Extensions</h1>
                 <p className="text-xs text-zinc-500">

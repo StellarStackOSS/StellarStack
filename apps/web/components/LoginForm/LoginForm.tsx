@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from "@stellarUI/components/Form";
 import { FunctionComponent, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { LiquidMetal } from "@paper-design/shaders-react";
 import { Turnstile } from "@/components/Turnstile/Turnstile";
 

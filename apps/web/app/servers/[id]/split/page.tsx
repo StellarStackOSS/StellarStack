@@ -2,21 +2,20 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { BsArrowRight, BsExclamationTriangle, BsPlus, BsServer, BsTrash } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { type ChildServer, servers } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
+import { type ChildServer, servers } from "@/lib/Api";
 import { toast } from "sonner";
-import GetErrorMessage from "@/lib/error-utils";
+import GetErrorMessage from "@/lib/ErrorUtils";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 
 // Format MiB values (memory/disk are stored in MiB in the database)
@@ -170,17 +169,10 @@ const SplitPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 {!isChildServer && (
                   <TextureButton
@@ -201,12 +193,12 @@ const SplitPage = (): JSX.Element | null => {
             {/* Child Server Warning */}
             {isChildServer && (
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-amber-900/30 bg-[#090909] p-1 pt-2">
+                <div className="flex h-full flex-col rounded-lg border border-amber-900/30 bg-muted p-1 pt-2">
                   <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                     <BsExclamationTriangle className="h-3 w-3 text-amber-400" />
                     <span className="text-amber-400">Notice</span>
                   </div>
-                  <div className="flex flex-1 items-center gap-3 rounded-lg border border-amber-900/20 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="flex flex-1 items-center gap-3 rounded-lg border border-amber-900/20 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
                     <img
                       src="/icons/24-triangle-warning.svg"
                       alt="Warning"
@@ -227,9 +219,9 @@ const SplitPage = (): JSX.Element | null => {
             {/* Current Resources */}
             {!isChildServer && (
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Current Resources</div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
                     <div className="grid grid-cols-3 gap-6">
                       <div>
                         <div className="text-xs tracking-wider text-zinc-500 uppercase">Memory</div>
@@ -255,11 +247,11 @@ const SplitPage = (): JSX.Element | null => {
 
             {/* Child Servers */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                   Child Servers {children.length > 0 && `(${children.length})`}
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
                       <Spinner />

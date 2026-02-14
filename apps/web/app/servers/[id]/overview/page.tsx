@@ -2,14 +2,12 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { servers, type Server, type Allocation } from "@/lib/api";
+import { servers, type Server, type Allocation } from "@/lib/Api";
 import DragDropGrid, { GridItem } from "@stellarUI/components/DragDropGrid/DragDropGrid";
-import { useGridStorage } from "@stellarUI/hooks/useGridStorage";
+import { useGridStorage } from "@stellarUI/hooks/UseGridStorage";
 import Console from "@stellarUI/components/Console/Console";
-import { cn } from "@stellarUI/lib/utils";
 import { BsExclamationTriangle } from "react-icons/bs";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import CpuCard from "@stellarUI/components/CpuCard/CpuCard";
 import UsageMetricCard from "@stellarUI/components/UsageMetricCard/UsageMetricCard";
@@ -17,15 +15,15 @@ import NetworkUsageCard from "@stellarUI/components/NetworkUsageCard/NetworkUsag
 import SystemInformationCard from "@stellarUI/components/SystemInformationCard/SystemInformationCard";
 import NetworkInfoCard from "@stellarUI/components/NetworkInfoCard/NetworkInfoCard";
 import InstanceNameCard from "@stellarUI/components/InstanceNameCard/InstanceNameCard";
-import type { ContainerStatus } from "@stellarUI/components/dashboard-cards-types/types";
-import { useLabels } from "@/hooks/useLabels";
-import { defaultGridItems, defaultHiddenCards } from "@/constants/gridConfig";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { type StatsWithHistory, useServerWebSocket } from "@/hooks/useServerWebSocket";
+import type { ContainerStatus } from "@stellarUI/components/DashboardCardsTypes/Types";
+import { useLabels } from "@/hooks/UseLabels";
+import { DEFAULT_GRID_ITEMS, DEFAULT_HIDDEN_CARDS } from "@/constants/GridConfig";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { type StatsWithHistory, useServerWebSocket } from "@/hooks/UseServerWebSocket";
 import { EulaExtension } from "../extensions/eula";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/server-maintenance-placeholder/server-maintenance-placeholder";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
+import { ServerMaintenancePlaceholder } from "components/ServerStatusPages/ServerMaintenancePlaceholder/ServerMaintenancePlaceholder";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
@@ -219,8 +217,8 @@ const ServerOverviewPage = (): JSX.Element | null => {
   const { items, visibleItems, layouts, saveLayout, resetLayout, showCard, hideCard } =
     useGridStorage({
       key: `stellarstack-dashboard-layout-${serverId}`,
-      defaultItems: defaultGridItems,
-      defaultHiddenCards: defaultHiddenCards,
+      defaultItems: DEFAULT_GRID_ITEMS,
+      defaultHiddenCards: DEFAULT_HIDDEN_CARDS,
     });
 
   const displayData = buildDisplayData(server, statsData, realDiskUsageBytes);
@@ -252,7 +250,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (isInstalling) {
     return (
-      <div className="min-h-svh bg-[#0b0b0a]">
+      <div className="min-h-svh bg-background">
         <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
@@ -260,7 +258,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (server?.status === "SUSPENDED") {
     return (
-      <div className="min-h-svh bg-[#0b0b0a]">
+      <div className="min-h-svh bg-background">
         <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
@@ -268,7 +266,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (server?.status === "MAINTENANCE") {
     return (
-      <div className="min-h-svh bg-[#0b0b0a]">
+      <div className="min-h-svh bg-background">
         <ServerMaintenancePlaceholder serverName={server?.name} />
       </div>
     );
@@ -276,7 +274,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (isLoading && !wsConnected) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#0b0b0a]">
+      <div className="flex min-h-svh items-center justify-center bg-background">
         <div className="flex items-center gap-3">
           <Spinner className="h-5 w-5" />
         </div>
@@ -297,16 +295,9 @@ const ServerOverviewPage = (): JSX.Element | null => {
           </div>
         )}
 
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
               <div className="flex w-2/3 flex-row justify-end gap-2">
                 <div className="flex flex-row items-center gap-2">
                   <TextureButton

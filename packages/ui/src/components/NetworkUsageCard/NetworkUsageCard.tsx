@@ -1,13 +1,13 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
 import { InfoTooltip, InfoRow } from "../InfoTooltip/InfoTooltip";
 import { DualSparkline } from "../Sparkline/Sparkline";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
-import type { NetworkUsageCardProps, NetworkTooltipData, NetworkUsageCardLabels } from "../dashboard-cards-types/types";
+import type { NetworkUsageCardProps, NetworkTooltipData, NetworkUsageCardLabels } from "../DashboardCardsTypes/Types";
 
 interface NetworkUsageCardComponentProps extends NetworkUsageCardProps {
   isOffline: boolean;

@@ -1,4 +1,4 @@
-import { type Backup } from "@/lib/api.types";
+import { type Backup } from "@/lib/ApiTypes";
 import React from "react";
 import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import { BsCheckCircle, BsCloudDownload, BsTrash } from "react-icons/bs";

@@ -23,6 +23,14 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "storybook:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "storybook:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     }
   }
 }

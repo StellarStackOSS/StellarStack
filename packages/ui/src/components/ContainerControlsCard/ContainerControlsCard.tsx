@@ -1,13 +1,13 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard from "../UsageCard/UsageCard";
 import type {
   CardProps,
   ContainerStatus,
   ContainerControlsCardLabels,
-} from "../dashboard-cards-types/types";
+} from "../DashboardCardsTypes/Types";
 
 interface ContainerControlsCardProps extends CardProps {
   isOffline: boolean;

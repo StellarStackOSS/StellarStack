@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
-import type { FadeInProps, FadeDirection, StaggerContainerProps } from "../animations-types/types";
+import { cn } from "@stellarUI/lib/Utils";
+import type { FadeInProps, FadeDirection, StaggerContainerProps } from "../AnimationsTypes/Types";
 
 export type { FadeInProps, FadeDirection, StaggerContainerProps };
 

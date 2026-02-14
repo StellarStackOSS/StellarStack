@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import type { StatsSchema } from "@stellarstack/plugin-sdk";
 
 interface StatsRendererProps {
@@ -9,7 +10,7 @@ interface StatsRendererProps {
   pluginConfig?: Record<string, unknown>;
 }
 
-export function StatsRenderer({ schema }: StatsRendererProps) {
+export const StatsRenderer = ({ schema }: StatsRendererProps): JSX.Element => {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {schema.items.map((item) => (
@@ -20,4 +21,4 @@ export function StatsRenderer({ schema }: StatsRendererProps) {
       ))}
     </div>
   );
-}
+};

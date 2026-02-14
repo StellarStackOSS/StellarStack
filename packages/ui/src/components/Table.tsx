@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Table = ({ className, ...props }: React.ComponentProps<"table">) => {
   return (

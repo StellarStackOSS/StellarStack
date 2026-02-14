@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useCommandMenu } from "./hooks/useCommandMenu";
+import { useCommandMenu } from "./hooks/UseCommandMenu";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import Switch from "@stellarUI/components/Switch/Switch";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { servers } from "@/lib/api";
+import { servers } from "@/lib/Api";
 import { toast } from "sonner";
 
 /**

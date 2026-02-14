@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import type { TimestampColumnTooltipProps, TooltipPosition } from "./types";
 
 export type { TimestampColumnTooltipProps, TooltipPosition };

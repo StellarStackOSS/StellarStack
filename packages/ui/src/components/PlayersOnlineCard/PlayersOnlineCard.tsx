@@ -1,11 +1,11 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
-import type { CardProps, Player, ContainerStatus, PlayersOnlineCardLabels } from "../dashboard-cards-types/types";
+import type { CardProps, Player, ContainerStatus, PlayersOnlineCardLabels } from "../DashboardCardsTypes/Types";
 
 interface PlayersOnlineCardProps extends CardProps {
   isOffline: boolean;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import TimestampColumnTooltip from "./TimestampTooltip";
 import { ScrollContext } from "./ScrollContext";

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { type JSX, useState, useCallback } from "react";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import Input from "@stellarUI/components/Input/Input";
@@ -22,7 +22,7 @@ import {
   BsController,
 } from "react-icons/bs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { pluginsApi } from "@/lib/api";
+import { pluginsApi } from "@/lib/Api";
 import { toast } from "sonner";
 
 interface SteamWorkshopTabProps {
@@ -42,7 +42,7 @@ interface WorkshopItem {
   creator?: string;
 }
 
-export function SteamWorkshopTab({ serverId }: SteamWorkshopTabProps) {
+export const SteamWorkshopTab = ({ serverId }: SteamWorkshopTabProps): JSX.Element => {
   const [workshopUrl, setWorkshopUrl] = useState("");
   const [workshopIds, setWorkshopIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
@@ -268,4 +268,4 @@ export function SteamWorkshopTab({ serverId }: SteamWorkshopTabProps) {
       </div>
     </div>
   );
-}
+};

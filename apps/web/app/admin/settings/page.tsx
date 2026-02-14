@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import {
@@ -21,9 +20,9 @@ import {
   type CloudflareSettings,
   type EmailSettings,
   type SubdomainSettings,
-} from "@/lib/api";
+} from "@/lib/Api";
 import { toast } from "sonner";
-import GetErrorMessage from "@/lib/error-utils";
+import GetErrorMessage from "@/lib/ErrorUtils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Switch from "@stellarUI/components/Switch/Switch";
@@ -309,12 +308,6 @@ export default function AdminSettingsPage() {
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-            </div>
-          </FadeIn>
-
           {/* Settings Sections */}
           <FadeIn delay={0.05}>
             <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">

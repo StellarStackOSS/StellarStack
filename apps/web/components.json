@@ -14,7 +14,7 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@stellarUI/lib/utils",
+    "utils": "@stellarUI/lib/Utils",
     "ui": "@stellarUI/components"
   }
 }

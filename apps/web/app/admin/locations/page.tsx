@@ -1,20 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import Textarea from "@stellarUI/components/Textarea";
 import { BsGeoAlt, BsPlus, BsPencil, BsTrash } from "react-icons/bs";
-import { useLocationMutations } from "@/hooks/queries/use-locations";
-import { useLocations } from "@/hooks/queries/use-locations";
-import type { CreateLocationData, Location } from "@/lib/api";
+import { useLocationMutations } from "@/hooks/queries/UseLocations";
+import { useLocations } from "@/hooks/queries/UseLocations";
+import type { CreateLocationData, Location } from "@/lib/Api";
 import { toast } from "sonner";
 
 export default function LocationsPage() {
@@ -97,8 +96,7 @@ export default function LocationsPage() {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <TextureButton
                   variant="primary"

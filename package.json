@@ -18,6 +18,7 @@
     "start:docs": "pnpm --filter docs start -p 8080",
     "start:home": "pnpm --filter home start -p 8080",
     "typecheck": "turbo typecheck",
+    "storybook": "pnpm --filter storybook dev",
     "build:desktop": "node apps/desktop/build.mjs",
     "dev:desktop": "node apps/desktop/build.mjs --dev"
   },

@@ -1,9 +1,9 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
-import type { CpuCoreGridProps } from "../dashboard-cards-types/types";
+import type { CpuCoreGridProps } from "../DashboardCardsTypes/Types";
 
 const CpuCoreGrid = ({ cores, isOffline }: CpuCoreGridProps): JSX.Element => {
   const getUsageColor = (percentage: number): string => {

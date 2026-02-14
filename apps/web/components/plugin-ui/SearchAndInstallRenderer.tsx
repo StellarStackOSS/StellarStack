@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { type JSX, useState } from "react";
 import type { SearchAndInstallSchema } from "@stellarstack/plugin-sdk";
-import { usePluginAction } from "@/hooks/queries/use-plugin-actions";
-import { pluginsApi } from "@/lib/api";
+import { usePluginAction } from "@/hooks/queries/UsePluginActions";
+import { pluginsApi } from "@/lib/Api";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
 import Badge from "@stellarUI/components/Badge/Badge";
@@ -13,7 +13,7 @@ import Dialog, {
   DialogHeader,
   DialogTitle,
 } from "@stellarUI/components/Dialog/Dialog";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { BsSearch, BsArrowClockwise, BsExclamationTriangle } from "react-icons/bs";
 
 // ============================================
@@ -42,12 +42,12 @@ interface MetadataConfig {
 // Component
 // ============================================
 
-export function SearchAndInstallRenderer({
+export const SearchAndInstallRenderer = ({
   schema,
   pluginId,
   serverId,
   pluginConfig,
-}: SearchAndInstallRendererProps) {
+}: SearchAndInstallRendererProps): JSX.Element => {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
@@ -134,7 +134,7 @@ export function SearchAndInstallRenderer({
   // Render
   // ============================================
 
-  const resultCard = schema.fields.resultCard as any;
+  const resultCard = schema.fields.resultCard;
 
   return (
     <div className="space-y-4">
@@ -168,7 +168,7 @@ export function SearchAndInstallRenderer({
             className="cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3 transition-all hover:border-white/20 hover:bg-white/10"
             onClick={() => handleViewDetails(item)}
           >
-            {resultCard.image && item[resultCard.image] && (
+            {resultCard.image && !!item[resultCard.image] && (
               <div className="mb-2 aspect-video overflow-hidden rounded bg-gray-900">
                 <img
                   src={String(item[resultCard.image])}
@@ -180,12 +180,12 @@ export function SearchAndInstallRenderer({
             <h3 className="line-clamp-2 font-semibold text-white">
               {String(item[resultCard.title])}
             </h3>
-            {resultCard.subtitle && item[resultCard.subtitle] && (
+            {resultCard.subtitle && !!item[resultCard.subtitle] && (
               <p className="line-clamp-1 text-xs text-gray-400">
                 {String(item[resultCard.subtitle])}
               </p>
             )}
-            {resultCard.description && item[resultCard.description] && (
+            {resultCard.description && !!item[resultCard.description] && (
               <p className="mt-1 line-clamp-2 text-xs text-gray-500">
                 {String(item[resultCard.description])}
               </p>
@@ -210,12 +210,12 @@ export function SearchAndInstallRenderer({
             <DialogHeader>
               <DialogTitle>{String(selectedItem[resultCard.title])}</DialogTitle>
               <DialogDescription>
-                {String(selectedItem[resultCard.subtitle] || "Item details")}
+                {resultCard.subtitle ? String(selectedItem[resultCard.subtitle]) : "Item details"}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 p-4">
-              {resultCard.image && selectedItem[resultCard.image] && (
+              {resultCard.image && !!selectedItem[resultCard.image] && (
                 <div className="aspect-video overflow-hidden rounded bg-gray-900">
                   <img
                     src={String(selectedItem[resultCard.image])}
@@ -225,7 +225,7 @@ export function SearchAndInstallRenderer({
                 </div>
               )}
 
-              {resultCard.description && selectedItem[resultCard.description] && (
+              {resultCard.description && !!selectedItem[resultCard.description] && (
                 <p className="text-sm text-gray-300">
                   {String(selectedItem[resultCard.description])}
                 </p>
@@ -276,13 +276,13 @@ export function SearchAndInstallRenderer({
       )}
     </div>
   );
-}
+};
 
 // ============================================
 // Helpers
 // ============================================
 
-function formatMetadataValue(value: unknown, format?: string): string {
+const formatMetadataValue = (value: unknown, format?: string): string => {
   if (value === null || value === undefined) {
     return "—";
   }
@@ -295,4 +295,4 @@ function formatMetadataValue(value: unknown, format?: string): string {
     default:
       return String(value);
   }
-}
+};

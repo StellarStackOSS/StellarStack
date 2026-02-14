@@ -3,8 +3,8 @@
 import { memo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarInset, SidebarProvider } from "@stellarUI/components/Sidebar/Sidebar";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
-import { cn } from "@stellarUI/lib/utils";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
+import { cn } from "@stellarUI/lib/Utils";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar/UnifiedSidebar";
 
 // Memoized background component to prevent re-renders
@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div className={cn("flex min-h-svh items-center justify-center bg-[#0b0b0a]")}>
+      <div className={cn("flex min-h-svh items-center justify-center bg-background")}>
         <PersistentBackground />
         <div className={cn("relative z-10 text-sm tracking-wider text-zinc-500 uppercase")}>
           Loading...

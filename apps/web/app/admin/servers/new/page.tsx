@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Tabs, { TabsContent, TabsList, TabsTrigger } from "@stellarUI/components/Tabs/Tabs";
@@ -19,13 +18,13 @@ import {
   BsServer,
   BsGear,
 } from "react-icons/bs";
-import { useBlueprints } from "@/hooks/queries/use-blueprints";
-import { useNode, useNodes } from "@/hooks/queries/use-nodes";
-import { useServerMutations } from "@/hooks/queries/use-servers";
-import { useUsers } from "@/hooks/queries/use-users";
-import type { CreateServerData, BlueprintVariable } from "@/lib/api";
+import { useBlueprints } from "@/hooks/queries/UseBlueprints";
+import { useNode, useNodes } from "@/hooks/queries/UseNodes";
+import { useServerMutations } from "@/hooks/queries/UseServers";
+import { useUsers } from "@/hooks/queries/UseUsers";
+import type { CreateServerData, BlueprintVariable } from "@/lib/Api";
 import { toast } from "sonner";
-import GetErrorMessage from "@/lib/error-utils";
+import GetErrorMessage from "@/lib/ErrorUtils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
@@ -180,7 +179,6 @@ export default function NewServerPage() {
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
                 <TextureButton
                   variant="minimal"
                   size="sm"
