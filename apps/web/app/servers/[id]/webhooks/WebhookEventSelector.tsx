@@ -1,7 +1,7 @@
 "use client";
 
-import { type WebhookEvent } from "@/lib/api";
-import { cn } from "@stellarUI/lib/utils";
+import { type WebhookEvent } from "@/lib/Api";
+import { cn } from "@stellarUI/lib/Utils";
 import { BsCheck2 } from "react-icons/bs";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Checkbox from "@stellarUI/components/Checkbox/Checkbox";

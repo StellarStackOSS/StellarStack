@@ -1,13 +1,13 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard from "../UsageCard/UsageCard";
 import type {
   CardProps,
   ContainerControlsCardLabels,
   ContainerStatus,
-} from "../dashboard-cards-types/types";
+} from "../DashboardCardsTypes/Types";
 
 interface InstanceNameCardProps extends CardProps {
   instanceName: string;

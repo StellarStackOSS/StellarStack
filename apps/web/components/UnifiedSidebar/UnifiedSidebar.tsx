@@ -13,6 +13,7 @@ import Sidebar, {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@stellarUI/components/Sidebar/Sidebar";
 import {
   CommandDialog,
@@ -63,14 +64,16 @@ import {
   Search01Icon,
   PuzzleIcon,
 } from "hugeicons-react";
-import { cn } from "@stellarUI/lib/utils";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
+import { cn } from "@stellarUI/lib/Utils";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { AnimatePresence, motion } from "framer-motion";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useServerWebSocket } from "@/hooks/useServerWebSocket";
-import { WaveText } from "@/components/WaveText/WaveText";
-import { useServers } from "@/hooks/queries/use-servers";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { useServerWebSocket } from "@/hooks/UseServerWebSocket";
+import { WaveText } from "@stellarUI/components/WaveText/WaveText";
+import { useServers } from "@/hooks/queries/UseServers";
+import { useBackups } from "@/hooks/queries/UseBackups";
+import { useSchedules } from "@/hooks/queries/UseSchedules";
 
 type SidebarVariant = "account" | "admin" | "app";
 
@@ -90,7 +93,7 @@ const adminNavItems = [
   { title: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
-const appNavItems = [
+export const appNavItems = [
   { title: "Overview", icon: GridIcon, href: "/overview" },
   { title: "Files", icon: Folder01Icon, href: "/files" },
   { title: "Backups", icon: FolderCloudIcon, href: "/backups" },
@@ -158,9 +161,10 @@ interface NavItemProps {
   variant: SidebarVariant;
   isHighlighted: boolean;
   onHover: (title: string | null) => void;
+  badge?: string;
 }
 
-const NavItem = ({ item, fullHref, isActive, variant, isHighlighted, onHover }: NavItemProps) => {
+const NavItem = ({ item, fullHref, isActive, variant, isHighlighted, onHover, badge }: NavItemProps) => {
   const Icon = item.icon;
 
   return (
@@ -214,6 +218,11 @@ const NavItem = ({ item, fullHref, isActive, variant, isHighlighted, onHover }: 
           >
             {item.title}
           </span>
+          {badge && (
+            <span className="ml-auto text-[10px] font-mono text-accent opacity-70">
+              {badge}
+            </span>
+          )}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -253,6 +262,10 @@ export const UnifiedSidebar = () => {
     : pathname.startsWith("/admin")
       ? "admin"
       : "app";
+
+  // Fetch backup and schedule counts for badge display (app variant only)
+  const { data: backups = [] } = useBackups(variant === "app" ? serverId : undefined);
+  const { data: schedulesList = [] } = useSchedules(variant === "app" ? serverId : undefined);
 
   const user = authUser
     ? {
@@ -322,6 +335,20 @@ export const UnifiedSidebar = () => {
       return href;
     };
 
+    // Compute badges for app variant nav items
+    const getBadge = (title: string): string | undefined => {
+      if (variant !== "app") return undefined;
+      if (title === "Backups") {
+        const completedCount = backups.filter((b) => b.status === "COMPLETED").length;
+        const limit = currentServer?.backupLimit ?? 0;
+        return `${completedCount}/${limit}`;
+      }
+      if (title === "Schedules") {
+        return `${schedulesList.length}`;
+      }
+      return undefined;
+    };
+
     return (
       <SidebarGroup>
         <SidebarGroupLabel
@@ -351,6 +378,7 @@ export const UnifiedSidebar = () => {
                   variant={variant}
                   isHighlighted={isHighlighted}
                   onHover={setHoveredItem}
+                  badge={getBadge(item.title)}
                 />
               );
             })}
@@ -394,9 +422,10 @@ export const UnifiedSidebar = () => {
     <Sidebar className={cn("")}>
       {/* Logo / Server Switcher Area */}
       {variant === "app" ? (
+        <div className="flex items-center justify-between border-b border-zinc-200/10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center justify-between gap-2 border-b border-zinc-200/10 px-4 py-4 text-left transition-colors outline-none hover:bg-zinc-800/50 focus:outline-none focus-visible:outline-none">
+            <button className="flex w-full items-center justify-between gap-2 px-4 py-4 text-left transition-colors outline-none hover:bg-zinc-800/50 focus:outline-none focus-visible:outline-none">
               <div className="flex items-center gap-2 overflow-hidden">
                 <img src="/logo_small_white.png" alt="logo" className="h-5 w-5 min-w-5" />
                 <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
@@ -416,7 +445,7 @@ export const UnifiedSidebar = () => {
             side="bottom"
             sideOffset={0}
             style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
-            className="border-zinc-700/50 bg-[#0f0f0f] shadow-xl shadow-black/50"
+            className="border-zinc-700/50 bg-secondary shadow-xl shadow-black/50"
           >
             <DropdownMenuLabel className="px-3 py-2 text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
               Switch Server
@@ -447,13 +476,16 @@ export const UnifiedSidebar = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <SidebarTrigger className="mr-3 shrink-0 text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95 group-data-[collapsible=icon]:hidden" />
+        </div>
       ) : (
         <>
-          <div className="flex w-full flex-row items-center gap-2 px-4 py-4">
+          <div className="flex w-full flex-row items-center justify-between gap-2 px-4 py-4">
             <div className="text-md flex flex-row items-center gap-2 text-zinc-200">
               <img src="/logo_small_white.png" alt="logo" className="h-5 w-5 min-w-5" />
               <span className="group-data-[collapsible=icon]:hidden">StellarStack</span>
             </div>
+            <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
           </div>
           <SidebarHeader className={cn("border-b border-zinc-200/10 p-4")}>
             {renderHeader()}
@@ -526,7 +558,7 @@ export const UnifiedSidebar = () => {
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.15, ease: "easeInOut" }}
                 className={cn(
-                  "absolute right-0 bottom-[120%] left-0 z-50 mb-1 rounded-lg border border-zinc-700/50 bg-[#0f0f0f] shadow-lg shadow-black/40"
+                  "absolute right-0 bottom-[120%] left-0 z-50 mb-1 rounded-lg border border-zinc-700/50 bg-secondary shadow-lg shadow-black/40"
                 )}
               >
                 <div>

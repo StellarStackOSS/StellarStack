@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import {TextureButton} from "@stellarUI/components/TextureButton";
 import { ArrowLeft } from "lucide-react";
 

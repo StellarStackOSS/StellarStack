@@ -1,10 +1,10 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
-import type { CardProps, NodeData, SystemInfoCardLabels } from "../dashboard-cards-types/types";
+import type { CardProps, NodeData, SystemInfoCardLabels } from "../DashboardCardsTypes/Types";
 
 interface SystemInformationCardProps extends CardProps {
   nodeData: NodeData | null;

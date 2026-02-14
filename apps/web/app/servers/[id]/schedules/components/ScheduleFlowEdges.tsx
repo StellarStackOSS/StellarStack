@@ -4,6 +4,12 @@ import { EdgeProps, getBezierPath, useReactFlow } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { SVGProps } from "react";
 
+/** Data carried on schedule flow edges. */
+interface ScheduleEdgeData extends Record<string, unknown> {
+  timeOffset?: number;
+  edgeIndex?: number;
+}
+
 // Time Delay Edge - Blue with animated pulse and time badge
 export const TimeDelayEdge = (props: EdgeProps) => {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd } =
@@ -19,8 +25,9 @@ export const TimeDelayEdge = (props: EdgeProps) => {
   });
 
   // Extract time offset and edge index from edge data
-  const timeOffset = (props.data as any)?.timeOffset || 0;
-  const edgeIndex = (props.data as any)?.edgeIndex || 0;
+  const edgeData = props.data as ScheduleEdgeData | undefined;
+  const timeOffset = edgeData?.timeOffset || 0;
+  const edgeIndex = edgeData?.edgeIndex || 0;
 
   // Delay for edge: 1.5 + 3*edgeIndex (pulses after start and between tasks)
   const pulseDelay = 1.5 + 3 * edgeIndex;
@@ -107,7 +114,8 @@ export const OnCompletionEdge = (props: EdgeProps) => {
   });
 
   // Extract edge index from edge data to stagger animation
-  const edgeIndex = (props.data as any)?.edgeIndex || 0;
+  const edgeData = props.data as ScheduleEdgeData | undefined;
+  const edgeIndex = edgeData?.edgeIndex || 0;
   const pulseDelay = 1.5 + 3 * edgeIndex;
 
   return (
@@ -159,7 +167,7 @@ export const OnCompletionEdge = (props: EdgeProps) => {
 };
 
 // Helper function to format time offset
-function formatTime(seconds: number): string {
+const formatTime = (seconds: number): string => {
   if (seconds < 60) {
     return `${seconds}s`;
   }
@@ -169,4 +177,4 @@ function formatTime(seconds: number): string {
     return `${minutes}m`;
   }
   return `${minutes}m ${remainingSeconds}s`;
-}
+};

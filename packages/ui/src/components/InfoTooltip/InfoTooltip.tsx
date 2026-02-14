@@ -1,7 +1,7 @@
 "use client";
 
 import { FiInfo } from "react-icons/fi";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import Tooltip, {
   TooltipContent,
   TooltipTrigger,

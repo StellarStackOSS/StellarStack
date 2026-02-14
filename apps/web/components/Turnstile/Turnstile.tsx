@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile as TurnstileWidget } from "@marsidev/react-turnstile";
-import { useEffect, useState } from "react";
+import { type JSX, useEffect, useState } from "react";
 
 interface TurnstileProps {
   onVerify: (token: string) => void;
@@ -9,7 +9,7 @@ interface TurnstileProps {
   onExpire?: () => void;
 }
 
-export function Turnstile({ onVerify, onError, onExpire }: TurnstileProps) {
+export const Turnstile = ({ onVerify, onError, onExpire }: TurnstileProps): JSX.Element | null => {
   const [siteKey, setSiteKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,4 +37,4 @@ export function Turnstile({ onVerify, onError, onExpire }: TurnstileProps) {
       />
     </div>
   );
-}
+};

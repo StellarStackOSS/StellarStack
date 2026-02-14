@@ -1,12 +1,13 @@
 "use client";
 
+import type { JSX } from "react";
 import { useUploads } from "@/components/providers/UploadProvider/UploadProvider";
 import { ArrowUp, Upload, X } from "lucide-react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { motion } from "framer-motion";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 
-export function UploadProgressIndicator() {
+export const UploadProgressIndicator = (): JSX.Element | null => {
   const { uploads, removeUpload } = useUploads();
 
   if (uploads.length === 0) return null;
@@ -57,4 +58,4 @@ export function UploadProgressIndicator() {
       </div>
     </motion.div>
   );
-}
+};

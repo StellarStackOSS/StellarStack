@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useCommandMenu } from "./hooks/useCommandMenu";
-import { useCommandContext } from "./hooks/useCommandContext";
+import { useCommandMenu } from "./hooks/UseCommandMenu";
+import { useCommandContext } from "./hooks/UseCommandContext";
 import {
   CommandDialog,
   CommandInput,
@@ -18,12 +18,12 @@ import {
   CommandContext,
   type CommandMenuState,
 } from "./commands/types";
-import { navigationCommands } from "./commands/navigation";
-import { serverActionCommands } from "./commands/server-actions";
-import { adminActionCommands } from "./commands/admin-actions";
-import { accountActionCommands } from "./commands/account-actions";
+import { navigationCommands } from "./commands/Navigation";
+import { serverActionCommands } from "./commands/ServerActions";
+import { adminActionCommands } from "./commands/AdminActions";
+import { accountActionCommands } from "./commands/AccountActions";
 import { CommandForms } from "./CommandForms";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 

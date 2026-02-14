@@ -4,7 +4,7 @@ import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Check, Minus } from "lucide-react";
 
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Checkbox = ({ className, ...props }: React.ComponentProps<typeof CheckboxPrimitive.Root>) => {
   return (
@@ -20,7 +20,7 @@ const Checkbox = ({ className, ...props }: React.ComponentProps<typeof CheckboxP
         data-slot="checkbox-indicator"
         className="grid place-content-center text-current transition-none"
       >
-        {(props as any).checked === "indeterminate" ? (
+        {props.checked === "indeterminate" ? (
           <Minus className="size-3.5" />
         ) : (
           <Check className="size-3.5" />

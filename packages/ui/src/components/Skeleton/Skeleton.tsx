@@ -1,4 +1,4 @@
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils"
 
 const Skeleton = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (

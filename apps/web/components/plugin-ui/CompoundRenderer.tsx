@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import type { CompoundSchema } from "@stellarstack/plugin-sdk";
 import { SchemaRenderer } from "./SchemaRenderer";
 
@@ -10,12 +11,12 @@ interface CompoundRendererProps {
   pluginConfig?: Record<string, unknown>;
 }
 
-export function CompoundRenderer({
+export const CompoundRenderer = ({
   schema,
   pluginId,
   serverId,
   pluginConfig,
-}: CompoundRendererProps) {
+}: CompoundRendererProps): JSX.Element => {
   const layoutClass =
     schema.layout === "horizontal"
       ? "grid grid-cols-2 gap-4"
@@ -45,4 +46,4 @@ export function CompoundRenderer({
       ))}
     </div>
   );
-}
+};

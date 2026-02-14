@@ -2,11 +2,9 @@
 
 import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
 import Badge from "@stellarUI/components/Badge/Badge";
 import {
@@ -21,16 +19,17 @@ import {
   BsMegaphone,
   BsTree,
 } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useServerTabPlugins } from "@/hooks/queries/use-plugins";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { useServerTabPlugins } from "@/hooks/queries/UsePlugins";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import { CurseForgeTab } from "./CurseForgeTab";
 import { ModrinthTab } from "./ModrinthTab";
 import { SteamWorkshopTab } from "./SteamWorkshopTab";
 import { AnnouncerTab } from "./AnnouncerTab";
 import { SchemaRenderer } from "@/components/plugin-ui/SchemaRenderer";
-import type { PluginInfo } from "@/lib/api";
+import type { UISchema } from "@stellarstack/plugin-sdk";
+import type { PluginInfo } from "@/lib/Api";
 
 const PLUGIN_ICONS: Record<string, React.ReactNode> = {
   flame: <BsBox className="h-5 w-5 text-orange-400" />,
@@ -104,7 +103,7 @@ const ServerPluginsPage = () => {
     }
 
     // Check if tab has a declarative UI schema (new system)
-    const uiSchema = (activeTab as any)?.uiSchema;
+    const uiSchema = (activeTab as { uiSchema?: UISchema })?.uiSchema;
     if (uiSchema) {
       return (
         <SchemaRenderer
@@ -140,12 +139,11 @@ const ServerPluginsPage = () => {
 
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
-      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
         {/* Header */}
         <FadeIn delay={0}>
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div>
                 <h1 className="text-lg font-semibold text-zinc-100">Extensions</h1>
                 <p className="text-xs text-zinc-500">Extensions and integrations for this server</p>
@@ -160,9 +158,9 @@ const ServerPluginsPage = () => {
           </div>
         ) : tabPlugins.length === 0 ? (
           <FadeIn delay={0.05}>
-            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Extensions</div>
-              <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] py-20 shadow-lg shadow-black/20">
+              <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background py-20 shadow-lg shadow-black/20">
                 <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
                 <h3 className="mb-2 text-sm font-medium text-zinc-400">No Extensions Available</h3>
                 <p className="max-w-sm text-center text-xs text-zinc-600">
@@ -176,7 +174,7 @@ const ServerPluginsPage = () => {
           <div className="space-y-4">
             {/* Plugin Tab Bar */}
             <FadeIn delay={0.05}>
-              <div className="flex flex-wrap gap-2 rounded-lg border border-white/5 bg-[#090909] p-2">
+              <div className="flex flex-wrap gap-2 rounded-lg border border-white/5 bg-muted p-2">
                 {tabPlugins.map((plugin) =>
                   (plugin.uiMetadata?.serverTabs || []).map((tab) => {
                     const tabId = `${plugin.pluginId}:${tab.id}`;
@@ -200,11 +198,11 @@ const ServerPluginsPage = () => {
 
             {/* Active Tab Content */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                   {activeTab?.label || "Extension"}
                 </div>
-                <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
                   {renderActiveTab()}
                 </div>
               </div>

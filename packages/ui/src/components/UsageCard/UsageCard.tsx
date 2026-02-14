@@ -1,5 +1,5 @@
 import { ComponentPropsWithoutRef, ReactNode } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { InfoTooltip } from "@stellarUI/components/InfoTooltip/InfoTooltip";
 
 type CardProps = ComponentPropsWithoutRef<"div">;

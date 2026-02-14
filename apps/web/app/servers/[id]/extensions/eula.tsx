@@ -10,10 +10,10 @@ import Dialog, {
   DialogFooter,
 } from "@stellarUI/components/Dialog/Dialog";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { toast } from "sonner";
-import { servers } from "@/lib/api";
-import type { ConsoleLine } from "@/hooks/useServerWebSocket";
+import { servers } from "@/lib/Api";
+import type { ConsoleLine } from "@/hooks/UseServerWebSocket";
 
 // Patterns that indicate EULA acceptance is required
 const EULA_PATTERNS = [

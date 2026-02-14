@@ -14,8 +14,8 @@ import Dialog, {
 } from '@stellarUI/components/Dialog/Dialog';
 import { BsDownload, BsCheckCircle, BsExclamationTriangle, BsShield, BsX } from 'react-icons/bs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { pluginsApi } from '@/lib/api';
-import type { PluginInfo } from '@/lib/api';
+import { pluginsApi } from "@/lib/Api";
+import type { PluginInfo } from "@/lib/Api";
 
 interface SecurityReport {
   score: number;

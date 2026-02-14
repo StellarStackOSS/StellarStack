@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import type { Server } from "@/lib/api";
+import type { Server } from "@/lib/Api";
 
 /** Category types for command grouping */
 export type CommandCategory =

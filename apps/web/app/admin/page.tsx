@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { Cpu, MapPin, Package, Server, Settings, Users } from "lucide-react";
 import Link from "next/link";
-import type { Blueprint, Location, Node, User } from "@/lib/api";
-import type { Server as ServerType } from "@/lib/api";
-import { account, blueprints, locations, nodes, servers } from "@/lib/api";
+import type { Blueprint, Location, Node, User } from "@/lib/Api";
+import type { Server as ServerType } from "@/lib/Api";
+import { account, blueprints, locations, nodes, servers } from "@/lib/Api";
 import { BsCpu, BsGeoAlt, BsServer, BsBox, BsPeople, BsGear, BsPlus } from "react-icons/bs";
 
 interface StatCardProps {
@@ -126,12 +125,6 @@ export default function AdminOverviewPage() {
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
-          <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-            </div>
-          </FadeIn>
-
           {/* Stats Grid */}
           <FadeIn delay={0.05}>
             <div className="mb-4 flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">

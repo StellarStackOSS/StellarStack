@@ -1,7 +1,7 @@
 import React from "react";
 import {SiDiscord, SiGithub, SiMintlify} from "react-icons/si";
 import Link from "next/link";
-import {cn} from "@stellarUI/lib/utils";
+import {cn} from "@stellarUI/lib/Utils";
 
 const Header = () => {
     return (

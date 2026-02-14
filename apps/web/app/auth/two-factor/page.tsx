@@ -2,11 +2,11 @@
 
 import { type JSX, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
 import { BsArrowLeft, BsShieldCheck } from "react-icons/bs";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/AuthClient";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
 

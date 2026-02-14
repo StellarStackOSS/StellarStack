@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import { type UISchema } from "@stellarstack/plugin-sdk";
 import { SearchAndInstallRenderer } from "./SearchAndInstallRenderer";
 import { FormRenderer } from "./FormRenderer";
@@ -27,12 +28,12 @@ interface SchemaRendererProps {
  * Generic schema renderer that renders any plugin UI from a declarative schema.
  * Routes to specialized renderers based on schema type.
  */
-export function SchemaRenderer({
+export const SchemaRenderer = ({
   schema,
   pluginId,
   serverId,
   pluginConfig,
-}: SchemaRendererProps) {
+}: SchemaRendererProps): JSX.Element => {
   const commonProps = {
     pluginId,
     serverId,
@@ -92,6 +93,6 @@ export function SchemaRenderer({
       const _exhaustive: never = schema;
       return _exhaustive;
   }
-}
+};
 
 export default SchemaRenderer;

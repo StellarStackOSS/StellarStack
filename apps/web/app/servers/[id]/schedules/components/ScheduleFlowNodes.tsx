@@ -3,6 +3,7 @@
 import {
   Handle,
   Position,
+  Node,
   NodeProps,
 } from "@xyflow/react";
 import { motion } from "framer-motion";
@@ -19,16 +20,16 @@ import Label from "@stellarUI/components/Label/Label";
 import { JSX } from "react";
 
 const nodeBaseClasses =
-  "relative flex flex-col rounded-lg border p-4 transition-colors border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20";
+  "relative flex flex-col rounded-lg border p-4 transition-colors border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20";
 
 // Node data interfaces
-export interface ScheduleStartNodeData {
+export interface ScheduleStartNodeData extends Record<string, unknown> {
   scheduleName: string;
   cronExpression: string;
   formattedCron: string;
 }
 
-export interface ScheduleTaskNodeData {
+export interface ScheduleTaskNodeData extends Record<string, unknown> {
   id: string;
   sequence: number;
   action: string;
@@ -37,9 +38,14 @@ export interface ScheduleTaskNodeData {
   timeOffset: number;
 }
 
-export interface ScheduleEndNodeData {
+export interface ScheduleEndNodeData extends Record<string, unknown> {
   taskCount: number;
 }
+
+/** Node type wrappers for NodeProps generics. */
+type ScheduleStartNode = Node<ScheduleStartNodeData, "scheduleStart">;
+type ScheduleTaskNode = Node<ScheduleTaskNodeData, "scheduleTask">;
+type ScheduleEndNode = Node<ScheduleEndNodeData, "scheduleEnd">;
 
 // Action metadata
 const actionConfig: Record<
@@ -71,7 +77,7 @@ const actionConfig: Record<
 // Schedule Start Node
 export const ScheduleStartNode = ({
   data,
-}: NodeProps<any>) => {
+}: NodeProps<ScheduleStartNode>) => {
   return (
     <motion.div
       data-id="start-node"
@@ -114,7 +120,7 @@ export const ScheduleStartNode = ({
 // Schedule Task Node
 export const ScheduleTaskNode = ({
   data,
-}: NodeProps<any>) => {
+}: NodeProps<ScheduleTaskNode>) => {
   const config = actionConfig[data.action] || actionConfig.command;
   const truncatedPayload = data.payload
     ? data.payload.length > 30
@@ -179,7 +185,7 @@ export const ScheduleTaskNode = ({
 // Schedule End Node
 export const ScheduleEndNode = ({
   data,
-}: NodeProps<any>) => {
+}: NodeProps<ScheduleEndNode>) => {
   // End node pulses after all tasks: delay = 3 + 3*taskCount
   const pulseDelay = 3 + 3 * data.taskCount;
 

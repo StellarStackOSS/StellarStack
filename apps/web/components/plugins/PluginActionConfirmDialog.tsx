@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { type JSX, useState } from "react";
 import { BsExclamationTriangle, BsShieldCheck, BsCheckCircle } from "react-icons/bs";
 import Dialog, {
   DialogContent,
@@ -27,7 +27,7 @@ export interface PluginActionConfirmDialogProps {
   warnings?: string[]; // Additional warnings to display
 }
 
-export function PluginActionConfirmDialog({
+export const PluginActionConfirmDialog = ({
   open,
   onOpenChange,
   title,
@@ -40,7 +40,7 @@ export function PluginActionConfirmDialog({
   onConfirm,
   isLoading = false,
   warnings = [],
-}: PluginActionConfirmDialogProps) {
+}: PluginActionConfirmDialogProps): JSX.Element => {
   const [localBackupEnabled, setLocalBackupEnabled] = useState(backupEnabled);
 
   const handleBackupToggle = (enabled: boolean) => {
@@ -174,4 +174,4 @@ export function PluginActionConfirmDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};

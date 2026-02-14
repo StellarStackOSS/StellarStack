@@ -3,9 +3,8 @@
 import { type JSX, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import Dialog, {
   DialogContent,
@@ -32,11 +31,11 @@ import {
   BsGlobe,
   BsLayers,
 } from "react-icons/bs";
-import type { Blueprint } from "@/lib/api";
-import { blueprints, servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import type { Blueprint } from "@/lib/Api";
+import { blueprints, servers } from "@/lib/Api";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import { toast } from "sonner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 
@@ -525,17 +524,10 @@ const SettingsPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 {hasChanges && (
                   <TextureButton variant="minimal" size="sm" onClick={handleReset}>
@@ -565,9 +557,9 @@ const SettingsPage = (): JSX.Element | null => {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* General Settings */}
             <FadeIn delay={0.05}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">General</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
                   <div className="space-y-4">
                     <div>
                       <Label className="text-xs text-zinc-500">Server Name</Label>
@@ -614,9 +606,9 @@ const SettingsPage = (): JSX.Element | null => {
 
             {/* Resource Limits */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Resource Limits</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <div className="text-xs tracking-wider text-zinc-500 uppercase">CPU</div>
@@ -649,12 +641,12 @@ const SettingsPage = (): JSX.Element | null => {
 
             {/* Danger Zone - Full Width */}
             <FadeIn delay={0.15} className="lg:col-span-2">
-              <div className="flex h-full flex-col rounded-lg border border-red-900/30 bg-[#090909] p-1 pt-2">
+              <div className="flex h-full flex-col rounded-lg border border-red-900/30 bg-muted p-1 pt-2">
                 <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                   <BsExclamationTriangle className="h-3 w-3 text-red-400" />
                   <span className="text-red-400">Danger Zone</span>
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-red-900/20 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="flex flex-1 flex-col rounded-lg border border-red-900/20 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-zinc-200">Reinstall Server</h3>
@@ -761,7 +753,7 @@ const SettingsPage = (): JSX.Element | null => {
                     <h3
                       className={cn(
                         "sticky top-0 mb-2 py-1 text-[10px] font-medium tracking-wider uppercase",
-                        "bg-[#0f0f0f] text-zinc-500"
+                        "bg-secondary text-zinc-500"
                       )}
                     >
                       {region}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 

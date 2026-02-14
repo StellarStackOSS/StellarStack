@@ -1,4 +1,4 @@
-import { Server } from "@/lib/api.types";
+import { Server } from "@/lib/ApiTypes";
 import React from "react";
 import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 

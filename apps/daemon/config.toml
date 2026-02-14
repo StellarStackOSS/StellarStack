@@ -55,8 +55,8 @@ default = 0
 
 [remote]
 url = "http://localhost:3001"
-token_id = "cmkzia5zz0006llxcvln9kgzg"
-token = "3b5869e60fba5edc8fd117aafc3ad22ed6f575e1efc9c1a5007e65aad6be955a82f19a69a38c142e2cc2dfcb45c1f10c"
+token_id = "cmlipy9200001llzw7gxjs0dz"
+token = "e4e390b8cd131a767e269b783a2f0318b66611ecc3bb0c8f2c2f2d37527dc0183f62a4900942edfd9cb46e52ff66f1c3"
 timeout = 30
 boot_servers_per_page = 50
 

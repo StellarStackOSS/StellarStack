@@ -3,8 +3,7 @@
 import { useState, type JSX } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@stellarUI/lib/utils";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+import { cn } from "@stellarUI/lib/Utils";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import {
@@ -24,11 +23,11 @@ import {
   BsGlobe,
   BsTrash,
 } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { useActivity } from "@/hooks/queries/use-activity";
-import type { ActivityLog } from "@/lib/api";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
+import { useActivity } from "@/hooks/queries/UseActivity";
+import type { ActivityLog } from "@/lib/Api";
 
 // Map API event types to display configuration
 const eventConfig: Record<string, { icon: JSX.Element; label: string; color: string }> = {
@@ -297,17 +296,10 @@ const ActivityPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-zinc-500">{logs.length} activities</span>
               </div>
@@ -316,9 +308,9 @@ const ActivityPage = (): JSX.Element | null => {
 
           {/* Activity Timeline */}
           <FadeIn delay={0.05}>
-            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Activity Log</div>
-              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-20">
                     <Spinner className="h-8 w-8" />

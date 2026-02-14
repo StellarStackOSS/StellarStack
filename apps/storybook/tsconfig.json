@@ -1,0 +1,12 @@
+{
+  "extends": "@workspace/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "paths": {
+      "@stellarUI/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["stories", ".storybook"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -4,7 +4,7 @@ import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils"
 
 const Sheet = ({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) => {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;

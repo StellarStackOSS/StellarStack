@@ -1,5 +1,5 @@
 import { Loader } from "lucide-react"
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Spinner = ({ className, ...props }: React.ComponentProps<"svg">) => {
   return (

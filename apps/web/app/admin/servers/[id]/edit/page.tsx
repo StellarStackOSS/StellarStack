@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
@@ -19,8 +18,8 @@ import {
   BsTrash,
   BsPencil,
 } from "react-icons/bs";
-import { useServer, useServerMutations } from "@/hooks/queries/use-servers";
-import GetErrorMessage from "@/lib/error-utils";
+import { useServer, useServerMutations } from "@/hooks/queries/UseServers";
+import GetErrorMessage from "@/lib/ErrorUtils";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
@@ -31,8 +30,18 @@ import Select, {
   SelectValue,
 } from "@stellarUI/components/Select";
 import { toast } from "sonner";
-import type { Node } from "@/lib/api";
-import { Allocation, Blueprint, blueprints, nodes, servers } from "@/lib/api";
+import type { Node } from "@/lib/Api";
+import { Allocation, Blueprint, blueprints, nodes, servers } from "@/lib/Api";
+
+/** Status of an in-progress server transfer. */
+interface TransferStatus {
+  status: string;
+  progress: number;
+  error?: string;
+  sourceNode: { displayName: string };
+  targetNode: { displayName: string };
+  createdAt: string;
+}
 
 export default function EditServerPage() {
   const router = useRouter();
@@ -71,7 +80,7 @@ export default function EditServerPage() {
   const [selectedTargetNodeId, setSelectedTargetNodeId] = useState<string>("");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
-  const [transferStatus, setTransferStatus] = useState<any>(null);
+  const [transferStatus, setTransferStatus] = useState<TransferStatus | null>(null);
   const [showTransferHistory, setShowTransferHistory] = useState(false);
 
   // Track if form has been initialized to prevent polling from overwriting user edits
@@ -337,7 +346,6 @@ export default function EditServerPage() {
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
                 <TextureButton
                   variant="minimal"
                   size="sm"

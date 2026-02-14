@@ -1,4 +1,4 @@
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 interface NetworkBarProps {
   download: number; // percentage 0-100

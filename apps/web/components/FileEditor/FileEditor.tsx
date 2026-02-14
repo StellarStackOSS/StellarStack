@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import {
   detectLanguage,
   getExtensionsForFile,
   SupportedLanguage,
-} from "@/lib/codemirror-extensions";
+} from "@/lib/CodemirrorExtensions";
 
 export interface CodeEditorProps {
   /** Current content of the editor */

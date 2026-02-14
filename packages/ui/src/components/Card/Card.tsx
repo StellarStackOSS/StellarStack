@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils"
 
 const Card = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (

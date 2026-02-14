@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
 
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils"
 
 interface SliderProps extends React.ComponentProps<typeof SliderPrimitive.Root> {
 }

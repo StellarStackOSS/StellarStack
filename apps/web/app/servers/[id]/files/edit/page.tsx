@@ -5,18 +5,16 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { ArrowLeft, File, Loader2, Save } from "lucide-react";
-import { cn } from "@stellarUI/lib/utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { detectLanguage, FileEditor } from "@/components/FileEditor/FileEditor";
-import { useFileContent, useFileMutations } from "@/hooks/queries/use-files";
+import { useFileContent, useFileMutations } from "@/hooks/queries/UseFiles";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import TextureBadge from "@stellarUI/components/TextureBadge/TextureBadge";
 import { MediaViewer } from "@/components/MediaViewer/MediaViewer";
-import { getMediaType } from "@/lib/media-utils";
-import { getApiEndpoint } from "@/lib/public-env";
-import { servers } from "@/lib/api";
+import { GetMediaType } from "@/lib/MediaUtils";
+import { GetApiEndpoint } from "@/lib/PublicEnv";
+import { servers } from "@/lib/Api";
 
 export default function FileEditPage() {
   const params = useParams();
@@ -94,7 +92,7 @@ export default function FileEditPage() {
 
     const loadBlobUrl = async () => {
       try {
-        const mediaType = getMediaType(fileName);
+        const mediaType = GetMediaType(fileName);
         if (mediaType !== "unknown" && !fileName.endsWith(".svg")) {
           // For binary media files, use the download endpoint with token
           try {
@@ -102,7 +100,7 @@ export default function FileEditPage() {
 
             if (cancelled) return;
 
-            const downloadUrl = getApiEndpoint(
+            const downloadUrl = GetApiEndpoint(
               `/api/servers/${serverId}/files/download?token=${token}`
             );
             const response = await fetch(downloadUrl, {
@@ -163,22 +161,17 @@ export default function FileEditPage() {
 
   const language = detectLanguage(fileName);
 
-  const mediaType = getMediaType(fileName);
+  const mediaType = GetMediaType(fileName);
   const isMedia = mediaType !== "unknown";
 
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
                 <TextureButton variant="minimal" size="sm" onClick={handleBack}>
                   <ArrowLeft className="h-4 w-4" />
                   <span className="text-xs tracking-wider uppercase">Back</span>
@@ -216,12 +209,12 @@ export default function FileEditPage() {
 
           {/* Editor Card */}
           <FadeIn delay={0.05} className="flex flex-1 flex-col">
-            <div className="flex flex-1 flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+            <div className="flex flex-1 flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
               <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                 <File className="h-3 w-3" />
                 Editor
               </div>
-              <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+              <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
                 {isLoading ? (
                   <div className="flex flex-1 items-center justify-center py-12">
                     <Spinner />
