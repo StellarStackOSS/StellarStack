@@ -1,8 +1,8 @@
 # Docker Image Build & Release Pipeline
-# Equivalent to the old .github/workflows/docker-build.yml
 #
-# Triggered by release tags (v*), repository dispatch, or manual trigger.
-# Builds API and Web Docker images, pushes to Docker Hub, signs with Cosign.
+# Triggered by release tags (v*), pipeline triggers, or manual.
+# Builds API and Web Docker images, pushes to GitLab Container Registry,
+# signs with Cosign, and generates SBOM.
 
 .docker-build-rules:
   rules:
@@ -28,7 +28,6 @@ docker-build:
         DOCKERFILE: docker/cores/web/Dockerfile
         IMAGE_NAME: stellarstack-web
   variables:
-    DOCKER_HUB_ORG: stellarstackoss
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
     - apk add --no-cache curl bash coreutils jq
@@ -43,10 +42,10 @@ docker-build:
         echo "No version found" && exit 1
       fi
       TAG="v${VERSION}"
-      IMAGE="${DOCKER_HUB_ORG}/${IMAGE_NAME}"
+      IMAGE="${CI_REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}"
 
-    # Login to Docker Hub
-    - echo "$DOCKER_HUB_TOKEN" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+    # Login to GitLab Container Registry
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 
     # Build
     - |
@@ -60,6 +59,7 @@ docker-build:
         --label "org.opencontainers.image.title=${IMAGE_NAME}" \
         --label "org.opencontainers.image.version=${VERSION}" \
         --label "org.opencontainers.image.vendor=StellarStack" \
+        --label "org.opencontainers.image.source=${CI_PROJECT_URL}" \
         -f "$DOCKERFILE" .
 
     # Push
