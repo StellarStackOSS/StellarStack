@@ -84,6 +84,40 @@ code-analysis:
     - pnpm jscpd --pattern "apps/api/src/**/*.ts" --pattern "apps/web/**/*.{ts,tsx}" --pattern "apps/home/**/*.{ts,tsx}" --pattern "packages/ui/src/**/*.{ts,tsx}" --ignore "**/node_modules/**" --ignore "**/.next/**" --ignore "**/dist/**" --ignore "**/stories/**" --threshold 5
     - pnpm format:check
 
+# ─── Railway helper functions ──────────────────────────────────────
+# Uses GraphQL API for environment management (avoids railway link issues)
+# and railway CLI with --project flag for deploys.
+
+.railway-deploy-script: &railway-deploy-script
+  - npm install -g @railway/cli
+  - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+  - RAILWAY_API="https://backboard.railway.com/graphql/v2"
+  - |
+    railway_gql() {
+      curl -sf -X POST "$RAILWAY_API" \
+        -H "Authorization: Bearer $RAILWAY_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$1"
+    }
+  - |
+    get_env_id() {
+      railway_gql "{\"query\":\"{ environments(projectId: \\\"$RAILWAY_PROJECT_ID\\\") { edges { node { id name } } } }\"}" \
+        | jq -r ".data.environments.edges[] | select(.node.name == \"$1\") | .node.id"
+    }
+  - |
+    delete_env() {
+      ENV_ID=$(get_env_id "$1")
+      if [ -n "$ENV_ID" ]; then
+        railway_gql "{\"query\":\"mutation { environmentDelete(id: \\\"$ENV_ID\\\") }\"}" > /dev/null
+        echo "Deleted environment $1"
+      fi
+    }
+  - |
+    create_env() {
+      railway_gql "{\"query\":\"mutation { environmentCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\" }) { id name } }\"}" \
+        | jq -r '.data.environmentCreate.name'
+    }
+
 # ─── Deploy Preview (Railway) ──────────────────────────────────────
 deploy-preview:
   stage: deploy
@@ -92,15 +126,13 @@ deploy-preview:
   variables:
     RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
-    - npm install -g @railway/cli
-    - railway link --project "$RAILWAY_PROJECT_ID"
-    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - *railway-deploy-script
     - ENV_NAME="preview-${SLUG}"
-    - railway environment delete "$ENV_NAME" || true
-    - railway environment new "$ENV_NAME"
-    - railway up --service web --environment "$ENV_NAME" --detach
-    - railway up --service api --environment "$ENV_NAME" --detach
-    - railway up --service home --environment "$ENV_NAME" --detach
+    - delete_env "$ENV_NAME"
+    - create_env "$ENV_NAME"
+    - railway up --project "$RAILWAY_PROJECT_ID" --service web --environment "$ENV_NAME" --detach
+    - railway up --project "$RAILWAY_PROJECT_ID" --service api --environment "$ENV_NAME" --detach
+    - railway up --project "$RAILWAY_PROJECT_ID" --service home --environment "$ENV_NAME" --detach
     - echo "Deployed preview environment ${ENV_NAME}"
   environment:
     name: preview/$CI_COMMIT_REF_SLUG
@@ -124,15 +156,13 @@ deploy-dev:
   variables:
     RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
-    - npm install -g @railway/cli
-    - railway link --project "$RAILWAY_PROJECT_ID"
-    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - *railway-deploy-script
     - ENV_NAME="dev-${SLUG}"
-    - railway environment delete "$ENV_NAME" || true
-    - railway environment new "$ENV_NAME"
-    - railway up --service web --environment "$ENV_NAME" --detach
-    - railway up --service api --environment "$ENV_NAME" --detach
-    - railway up --service home --environment "$ENV_NAME" --detach
+    - delete_env "$ENV_NAME"
+    - create_env "$ENV_NAME"
+    - railway up --project "$RAILWAY_PROJECT_ID" --service web --environment "$ENV_NAME" --detach
+    - railway up --project "$RAILWAY_PROJECT_ID" --service api --environment "$ENV_NAME" --detach
+    - railway up --project "$RAILWAY_PROJECT_ID" --service home --environment "$ENV_NAME" --detach
     - echo "Deployed dev environment ${ENV_NAME}"
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
@@ -153,13 +183,23 @@ cleanup-preview:
   image: node:${NODE_VERSION}
   variables:
     GIT_STRATEGY: none
-    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
-    - npm install -g @railway/cli
-    - railway link --project "$RAILWAY_PROJECT_ID"
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
-    - ENV_NAME="preview-${SLUG}"
-    - railway environment delete "$ENV_NAME"
+    - RAILWAY_API="https://backboard.railway.com/graphql/v2"
+    - |
+      ENV_ID=$(curl -sf -X POST "$RAILWAY_API" \
+        -H "Authorization: Bearer $RAILWAY_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"query\":\"{ environments(projectId: \\\"$RAILWAY_PROJECT_ID\\\") { edges { node { id name } } } }\"}" \
+        | jq -r ".data.environments.edges[] | select(.node.name == \"preview-${SLUG}\") | .node.id")
+    - |
+      if [ -n "$ENV_ID" ]; then
+        curl -sf -X POST "$RAILWAY_API" \
+          -H "Authorization: Bearer $RAILWAY_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"query\":\"mutation { environmentDelete(id: \\\"$ENV_ID\\\") }\"}"
+        echo "Deleted preview-${SLUG}"
+      fi
   environment:
     name: preview/$CI_COMMIT_REF_SLUG
     action: stop
@@ -179,13 +219,23 @@ cleanup-dev:
   image: node:${NODE_VERSION}
   variables:
     GIT_STRATEGY: none
-    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
-    - npm install -g @railway/cli
-    - railway link --project "$RAILWAY_PROJECT_ID"
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
-    - ENV_NAME="dev-${SLUG}"
-    - railway environment delete "$ENV_NAME"
+    - RAILWAY_API="https://backboard.railway.com/graphql/v2"
+    - |
+      ENV_ID=$(curl -sf -X POST "$RAILWAY_API" \
+        -H "Authorization: Bearer $RAILWAY_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"query\":\"{ environments(projectId: \\\"$RAILWAY_PROJECT_ID\\\") { edges { node { id name } } } }\"}" \
+        | jq -r ".data.environments.edges[] | select(.node.name == \"dev-${SLUG}\") | .node.id")
+    - |
+      if [ -n "$ENV_ID" ]; then
+        curl -sf -X POST "$RAILWAY_API" \
+          -H "Authorization: Bearer $RAILWAY_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"query\":\"mutation { environmentDelete(id: \\\"$ENV_ID\\\") }\"}"
+        echo "Deleted dev-${SLUG}"
+      fi
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     action: stop
