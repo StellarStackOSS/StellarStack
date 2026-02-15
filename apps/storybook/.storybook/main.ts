@@ -24,7 +24,7 @@ const config: StorybookConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@stellarUI": path.resolve(__dirname, "../../packages/ui/src"),
+      "@stellarUI": path.resolve(__dirname, "../../../packages/ui/src"),
     };
 
     return config;

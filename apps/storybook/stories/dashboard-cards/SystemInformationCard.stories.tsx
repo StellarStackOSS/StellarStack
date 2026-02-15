@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import SystemInformationCard from "@stellarUI/components/SystemInformationCard/SystemInformationCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const meta: Meta<typeof SystemInformationCard> = {
   title: "Dashboard Cards/SystemInformationCard",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Toaster } from "@stellarUI/components/Sonner/Sonner";
+import Toaster from "@stellarUI/components/Sonner/Sonner";
 import Button from "@stellarUI/components/Button/Button";
 import { toast } from "sonner";
 

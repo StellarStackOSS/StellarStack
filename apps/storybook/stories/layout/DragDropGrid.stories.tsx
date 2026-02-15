@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const meta: Meta<typeof DragDropGridMockProvider> = {
   title: "Layout/DragDropGrid",

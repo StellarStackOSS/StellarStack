@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import PlayersOnlineCard from "@stellarUI/components/PlayersOnlineCard/PlayersOnlineCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const MOCK_PLAYERS = [
   { id: "1", name: "Steve", joinedAt: Date.now() - 3600000 },

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import InstanceNameCard from "@stellarUI/components/InstanceNameCard/InstanceNameCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const LABELS = {
   title: "Controls",

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import NetworkUsageCard from "@stellarUI/components/NetworkUsageCard/NetworkUsageCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 import { GenerateHistory } from "../_helpers/MockData";
 
 const meta: Meta<typeof NetworkUsageCard> = {

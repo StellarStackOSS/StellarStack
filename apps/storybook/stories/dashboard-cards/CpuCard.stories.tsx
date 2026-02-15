@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import CpuCard from "@stellarUI/components/CpuCard/CpuCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 import { GenerateHistory, GenerateCoreUsage } from "../_helpers/MockData";
 
 const meta: Meta<typeof CpuCard> = {

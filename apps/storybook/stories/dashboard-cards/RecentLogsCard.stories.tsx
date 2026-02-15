@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import RecentLogsCard from "@stellarUI/components/RecentLogsCard/RecentLogsCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const MOCK_LOGS = [
   { level: "info", message: "Server started successfully", time: "12:00:01" },
