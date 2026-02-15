@@ -1,0 +1,38 @@
+# Docker Build Test Pipeline — manual trigger only
+# Equivalent to the old .github/workflows/test-docker-api.yml and test-docker-web.yml
+
+test-docker-api:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKERFILE: "docker/cores/api/Dockerfile"
+  script:
+    - docker build -t stellarstack-api:test -f "$DOCKERFILE" .
+    - docker images | grep stellarstack-api:test
+    - echo "API Docker image built successfully"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+test-docker-web:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKERFILE: "docker/cores/web/Dockerfile"
+  script:
+    - |
+      docker build \
+        --build-arg NEXT_PUBLIC_GIT_COMMIT_HASH=${CI_COMMIT_SHA} \
+        -t stellarstack-web:test \
+        -f "$DOCKERFILE" .
+    - docker images | grep stellarstack-web:test
+    - echo "Web Docker image built successfully"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual

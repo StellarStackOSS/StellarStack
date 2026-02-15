@@ -146,7 +146,7 @@ const FAQ = () => {
       id: 8,
       question: 'How do I contribute to StellarStack?',
       answer:
-        'We welcome contributions from the community! You can contribute by submitting pull requests, reporting issues, improving documentation, or helping with translations. Please check our contributing guidelines on GitHub for more information.',
+        'We welcome contributions from the community! You can contribute by submitting pull requests, reporting issues, improving documentation, or helping with translations. Please check our contributing guidelines on GitLab for more information.',
     },
   ];
 

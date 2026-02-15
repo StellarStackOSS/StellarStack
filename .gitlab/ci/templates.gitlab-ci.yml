@@ -1,0 +1,36 @@
+# Shared job templates for Node.js pipelines
+
+.node-setup:
+  image: node:${NODE_VERSION}
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - node_modules/
+      - apps/*/node_modules/
+      - packages/*/node_modules/
+    policy: pull
+
+.rust-setup:
+  image: rust:latest
+  cache:
+    key: rust-${CI_JOB_NAME}
+    paths:
+      - apps/daemon/target/
+    policy: pull-push
+
+.ci-rules:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^(daemon|desktop)-v/
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+.release-tag-rules:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"

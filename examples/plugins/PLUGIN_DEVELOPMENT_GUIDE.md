@@ -481,7 +481,7 @@ To install a plugin from a Git repository:
 
 1. Go to admin panel → Plugins → Marketplace
 2. Click "Install from Git Repository"
-3. Paste the repository URL: `https://github.com/username/my-plugin`
+3. Paste the repository URL: `https://gitlab.com/username/my-plugin`
 4. Click Install
 
 The plugin will be:
@@ -529,6 +529,6 @@ To share your plugin with the community:
 ## Support
 
 - **Documentation**: https://docs.stellar stack.dev/plugins
-- **GitHub Issues**: https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/issues
+- **GitLab Issues**: https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK/-/issues
 - **Community Forum**: https://community.stellarstack.dev
 - **Discord**: https://discord.gg/stellarstack

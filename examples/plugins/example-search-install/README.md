@@ -66,7 +66,7 @@ All functionality is defined using declarative action schemas:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/example-search-install.git
+git clone https://gitlab.com/your-username/example-search-install.git
 cd example-search-install
 
 # Install in StellarStack plugins directory
@@ -438,7 +438,7 @@ MIT License - See LICENSE file for details
 
 ## Resources
 
-- [StellarStack Plugin SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)
+- [StellarStack Plugin SDK](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK)
 - [Plugin Development Guide](https://docs.stellarstack.com/plugins)
 - [UI Schema Documentation](https://docs.stellarstack.com/plugins/ui-schemas)
 - [Action System Reference](https://docs.stellarstack.com/plugins/actions)
@@ -447,7 +447,7 @@ MIT License - See LICENSE file for details
 
 For questions and support:
 - 📖 Read the [StellarStack documentation](https://docs.stellarstack.com)
-- 🐛 Report bugs on [GitHub Issues](https://github.com/StellarStackOSS/example-search-install/issues)
+- 🐛 Report bugs on [GitLab Issues](https://gitlab.com/StellarStackOSS/example-search-install/-/issues)
 - 💬 Join the community [Discord server](https://discord.gg/stellarstack)
 
 ## Changelog

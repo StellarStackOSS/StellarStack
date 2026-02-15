@@ -1,5 +1,5 @@
 import React from "react";
-import {SiDiscord, SiGithub, SiMintlify} from "react-icons/si";
+import {SiDiscord, SiGitlab, SiMintlify} from "react-icons/si";
 import Link from "next/link";
 import {cn} from "@stellarUI/lib/Utils";
 
@@ -34,8 +34,8 @@ const Header = () => {
                 <a href="https://discord.gg/stellarstack" target="_blank" rel="noopener noreferrer">
                     <SiDiscord size="20" className="opacity-50 duration-300 hover:opacity-100 transiton-all cursor-pointer"/>
                 </a>
-                <a href="https://github.com/StellarStackOSS/StellarStack" target="_blank" rel="noopener noreferrer">
-                    <SiGithub size="20" className="opacity-50 duration-300 hover:opacity-100 transiton-all cursor-pointer"/>
+                <a href="https://gitlab.com/StellarStackOSS/stellarstack" target="_blank" rel="noopener noreferrer">
+                    <SiGitlab size="20" className="opacity-50 duration-300 hover:opacity-100 transiton-all cursor-pointer"/>
                 </a>
             </div>
         </div>

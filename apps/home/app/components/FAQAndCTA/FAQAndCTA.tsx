@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowRight, Github } from 'lucide-react';
-import {SiGithub} from "react-icons/si";
+import { ChevronDown, ArrowRight } from 'lucide-react';
+import {SiGitlab} from "react-icons/si";
 
 interface FAQItemData {
   id: number;
@@ -210,13 +210,13 @@ const FAQAndCTA = () => {
             className="flex flex-col gap-4 mt-6"
           >
             <a
-              href="https://github.com"
+              href="https://gitlab.com/StellarStackOSS/stellarstack"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-8 py-3 border border-white/40 font-semibold hover:bg-white/5 transition-colors"
             >
-              <SiGithub size={20} />
-              <span>View on GitHub</span>
+              <SiGitlab size={20} />
+              <span>View on GitLab</span>
             </a>
           </motion.div>
 
