@@ -1,5 +1,5 @@
 # CI Pipeline — runs on all branches and merge requests
-# Equivalent to the old .github/workflows/ci.yml
+# Uses Turborepo for caching and parallel task execution
 
 # ─── Install ────────────────────────────────────────────────────────
 install:
@@ -8,66 +8,40 @@ install:
     - .ci-rules
   stage: install
   cache:
-    key:
-      files:
-        - pnpm-lock.yaml
-    paths:
-      - node_modules/
-      - apps/*/node_modules/
-      - packages/*/node_modules/
-    policy: pull-push
+    - key:
+        files:
+          - pnpm-lock.yaml
+      paths:
+        - node_modules/
+        - apps/*/node_modules/
+        - packages/*/node_modules/
+      policy: pull-push
+    - key: turbo-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .turbo/
+      policy: pull-push
   script:
     - pnpm install --frozen-lockfile
 
-# ─── Pre-build (typecheck + lint) ──────────────────────────────────
+# ─── Pre-build (typecheck + lint via Turbo) ──────────────────────
 pre-build:
   extends:
     - .node-setup
     - .ci-rules
   stage: pre-build
   needs: [install]
-  parallel:
-    matrix:
-      - TARGET: api
-        TYPECHECK_CMD: "pnpm --filter @workspace/api tsc --noEmit"
-        LINT_CMD: "pnpm --filter @workspace/api lint"
-      - TARGET: web
-        TYPECHECK_CMD: "pnpm --filter web typecheck"
-        LINT_CMD: "pnpm --filter web lint"
-      - TARGET: home
-        TYPECHECK_CMD: "pnpm --filter home typecheck"
-        LINT_CMD: "pnpm --filter home lint"
-      - TARGET: ui
-        TYPECHECK_CMD: "pnpm --filter @stellarUI tsc --noEmit"
-        LINT_CMD: "pnpm --filter @stellarUI lint"
-      - TARGET: storybook
-        TYPECHECK_CMD: "echo skipped"
-        LINT_CMD: "echo skipped"
   script:
-    - echo "Pre-build checks for $TARGET"
-    - eval "$TYPECHECK_CMD"
-    - eval "$LINT_CMD"
+    - pnpm turbo typecheck lint --env-mode=loose
 
-# ─── Build ─────────────────────────────────────────────────────────
+# ─── Build (all apps via Turbo) ──────────────────────────────────
 build:
   extends:
     - .node-setup
     - .ci-rules
   stage: build
   needs: [pre-build]
-  parallel:
-    matrix:
-      - TARGET: api
-        BUILD_CMD: "pnpm build:api"
-      - TARGET: web
-        BUILD_CMD: "pnpm build:web"
-      - TARGET: home
-        BUILD_CMD: "pnpm build:home"
-      - TARGET: storybook
-        BUILD_CMD: "pnpm --filter storybook build"
   script:
-    - echo "Building $TARGET"
-    - eval "$BUILD_CMD"
+    - pnpm turbo build --env-mode=loose
 
 # ─── Test (jsdom — packages/ui) ────────────────────────────────────
 test-jsdom:
