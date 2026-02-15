@@ -50,8 +50,6 @@ discover-cores:
         image: docker:latest
         services:
           - docker:dind
-        tags:
-          - self-hosted
         variables:
           DOCKER_TLS_CERTDIR: "/certs"
         script:
