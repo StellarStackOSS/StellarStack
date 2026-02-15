@@ -92,7 +92,7 @@ code-analysis:
 # PG + Redis credentials are pulled from Railway automatically.
 #
 # Required CI variables:
-#   RAILWAY_TOKEN           — Railway API token
+#   RAILWAY_API_TOKEN       — Railway API token
 #   RAILWAY_PROJECT_ID      — Railway project ID
 #   CLOUDFLARE_API_TOKEN    — Cloudflare API token (DNS edit)
 #   CLOUDFLARE_ZONE_ID_DEV  — Zone ID for stellarstack.dev
@@ -108,7 +108,7 @@ code-analysis:
   - |
     railway_gql() {
       RESPONSE=$(curl -s -X POST "$RAILWAY_API" \
-        -H "Authorization: Bearer $RAILWAY_TOKEN" \
+        -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
         -H "Content-Type: application/json" \
         -d "$1")
       # Check for GraphQL errors
@@ -398,8 +398,6 @@ deploy-dev:
   stage: deploy
   image: node:${NODE_VERSION}
   needs: []
-  variables:
-    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
     - *railway-deploy-script
     - deploy_full_stack "dev-${SLUG}" "${SLUG}"
