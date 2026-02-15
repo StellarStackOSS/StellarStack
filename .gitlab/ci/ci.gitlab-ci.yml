@@ -205,14 +205,18 @@ code-analysis:
   - |
     deploy_full_stack() {
       # $1 = env name (e.g., dev-slug), $2 = slug
-      echo "=== Creating environment: $1 ==="
-      delete_env "$1"
-      ENV_ID=$(create_env "$1")
-      if [ -z "$ENV_ID" ] || [ "$ENV_ID" = "null" ]; then
-        echo "ERROR: Failed to create environment '$1'" >&2
-        return 1
+      echo "=== Ensuring environment: $1 ==="
+      ENV_ID=$(get_env_id "$1")
+      if [ -n "$ENV_ID" ]; then
+        echo "Reusing existing environment: $ENV_ID"
+      else
+        ENV_ID=$(create_env "$1")
+        if [ -z "$ENV_ID" ] || [ "$ENV_ID" = "null" ]; then
+          echo "ERROR: Failed to create environment '$1'" >&2
+          return 1
+        fi
+        echo "Created environment: $ENV_ID"
       fi
-      echo "Environment ID: $ENV_ID"
 
       echo "=== Listing project services ==="
       list_services
