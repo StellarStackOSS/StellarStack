@@ -25,14 +25,18 @@ import {
 } from "@xyflow/react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import Button from "@stellarUI/components/Button/Button";
-import ContextMenu, { ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@stellarUI/components/ContextMenu/ContextMenu";
+import ContextMenu, {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@stellarUI/components/ContextMenu/ContextMenu";
 import Input from "@stellarUI/components/Input/Input";
 import Switch from "@stellarUI/components/Switch/Switch";
 import Label from "@stellarUI/components/Label/Label";
 import Textarea from "@stellarUI/components/Textarea";
 import { Download, Layout, Upload, X, FileCode } from "lucide-react";
 import { motion } from "framer-motion";
-import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/api.types";
+import type { Blueprint, BlueprintVariable, PterodactylEgg } from "@/lib/ApiTypes";
 
 // ============================================================================
 // Types
@@ -892,7 +896,7 @@ const blueprintToNodes = (
 
   // Create Install Script Node
   const installId = getId("install");
-  const installation = (scripts as any)?.installation;
+  const installation = (scripts as PterodactylEgg["scripts"])?.installation;
   nodes.push({
     id: installId,
     type: "bluePrintInstallScript",
@@ -934,12 +938,10 @@ const blueprintToNodes = (
   });
 
   // Create Config Node if there's config data
+  const typedConfig = config as PterodactylEgg["config"];
   const hasConfig =
-    config &&
-    ((config as any).files ||
-      (config as any).startup ||
-      (config as any).logs ||
-      (config as any).stop);
+    typedConfig &&
+    (typedConfig.files || typedConfig.startup || typedConfig.logs || typedConfig.stop);
 
   if (hasConfig) {
     const configId = getId("config");
@@ -948,10 +950,10 @@ const blueprintToNodes = (
       type: "blueprintConfig",
       position: { x: 600, y: 500 },
       data: {
-        files: (config as any).files || "",
-        startup: (config as any).startup || "",
-        logs: (config as any).logs || "",
-        stop: (config as any).stop || "",
+        files: typedConfig.files || "",
+        startup: typedConfig.startup || "",
+        logs: typedConfig.logs || "",
+        stop: typedConfig.stop || "",
       } as ConfigNodeData,
     });
 

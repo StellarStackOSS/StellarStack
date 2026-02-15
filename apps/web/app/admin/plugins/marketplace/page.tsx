@@ -1,27 +1,32 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Button from '@stellarUI/components/Button/Button';
-import Input from '@stellarUI/components/Input/Input';
-import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@stellarUI/components/Card/Card';
-import Badge from '@stellarUI/components/Badge/Badge';
+import { useState } from "react";
+import Button from "@stellarUI/components/Button/Button";
+import Input from "@stellarUI/components/Input/Input";
+import Card, {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@stellarUI/components/Card/Card";
+import Badge from "@stellarUI/components/Badge/Badge";
 import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@stellarUI/components/Dialog/Dialog';
-import { BsDownload, BsCheckCircle, BsExclamationTriangle, BsShield, BsX } from 'react-icons/bs';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { pluginsApi } from '@/lib/api';
-import type { PluginInfo } from '@/lib/api';
+} from "@stellarUI/components/Dialog/Dialog";
+import { BsDownload, BsCheckCircle, BsExclamationTriangle, BsShield, BsX } from "react-icons/bs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { pluginsApi } from "@/lib/Api";
+import type { PluginInfo } from "@/lib/Api";
 
 interface SecurityReport {
   score: number;
-  riskLevel: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "safe" | "low" | "medium" | "high" | "critical";
   issues: Array<{
-    severity: 'info' | 'warning' | 'error' | 'critical';
+    severity: "info" | "warning" | "error" | "critical";
     message: string;
     file?: string;
   }>;
@@ -42,7 +47,7 @@ interface PluginInstallResponse {
 }
 
 export default function PluginMarketplacePage() {
-  const [repoUrl, setRepoUrl] = useState('');
+  const [repoUrl, setRepoUrl] = useState("");
   const [selectedPlugin, setSelectedPlugin] = useState<{
     pluginId: string;
     name: string;
@@ -53,22 +58,22 @@ export default function PluginMarketplacePage() {
 
   // Fetch list of installed plugins
   const { data: installedPlugins = [] } = useQuery({
-    queryKey: ['plugins'],
+    queryKey: ["plugins"],
     queryFn: () => pluginsApi.listPlugins(),
   });
 
   // Install plugin mutation
   const installMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await fetch('/api/plugins/install', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl: url, branch: 'main' }),
+      const response = await fetch("/api/plugins/install", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repoUrl: url, branch: "main" }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to install plugin');
+        throw new Error(error.error || "Failed to install plugin");
       }
 
       return (await response.json()) as PluginInstallResponse;
@@ -80,14 +85,14 @@ export default function PluginMarketplacePage() {
         securityReport: data.plugin.securityReport,
       });
       setShowSecurityDetails(true);
-      setRepoUrl('');
-      queryClient.invalidateQueries({ queryKey: ['plugins'] });
+      setRepoUrl("");
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
     },
   });
 
   const handleInstall = async () => {
     if (!repoUrl.trim()) {
-      alert('Please enter a repository URL');
+      alert("Please enter a repository URL");
       return;
     }
     await installMutation.mutateAsync(repoUrl);
@@ -95,29 +100,29 @@ export default function PluginMarketplacePage() {
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'safe':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'critical':
-        return 'bg-red-100 text-red-800 border-red-300';
+      case "safe":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "low":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "high":
+        return "bg-orange-100 text-orange-800 border-orange-300";
+      case "critical":
+        return "bg-red-100 text-red-800 border-red-300";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
   const getSecurityIcon = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'safe':
-        return <BsCheckCircle className="inline mr-2" />;
-      case 'critical':
-        return <BsX className="inline mr-2" />;
+      case "safe":
+        return <BsCheckCircle className="mr-2 inline" />;
+      case "critical":
+        return <BsX className="mr-2 inline" />;
       default:
-        return <BsExclamationTriangle className="inline mr-2" />;
+        return <BsExclamationTriangle className="mr-2 inline" />;
     }
   };
 
@@ -125,7 +130,9 @@ export default function PluginMarketplacePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Plugin Marketplace</h1>
-        <p className="text-gray-600 mt-2">Install plugins from Git repositories to extend StellarStack functionality.</p>
+        <p className="mt-2 text-gray-600">
+          Install plugins from Git repositories to extend StellarStack functionality.
+        </p>
       </div>
 
       {/* Installation Section */}
@@ -140,21 +147,21 @@ export default function PluginMarketplacePage() {
           <div className="space-y-2">
             <label className="block text-sm font-medium">Repository URL</label>
             <Input
-              placeholder="https://github.com/username/stellarstack-plugin-name"
+              placeholder="https://gitlab.com/username/stellarstack-plugin-name"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               disabled={installMutation.isPending}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') handleInstall();
+                if (e.key === "Enter") handleInstall();
               }}
             />
             <p className="text-xs text-gray-500">
-              Example: https://github.com/StellarStackOSS/example-mod-installer
+              Example: https://gitlab.com/StellarStackOSS/example-mod-installer
             </p>
           </div>
 
           {installMutation.error && (
-            <div className="p-3 bg-red-50 border border-red-300 rounded text-red-800 text-sm">
+            <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
               {String(installMutation.error)}
             </div>
           )}
@@ -219,14 +226,14 @@ export default function PluginMarketplacePage() {
             <div className="flex items-center justify-between">
               <span className="font-medium">Security Score:</span>
               <div className="flex items-center space-x-2">
-                <div className="w-48 bg-gray-200 rounded-full h-2">
+                <div className="h-2 w-48 rounded-full bg-gray-200">
                   <div
                     className={`h-2 rounded-full transition-all ${
                       selectedPlugin.securityReport.score >= 80
-                        ? 'bg-green-500'
+                        ? "bg-green-500"
                         : selectedPlugin.securityReport.score >= 60
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
                     }`}
                     style={{ width: `${selectedPlugin.securityReport.score}%` }}
                   />
@@ -238,18 +245,21 @@ export default function PluginMarketplacePage() {
             {/* Issues/Warnings */}
             {selectedPlugin.securityReport.issues.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-medium mb-2">Issues Found:</h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <h4 className="mb-2 font-medium">Issues Found:</h4>
+                <div className="max-h-64 space-y-2 overflow-y-auto">
                   {selectedPlugin.securityReport.issues.map((issue, idx) => (
-                    <div key={idx} className="text-sm p-2 bg-white rounded border-l-4 border-orange-400">
+                    <div
+                      key={idx}
+                      className="rounded border-l-4 border-orange-400 bg-white p-2 text-sm"
+                    >
                       <div className="font-medium">
-                        {issue.severity === 'critical' && '🔴'}
-                        {issue.severity === 'error' && '🟠'}
-                        {issue.severity === 'warning' && '🟡'}
-                        {issue.severity === 'info' && '🔵'} {issue.severity.toUpperCase()}
+                        {issue.severity === "critical" && "🔴"}
+                        {issue.severity === "error" && "🟠"}
+                        {issue.severity === "warning" && "🟡"}
+                        {issue.severity === "info" && "🔵"} {issue.severity.toUpperCase()}
                       </div>
                       <div className="text-gray-700">{issue.message}</div>
-                      {issue.file && <div className="text-gray-500 text-xs">{issue.file}</div>}
+                      {issue.file && <div className="text-xs text-gray-500">{issue.file}</div>}
                     </div>
                   ))}
                 </div>
@@ -258,10 +268,10 @@ export default function PluginMarketplacePage() {
 
             {selectedPlugin.securityReport.warnings.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-medium mb-2">Warnings:</h4>
+                <h4 className="mb-2 font-medium">Warnings:</h4>
                 <div className="space-y-1">
                   {selectedPlugin.securityReport.warnings.map((warning, idx) => (
-                    <div key={idx} className="text-sm text-yellow-800 flex items-start">
+                    <div key={idx} className="flex items-start text-sm text-yellow-800">
                       <span className="mr-2">⚠️</span>
                       <span>{warning}</span>
                     </div>
@@ -272,7 +282,7 @@ export default function PluginMarketplacePage() {
 
             {selectedPlugin.securityReport.issues.length === 0 &&
               selectedPlugin.securityReport.warnings.length === 0 && (
-                <div className="p-4 bg-green-50 border border-green-300 rounded flex items-center text-green-800">
+                <div className="flex items-center rounded border border-green-300 bg-green-50 p-4 text-green-800">
                   <BsCheckCircle className="mr-2 flex-shrink-0" />
                   <span>No issues detected. This plugin appears to be safe.</span>
                 </div>
@@ -285,35 +295,42 @@ export default function PluginMarketplacePage() {
       <Card>
         <CardHeader>
           <CardTitle>Installed Plugins ({installedPlugins.length})</CardTitle>
-          <CardDescription>Community and official plugins installed on this instance.</CardDescription>
+          <CardDescription>
+            Community and official plugins installed on this instance.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {installedPlugins.length === 0 ? (
-            <p className="text-gray-500 py-8 text-center">No plugins installed yet. Install one from a Git repository above.</p>
+            <p className="py-8 text-center text-gray-500">
+              No plugins installed yet. Install one from a Git repository above.
+            </p>
           ) : (
             <div className="grid gap-4">
               {installedPlugins.map((plugin: PluginInfo) => (
-                <div key={plugin.pluginId} className="border rounded-lg p-4 hover:bg-gray-50 transition">
+                <div
+                  key={plugin.pluginId}
+                  className="rounded-lg border p-4 transition hover:bg-gray-50"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="font-medium text-lg">{plugin.name}</div>
+                      <div className="text-lg font-medium">{plugin.name}</div>
                       <p className="text-sm text-gray-600">{plugin.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="mt-2 flex items-center gap-2">
                         <Badge variant="outline">{plugin.version}</Badge>
                         <Badge
-                          variant={plugin.isBuiltIn ? 'default' : 'secondary'}
+                          variant={plugin.isBuiltIn ? "default" : "secondary"}
                           className={
                             plugin.isBuiltIn
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
                           }
                         >
-                          {plugin.isBuiltIn ? '✓ Official' : 'Community'}
+                          {plugin.isBuiltIn ? "✓ Official" : "Community"}
                         </Badge>
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant={plugin.status === 'enabled' ? 'default' : 'secondary'}>
+                      <Badge variant={plugin.status === "enabled" ? "default" : "secondary"}>
                         {plugin.status}
                       </Badge>
                     </div>
@@ -343,8 +360,8 @@ export default function PluginMarketplacePage() {
           <div>
             <h4 className="font-medium text-blue-900">Community Plugins</h4>
             <p className="text-sm text-blue-800">
-              Created by community developers. Automatically analyzed for common security issues. Always review the security
-              report before installing.
+              Created by community developers. Automatically analyzed for common security issues.
+              Always review the security report before installing.
             </p>
           </div>
         </CardContent>

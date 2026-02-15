@@ -12,9 +12,12 @@
     "db:studio": "pnpm prisma studio",
     "db:version": "pnpm prisma --version",
     "build": "tsc",
+    "pretypecheck": "pnpm prisma generate",
+    "typecheck": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "db:init": "prisma init",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.4.9",

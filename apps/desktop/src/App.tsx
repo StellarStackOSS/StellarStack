@@ -191,7 +191,7 @@ const App = (): JSX.Element => {
   };
 
   return (
-    <div className="relative w-screen h-screen">
+    <div className="relative h-screen w-screen">
       {/* Title bar */}
       <TitleBar />
 
@@ -202,21 +202,21 @@ const App = (): JSX.Element => {
         muted
         loop
         playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0"
+        className="fixed inset-0 z-0 h-full w-full object-cover"
       >
         <source src="/Gradient.mp4" type="video/mp4" />
       </video>
 
       {/* Centered logo */}
-      <div className="fixed inset-0 flex items-center justify-center z-10">
-        <img src="/logo.png" alt="StellarStack" className="w-[120px] h-[120px]" />
+      <div className="fixed inset-0 z-10 flex items-center justify-center">
+        <img src="/logo.png" alt="StellarStack" className="h-[120px] w-[120px]" />
       </div>
 
       {/* Bottom-left status */}
       {!error && !showWizard && (
         <div className="fixed bottom-7 left-7 z-20 flex items-center gap-2.5">
           <Spinner className="size-4 text-white" />
-          <span className="text-[13px] text-white font-normal tracking-tight drop-shadow-md">
+          <span className="text-[13px] font-normal tracking-tight text-white drop-shadow-md">
             {status}
           </span>
         </div>
@@ -224,32 +224,26 @@ const App = (): JSX.Element => {
 
       {/* Error display */}
       {error && (
-        <div className="fixed bottom-7 left-7 right-7 z-30 bg-red-500/15 backdrop-blur-xl border border-red-500/30 rounded-[10px] px-5 py-4">
-          <h3 className="text-red-500 text-sm font-semibold mb-1">Startup Failed</h3>
-          <p className="text-white/70 text-[13px] leading-relaxed">{error}</p>
+        <div className="fixed right-7 bottom-7 left-7 z-30 rounded-[10px] border border-red-500/30 bg-red-500/15 px-5 py-4 backdrop-blur-xl">
+          <h3 className="mb-1 text-sm font-semibold text-red-500">Startup Failed</h3>
+          <p className="text-[13px] leading-relaxed text-white/70">{error}</p>
         </div>
       )}
 
       {/* Setup wizard overlay */}
       {showWizard && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-2xl z-[100] overflow-y-auto p-12">
-          <div className="max-w-[400px] mx-auto pt-16">
-            <h2 className="text-2xl font-semibold mb-2">Welcome to StellarStack</h2>
-            <p className="text-white/60 mb-6 text-sm">
-              Create your admin account to get started.
-            </p>
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/85 p-12 backdrop-blur-2xl">
+          <div className="mx-auto max-w-[400px] pt-16">
+            <h2 className="mb-2 text-2xl font-semibold">Welcome to StellarStack</h2>
+            <p className="mb-6 text-sm text-white/60">Create your admin account to get started.</p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-white/70 mb-1">Name</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Admin"
-                />
+                <label className="mb-1 block text-sm text-white/70">Name</label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Admin" />
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1">Email</label>
+                <label className="mb-1 block text-sm text-white/70">Email</label>
                 <Input
                   type="email"
                   value={email}
@@ -258,7 +252,7 @@ const App = (): JSX.Element => {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1">Password</label>
+                <label className="mb-1 block text-sm text-white/70">Password</label>
                 <Input
                   type="password"
                   value={password}
@@ -268,11 +262,7 @@ const App = (): JSX.Element => {
               </div>
             </div>
 
-            <Button
-              onClick={handleSetup}
-              disabled={wizardLoading}
-              className="mt-5 w-full"
-            >
+            <Button onClick={handleSetup} disabled={wizardLoading} className="mt-5 w-full">
               {wizardLoading ? (
                 <>
                   <Spinner className="size-4" />
@@ -283,9 +273,7 @@ const App = (): JSX.Element => {
               )}
             </Button>
 
-            {wizardError && (
-              <p className="text-red-500 text-sm mt-3">{wizardError}</p>
-            )}
+            {wizardError && <p className="mt-3 text-sm text-red-500">{wizardError}</p>}
           </div>
         </div>
       )}

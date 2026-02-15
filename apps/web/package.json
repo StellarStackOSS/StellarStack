@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.4.9",
@@ -35,9 +36,7 @@
     "@stellarUI": "workspace:*",
     "@xyflow/react": "^12.10.0",
     "better-auth": "^1.1.14",
-    "d3-dag": "^1.1.0",
     "dagre": "^0.8.5",
-    "elkjs": "^0.11.0",
     "framer-motion": "^12.23.25",
     "hugeicons-react": "^0.4.0",
     "lucide-react": "^0.68.0",
@@ -52,8 +51,7 @@
     "react-medium-image-zoom": "^5.4.0",
     "recharts": "2.15.4",
     "sonner": "^2.0.7",
-    "zod": "^4.3.5",
-    "zustand": "^5.0.9"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",

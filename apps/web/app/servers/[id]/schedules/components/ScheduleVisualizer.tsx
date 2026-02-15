@@ -40,14 +40,14 @@ export interface ScheduleVisualizerData {
   }>;
 }
 
-interface VisualizerNode extends Node<any> {
+interface VisualizerNode extends Node<Record<string, unknown>> {
   type: string;
 }
 
 type VisualizerEdge = Edge<{ timeOffset?: number; edgeIndex?: number }>;
 
 // Format cron expression to human-readable
-function formatCronExpression(cronExpr: string): string {
+const formatCronExpression = (cronExpr: string): string => {
   try {
     const parts = cronExpr.trim().split(/\s+/);
     if (parts.length < 5) return cronExpr;
@@ -65,13 +65,15 @@ function formatCronExpression(cronExpr: string): string {
   } catch {
     return cronExpr;
   }
-}
+};
 
 // Data transformation: Convert schedule to nodes and edges with vertical layout
-function scheduleToNodesAndEdges(schedule: ScheduleVisualizerData): {
+const scheduleToNodesAndEdges = (
+  schedule: ScheduleVisualizerData
+): {
   nodes: VisualizerNode[];
   edges: VisualizerEdge[];
-} {
+} => {
   const nodes: VisualizerNode[] = [];
   const edges: VisualizerEdge[] = [];
 
@@ -148,7 +150,7 @@ function scheduleToNodesAndEdges(schedule: ScheduleVisualizerData): {
   });
 
   return { nodes, edges };
-}
+};
 
 // Flow control panel component - this is inside ReactFlow context
 const FlowControls = () => {
@@ -193,7 +195,6 @@ const VisualizerFlow = ({ schedule }: { schedule: ScheduleVisualizerData }) => {
     <ReactFlow
       nodes={nodes}
       edges={edges}
-      // @ts-expect-error React Flow v12 NodeProps typing incompatibility
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       connectionLineType={ConnectionLineType.Bezier}

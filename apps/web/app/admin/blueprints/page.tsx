@@ -2,13 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import Textarea from "@stellarUI/components/Textarea";
@@ -24,9 +23,9 @@ import {
   BsPerson,
   BsDiagram3,
 } from "react-icons/bs";
-import { useBlueprintMutations } from "@/hooks/queries/use-blueprints";
-import { useBlueprints } from "@/hooks/queries/use-blueprints";
-import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/api";
+import { useBlueprintMutations } from "@/hooks/queries/UseBlueprints";
+import { useBlueprints } from "@/hooks/queries/UseBlueprints";
+import type { Blueprint, CreateBlueprintData, PterodactylEgg } from "@/lib/Api";
 import { toast } from "sonner";
 
 export default function BlueprintsPage() {
@@ -203,8 +202,7 @@ export default function BlueprintsPage() {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <Link href="/admin/blueprints/builder">
                   <TextureButton variant="minimal" size="sm" className="w-fit">

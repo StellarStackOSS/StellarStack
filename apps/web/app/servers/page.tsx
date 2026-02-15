@@ -4,14 +4,14 @@ import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import { BsChevronRight } from "react-icons/bs";
-import type { Server } from "@/lib/api";
-import { servers as serversApi } from "@/lib/api";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
+import type { Server } from "@/lib/Api";
+import { servers as serversApi } from "@/lib/Api";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import { toast } from "sonner";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { renderVersion } from "@/components/UnifiedSidebar/UnifiedSidebar";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 type ServerStatus =
   | "INSTALLING"
@@ -92,7 +92,7 @@ const ServersPage = (): JSX.Element | null => {
           {/* Server List */}
           <div className="flex flex-col gap-4">
             {isLoading ? (
-              <div className="py-12 text-center text-sm text-zinc-500 w-full flex items-center justify-center ">
+              <div className="flex w-full items-center justify-center py-12 text-center text-sm text-zinc-500">
                 <Spinner />
               </div>
             ) : servers.length === 0 ? (

@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
@@ -21,8 +20,8 @@ import {
   BsSave,
   BsPencil,
 } from "react-icons/bs";
-import type { Allocation, Node, NodeStats } from "@/lib/api";
-import { nodes } from "@/lib/api";
+import type { Allocation, Node, NodeStats } from "@/lib/Api";
+import { nodes } from "@/lib/Api";
 import { toast } from "sonner";
 import Label from "@stellarUI/components/Label/Label";
 import Input from "@stellarUI/components/Input/Input";
@@ -32,8 +31,8 @@ import Select, {
   SelectTrigger,
   SelectValue,
 } from "@stellarUI/components/Select";
-import { useNode, useNodeMutations } from "@/hooks/queries/use-nodes";
-import GetErrorMessage from "@/lib/error-utils";
+import { useNode, useNodeMutations } from "@/hooks/queries/UseNodes";
+import GetErrorMessage from "@/lib/ErrorUtils";
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -238,7 +237,6 @@ export default function NodeDetailPage() {
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
                 <TextureButton
                   variant="minimal"
                   size="sm"
@@ -359,7 +357,9 @@ export default function NodeDetailPage() {
                         <Input
                           type="text"
                           value={formData.displayName}
-                          onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, displayName: e.target.value })
+                          }
                           required
                         />
                       </div>
@@ -418,7 +418,10 @@ export default function NodeDetailPage() {
                             type="number"
                             value={formData.sftpPort}
                             onChange={(e) =>
-                              setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })
+                              setFormData({
+                                ...formData,
+                                sftpPort: parseInt(e.target.value) || 2022,
+                              })
                             }
                             min={1}
                             max={65535}
@@ -708,7 +711,9 @@ export default function NodeDetailPage() {
                                 <Input
                                   type="text"
                                   value={rangeForm.ip}
-                                  onChange={(e) => setRangeForm({ ...rangeForm, ip: e.target.value })}
+                                  onChange={(e) =>
+                                    setRangeForm({ ...rangeForm, ip: e.target.value })
+                                  }
                                   placeholder="0.0.0.0"
                                   required
                                 />

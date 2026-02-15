@@ -4,27 +4,27 @@ import { logger } from "hono/logger";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { serve } from "@hono/node-server";
 
-import { auth } from "./lib/auth";
-import { wsManager } from "./lib/ws";
-import { account } from "./routes/account";
-import { locations } from "./routes/locations";
-import { nodes } from "./routes/nodes";
-import { blueprints } from "./routes/blueprints";
-import { servers } from "./routes/servers";
-import { webhooks } from "./routes/webhooks";
-import { domains } from "./routes/domains";
-import { remote } from "./routes/remote";
-import { members } from "./routes/members";
-import { settings } from "./routes/settings";
-import { analyticsRouter } from "./routes/analytics";
-import { plugins } from "./routes/plugins";
-import { pluginManager } from "./lib/plugin-manager";
-import { securityHeaders, validateEnvironment, getRequiredEnv } from "./middleware/security";
-import { authRateLimit, apiRateLimit } from "./middleware/rate-limit";
-import { db } from "./lib/db";
-import { startAutoShutdownChecker } from "./lib/auto-shutdown";
+import { auth } from "./lib/Auth";
+import { wsManager } from "./lib/Ws";
+import { account } from "./routes/Account";
+import { locations } from "./routes/Locations";
+import { nodes } from "./routes/Nodes";
+import { blueprints } from "./routes/Blueprints";
+import { servers } from "./routes/Servers";
+import { webhooks } from "./routes/Webhooks";
+import { domains } from "./routes/Domains";
+import { remote } from "./routes/Remote";
+import { members } from "./routes/Members";
+import { settings } from "./routes/Settings";
+import { analyticsRouter } from "./routes/Analytics";
+import { plugins } from "./routes/Plugins";
+import { pluginManager } from "./lib/PluginManager";
+import { SecurityHeaders, ValidateEnvironment, GetRequiredEnv } from "./middleware/Security";
+import { authRateLimit, apiRateLimit } from "./middleware/RateLimit";
+import { db } from "./lib/Db";
+import { StartAutoShutdownChecker } from "./lib/AutoShutdown";
 
-validateEnvironment();
+ValidateEnvironment();
 
 const app = new Hono();
 
@@ -32,17 +32,17 @@ const app = new Hono();
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
 // Get frontend URL with production safety
-const FRONTEND_URL = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
+const FRONTEND_URL = GetRequiredEnv("FRONTEND_URL", "http://localhost:3000");
 const IS_DESKTOP = process.env.DESKTOP_MODE === "true";
 
 // In desktop mode, allow any localhost origin (Vite dev server, Next.js, etc.)
 const corsOrigin = IS_DESKTOP
-  ? (origin: string) => origin.startsWith("http://localhost:") ? origin : FRONTEND_URL
+  ? (origin: string) => (origin.startsWith("http://localhost:") ? origin : FRONTEND_URL)
   : FRONTEND_URL;
 
 // Middleware
 app.use("*", logger());
-app.use("*", securityHeaders());
+app.use("*", SecurityHeaders());
 
 // CORS for auth routes (must be before the auth handler)
 app.use(
@@ -162,8 +162,8 @@ app.post("/api/admin/reset-password", async (c) => {
     }
 
     // Hash the new password using bcrypt
-    const { hashPassword } = await import("./lib/crypto");
-    const hashedPassword = await hashPassword(newPassword);
+    const { HashPassword } = await import("./lib/Crypto");
+    const hashedPassword = await HashPassword(newPassword);
 
     // Update the user's password in the account table
     await db.account.updateMany({
@@ -315,14 +315,17 @@ app.get(
       onOpen: async (_event, ws) => {
         console.log("[WS] Client connected");
         // Add client first
-        wsManager.addClient(ws.raw as any);
+        wsManager.addClient(ws.raw as unknown as import("ws").WebSocket);
 
         // Try to auto-authenticate via Better Auth session
         try {
           const session = await auth.api.getSession({ headers });
           if (session?.user) {
             console.log(`[WS] Cookie auth successful for user ${session.user.id}`);
-            wsManager.authenticateClient(ws.raw as any, session.user.id);
+            wsManager.authenticateClient(
+              ws.raw as unknown as import("ws").WebSocket,
+              session.user.id
+            );
             ws.send(JSON.stringify({ type: "auth_success", userId: session.user.id }));
           } else {
             console.log("[WS] No valid session found in cookies");
@@ -350,7 +353,10 @@ app.get(
 
             if (session) {
               // Update client with authenticated user
-              wsManager.authenticateClient(ws.raw as any, session.userId);
+              wsManager.authenticateClient(
+                ws.raw as unknown as import("ws").WebSocket,
+                session.userId
+              );
               ws.send(JSON.stringify({ type: "auth_success", userId: session.userId }));
             } else {
               ws.send(JSON.stringify({ type: "auth_error", error: "Invalid or expired session" }));
@@ -359,17 +365,17 @@ app.get(
           }
 
           // Handle other messages
-          wsManager.handleMessage(ws.raw as any, message);
+          wsManager.handleMessage(ws.raw as unknown as import("ws").WebSocket, message);
         } catch {
           // Invalid JSON, let wsManager handle it
-          wsManager.handleMessage(ws.raw as any, message);
+          wsManager.handleMessage(ws.raw as unknown as import("ws").WebSocket, message);
         }
       },
       onClose: (_event, ws) => {
-        wsManager.removeClient(ws.raw as any);
+        wsManager.removeClient(ws.raw as unknown as import("ws").WebSocket);
       },
       onError: (_event, ws) => {
-        wsManager.removeClient(ws.raw as any);
+        wsManager.removeClient(ws.raw as unknown as import("ws").WebSocket);
       },
     };
   })
@@ -415,7 +421,7 @@ pluginManager.initialize().catch((error) => {
 });
 
 // Start auto-shutdown background checker
-startAutoShutdownChecker();
+StartAutoShutdownChecker();
 
 // Graceful shutdown handling
 // Stop all plugin workers when the process is terminating

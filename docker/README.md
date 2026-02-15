@@ -61,7 +61,7 @@ The easiest way to deploy StellarStack:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/stellarstack.git
+git clone https://gitlab.com/your-org/stellarstack.git
 cd stellarstack/docker
 
 # 2. Run the setup script
@@ -584,7 +584,7 @@ docker run --rm \
 2. **Install Docker and Docker Compose**
 3. **Clone repository**
    ```bash
-   git clone https://github.com/your-org/stellarstack.git
+   git clone https://gitlab.com/your-org/stellarstack.git
    cd stellarstack/docker
    ```
 4. **Restore `.env` file**
@@ -655,8 +655,8 @@ To use a custom domain provider:
 ## Support
 
 - **Documentation**: See root `README.md`
-- **Issues**: [GitHub Issues](https://github.com/your-org/stellarstack/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/stellarstack/discussions)
+- **Issues**: [GitLab Issues](https://gitlab.com/your-org/stellarstack/-/issues)
+- **Discussions**: [GitLab Issues](https://gitlab.com/your-org/stellarstack/-/issues)
 
 ## License
 

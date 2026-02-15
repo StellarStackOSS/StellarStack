@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const TextureCardStyled = React.forwardRef<
   HTMLDivElement,
@@ -27,6 +27,7 @@ const TextureCardStyled = React.forwardRef<
     </div>
   </div>
 ));
+TextureCardStyled.displayName = "TextureCardStyled";
 
 // Allows for global css overrides and theme support - similar to shad cn
 const TextureCard = React.forwardRef<

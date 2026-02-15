@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Input = ({ className, type, ...props }: React.ComponentProps<"input">) => {
   return (

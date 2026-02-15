@@ -1,7 +1,12 @@
 "use client";
 
 import { createContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { Command, CommandMenuState, CommandMenuContextType, CommandContext } from "./commands/types";
+import {
+  Command,
+  CommandMenuState,
+  CommandMenuContextType,
+  CommandContext,
+} from "./commands/types";
 
 /** Context for command menu state and methods */
 export const CommandMenuContext = createContext<CommandMenuContextType | undefined>(undefined);

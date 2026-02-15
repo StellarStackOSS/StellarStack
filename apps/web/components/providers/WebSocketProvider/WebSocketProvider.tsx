@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from "react";
-import { useGlobalWebSocket } from "@/hooks/useWebSocket";
+import { useGlobalWebSocket } from "@/hooks/UseWebSocket";
 
 interface WebSocketContextType {
   isConnected: boolean;

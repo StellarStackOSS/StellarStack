@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import type { TimestampColumnTooltipProps, TooltipPosition } from "./types";
 
 export type { TimestampColumnTooltipProps, TooltipPosition };
@@ -71,7 +71,8 @@ const TimestampColumnTooltip = ({ timestamp, position }: TimestampColumnTooltipP
   return createPortal(
     <div
       className={cn(
-        "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100 border-zinc-200/10 bg-[#0f0f0f]/80")}
+        "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border border-zinc-200/10 bg-[#0f0f0f]/80 p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100"
+      )}
       style={{
         top: position.top,
         left: position.left,

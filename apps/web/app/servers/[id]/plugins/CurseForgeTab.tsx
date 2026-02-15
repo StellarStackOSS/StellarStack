@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import Input from "@stellarUI/components/Input/Input";
@@ -23,7 +23,7 @@ import {
   BsChevronRight,
 } from "react-icons/bs";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { pluginsApi, type CurseForgeSearchResult } from "@/lib/api";
+import { pluginsApi, type CurseForgeSearchResult } from "@/lib/Api";
 import { toast } from "sonner";
 
 interface CurseForgeTabProps {

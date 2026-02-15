@@ -95,7 +95,7 @@ const OverviewShowcase = (): JSX.Element => {
       <DragDropGridMockProvider defaultSize="sm">
         <div className="flex flex-col gap-3">
           {/* Top row: metric cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="h-[200px]">
               <CpuCard
                 itemId="demo-cpu"
@@ -135,11 +135,7 @@ const OverviewShowcase = (): JSX.Element => {
 
           {/* Bottom: console */}
           <div className="h-[250px]">
-            <Console
-              lines={CONSOLE_LINES}
-              isOffline={false}
-              showSendButton
-            />
+            <Console lines={CONSOLE_LINES} isOffline={false} showSendButton />
           </div>
         </div>
       </DragDropGridMockProvider>

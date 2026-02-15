@@ -17,11 +17,38 @@
         "uiSchema": {
           "type": "form",
           "fields": [
-            {"name": "serverName", "type": "text", "label": "Server Name", "placeholder": "Enter server name", "required": true},
-            {"name": "maxPlayers", "type": "number", "label": "Max Players", "placeholder": "20", "min": 1, "max": 1000},
-            {"name": "enablePvp", "type": "checkbox", "label": "Enable PvP", "default": true},
-            {"name": "difficulty", "type": "select", "label": "Difficulty", "options": [{"label": "Easy", "value": "easy"}, {"label": "Normal", "value": "normal"}, {"label": "Hard", "value": "hard"}]},
-            {"name": "motd", "type": "textarea", "label": "Message of the Day", "placeholder": "Welcome to our server!"}
+            {
+              "name": "serverName",
+              "type": "text",
+              "label": "Server Name",
+              "placeholder": "Enter server name",
+              "required": true
+            },
+            {
+              "name": "maxPlayers",
+              "type": "number",
+              "label": "Max Players",
+              "placeholder": "20",
+              "min": 1,
+              "max": 1000
+            },
+            { "name": "enablePvp", "type": "checkbox", "label": "Enable PvP", "default": true },
+            {
+              "name": "difficulty",
+              "type": "select",
+              "label": "Difficulty",
+              "options": [
+                { "label": "Easy", "value": "easy" },
+                { "label": "Normal", "value": "normal" },
+                { "label": "Hard", "value": "hard" }
+              ]
+            },
+            {
+              "name": "motd",
+              "type": "textarea",
+              "label": "Message of the Day",
+              "placeholder": "Welcome to our server!"
+            }
           ],
           "submitAction": "save-settings",
           "loadAction": "load-settings"
@@ -30,7 +57,11 @@
     ]
   },
   "actions": [
-    {"id": "save-settings", "name": "Save Settings", "operations": [{"type": "send-command", "command": "say Settings saved successfully"}]},
-    {"id": "load-settings", "name": "Load Settings", "operations": []}
+    {
+      "id": "save-settings",
+      "name": "Save Settings",
+      "operations": [{ "type": "send-command", "command": "say Settings saved successfully" }]
+    },
+    { "id": "load-settings", "name": "Load Settings", "operations": [] }
   ]
 }

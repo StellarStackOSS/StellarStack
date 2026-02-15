@@ -26,7 +26,7 @@
       "versioning": "default",
       "include-component-in-tag": false,
       "pull-request-title-pattern": "chore: release v${version}",
-      "changelog-host": "https://github.com"
+      "changelog-host": "https://gitlab.com"
     }
   },
   "bootstrap-sha": "e6bd66507c28897dda4f6be7143969e96e23a92a"

@@ -1,0 +1,108 @@
+# Daemon Release Pipeline — triggered by daemon-v* tags or manual
+# Equivalent to the old .github/workflows/daemon-release.yml
+
+.daemon-release-rules:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^daemon-v/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        DAEMON_VERSION: $VERSION
+      when: manual
+
+# ─── Build daemon binaries ──────────────────────────────────────────
+daemon-build:
+  extends:
+    - .rust-setup
+    - .daemon-release-rules
+  stage: build
+  parallel:
+    matrix:
+      - TARGET: x86_64-unknown-linux-gnu
+        ARTIFACT_NAME: stellar-daemon-linux-x86_64
+        USE_CROSS: "false"
+      - TARGET: aarch64-unknown-linux-gnu
+        ARTIFACT_NAME: stellar-daemon-linux-aarch64
+        USE_CROSS: "true"
+  script:
+    - rustup target add $TARGET
+    - |
+      if [ "$USE_CROSS" = "true" ]; then
+        apt-get update && apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        cargo install cross --git https://github.com/cross-rs/cross
+        cd apps/daemon
+        cross build --release --target $TARGET
+      else
+        cd apps/daemon
+        cargo build --release --target $TARGET
+      fi
+    - cp target/$TARGET/release/stellar-daemon $ARTIFACT_NAME
+    - |
+      if [ "$USE_CROSS" = "true" ]; then
+        aarch64-linux-gnu-strip $ARTIFACT_NAME || true
+      else
+        strip $ARTIFACT_NAME || true
+      fi
+  artifacts:
+    paths:
+      - apps/daemon/$ARTIFACT_NAME
+    expire_in: 1 day
+
+# ─── Create daemon release ──────────────────────────────────────────
+daemon-release:
+  extends: .daemon-release-rules
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: daemon-build
+      artifacts: true
+  script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        VERSION=${CI_COMMIT_TAG#daemon-v}
+        TAG=$CI_COMMIT_TAG
+      else
+        VERSION=$DAEMON_VERSION
+        TAG="daemon-v${VERSION}"
+      fi
+      echo "VERSION=$VERSION" > release.env
+      echo "TAG=$TAG" >> release.env
+    - |
+      mkdir -p release
+      find apps/daemon -maxdepth 1 -name "stellar-daemon-*" -exec cp {} release/ \;
+      cd release && sha256sum * > checksums.txt
+  artifacts:
+    paths:
+      - release/
+    reports:
+      dotenv: release.env
+    expire_in: 1 day
+  release:
+    tag_name: $TAG
+    name: "Daemon v${VERSION}"
+    description: |
+      ## StellarStack Daemon v${VERSION}
+
+      ### Installation
+
+      ```bash
+      curl -fsSL https://gitlab.com/StellarStackOSS/stellarstack/-/raw/master/apps/daemon/install.sh | sudo bash
+      ```
+
+      ### Manual Download
+
+      | Platform | Architecture | Download |
+      |----------|-------------|----------|
+      | Linux | x86_64 | stellar-daemon-linux-x86_64 |
+      | Linux | ARM64 | stellar-daemon-linux-aarch64 |
+
+      ### Checksums
+
+      See `checksums.txt` in the release assets.
+    assets:
+      links:
+        - name: stellar-daemon-linux-x86_64
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/release/stellar-daemon-linux-x86_64"
+        - name: stellar-daemon-linux-aarch64
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/release/stellar-daemon-linux-aarch64"
+        - name: checksums.txt
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/release/checksums.txt"

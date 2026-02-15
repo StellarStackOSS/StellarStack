@@ -27,7 +27,11 @@ import {
  */
 const GetActionMeta = (
   action: MockScheduleTask["action"]
-): { label: string; variant: "success" | "destructive" | "warning" | "accent" | "primary"; icon: JSX.Element } => {
+): {
+  label: string;
+  variant: "success" | "destructive" | "warning" | "accent" | "primary";
+  icon: JSX.Element;
+} => {
   switch (action) {
     case "power_start":
       return { label: "Start", variant: "success", icon: <Play size={12} /> };
@@ -64,12 +68,12 @@ const TaskPill = ({ task, isExecuting = false }: TaskPillProps): JSX.Element => 
 
   if (isExecuting) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/50 px-2 py-1 text-xs transition-all">
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-500 bg-blue-900/30 px-2 py-1 text-xs ring-1 ring-blue-500/50 transition-all">
         <Spinner className="h-3 w-3 text-blue-400" />
         {meta.icon}
         <span className="text-white/80">{meta.label}</span>
         {task.payload && (
-          <span className="text-white/40 max-w-[60px] truncate">{task.payload}</span>
+          <span className="max-w-[60px] truncate text-white/40">{task.payload}</span>
         )}
       </span>
     );
@@ -79,9 +83,7 @@ const TaskPill = ({ task, isExecuting = false }: TaskPillProps): JSX.Element => 
     <TextureBadge variant="ghost" size="sm">
       {meta.icon}
       {meta.label}
-      {task.payload && (
-        <span className="opacity-60 max-w-[60px] truncate">{task.payload}</span>
-      )}
+      {task.payload && <span className="max-w-[60px] truncate opacity-60">{task.payload}</span>}
     </TextureBadge>
   );
 };
@@ -108,11 +110,11 @@ interface ScheduleCardProps {
  */
 const ScheduleCard = ({ schedule, active, onToggle }: ScheduleCardProps): JSX.Element => {
   return (
-    <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 flex flex-col gap-3">
+    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-white/90 font-medium">{schedule.name}</span>
+          <span className="font-medium text-white/90">{schedule.name}</span>
           <TextureBadge variant="secondary" size="sm">
             {schedule.tasks.length} {schedule.tasks.length === 1 ? "task" : "tasks"}
           </TextureBadge>
@@ -120,13 +122,13 @@ const ScheduleCard = ({ schedule, active, onToggle }: ScheduleCardProps): JSX.El
         {/* Toggle switch */}
         <button
           onClick={onToggle}
-          className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+          className={`relative h-5 w-10 rounded-full transition-colors duration-200 ${
             active ? "bg-emerald-500" : "bg-zinc-700"
           }`}
           aria-label={`${active ? "Disable" : "Enable"} ${schedule.name}`}
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+            className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform duration-200 ${
               active ? "translate-x-5" : "translate-x-0"
             }`}
           />
@@ -134,15 +136,12 @@ const ScheduleCard = ({ schedule, active, onToggle }: ScheduleCardProps): JSX.El
       </div>
 
       {/* Task flow pills */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-1.5">
         {schedule.tasks.map((task, i) => (
           <div key={task.id} className="flex items-center gap-1.5">
-            <TaskPill
-              task={task}
-              isExecuting={schedule.executingTaskIndex === i}
-            />
+            <TaskPill task={task} isExecuting={schedule.executingTaskIndex === i} />
             {i < schedule.tasks.length - 1 && (
-              <ArrowRight className="text-white/30 shrink-0" size={12} />
+              <ArrowRight className="shrink-0 text-white/30" size={12} />
             )}
           </div>
         ))}
@@ -186,19 +185,17 @@ const TaskFlowNode = ({ task, index }: TaskFlowNodeProps): JSX.Element => {
       className="flex items-center gap-3"
     >
       {/* Sequence circle */}
-      <div className="w-7 h-7 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-xs text-white/60 shrink-0">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/60">
         {task.sequence}
       </div>
 
       {/* Task info */}
-      <div className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 flex items-center gap-2">
+      <div className="flex flex-1 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
         <TextureBadge variant="ghost" size="sm">
           {meta.icon}
           {meta.label}
         </TextureBadge>
-        {task.payload && (
-          <span className="text-xs text-white/40 font-mono">{task.payload}</span>
-        )}
+        {task.payload && <span className="font-mono text-xs text-white/40">{task.payload}</span>}
       </div>
 
       {/* Trigger badge */}
@@ -262,9 +259,7 @@ const SchedulesShowcase = (): JSX.Element => {
 
   // Override the first schedule's executingTaskIndex with the animated value
   const animatedSchedules = MOCK_SCHEDULES.map((schedule) =>
-    schedule.id === "sched-1"
-      ? { ...schedule, executingTaskIndex: executingIndex }
-      : schedule
+    schedule.id === "sched-1" ? { ...schedule, executingTaskIndex: executingIndex } : schedule
   );
 
   return (
@@ -294,13 +289,13 @@ const SchedulesShowcase = (): JSX.Element => {
 
         {/* Task flow visualization */}
         <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
-          <div className="text-xs text-white/40 uppercase tracking-wider mb-3">
+          <div className="mb-3 text-xs tracking-wider text-white/40 uppercase">
             Task Flow — {primarySchedule.name}
           </div>
 
-          <div className="flex flex-col gap-2 relative">
+          <div className="relative flex flex-col gap-2">
             {/* Connecting line */}
-            <div className="absolute left-[13px] top-[28px] bottom-[28px] w-px bg-white/10" />
+            <div className="absolute top-[28px] bottom-[28px] left-[13px] w-px bg-white/10" />
 
             {primarySchedule.tasks.map((task, i) => (
               <TaskFlowNode key={task.id} task={task} index={i} />

@@ -18,12 +18,12 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Development Setup
 
-1. **Fork the repository** on GitHub
+1. **Fork the project** on GitLab
 
 2. **Clone your fork:**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/stellarstack.git
+git clone https://gitlab.com/YOUR_USERNAME/stellarstack.git
 cd stellarstack/stack
 ```
 
@@ -265,7 +265,7 @@ StellarStack uses automated releases powered by [release-please](https://github.
    - Creates a pull request with these updates
 
 3. **Merge to Release**: When the release PR is merged:
-   - A GitHub release is created with the new version tag
+   - A GitLab release is created with the new version tag
    - Linear ticket IDs in the changelog are automatically linked
    - Docker images are built and pushed to Docker Hub
    - The manifest file is updated with the new version
@@ -344,7 +344,7 @@ Add relevant screenshots or error logs
 
 ## Security Vulnerabilities
 
-**Do not** report security vulnerabilities through public GitHub issues.
+**Do not** report security vulnerabilities through public GitLab issues.
 
 Instead, please email security@stellarstack.dev (or the maintainer directly) with:
 
@@ -358,7 +358,7 @@ We will respond within 48 hours and work with you to address the issue.
 ## Questions?
 
 - **Discord**: Join our Discord server for real-time help
-- **Discussions**: Use GitHub Discussions for questions
+- **Discussions**: Use GitLab Issues for questions
 - **Issues**: For bugs and feature requests
 
 ## License

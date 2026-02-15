@@ -49,7 +49,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
-      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased overflow-x-hidden bg-[#101010] text-white`}>
+      <body
+        className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-[#101010] font-sans text-white antialiased`}
+      >
         {children}
       </body>
     </html>

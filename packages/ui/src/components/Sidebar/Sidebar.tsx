@@ -3,10 +3,9 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
 
-import { useIsMobile } from "@stellarUI/hooks/use-mobile";
-import { cn } from "@stellarUI/lib/utils";
+import { useIsMobile } from "@stellarUI/hooks/UseMobile";
+import { cn } from "@stellarUI/lib/Utils";
 import Button from "@stellarUI/components/Button/Button";
 import Input from "@stellarUI/components/Input/Input";
 import Separator from "@stellarUI/components/Separator/Separator";

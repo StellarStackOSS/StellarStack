@@ -2,11 +2,10 @@
 
 import { type JSX, useCallback, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
@@ -21,17 +20,17 @@ import {
   BsTrash,
 } from "react-icons/bs";
 import { toast } from "sonner";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import {
   usePermissionDefinitions,
   useServerInvitations,
   useServerMemberMutations,
   useServerMembers,
-} from "@/hooks/queries/use-server-members";
-import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/api";
+} from "@/hooks/queries/UseServerMembers";
+import type { PermissionCategory, ServerInvitation, ServerMember } from "@/lib/Api";
 import Label from "@stellarUI/components/Label/Label";
 import Checkbox from "@stellarUI/components/Checkbox/Checkbox";
 
@@ -302,11 +301,10 @@ const UsersPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div className="flex items-center gap-2">
                 {isOwner && (
                   <TextureButton
@@ -326,7 +324,7 @@ const UsersPage = (): JSX.Element | null => {
           {/* Pending Invitations Card */}
           {invitations.length > 0 && (
             <FadeIn delay={0.05}>
-              <div className="mb-4 flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="bg-muted mb-4 flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
                   <div className="flex items-center gap-2 text-xs opacity-50">
                     <BsEnvelope className="h-3 w-3" />
@@ -336,7 +334,7 @@ const UsersPage = (): JSX.Element | null => {
                     {invitations.length} invitation{invitations.length !== 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                   {invitations.map((invitation, index) => (
                     <div
                       key={invitation.id}
@@ -382,7 +380,7 @@ const UsersPage = (): JSX.Element | null => {
 
           {/* Members Card */}
           <FadeIn delay={invitations.length > 0 ? 0.1 : 0.05}>
-            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+            <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
               <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
                 <div className="flex items-center gap-2 text-xs opacity-50">
                   <BsPeopleFill className="h-3 w-3" />
@@ -392,7 +390,7 @@ const UsersPage = (): JSX.Element | null => {
                   {members.length + 1} member{members.length !== 0 ? "s" : ""}
                 </span>
               </div>
-              <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+              <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Spinner />

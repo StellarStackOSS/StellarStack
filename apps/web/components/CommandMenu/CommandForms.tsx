@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useCommandMenu } from "./hooks/useCommandMenu";
+import { useCommandMenu } from "./hooks/UseCommandMenu";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 import Switch from "@stellarUI/components/Switch/Switch";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { servers } from "@/lib/api";
+import { servers } from "@/lib/Api";
 import { toast } from "sonner";
 
 /**
@@ -123,7 +123,7 @@ export const CommandForms = () => {
         }}
         isLoading={false}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           You'll be taken to the schedules page where you can create a detailed schedule with cron
           expressions and multiple tasks.
         </p>
@@ -146,7 +146,7 @@ export const CommandForms = () => {
         }}
         isLoading={false}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           You'll be taken to the file manager where you can upload and manage your server files.
         </p>
       </FormModal>

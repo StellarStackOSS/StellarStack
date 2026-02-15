@@ -1,13 +1,13 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard from "../UsageCard/UsageCard";
 import type {
   CardProps,
   ContainerControlsCardLabels,
   ContainerStatus,
-} from "../dashboard-cards-types/types";
+} from "../DashboardCardsTypes/Types";
 
 interface InstanceNameCardProps extends CardProps {
   instanceName: string;
@@ -46,7 +46,6 @@ const InstanceNameCard = ({
   const anyLoading =
     loadingStates.start || loadingStates.stop || loadingStates.kill || loadingStates.restart;
 
-  const startDisabled = isRunning || isTransitioning || anyLoading;
   const stopDisabled = isStopped || isOffline || isTransitioning || anyLoading;
   const killDisabled = isStopped || isOffline || isTransitioning || anyLoading;
   const restartDisabled = isStopped || isOffline || isTransitioning || anyLoading;
@@ -56,20 +55,19 @@ const InstanceNameCard = ({
     isTransitioning ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-50"
   );
 
-
   return (
     <UsageCard className="flex h-full flex-row items-center justify-between">
-      <div
-        className={cn("font-mono text-2xl uppercase text-zinc-400")}
-      >
-        {instanceName}
-      </div>
+      <div className={cn("font-mono text-2xl text-zinc-400 uppercase")}>{instanceName}</div>
 
       <div className="flex flex-row gap-4">
         <span
           onClick={() => {
             if (isTransitioning || anyLoading) return;
-            isRunning ? onStop() : onStart();
+            if (isRunning) {
+              onStop();
+            } else {
+              onStart();
+            }
           }}
           className={baseButtonClass}
         >

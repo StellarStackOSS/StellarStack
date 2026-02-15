@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # StellarStack Panel & API Installer (Docker-based)
-# https://github.com/MarquesCoding/StellarStack
+# https://gitlab.com/StellarStackOSS/stellarstack
 
 set -e
 
@@ -19,7 +19,7 @@ error_handler() {
     echo -e "${ERROR}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${SECONDARY}  Please report this issue with the error details above.${NC}"
-    echo -e "${SECONDARY}  GitHub: https://github.com/MarquesCoding/StellarStack/issues${NC}"
+    echo -e "${SECONDARY}  GitLab: https://gitlab.com/StellarStackOSS/stellarstack/-/issues${NC}"
     echo ""
     exit 1
 }
@@ -79,7 +79,7 @@ daemon_ssl_domain=""
 daemon_enable_redis="n"
 daemon_redis_url=""
 DAEMON_INSTALL_DIR="/opt/stellar-daemon"
-GITHUB_REPO="MarquesCoding/StellarStack"
+GITLAB_REPO="StellarStackOSS/stellarstack"
 
 # PostgreSQL configuration
 postgres_user="stellarstack"
@@ -2968,7 +2968,7 @@ install_daemon() {
     rm -rf "${BUILD_DIR}"
 
     print_task "Cloning repository"
-    git clone --depth 1 "https://github.com/${GITHUB_REPO}.git" "${BUILD_DIR}" > /dev/null 2>&1
+    git clone --depth 1 "https://gitlab.com/${GITLAB_REPO}.git" "${BUILD_DIR}" > /dev/null 2>&1
     print_task_done "Cloning repository"
 
     echo ""

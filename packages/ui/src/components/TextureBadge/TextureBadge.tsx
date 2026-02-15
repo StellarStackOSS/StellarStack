@@ -1,15 +1,13 @@
 import * as React from "react";
-import {Slot} from "@radix-ui/react-slot";
-import {cva, type VariantProps} from "class-variance-authority";
-import {cn} from "@stellarUI/lib/utils";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@stellarUI/lib/Utils";
 
 const textureBadgeOuter = cva("", {
   variants: {
     variant: {
-      primary:
-        "bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px]",
-      secondary:
-        "bg-white/60 dark:bg-neutral-600/50 p-[1px]",
+      primary: "bg-gradient-to-b from-black/70 to-black dark:from-white dark:to-white/80 p-[1px]",
+      secondary: "bg-white/60 dark:bg-neutral-600/50 p-[1px]",
       accent:
         "bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px]",
       destructive:
@@ -18,8 +16,7 @@ const textureBadgeOuter = cva("", {
         "bg-gradient-to-b from-emerald-300/90 to-emerald-500 dark:from-emerald-300/70 dark:to-emerald-600 p-[1px]",
       warning:
         "bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px]",
-      ghost:
-        "border border-transparent bg-transparent p-[1px]",
+      ghost: "border border-transparent bg-transparent p-[1px]",
     },
     size: {
       sm: "rounded-[4px]",
@@ -82,4 +79,4 @@ const TextureBadge = ({
   );
 };
 
-export default TextureBadge
+export default TextureBadge;

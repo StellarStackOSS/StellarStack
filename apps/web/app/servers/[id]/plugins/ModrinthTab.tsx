@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import React, { type JSX, useState, useCallback } from "react";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import Input from "@stellarUI/components/Input/Input";
@@ -15,7 +15,7 @@ import Dialog, {
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import { BsSearch, BsDownload, BsBox, BsClock, BsHeart } from "react-icons/bs";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { pluginsApi } from "@/lib/api";
+import { pluginsApi } from "@/lib/Api";
 import { toast } from "sonner";
 
 interface ModrinthTabProps {
@@ -60,7 +60,7 @@ interface ModrinthVersion {
   }>;
 }
 
-export function ModrinthTab({ serverId }: ModrinthTabProps) {
+export const ModrinthTab = ({ serverId }: ModrinthTabProps): JSX.Element => {
   const [searchQuery, setSearchQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<ModrinthProject | null>(null);
@@ -355,4 +355,4 @@ export function ModrinthTab({ serverId }: ModrinthTabProps) {
       />
     </div>
   );
-}
+};

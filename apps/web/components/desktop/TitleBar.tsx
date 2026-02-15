@@ -88,7 +88,15 @@ const TitleBar = (): React.JSX.Element => {
           }}
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" strokeWidth="1" fill="none" />
+            <rect
+              x="0.5"
+              y="0.5"
+              width="9"
+              height="9"
+              stroke="currentColor"
+              strokeWidth="1"
+              fill="none"
+            />
           </svg>
         </button>
 

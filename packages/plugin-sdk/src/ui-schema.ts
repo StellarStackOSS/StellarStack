@@ -61,7 +61,13 @@ export interface PasswordField extends BaseField {
   minLength?: number;
 }
 
-export type FieldSchema = StringField | NumberField | BooleanField | SelectField | TextareaField | PasswordField;
+export type FieldSchema =
+  | StringField
+  | NumberField
+  | BooleanField
+  | SelectField
+  | TextareaField
+  | PasswordField;
 
 // ============================================
 // UI Schema Types
