@@ -29,6 +29,7 @@ pre-build:
     - .node-setup
     - .ci-rules
   stage: pre-build
+  tags: [saas-linux-2xlarge-amd64]
   needs: [install]
   script:
     - pnpm turbo typecheck lint --env-mode=loose
@@ -39,6 +40,7 @@ build:
     - .node-setup
     - .ci-rules
   stage: build
+  tags: [saas-linux-2xlarge-amd64]
   needs: [pre-build]
   script:
     - pnpm turbo build --env-mode=loose
