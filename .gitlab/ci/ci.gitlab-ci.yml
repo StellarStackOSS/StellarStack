@@ -187,13 +187,13 @@ code-analysis:
   - |
     add_custom_domain() {
       # $1 = service ID, $2 = environment ID, $3 = domain
-      railway_gql "{\"query\":\"mutation { customDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", domain: \\\"$3\\\" }) { id domain } }\"}"
+      railway_gql "{\"query\":\"mutation { customDomainCreate(input: { projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", domain: \\\"$3\\\" }) { id domain } }\"}"
     }
   - |
     ensure_service_domain() {
       # $1 = service ID, $2 = environment ID
       # Returns existing Railway domain or creates one
-      DOMAIN=$(railway_gql "{\"query\":\"{ domains(serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") { serviceDomains { domain } } }\"}" \
+      DOMAIN=$(railway_gql "{\"query\":\"{ domains(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") { serviceDomains { domain } } }\"}" \
         | jq -r '.data.domains.serviceDomains[0].domain // empty')
       if [ -z "$DOMAIN" ]; then
         DOMAIN=$(railway_gql "{\"query\":\"mutation { serviceDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\" }) { domain } }\"}" \
@@ -256,6 +256,11 @@ code-analysis:
         list_services
         return 1
       fi
+
+      echo "=== Configuring Postgres + Redis ==="
+      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_PASSWORD" "stellar"
+      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_USER" "stellar"
+      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_DB" "stellar"
 
       PANEL_URL="https://${2}-panel.stellarstack.dev"
       API_URL="https://${2}-api.stellarstack.dev"
