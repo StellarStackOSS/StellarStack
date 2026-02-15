@@ -1,0 +1,134 @@
+# Release Management Pipeline
+# Equivalent to the old .github/workflows/release-please.yml and sync-changelog.yml
+#
+# Uses release-please CLI for automated versioning and changelog generation.
+# Triggers Docker builds after a release is created.
+
+# ─── Release Please (create/update MR) ──────────────────────────────
+release-please:
+  stage: release
+  image: node:${NODE_VERSION}
+  script:
+    - npx release-please release-pr
+        --repo-url="${CI_PROJECT_URL}"
+        --token="${GITLAB_TOKEN}"
+        --target-branch=master
+        --config-file=release-please-config.json
+        --manifest-file=.release-please-manifest.json
+    - npx release-please gitlab-release
+        --repo-url="${CI_PROJECT_URL}"
+        --token="${GITLAB_TOKEN}"
+        --config-file=release-please-config.json
+        --manifest-file=.release-please-manifest.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"
+
+# ─── Update install-script.sh version after release ──────────────────
+update-install-script:
+  stage: release
+  image: node:${NODE_VERSION}
+  needs:
+    - job: release-please
+      optional: true
+  script:
+    - |
+      if [ -z "$CI_COMMIT_TAG" ]; then
+        echo "No tag found, skipping install-script update"
+        exit 0
+      fi
+      VERSION="${CI_COMMIT_TAG#v}"
+      TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+      sed -i "s/^INSTALLER_VERSION=.*/INSTALLER_VERSION=\"${VERSION}\"/" install-script.sh
+      sed -i "s/^INSTALLER_DATE=.*/INSTALLER_DATE=\"${TIMESTAMP}\"/" install-script.sh
+
+      git config user.name "gitlab-ci[bot]"
+      git config user.email "gitlab-ci[bot]@users.noreply.gitlab.com"
+      git add install-script.sh
+      git commit -m "chore: update install-script.sh to version ${VERSION}" || echo "No changes"
+      git push "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:master || echo "Nothing to push"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d/
+
+# ─── Sync Changelog to Docs ─────────────────────────────────────────
+sync-changelog:
+  stage: release
+  image: node:${NODE_VERSION}
+  script:
+    - mkdir -p apps/docs/changelog
+
+    - |
+      cat > apps/docs/changelog/releases.mdx << 'HEADER'
+      ---
+      title: 'Changelog'
+      description: 'Release history and version updates for StellarStack'
+      icon: 'clock'
+      ---
+
+      # Changelog
+
+      All notable changes to StellarStack are documented here. We follow [Semantic Versioning](https://semver.org/).
+
+      HEADER
+
+    - tail -n +2 CHANGELOG.md >> apps/docs/changelog/releases.mdx
+
+    - |
+      if git diff --quiet apps/docs/changelog/releases.mdx; then
+        echo "No changes to sync"
+        exit 0
+      fi
+
+    - git config user.name "gitlab-ci[bot]"
+    - git config user.email "gitlab-ci[bot]@users.noreply.gitlab.com"
+    - git checkout -b docs/sync-changelog
+    - git add apps/docs/changelog/releases.mdx
+    - git commit -m "docs: sync changelog to docs"
+    - git push "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" docs/sync-changelog -o merge_request.create -o merge_request.title="docs: Update changelog in documentation" -o merge_request.remove_source_branch
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - CHANGELOG.md
+
+# ─── Send Discord Notification ───────────────────────────────────────
+discord-notification:
+  stage: release
+  image: alpine:latest
+  needs:
+    - job: release-please
+      optional: true
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ -z "$DISCORD_WEBHOOK" ]; then
+        echo "DISCORD_WEBHOOK not configured, skipping"
+        exit 0
+      fi
+      curl -H "Content-Type: application/json" \
+        -d '{
+          "embeds": [{
+            "title": "New Release: '"${CI_COMMIT_TAG}"'",
+            "description": "A new version of StellarStack has been released!",
+            "url": "'"${CI_PROJECT_URL}/-/releases/${CI_COMMIT_TAG}"'",
+            "color": 5814783,
+            "fields": [
+              {"name": "Version", "value": "'"${CI_COMMIT_TAG}"'", "inline": true},
+              {"name": "Release", "value": "[View Release]('"${CI_PROJECT_URL}/-/releases/${CI_COMMIT_TAG}"')", "inline": true}
+            ],
+            "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"
+          }],
+          "components": [
+            {
+              "type": 1,
+              "components": [
+                {"type": 2, "style": 5, "label": "View Release", "url": "'"${CI_PROJECT_URL}/-/releases/${CI_COMMIT_TAG}"'"},
+                {"type": 2, "style": 5, "label": "View Repository", "url": "'"${CI_PROJECT_URL}"'"},
+                {"type": 2, "style": 5, "label": "View Changelog", "url": "'"${CI_PROJECT_URL}/-/blob/master/CHANGELOG.md"'"}
+              ]
+            }
+          ]
+        }' \
+        "$DISCORD_WEBHOOK" || echo "Failed to send Discord notification"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d/

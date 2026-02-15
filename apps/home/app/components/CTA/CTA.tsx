@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Github } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { SiGitlab } from 'react-icons/si';
 
 /**
  * Call-to-Action section encouraging users to get started with StellarStack.
@@ -86,7 +87,7 @@ const CTA = () => {
           </motion.a>
 
           <motion.a
-            href="https://github.com"
+            href="https://gitlab.com/StellarStackOSS/stellarstack"
             target="_blank"
             rel="noopener noreferrer"
             whileHover="hover"
@@ -94,8 +95,8 @@ const CTA = () => {
             variants={buttonVariants}
             className="flex items-center justify-center gap-2 px-8 py-3 border border-white/40  font-semibold hover:bg-white/5 transition-colors"
           >
-            <Github size={20} />
-            <span>View on GitHub</span>
+            <SiGitlab size={20} />
+            <span>View on GitLab</span>
           </motion.a>
         </motion.div>
 

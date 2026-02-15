@@ -6,21 +6,21 @@
     <br />
     <a href="https://stellarstack.app"><strong>stellarstack.app</strong></a>
     ·
-    <a href="https://github.com/StellarStackOSS/StellarStack/releases"><strong>Releases</strong></a>
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack/-/releases"><strong>Releases</strong></a>
     ·
     <a href="https://linear.app/stellarstack"><strong>Linear</strong></a>
   </p>
   <p align="center">
-    <a href="https://github.com/StellarStackOSS/StellarStack/blob/master/LICENSE">
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack/-/blob/master/LICENSE">
       <img src="https://img.shields.io/static/v1?label=License&message=MIT&color=blue" />
     </a>
-    <a href="https://github.com/StellarStackOSS/StellarStack">
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack">
       <img src="https://img.shields.io/static/v1?label=Backend&message=Hono&color=E36002" />
     </a>
-    <a href="https://github.com/StellarStackOSS/StellarStack">
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack">
       <img src="https://img.shields.io/static/v1?label=Frontend&message=Next.js%2015&color=000" />
     </a>
-    <a href="https://github.com/StellarStackOSS/StellarStack">
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack">
       <img src="https://img.shields.io/static/v1?label=Daemon&message=Rust&color=DEA584" />
     </a>
   </p>
@@ -141,7 +141,7 @@ Game servers stay isolated in Docker. The daemon handles port allocation, resour
 
 ### **DevOps**
 
-- **GitHub Actions** - CI/CD for Docker builds and releases
+- **GitLab CI/CD** - CI/CD for Docker builds and releases
 - **[release-please](https://github.com/googleapis/release-please)** - Automated changelog and versioning
 - **commitlint** - Conventional commits with Linear ticket integration
 
@@ -169,7 +169,7 @@ stellarstack/
 │   ├── ui/                # Shared UI components
 │   ├── eslint-config/     # Shared ESLint configs
 │   └── typescript-config/ # Shared TypeScript configs
-├── .github/
+├── .gitlab/
 │   └── workflows/         # CI/CD pipelines
 ├── docker/
 │   ├── dockerfiles/       # API and web Dockerfiles
@@ -192,8 +192,8 @@ stellarstack/
 
 ```bash
 # Clone the repository
-git clone https://github.com/StellarStackOSS/StellarStack.git
-cd StellarStack
+git clone https://gitlab.com/StellarStackOSS/stellarstack.git
+cd stellarstack
 
 # Install dependencies
 pnpm install
@@ -225,7 +225,7 @@ pnpm dev
 One-command installer for Ubuntu 22.04+:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/StellarStackOSS/StellarStack/master/install-script.sh | sudo bash
+curl -sSL https://gitlab.com/StellarStackOSS/stellarstack/-/raw/master/install-script.sh | sudo bash
 ```
 
 This installs:
@@ -236,14 +236,14 @@ This installs:
 - nginx reverse proxy
 - SSL via Certbot (if domain provided)
 
-See the [Installation Guide](https://github.com/StellarStackOSS/StellarStack#installation) for detailed steps and manual setup.
+See the [Installation Guide](https://gitlab.com/StellarStackOSS/stellarstack#installation) for detailed steps and manual setup.
 
 ### Docker Compose (Self-Hosting)
 
 ```bash
 # Clone repository
-git clone https://github.com/StellarStackOSS/StellarStack.git
-cd StellarStack
+git clone https://gitlab.com/StellarStackOSS/stellarstack.git
+cd stellarstack
 
 # Copy and configure environment
 cp .env.example .env
@@ -343,10 +343,10 @@ StellarStack uses automated releases via [release-please](https://github.com/goo
 
 1. **Conventional commits** determine version bump (feat = minor, fix = patch)
 2. **Release-please** creates a PR with changelog and version bump
-3. **Merge the PR** to trigger GitHub release
+3. **Merge the PR** to trigger GitLab release
 4. **Docker images** automatically built and pushed to Docker Hub
 
-All releases link Linear tickets in the changelog. See [Releases](https://github.com/StellarStackOSS/StellarStack/releases) for history.
+All releases link Linear tickets in the changelog. See [Releases](https://gitlab.com/StellarStackOSS/stellarstack/-/releases) for history.
 
 ---
 
@@ -399,7 +399,7 @@ You're free to use, modify, and distribute StellarStack for personal or commerci
 
 ## Community
 
-- **GitHub**: [StellarStackOSS](https://github.com/StellarStackOSS)
+- **GitLab**: [StellarStackOSS](https://gitlab.com/StellarStackOSS)
 - **Linear**: [linear.app/stellarstack](https://linear.app/stellarstack)
 - **Website**: [stellarstack.app](https://stellarstack.app)
 
@@ -409,7 +409,7 @@ You're free to use, modify, and distribute StellarStack for personal or commerci
   <p>Built with ❤️ for the game hosting community</p>
   <p>
     <a href="https://stellarstack.app">Website</a> ·
-    <a href="https://github.com/StellarStackOSS/StellarStack/releases">Releases</a> ·
+    <a href="https://gitlab.com/StellarStackOSS/stellarstack/-/releases">Releases</a> ·
     <a href="CONTRIBUTING.md">Contributing</a> ·
     <a href="https://linear.app/stellarstack">Linear</a>
   </p>

@@ -145,7 +145,7 @@ const PluginsPage = () => {
       // Validate URL format (basic check)
       if (!installRepoUrl.includes("github.com") && !installRepoUrl.includes("gitlab.com")) {
         setInstallError(
-          "Only GitHub and GitLab repositories are supported. Please use a URL like https://github.com/username/plugin-name"
+          "Only GitHub and GitLab repositories are supported. Please use a URL like https://gitlab.com/username/plugin-name"
         );
         setIsInstalling(false);
         return;
@@ -516,7 +516,7 @@ const PluginsPage = () => {
               <Label className="text-sm text-zinc-200">Repository URL</Label>
               <Input
                 type="url"
-                placeholder="https://github.com/username/extension-name"
+                placeholder="https://gitlab.com/username/extension-name"
                 value={installRepoUrl}
                 onChange={(e) => {
                   setInstallRepoUrl(e.target.value);

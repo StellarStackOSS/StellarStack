@@ -3,7 +3,7 @@
 **Current Version:** 1.3.9
 **Last Updated:** February 6, 2026
 **Total Commits:** 270
-**Repository:** https://github.com/StellarStackOSS/StellarStack
+**Repository:** https://gitlab.com/StellarStackOSS/stellarstack
 
 ---
 
@@ -17,7 +17,7 @@ StellarStack is a modern, open-source game server management panel designed for 
 - **Plugin system** with 4-phase implementation (completed)
 - **100% TypeScript** codebase with zero `any` types
 - **Monorepo architecture** using Turborepo
-- **Automated CI/CD** with GitHub Actions
+- **Automated CI/CD** with GitLab CI/CD
 
 ---
 
@@ -246,7 +246,7 @@ stellarstack/
 - **Components:** 50+ reusable UI components
 - **API Endpoints:** 45+ permission nodes
 - **Database:** PostgreSQL with Prisma
-- **CI/CD:** GitHub Actions with automated versioning
+- **CI/CD:** GitLab CI/CD with automated versioning
 
 ### Build System
 - **Package Manager:** pnpm 10.4.1
@@ -370,8 +370,8 @@ Based on commit history analysis and code structure:
 ## Community & Contribution
 
 - **License:** MIT (Open Source)
-- **Repository:** https://github.com/StellarStackOSS/StellarStack
-- **Issue Tracking:** GitHub Issues + Linear (internal)
+- **Repository:** https://gitlab.com/StellarStackOSS/stellarstack
+- **Issue Tracking:** GitLab Issues + Linear (internal)
 - **Releases:** Automated with release-please
 - **Contributing:** Community contributions welcome
 

@@ -1,0 +1,168 @@
+# Desktop Release Pipeline — triggered by desktop-v* tags or manual
+# Equivalent to the old .github/workflows/desktop-release.yml
+#
+# IMPORTANT: Requires self-hosted runners with the following tags:
+#   - macos    (macOS runner for .dmg builds)
+#   - windows  (Windows runner for .exe/.msi builds)
+#   - linux    (Linux runner for .AppImage/.deb builds)
+
+.desktop-release-rules:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^desktop-v/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        DESKTOP_VERSION: $VERSION
+      when: manual
+
+# ─── Build daemon sidecars (per target) ─────────────────────────────
+desktop-daemon-build:
+  extends:
+    - .rust-setup
+    - .desktop-release-rules
+  stage: build
+  parallel:
+    matrix:
+      - TARGET: x86_64-pc-windows-msvc
+        TAGS: windows
+      - TARGET: x86_64-apple-darwin
+        TAGS: macos
+      - TARGET: aarch64-apple-darwin
+        TAGS: macos
+      - TARGET: x86_64-unknown-linux-gnu
+        TAGS: linux
+  tags:
+    - $TAGS
+  script:
+    - rustup target add $TARGET
+    - cd apps/daemon
+    - cargo build --release --target $TARGET
+  artifacts:
+    paths:
+      - apps/daemon/target/$TARGET/release/stellar-daemon*
+    expire_in: 1 day
+
+# ─── Build Tauri desktop app (per platform) ─────────────────────────
+desktop-build:
+  extends: .desktop-release-rules
+  stage: build
+  needs:
+    - job: desktop-daemon-build
+      artifacts: true
+  parallel:
+    matrix:
+      - PLATFORM: windows-x64
+        TARGET: x86_64-pc-windows-msvc
+        DAEMON_TARGET: x86_64-pc-windows-msvc
+        DAEMON_EXT: ".exe"
+        TAGS: windows
+      - PLATFORM: macos-x64
+        TARGET: x86_64-apple-darwin
+        DAEMON_TARGET: x86_64-apple-darwin
+        DAEMON_EXT: ""
+        TAGS: macos
+      - PLATFORM: macos-arm
+        TARGET: aarch64-apple-darwin
+        DAEMON_TARGET: aarch64-apple-darwin
+        DAEMON_EXT: ""
+        TAGS: macos
+      - PLATFORM: linux-x64
+        TARGET: x86_64-unknown-linux-gnu
+        DAEMON_TARGET: x86_64-unknown-linux-gnu
+        DAEMON_EXT: ""
+        TAGS: linux
+  tags:
+    - $TAGS
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+    - rustup target add $TARGET
+  script:
+    - pnpm install --frozen-lockfile
+
+    # Install Linux system dependencies
+    - |
+      if [ "$(uname)" = "Linux" ]; then
+        apt-get update
+        apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      fi
+
+    # Stage daemon binary
+    - mkdir -p apps/desktop/src-tauri/binaries
+    - |
+      if [ -n "$DAEMON_EXT" ]; then
+        cp "apps/daemon/target/${DAEMON_TARGET}/release/stellar-daemon${DAEMON_EXT}" \
+           "apps/desktop/src-tauri/binaries/stellar-daemon-${DAEMON_TARGET}${DAEMON_EXT}"
+      else
+        cp "apps/daemon/target/${DAEMON_TARGET}/release/stellar-daemon" \
+           "apps/desktop/src-tauri/binaries/stellar-daemon-${DAEMON_TARGET}"
+        chmod +x "apps/desktop/src-tauri/binaries/stellar-daemon-${DAEMON_TARGET}"
+      fi
+
+    # Build web + API + Tauri
+    - DESKTOP_BUILD=true pnpm --filter web build:desktop
+    - node apps/api/build-desktop.mjs
+    - node apps/desktop/prepare-resources.mjs
+    - pnpm --filter desktop tauri build --target $TARGET
+  artifacts:
+    paths:
+      - apps/desktop/src-tauri/target/$TARGET/release/bundle/
+    expire_in: 1 day
+
+# ─── Collect artifacts and create release ────────────────────────────
+desktop-release:
+  extends: .desktop-release-rules
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: desktop-build
+      artifacts: true
+  script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        VERSION=${CI_COMMIT_TAG#desktop-v}
+        TAG=$CI_COMMIT_TAG
+      else
+        VERSION=$DESKTOP_VERSION
+        TAG="desktop-v${VERSION}"
+      fi
+      echo "VERSION=$VERSION" > release.env
+      echo "TAG=$TAG" >> release.env
+
+    # Collect all installers into release/
+    - mkdir -p release
+    - find apps/desktop/src-tauri/target -type f
+        \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" \)
+        -exec cp {} release/ \;
+    - cd release && sha256sum * > checksums.txt
+    - ls -lh
+  artifacts:
+    paths:
+      - release/
+    reports:
+      dotenv: release.env
+    expire_in: 7 days
+  release:
+    tag_name: $TAG
+    name: "Desktop v${VERSION}"
+    description: |
+      ## StellarStack Desktop v${VERSION}
+
+      ### Downloads
+
+      | Platform | Architecture | Format |
+      |----------|-------------|--------|
+      | Windows | x64 | `.exe` (NSIS installer) or `.msi` |
+      | macOS | Intel (x64) | `.dmg` |
+      | macOS | Apple Silicon (ARM) | `.dmg` |
+      | Linux | x64 | `.AppImage` or `.deb` |
+
+      ### Checksums
+
+      See `checksums.txt` in the release assets for SHA256 verification.
+
+      ### Notes
+
+      - **Windows:** Run the `.exe` installer or use the `.msi` for enterprise deployment.
+      - **macOS:** Open the `.dmg` and drag StellarStack to Applications.
+      - **Linux:** Make the `.AppImage` executable (`chmod +x`) and run, or install the `.deb` with `sudo dpkg -i`.
+      - Docker must be installed and running for database services.

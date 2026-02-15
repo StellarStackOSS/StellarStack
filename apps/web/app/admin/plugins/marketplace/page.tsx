@@ -140,7 +140,7 @@ export default function PluginMarketplacePage() {
           <div className="space-y-2">
             <label className="block text-sm font-medium">Repository URL</label>
             <Input
-              placeholder="https://github.com/username/stellarstack-plugin-name"
+              placeholder="https://gitlab.com/username/stellarstack-plugin-name"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               disabled={installMutation.isPending}
@@ -149,7 +149,7 @@ export default function PluginMarketplacePage() {
               }}
             />
             <p className="text-xs text-gray-500">
-              Example: https://github.com/StellarStackOSS/example-mod-installer
+              Example: https://gitlab.com/StellarStackOSS/example-mod-installer
             </p>
           </div>
 

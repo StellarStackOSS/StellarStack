@@ -269,8 +269,7 @@ export class PluginInstaller {
   ): "official" | "community" {
     // Check if this is an official StellarStack repository
     const officialRepos = [
-      "github.com/StellarStackOSS/",
-      "github.com/StellarStack/",
+      "gitlab.com/StellarStackOSS/",
     ];
 
     const isOfficial = officialRepos.some((repo) => repoUrl.includes(repo));

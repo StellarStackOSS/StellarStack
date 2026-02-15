@@ -1,10 +1,10 @@
 # StellarStack Plugin Examples & Documentation
 
-This directory contains documentation and guides for StellarStack plugins. **Plugin code and example implementations are located in the external [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) repository.**
+This directory contains documentation and guides for StellarStack plugins. **Plugin code and example implementations are located in the external [StellarStack-Plugin-SDK](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK) repository.**
 
 ## 📦 Plugin Resources
 
-All plugin-related code and examples are in the **[StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)** repository:
+All plugin-related code and examples are in the **[StellarStack-Plugin-SDK](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK)** repository:
 
 ### 🌟 Official Plugins (SDK Repository)
 StellarStack ships with several **official plugins** maintained by the team:
@@ -29,9 +29,9 @@ Comprehensive guides for plugin development:
 
 ## Getting Started with Plugin Development
 
-1. **Visit the [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) repository**
+1. **Visit the [StellarStack-Plugin-SDK](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK) repository**
 2. **Choose an example** that matches your use case (in `examples/plugins/`)
-3. **Copy the example directory** to your own GitHub repository
+3. **Copy the example directory** to your own GitLab repository
 4. **Customize `stellarstack.json`** for your needs
 5. **Install via Git** in the StellarStack admin panel (Admin → Plugins → Install from Git)
 
@@ -61,7 +61,7 @@ A basic form UI for server settings configuration.
 
 **View the source:**
 ```bash
-git clone https://github.com/StellarStackOSS/StellarStack-Plugin-SDK
+git clone https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK
 cat StellarStack-Plugin-SDK/examples/plugins/example-simple-form/stellarstack.json
 ```
 
@@ -141,7 +141,7 @@ A player management UI with searchable table and row actions.
 
 1. **Clone the SDK repository:**
    ```bash
-   git clone https://github.com/StellarStackOSS/StellarStack-Plugin-SDK
+   git clone https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK
    cd StellarStack-Plugin-SDK/examples/plugins
    ```
 
@@ -332,11 +332,11 @@ For detailed information, see:
 
 ## 🚀 Publishing Your Plugin
 
-1. **Create a GitHub repository** for your plugin (on your personal or organization account)
+1. **Create a GitLab repository** for your plugin (on your personal or group account)
 2. **Add your customized `stellarstack.json`** and supporting files
 3. **Copy the repository URL**
 4. **Install in StellarStack:** Admin Panel → Plugins → Install from Git Repository
-5. **Share with others:** Post your plugin URL in the community forums or on GitHub
+5. **Share with others:** Post your plugin URL in the community forums or on GitLab
 
 ### Creating Your Plugin Repository
 Your plugin repository should have this structure:
@@ -348,7 +348,7 @@ my-plugin/
 └── ...other files...
 ```
 
-The only required file is `stellarstack.json`. See the examples in the [StellarStack-Plugin-SDK](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK) for reference.
+The only required file is `stellarstack.json`. See the examples in the [StellarStack-Plugin-SDK](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK) for reference.
 
 ## ⚠️ Important Notes
 
@@ -361,7 +361,7 @@ The only required file is `stellarstack.json`. See the examples in the [StellarS
 
 Found an issue or have an improvement?
 
-1. Fork the [StellarStack-Plugin-SDK repository](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK)
+1. Fork the [StellarStack-Plugin-SDK repository](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK)
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
@@ -373,7 +373,7 @@ All examples are released under the **MIT License**. Feel free to use them as a 
 ## 🆘 Support
 
 - **Questions?** Check the [Plugin Development Guide](PLUGIN_DEVELOPMENT_GUIDE.md)
-- **Found a bug?** Open an [issue on GitHub](https://github.com/StellarStackOSS/StellarStack-Plugin-SDK/issues)
+- **Found a bug?** Open an [issue on GitLab](https://gitlab.com/StellarStackOSS/StellarStack-Plugin-SDK/-/issues)
 - **Need help?** Join our [Discord community](https://discord.gg/stellarstack)
 
 ---

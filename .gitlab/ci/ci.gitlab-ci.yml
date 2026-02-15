@@ -1,0 +1,164 @@
+# CI Pipeline — runs on all branches and merge requests
+# Equivalent to the old .github/workflows/ci.yml
+
+# ─── Install ────────────────────────────────────────────────────────
+install:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: install
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - node_modules/
+      - apps/*/node_modules/
+      - packages/*/node_modules/
+    policy: pull-push
+  script:
+    - pnpm install --frozen-lockfile
+
+# ─── Pre-build (typecheck + lint) ──────────────────────────────────
+pre-build:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: pre-build
+  needs: [install]
+  parallel:
+    matrix:
+      - TARGET: api
+        TYPECHECK_CMD: "pnpm --filter @workspace/api tsc --noEmit"
+        LINT_CMD: "pnpm --filter @workspace/api lint"
+      - TARGET: web
+        TYPECHECK_CMD: "pnpm --filter web typecheck"
+        LINT_CMD: "pnpm --filter web lint"
+      - TARGET: home
+        TYPECHECK_CMD: "pnpm --filter home typecheck"
+        LINT_CMD: "pnpm --filter home lint"
+      - TARGET: ui
+        TYPECHECK_CMD: "pnpm --filter @stellarUI tsc --noEmit"
+        LINT_CMD: "pnpm --filter @stellarUI lint"
+      - TARGET: storybook
+        TYPECHECK_CMD: "echo skipped"
+        LINT_CMD: "echo skipped"
+  script:
+    - echo "Pre-build checks for $TARGET"
+    - eval "$TYPECHECK_CMD"
+    - eval "$LINT_CMD"
+
+# ─── Build ─────────────────────────────────────────────────────────
+build:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: build
+  needs: [pre-build]
+  parallel:
+    matrix:
+      - TARGET: api
+        BUILD_CMD: "pnpm build:api"
+      - TARGET: web
+        BUILD_CMD: "pnpm build:web"
+      - TARGET: home
+        BUILD_CMD: "pnpm build:home"
+      - TARGET: storybook
+        BUILD_CMD: "pnpm --filter storybook build"
+  script:
+    - echo "Building $TARGET"
+    - eval "$BUILD_CMD"
+
+# ─── Test (jsdom — packages/ui) ────────────────────────────────────
+test-jsdom:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: test
+  needs: [build]
+  script:
+    - pnpm test:jsdom
+
+# ─── Test (happy-dom — apps/web) ───────────────────────────────────
+test-dom:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: test
+  needs: [build]
+  script:
+    - pnpm test:dom
+
+# ─── Test (node — apps/api) ────────────────────────────────────────
+test-node:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: test
+  needs: [build]
+  script:
+    - pnpm test:node
+
+# ─── Code Analysis ─────────────────────────────────────────────────
+code-analysis:
+  extends:
+    - .node-setup
+    - .ci-rules
+  stage: analysis
+  needs: [test-jsdom, test-dom, test-node]
+  script:
+    - pnpm jscpd --pattern "apps/**/*.{ts,tsx}" --threshold 5
+    - pnpm format:check
+
+# ─── Deploy Preview (Railway) ──────────────────────────────────────
+deploy-preview:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  needs: [code-analysis]
+  variables:
+    RAILWAY_TOKEN: $RAILWAY_TOKEN
+    RAILWAY_PROJECT_ID: $RAILWAY_PROJECT_ID
+  script:
+    - npm install -g @railway/cli
+    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - ENV_NAME="preview-${SLUG}"
+    - railway environment delete "$ENV_NAME" --yes || true
+    - railway environment create "$ENV_NAME"
+    - railway up --service web --environment "$ENV_NAME" --detach
+    - railway up --service api --environment "$ENV_NAME" --detach
+    - railway up --service home --environment "$ENV_NAME" --detach
+    - echo "Deployed preview environment ${ENV_NAME}"
+  environment:
+    name: preview/$CI_COMMIT_REF_SLUG
+    auto_stop_in: 15 minutes
+    on_stop: cleanup-preview
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+# ─── Cleanup Preview ───────────────────────────────────────────────
+cleanup-preview:
+  stage: cleanup
+  image: node:${NODE_VERSION}
+  variables:
+    GIT_STRATEGY: none
+    RAILWAY_TOKEN: $RAILWAY_TOKEN
+  script:
+    - npm install -g @railway/cli
+    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - ENV_NAME="preview-${SLUG}"
+    - railway environment delete "$ENV_NAME" --yes
+  environment:
+    name: preview/$CI_COMMIT_REF_SLUG
+    action: stop
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
