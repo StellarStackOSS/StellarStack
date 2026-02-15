@@ -13,7 +13,10 @@ import { GenerateWsStats, GenerateLogLine } from "./Generators.js";
 const activeConnections = new Map<string, Set<WSContext>>();
 
 /** Interval handles per WebSocket connection for cleanup */
-const connectionIntervals = new Map<WSContext, { stats: ReturnType<typeof setInterval>; console: ReturnType<typeof setInterval> }>();
+const connectionIntervals = new Map<
+  WSContext,
+  { stats: ReturnType<typeof setInterval>; console: ReturnType<typeof setInterval> }
+>();
 
 /**
  * Called when a WebSocket connection opens. Sends initial state and starts intervals.
@@ -37,7 +40,7 @@ const HandleOpen = (serverId: string, ws: WSContext): void => {
       JSON.stringify({
         event: "console history",
         args: [{ lines: server.console_buffer.slice(-100) }],
-      }),
+      })
     );
   }
 
@@ -126,7 +129,11 @@ const HandleClose = (serverId: string, ws: WSContext): void => {
  * @param ws - The WebSocket context
  * @param message - Parsed incoming message
  */
-const HandleIncomingMessage = (serverId: string, ws: WSContext, message: WsIncomingMessage): void => {
+const HandleIncomingMessage = (
+  serverId: string,
+  ws: WSContext,
+  message: WsIncomingMessage
+): void => {
   const server = GetServer(serverId);
   if (!server) {
     ws.send(JSON.stringify({ event: "error", args: [{ message: "Server not found" }] }));
@@ -166,7 +173,7 @@ const HandleIncomingMessage = (serverId: string, ws: WSContext, message: WsIncom
           JSON.stringify({
             event: "console history",
             args: [{ lines: server.console_buffer.slice(-100) }],
-          }),
+          })
         );
       }
       break;
@@ -225,7 +232,10 @@ const HandlePowerAction = (serverId: string, action: string): void => {
       const stopLine = "[INFO] Stopping the server...";
       const stopTs = Math.floor(Date.now() / 1000);
       AddConsoleLine(serverId, stopLine);
-      BroadcastToServer(serverId, { event: "console output", args: [{ line: stopLine, timestamp: stopTs }] });
+      BroadcastToServer(serverId, {
+        event: "console output",
+        args: [{ line: stopLine, timestamp: stopTs }],
+      });
 
       setTimeout(() => {
         server.state = "offline";

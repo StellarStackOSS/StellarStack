@@ -69,7 +69,7 @@ app.get(
         HandleClose(serverId, ws);
       },
     };
-  }),
+  })
 );
 
 /** 404 fallback */

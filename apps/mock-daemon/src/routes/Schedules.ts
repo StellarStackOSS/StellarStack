@@ -100,29 +100,33 @@ ScheduleRoutes.post("/:scheduleId/run", (c) => {
   /** Broadcast schedule execution status */
   BroadcastToServer(serverId, {
     event: "schedule status",
-    args: [{
-      id: schedule.id,
-      name: schedule.name,
-      is_executing: true,
-      executing_task_index: 0,
-      last_execution_time: Math.floor(Date.now() / 1000),
-      enabled: schedule.enabled,
-    }],
+    args: [
+      {
+        id: schedule.id,
+        name: schedule.name,
+        is_executing: true,
+        executing_task_index: 0,
+        last_execution_time: Math.floor(Date.now() / 1000),
+        enabled: schedule.enabled,
+      },
+    ],
   });
 
   /** Simulate completion after 1 second */
   setTimeout(() => {
     BroadcastToServer(serverId, {
       event: "schedule status",
-      args: [{
-        id: schedule.id,
-        name: schedule.name,
-        is_executing: false,
-        executing_task_index: 0,
-        last_execution_time: Math.floor(Date.now() / 1000),
-        enabled: schedule.enabled,
-        last_result: "success",
-      }],
+      args: [
+        {
+          id: schedule.id,
+          name: schedule.name,
+          is_executing: false,
+          executing_task_index: 0,
+          last_execution_time: Math.floor(Date.now() / 1000),
+          enabled: schedule.enabled,
+          last_result: "success",
+        },
+      ],
     });
   }, 1000);
 
