@@ -16,11 +16,7 @@ const servers = new Map<string, MockServer>();
  * @param config - Full server creation config
  * @returns The created MockServer
  */
-const CreateServer = (
-  uuid: string,
-  name: string,
-  config: MockServer["config"],
-): MockServer => {
+const CreateServer = (uuid: string, name: string, config: MockServer["config"]): MockServer => {
   const server: MockServer = {
     config,
     state: "offline",
@@ -205,9 +201,17 @@ const CreateDefaultFileTree = (): Map<string, MockFile> => {
   MakeDir("logs", "/logs");
   MakeDir("plugins", "/plugins");
   MakeDir("config", "/config");
-  MakeFile("server.properties", "/server.properties", "# Mock server properties\nserver-port=25565\nmotd=A StellarStack Mock Server\n");
+  MakeFile(
+    "server.properties",
+    "/server.properties",
+    "# Mock server properties\nserver-port=25565\nmotd=A StellarStack Mock Server\n"
+  );
   MakeFile("eula.txt", "/eula.txt", "eula=true\n");
-  MakeFile("server.log", "/logs/server.log", "[INFO] Mock daemon server started\n[INFO] Ready for connections\n");
+  MakeFile(
+    "server.log",
+    "/logs/server.log",
+    "[INFO] Mock daemon server started\n[INFO] Ready for connections\n"
+  );
 
   return files;
 };

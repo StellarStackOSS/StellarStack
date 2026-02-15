@@ -10,13 +10,7 @@ import type {
   ServerSummary,
   ServerResponse,
 } from "../Types.js";
-import {
-  CreateServer,
-  GetServer,
-  DeleteServer,
-  GetAllServers,
-  AddConsoleLine,
-} from "../State.js";
+import { CreateServer, GetServer, DeleteServer, GetAllServers, AddConsoleLine } from "../State.js";
 import { BroadcastToServer } from "../Websocket.js";
 
 const ServerRoutes = new Hono();
@@ -89,7 +83,10 @@ ServerRoutes.get("/:server_id", (c) => {
     is_restoring: server.is_restoring,
     suspended: server.suspended,
     invocation: server.config.invocation ?? "",
-    container: server.config.container ?? { image: "ghcr.io/stellarstack/mock:latest", oom_disabled: false },
+    container: server.config.container ?? {
+      image: "ghcr.io/stellarstack/mock:latest",
+      oom_disabled: false,
+    },
   };
 
   return c.json(response);
@@ -111,7 +108,8 @@ ServerRoutes.patch("/:server_id", async (c) => {
   if (updates.name) server.config.name = updates.name;
   if (updates.invocation) server.config.invocation = updates.invocation;
   if (updates.build) server.config.build = { ...server.config.build, ...updates.build };
-  if (updates.container) server.config.container = { ...server.config.container, ...updates.container };
+  if (updates.container)
+    server.config.container = { ...server.config.container, ...updates.container };
   if (updates.suspended !== undefined) server.suspended = updates.suspended;
 
   return c.json({ success: true });

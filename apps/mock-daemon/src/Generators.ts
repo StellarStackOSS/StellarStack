@@ -121,9 +121,9 @@ const LOG_TEMPLATES = [
   "[INFO] Server thread running",
   "[INFO] Loading libraries, please wait...",
   "[INFO] Starting minecraft server version 1.21.4",
-  "[INFO] Preparing level \"world\"",
+  '[INFO] Preparing level "world"',
   "[INFO] Preparing start region for dimension minecraft:overworld",
-  "[INFO] Done! For help, type \"help\"",
+  '[INFO] Done! For help, type "help"',
   "[INFO] Player connected from /127.0.0.1",
   "[INFO] UUID of player MockPlayer is 550e8400-e29b-41d4-a716-446655440000",
   "[WARN] Can't keep up! Is the server overloaded?",
@@ -211,9 +211,7 @@ const GenerateUUID = (): string => {
  * @returns Hex checksum string
  */
 const GenerateChecksum = (): string => {
-  return Array.from({ length: 64 }, () =>
-    Math.floor(Math.random() * 16).toString(16),
-  ).join("");
+  return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 };
 
 export {

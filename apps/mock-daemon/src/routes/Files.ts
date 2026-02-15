@@ -171,7 +171,11 @@ FileRoutes.post("/rename", async (c) => {
     if (file) {
       const newName = toPath.split("/").pop() ?? rename.to;
       DeleteFile(serverId, fromPath);
-      SetFile(serverId, toPath, { ...file, name: newName, modified: Math.floor(Date.now() / 1000) });
+      SetFile(serverId, toPath, {
+        ...file,
+        name: newName,
+        modified: Math.floor(Date.now() / 1000),
+      });
     }
   }
 

@@ -127,7 +127,10 @@ PluginRoutes.delete("/delete-all", (c) => {
     server.files.delete(key);
   }
 
-  const response: DaemonResponse = { success: true, message: `Deleted ${toDelete.length} plugin files` };
+  const response: DaemonResponse = {
+    success: true,
+    message: `Deleted ${toDelete.length} plugin files`,
+  };
   return c.json(response);
 });
 
@@ -143,7 +146,11 @@ PluginRoutes.post("/backup", (c) => {
   }
 
   const backupId = GenerateUUID();
-  return c.json({ success: true, backup_id: backupId, name: `plugin-backup-${backupId.slice(0, 8)}` });
+  return c.json({
+    success: true,
+    backup_id: backupId,
+    name: `plugin-backup-${backupId.slice(0, 8)}`,
+  });
 });
 
 /**

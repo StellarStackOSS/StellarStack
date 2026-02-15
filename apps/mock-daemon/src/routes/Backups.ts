@@ -73,7 +73,10 @@ BackupRoutes.post("/restore", async (c) => {
   const body = await c.req.json<RestoreBackupRequest>();
 
   server.is_restoring = true;
-  BroadcastToServer(serverId, { event: "backup restore started", args: [{ uuid: body.backup_id }] });
+  BroadcastToServer(serverId, {
+    event: "backup restore started",
+    args: [{ uuid: body.backup_id }],
+  });
 
   /** Simulate restore taking 2 seconds */
   setTimeout(() => {
