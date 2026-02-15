@@ -16,7 +16,7 @@ variables:
   NODE_VERSION: "20"
 
 default:
-  tags: [saas-linux-large-amd64]
+  tags: [saas-linux-medium-amd64]
   interruptible: true
 
 workflow:

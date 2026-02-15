@@ -81,6 +81,7 @@ desktop-daemon-build-windows:
 desktop-build-linux:
   extends: .desktop-release-rules
   stage: build
+  tags: [saas-linux-2xlarge-amd64]
   image: rust:latest
   needs:
     - job: desktop-daemon-build-linux

@@ -12,6 +12,7 @@
     "db:studio": "pnpm prisma studio",
     "db:version": "pnpm prisma --version",
     "build": "tsc",
+    "pretypecheck": "pnpm prisma generate",
     "typecheck": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "db:init": "prisma init",
