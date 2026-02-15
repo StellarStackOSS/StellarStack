@@ -138,6 +138,8 @@ deploy-preview:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: never
     - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
 
 # ─── Deploy Dev (Railway — manual) ────────────────────────────────
 deploy-dev:
