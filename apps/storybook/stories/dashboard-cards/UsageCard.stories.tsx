@@ -10,7 +10,13 @@ const meta: Meta<typeof UsageCard> = {
   title: "Dashboard Cards/UsageCard",
   component: UsageCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;
@@ -23,7 +29,7 @@ export const Default: Story = {
     children: (
       <UsageCardContent>
         <p className="text-2xl font-bold">8.2 GB</p>
-        <p className="text-sm text-muted-foreground">of 16 GB used</p>
+        <p className="text-muted-foreground text-sm">of 16 GB used</p>
       </UsageCardContent>
     ),
   },
@@ -34,10 +40,10 @@ export const WithFooter: Story = {
     <UsageCard itemId="usage-2" title="Disk Usage">
       <UsageCardContent>
         <p className="text-2xl font-bold">120 GB</p>
-        <p className="text-sm text-muted-foreground">of 256 GB used</p>
+        <p className="text-muted-foreground text-sm">of 256 GB used</p>
       </UsageCardContent>
       <UsageCardFooter>
-        <p className="text-xs text-muted-foreground">Last updated 5 min ago</p>
+        <p className="text-muted-foreground text-xs">Last updated 5 min ago</p>
       </UsageCardFooter>
     </UsageCard>
   ),

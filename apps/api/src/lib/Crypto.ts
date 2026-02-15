@@ -8,13 +8,7 @@
  * - Timing-safe comparisons to prevent timing attacks
  */
 
-import {
-  randomBytes,
-  createHash,
-  createCipheriv,
-  createDecipheriv,
-  timingSafeEqual,
-} from "crypto";
+import { randomBytes, createHash, createCipheriv, createDecipheriv, timingSafeEqual } from "crypto";
 import bcrypt from "bcrypt";
 
 // ============================================================================

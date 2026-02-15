@@ -474,10 +474,13 @@ export const servers = {
         isActive?: boolean;
       }>
     ) =>
-      request<{ success: boolean; rule: FirewallRule }>(`/api/servers/${serverId}/firewall/${ruleId}`, {
-        method: "PATCH",
-        body: data,
-      }),
+      request<{ success: boolean; rule: FirewallRule }>(
+        `/api/servers/${serverId}/firewall/${ruleId}`,
+        {
+          method: "PATCH",
+          body: data,
+        }
+      ),
     delete: (serverId: string, ruleId: string) =>
       request(`/api/servers/${serverId}/firewall/${ruleId}`, { method: "DELETE" }),
   },

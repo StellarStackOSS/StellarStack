@@ -144,13 +144,14 @@ export class PluginAuditLogger {
       errorCount: entries.filter((e) => e.result === "error").length,
       deniedCount: entries.filter((e) => e.result === "denied").length,
       averageDuration:
-        entries.length > 0
-          ? entries.reduce((sum, e) => sum + e.duration, 0) / entries.length
-          : 0,
+        entries.length > 0 ? entries.reduce((sum, e) => sum + e.duration, 0) / entries.length : 0,
       lastAction: entries[0]?.timestamp,
       topUsers: this.getTopUsers(entries),
       topServers: this.getTopServers(entries),
-      errorRate: entries.length > 0 ? (entries.filter((e) => e.result === "error").length / entries.length) * 100 : 0,
+      errorRate:
+        entries.length > 0
+          ? (entries.filter((e) => e.result === "error").length / entries.length) * 100
+          : 0,
     };
 
     return stats;
@@ -249,7 +250,9 @@ export class PluginAuditLogger {
     const csv = [
       headers.join(","),
       ...rows.map((row) =>
-        row.map((cell) => (typeof cell === "string" && cell.includes(",") ? `"${cell}"` : cell)).join(",")
+        row
+          .map((cell) => (typeof cell === "string" && cell.includes(",") ? `"${cell}"` : cell))
+          .join(",")
       ),
     ].join("\n");
 

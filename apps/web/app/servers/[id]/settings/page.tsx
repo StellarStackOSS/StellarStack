@@ -524,7 +524,7 @@ const SettingsPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-end">
@@ -557,9 +557,9 @@ const SettingsPage = (): JSX.Element | null => {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* General Settings */}
             <FadeIn delay={0.05}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">General</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <div className="space-y-4">
                     <div>
                       <Label className="text-xs text-zinc-500">Server Name</Label>
@@ -606,9 +606,9 @@ const SettingsPage = (): JSX.Element | null => {
 
             {/* Resource Limits */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Resource Limits</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <div className="text-xs tracking-wider text-zinc-500 uppercase">CPU</div>
@@ -641,12 +641,12 @@ const SettingsPage = (): JSX.Element | null => {
 
             {/* Danger Zone - Full Width */}
             <FadeIn delay={0.15} className="lg:col-span-2">
-              <div className="flex h-full flex-col rounded-lg border border-red-900/30 bg-muted p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-red-900/30 p-1 pt-2">
                 <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                   <BsExclamationTriangle className="h-3 w-3 text-red-400" />
                   <span className="text-red-400">Danger Zone</span>
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-red-900/20 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-red-900/20 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-zinc-200">Reinstall Server</h3>

@@ -2,7 +2,13 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { db } from "../lib/Db";
 import { RequireServerAccess, RequirePermission, CheckPermission } from "../middleware/Auth";
-import { PERMISSIONS, PERMISSION_DEFINITIONS, CATEGORY_DEFINITIONS, GetAllCategories, GetPermissionsByCategory } from "../lib/Permissions";
+import {
+  PERMISSIONS,
+  PERMISSION_DEFINITIONS,
+  CATEGORY_DEFINITIONS,
+  GetAllCategories,
+  GetPermissionsByCategory,
+} from "../lib/Permissions";
 import type { Variables } from "../Types";
 import { SendEmail } from "../lib/Email";
 
@@ -399,7 +405,9 @@ members.post("/invitation/:token/accept", async (c) => {
   const { token } = c.req.param();
 
   // Get current user from session
-  const session = await (await import("../lib/Auth")).auth.api.getSession({
+  const session = await (
+    await import("../lib/Auth")
+  ).auth.api.getSession({
     headers: c.req.raw.headers,
   });
 
@@ -506,7 +514,9 @@ members.post("/invitation/:token/decline", async (c) => {
 
 // Get user's server memberships
 members.get("/my-memberships", async (c) => {
-  const session = await (await import("../lib/Auth")).auth.api.getSession({
+  const session = await (
+    await import("../lib/Auth")
+  ).auth.api.getSession({
     headers: c.req.raw.headers,
   });
 
@@ -548,7 +558,9 @@ members.get("/my-memberships", async (c) => {
 
 // Get user's pending invitations
 members.get("/my-invitations", async (c) => {
-  const session = await (await import("../lib/Auth")).auth.api.getSession({
+  const session = await (
+    await import("../lib/Auth")
+  ).auth.api.getSession({
     headers: c.req.raw.headers,
   });
 
@@ -558,10 +570,7 @@ members.get("/my-invitations", async (c) => {
 
   const invitations = await db.serverInvitation.findMany({
     where: {
-      OR: [
-        { inviteeId: session.user.id },
-        { email: session.user.email },
-      ],
+      OR: [{ inviteeId: session.user.id }, { email: session.user.email }],
       status: "PENDING",
       expiresAt: { gt: new Date() },
     },

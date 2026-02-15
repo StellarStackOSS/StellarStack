@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { TextureCard, TextureCardContent, TextureCardHeader, TextureCardTitle, TextureCardFooter } from "@stellarUI/components/TextureCard";
+import {
+  TextureCard,
+  TextureCardContent,
+  TextureCardHeader,
+  TextureCardTitle,
+  TextureCardFooter,
+} from "@stellarUI/components/TextureCard";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 
 const meta: Meta<typeof TextureCard> = {
@@ -15,7 +21,7 @@ export const Default: Story = {
   render: () => (
     <TextureCard className="w-[350px]">
       <TextureCardContent className="p-6">
-        <p className="text-sm text-muted-foreground">Simple texture card with content.</p>
+        <p className="text-muted-foreground text-sm">Simple texture card with content.</p>
       </TextureCardContent>
     </TextureCard>
   ),
@@ -28,7 +34,7 @@ export const WithHeader: Story = {
         <TextureCardTitle>Card Title</TextureCardTitle>
       </TextureCardHeader>
       <TextureCardContent>
-        <p className="text-sm text-muted-foreground">Card body content goes here.</p>
+        <p className="text-muted-foreground text-sm">Card body content goes here.</p>
       </TextureCardContent>
     </TextureCard>
   ),
@@ -41,11 +47,15 @@ export const WithFooter: Story = {
         <TextureCardTitle>Settings</TextureCardTitle>
       </TextureCardHeader>
       <TextureCardContent>
-        <p className="text-sm text-muted-foreground">Manage your preferences.</p>
+        <p className="text-muted-foreground text-sm">Manage your preferences.</p>
       </TextureCardContent>
       <TextureCardFooter className="flex justify-end gap-2">
-        <TextureButton variant="ghost" size="sm">Cancel</TextureButton>
-        <TextureButton variant="primary" size="sm">Save</TextureButton>
+        <TextureButton variant="ghost" size="sm">
+          Cancel
+        </TextureButton>
+        <TextureButton variant="primary" size="sm">
+          Save
+        </TextureButton>
       </TextureCardFooter>
     </TextureCard>
   ),

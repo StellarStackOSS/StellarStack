@@ -6,14 +6,14 @@
  * All API calls are proxied back to the parent for permission checking.
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
 // ============================================
 // Types
 // ============================================
 
 interface InitMessage {
-  type: 'init';
+  type: "init";
   requestId: string;
   data: {
     pluginId: string;
@@ -22,7 +22,7 @@ interface InitMessage {
 }
 
 interface ActionMessage {
-  type: 'action';
+  type: "action";
   requestId: string;
   data: {
     actionId: string;
@@ -31,7 +31,7 @@ interface ActionMessage {
 }
 
 interface ApiCallMessage {
-  type: 'api-call';
+  type: "api-call";
   requestId: string;
   data: {
     method: string;
@@ -40,7 +40,7 @@ interface ApiCallMessage {
 }
 
 interface ShutdownMessage {
-  type: 'shutdown';
+  type: "shutdown";
   requestId: string;
 }
 
@@ -51,22 +51,25 @@ type WorkerMessage = InitMessage | ActionMessage | ApiCallMessage | ShutdownMess
 // ============================================
 
 class PluginWorkerRuntime {
-  private pluginId: string = '';
-  private pluginPath: string = '';
+  private pluginId: string = "";
+  private pluginPath: string = "";
   private plugin: unknown = null;
-  private pendingApiCalls = new Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
+  private pendingApiCalls = new Map<
+    string,
+    { resolve: (value: unknown) => void; reject: (error: Error) => void }
+  >();
 
   constructor() {
     // Listen for messages from parent process
-    process.on('message', (msg: WorkerMessage) => {
+    process.on("message", (msg: WorkerMessage) => {
       this.handleMessage(msg).catch((error) => {
-        console.error('[PluginWorkerRunner] Error handling message:', error);
+        console.error("[PluginWorkerRunner] Error handling message:", error);
       });
     });
 
     // Handle parent process exit
-    process.on('disconnect', () => {
-      console.log('[PluginWorkerRunner] Parent disconnected, exiting');
+    process.on("disconnect", () => {
+      console.log("[PluginWorkerRunner] Parent disconnected, exiting");
       process.exit(0);
     });
   }
@@ -74,26 +77,29 @@ class PluginWorkerRuntime {
   private async handleMessage(msg: WorkerMessage): Promise<void> {
     try {
       switch (msg.type) {
-        case 'init':
+        case "init":
           await this.init(msg);
           break;
-        case 'action':
+        case "action":
           await this.executeAction(msg);
           break;
-        case 'api-call':
+        case "api-call":
           // API calls are handled by parent, this shouldn't happen here
-          this.sendError(msg.requestId, 'API calls should be proxied through parent');
+          this.sendError(msg.requestId, "API calls should be proxied through parent");
           break;
-        case 'shutdown':
+        case "shutdown":
           process.exit(0);
           break;
         default: {
           const unknownMsg = msg as { requestId?: string; type?: string };
-          this.sendError(unknownMsg.requestId || 'unknown', `Unknown message type: ${unknownMsg.type}`);
+          this.sendError(
+            unknownMsg.requestId || "unknown",
+            `Unknown message type: ${unknownMsg.type}`
+          );
         }
       }
     } catch (error) {
-      const requestId = (msg as { requestId?: string }).requestId || 'unknown';
+      const requestId = (msg as { requestId?: string }).requestId || "unknown";
       this.sendError(requestId, error instanceof Error ? error.message : String(error));
     }
   }
@@ -109,7 +115,7 @@ class PluginWorkerRuntime {
 
       // Send ready message
       this.send({
-        type: 'ready',
+        type: "ready",
         requestId: msg.requestId,
       });
     } catch (error) {
@@ -141,11 +147,11 @@ class PluginWorkerRuntime {
    */
   private createScopedAPI() {
     return {
-      get: (endpoint: string) => this.apiCall('GET', endpoint),
-      post: (endpoint: string, data: unknown) => this.apiCall('POST', endpoint, data),
-      put: (endpoint: string, data: unknown) => this.apiCall('PUT', endpoint, data),
-      patch: (endpoint: string, data: unknown) => this.apiCall('PATCH', endpoint, data),
-      delete: (endpoint: string) => this.apiCall('DELETE', endpoint),
+      get: (endpoint: string) => this.apiCall("GET", endpoint),
+      post: (endpoint: string, data: unknown) => this.apiCall("POST", endpoint, data),
+      put: (endpoint: string, data: unknown) => this.apiCall("PUT", endpoint, data),
+      patch: (endpoint: string, data: unknown) => this.apiCall("PATCH", endpoint, data),
+      delete: (endpoint: string) => this.apiCall("DELETE", endpoint),
     };
   }
 
@@ -173,7 +179,7 @@ class PluginWorkerRuntime {
 
       // Send API request to parent
       this.send({
-        type: 'api-request',
+        type: "api-request",
         requestId,
         data: { method, endpoint, data },
       });
@@ -192,7 +198,7 @@ class PluginWorkerRuntime {
 
   private sendSuccess(requestId: string, data: unknown): void {
     this.send({
-      type: 'success',
+      type: "success",
       requestId,
       data,
     });
@@ -200,7 +206,7 @@ class PluginWorkerRuntime {
 
   private sendError(requestId: string, error: string): void {
     this.send({
-      type: 'error',
+      type: "error",
       requestId,
       error,
     });
@@ -215,9 +221,9 @@ class PluginWorkerRuntime {
 const runtime = new PluginWorkerRuntime();
 
 // Handle uncaught errors
-process.on('uncaughtException', (error) => {
-  console.error('[PluginWorkerRunner] Uncaught exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("[PluginWorkerRunner] Uncaught exception:", error);
   process.exit(1);
 });
 
-console.log('[PluginWorkerRunner] Worker process started, waiting for messages...');
+console.log("[PluginWorkerRunner] Worker process started, waiting for messages...");

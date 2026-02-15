@@ -9,7 +9,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { useServer as useServerQuery, useServerConsole, useServerMutations } from "@/hooks/queries/UseServers";
+import {
+  useServer as useServerQuery,
+  useServerConsole,
+  useServerMutations,
+} from "@/hooks/queries/UseServers";
 import { useWebSocket } from "@/hooks/UseWebSocket";
 import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import type { Server, ConsoleInfo } from "@/lib/Api";

@@ -129,19 +129,48 @@ class WebSocketManager {
   /**
    * Serialize server for WebSocket transmission
    */
-  private serializeServer(server: Record<string, unknown> & {
-    id: string; shortId: string | null; name: string; description: string | null;
-    status: string; suspended: boolean; containerId: string | null;
-    memory: bigint | number; disk: bigint | number; cpu: number;
-    cpuPinning: string | null; swap: bigint | number; oomKillDisable: boolean;
-    backupLimit: number; nodeId: string; blueprintId: string; ownerId: string;
-    createdAt: Date; updatedAt: Date;
-    node?: { id: string; displayName: string; host: string; port: number;
-      protocol: string; sftpPort: number; isOnline: boolean;
-      location: unknown; [key: string]: unknown };
-    allocations?: Array<{ id: string; ip: string; port: number; assigned: boolean; [key: string]: unknown }>;
-    blueprint?: { id: string; name: string } | null;
-  }) {
+  private serializeServer(
+    server: Record<string, unknown> & {
+      id: string;
+      shortId: string | null;
+      name: string;
+      description: string | null;
+      status: string;
+      suspended: boolean;
+      containerId: string | null;
+      memory: bigint | number;
+      disk: bigint | number;
+      cpu: number;
+      cpuPinning: string | null;
+      swap: bigint | number;
+      oomKillDisable: boolean;
+      backupLimit: number;
+      nodeId: string;
+      blueprintId: string;
+      ownerId: string;
+      createdAt: Date;
+      updatedAt: Date;
+      node?: {
+        id: string;
+        displayName: string;
+        host: string;
+        port: number;
+        protocol: string;
+        sftpPort: number;
+        isOnline: boolean;
+        location: unknown;
+        [key: string]: unknown;
+      };
+      allocations?: Array<{
+        id: string;
+        ip: string;
+        port: number;
+        assigned: boolean;
+        [key: string]: unknown;
+      }>;
+      blueprint?: { id: string; name: string } | null;
+    }
+  ) {
     return {
       id: server.id,
       shortId: server.shortId,

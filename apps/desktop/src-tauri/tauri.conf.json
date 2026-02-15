@@ -45,12 +45,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "resources/**/*"
-    ],
-    "externalBin": [
-      "binaries/stellar-daemon"
-    ]
+    "resources": ["resources/**/*"],
+    "externalBin": ["binaries/stellar-daemon"]
   },
   "plugins": {
     "shell": {

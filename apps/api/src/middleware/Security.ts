@@ -33,10 +33,7 @@ export const SecurityHeaders = () => {
     );
 
     // Content Security Policy for API responses
-    c.header(
-      "Content-Security-Policy",
-      "default-src 'none'; frame-ancestors 'none'"
-    );
+    c.header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
 
     // Strict Transport Security (for HTTPS)
     if (process.env.NODE_ENV === "production") {
@@ -54,18 +51,10 @@ export const ValidateEnvironment = (): void => {
   const errors: string[] = [];
 
   // Critical variables that must be set
-  const criticalVars = [
-    "BETTER_AUTH_SECRET",
-    "DATABASE_URL",
-  ];
+  const criticalVars = ["BETTER_AUTH_SECRET", "DATABASE_URL"];
 
   // Variables that must be set in production
-  const productionVars = [
-    "FRONTEND_URL",
-    "API_URL",
-    "DOWNLOAD_TOKEN_SECRET",
-    "ENCRYPTION_KEY",
-  ];
+  const productionVars = ["FRONTEND_URL", "API_URL", "DOWNLOAD_TOKEN_SECRET", "ENCRYPTION_KEY"];
 
   for (const envVar of criticalVars) {
     if (!process.env[envVar]) {
@@ -177,11 +166,11 @@ export const ValidateExternalUrl = (url: string): boolean => {
 const isPrivateIP = (ip: string): boolean => {
   // IPv4 private ranges
   const privateRanges = [
-    /^10\./,                      // 10.0.0.0/8
+    /^10\./, // 10.0.0.0/8
     /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12
-    /^192\.168\./,                // 192.168.0.0/16
-    /^169\.254\./,                // 169.254.0.0/16 (link-local)
-    /^127\./,                     // 127.0.0.0/8 (loopback)
+    /^192\.168\./, // 192.168.0.0/16
+    /^169\.254\./, // 169.254.0.0/16 (link-local)
+    /^127\./, // 127.0.0.0/8 (loopback)
   ];
 
   for (const range of privateRanges) {

@@ -1,7 +1,11 @@
 "use client";
 
 import { type JSX, useEffect, useState, useRef } from "react";
-import Dialog, { DialogContent, DialogHeader, DialogTitle } from "@stellarUI/components/Dialog/Dialog";
+import Dialog, {
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@stellarUI/components/Dialog/Dialog";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { cn } from "@stellarUI/lib/Utils";
 import { GetMediaType } from "@/lib/MediaUtils";
@@ -66,7 +70,7 @@ export const MediaPreviewModal = ({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Clean up previous blob URL
         if (blobUrlRef.current) {
           URL.revokeObjectURL(blobUrlRef.current);
@@ -86,11 +90,13 @@ export const MediaPreviewModal = ({
             // Use the API's download endpoint with token authentication
             const { servers } = await import("@/lib/Api");
             const { token } = await servers.files.getDownloadToken(serverId, filePath);
-            
+
             if (cancelled) return;
-            
-            const downloadUrl = GetApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
-            
+
+            const downloadUrl = GetApiEndpoint(
+              `/api/servers/${serverId}/files/download?token=${token}`
+            );
+
             const response = await fetch(downloadUrl, {
               credentials: "include", // Include cookies for auth
             });
@@ -143,9 +149,9 @@ export const MediaPreviewModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-6xl w-full">
+      <DialogContent className="w-full min-w-6xl">
         <DialogHeader>
-          <DialogTitle className="text-zinc-200 overflow-hidden text-clip max-w-md"></DialogTitle>
+          <DialogTitle className="max-w-md overflow-hidden text-clip text-zinc-200"></DialogTitle>
         </DialogHeader>
 
         <div

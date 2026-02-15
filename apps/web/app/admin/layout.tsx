@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div className={cn("flex min-h-svh items-center justify-center bg-background")}>
+      <div className={cn("bg-background flex min-h-svh items-center justify-center")}>
         <PersistentBackground />
         <div className={cn("relative z-10 text-sm tracking-wider text-zinc-500 uppercase")}>
           Loading...

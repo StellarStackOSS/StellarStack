@@ -742,4 +742,3 @@ export interface PluginAuditLog {
   result: "success" | "error" | "denied";
   timestamp: string;
 }
-

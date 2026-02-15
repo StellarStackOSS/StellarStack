@@ -70,10 +70,7 @@ export const hasPermission = (
  * @param _serverId - Optional server ID for context-specific permissions
  * @returns Array of required user permission strings
  */
-const getUserRequiredPermissions = (
-  action: string,
-  _serverId?: string
-): string[] => {
+const getUserRequiredPermissions = (action: string, _serverId?: string): string[] => {
   // Map action types to required user permissions
   switch (action) {
     case "files.read":
@@ -102,7 +99,10 @@ const getUserRequiredPermissions = (
  * @param next - Next middleware function
  * @returns Response or passes to next middleware
  */
-export const requireServerAccess = async (c: Context<{ Variables: Variables }>, next: Next): Promise<Response | void> => {
+export const requireServerAccess = async (
+  c: Context<{ Variables: Variables }>,
+  next: Next
+): Promise<Response | void> => {
   const serverId = c.req.param("serverId");
 
   if (!serverId) {
@@ -228,7 +228,7 @@ export const requirePluginPermissions = async (
     const action = manifest.actions?.find((a) => a.id === actionId);
     if (action?.dangerous) {
       // Require explicit confirmation
-      const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+      const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
       if (!body.confirmed) {
         return c.json(
           {

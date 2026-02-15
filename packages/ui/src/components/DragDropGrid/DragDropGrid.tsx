@@ -546,12 +546,7 @@ const DragDropGrid = ({
 };
 
 // Grid Item Component
-const GridItem = ({
-  itemId,
-  children,
-  className,
-  ...props
-}: GridItemProps) => {
+const GridItem = ({ itemId, children, className, ...props }: GridItemProps) => {
   const { isEditing } = useDragDropGrid();
 
   return (

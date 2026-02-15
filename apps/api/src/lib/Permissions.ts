@@ -476,7 +476,10 @@ export const HasAnyPermission = (userPermissions: string[], permissions: Permiss
   return permissions.some((p) => HasPermission(userPermissions, p));
 };
 
-export const HasAllPermissions = (userPermissions: string[], permissions: Permission[]): boolean => {
+export const HasAllPermissions = (
+  userPermissions: string[],
+  permissions: Permission[]
+): boolean => {
   return permissions.every((p) => HasPermission(userPermissions, p));
 };
 

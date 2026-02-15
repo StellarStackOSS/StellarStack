@@ -5,7 +5,7 @@
  * Processes API requests, enforces permissions, and sends responses back.
  */
 
-import { PluginAPIProxy } from './PluginApiProxy';
+import { PluginAPIProxy } from "./PluginApiProxy";
 
 // ============================================
 // Types
@@ -28,7 +28,7 @@ interface WorkerIpcMessage {
 
 /** Outgoing IPC response to a plugin worker */
 interface WorkerIpcResponse {
-  type: 'success' | 'error';
+  type: "success" | "error";
   requestId: string;
   data?: unknown;
   error?: string;
@@ -49,28 +49,28 @@ export class PluginIPCHandler {
   ): Promise<void> {
     try {
       switch (message.type) {
-        case 'api-request':
+        case "api-request":
           await this.handleAPIRequest(pluginId, message, sendResponse);
           break;
 
-        case 'action-execution':
+        case "action-execution":
           await this.handleActionExecution(pluginId, message, sendResponse);
           break;
 
-        case 'log':
+        case "log":
           this.handleLog(pluginId, message);
           break;
 
         default:
           sendResponse({
-            type: 'error',
+            type: "error",
             requestId: message.requestId,
             error: `Unknown message type: ${message.type}`,
           });
       }
     } catch (error) {
       sendResponse({
-        type: 'error',
+        type: "error",
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -91,19 +91,19 @@ export class PluginIPCHandler {
       // Execute API call with permission checking
       const result = await PluginAPIProxy.executeAPICall(
         pluginId,
-        method || '',
-        endpoint || '',
+        method || "",
+        endpoint || "",
         data
       );
 
       sendResponse({
-        type: 'success',
+        type: "success",
         requestId: message.requestId,
         data: result,
       });
     } catch (error) {
       sendResponse({
-        type: 'error',
+        type: "error",
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -125,17 +125,17 @@ export class PluginIPCHandler {
       const result = {
         success: true,
         actionId,
-        message: 'Action executed by worker',
+        message: "Action executed by worker",
       };
 
       sendResponse({
-        type: 'success',
+        type: "success",
         requestId: message.requestId,
         data: result,
       });
     } catch (error) {
       sendResponse({
-        type: 'error',
+        type: "error",
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -146,8 +146,8 @@ export class PluginIPCHandler {
    * Handle log messages from worker
    */
   private static handleLog(pluginId: string, message: WorkerIpcMessage): void {
-    const level = message.level || 'info';
-    const text = message.text || '';
+    const level = message.level || "info";
+    const text = message.text || "";
     console.log(`[Plugin:${pluginId}:${level.toUpperCase()}] ${text}`);
   }
 }

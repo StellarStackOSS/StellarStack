@@ -195,7 +195,9 @@ remote.get("/servers", async (c) => {
 
         if (startupConfig.done) {
           if (Array.isArray(startupConfig.done)) {
-            donePatterns = startupConfig.done.filter((p: unknown): p is string => typeof p === "string");
+            donePatterns = startupConfig.done.filter(
+              (p: unknown): p is string => typeof p === "string"
+            );
           } else if (typeof startupConfig.done === "string") {
             donePatterns = [startupConfig.done];
           }
@@ -326,7 +328,9 @@ remote.get("/servers/:uuid", async (c) => {
 
       if (startupConfig.done) {
         if (Array.isArray(startupConfig.done)) {
-          donePatterns = startupConfig.done.filter((p: unknown): p is string => typeof p === "string");
+          donePatterns = startupConfig.done.filter(
+            (p: unknown): p is string => typeof p === "string"
+          );
         } else if (typeof startupConfig.done === "string") {
           donePatterns = [startupConfig.done];
         }

@@ -47,8 +47,7 @@ const ContainerControlsCard = ({
 
   const buttonBase =
     "px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors border bg-transparent flex items-center justify-center gap-2 min-w-[80px]";
-  const buttonColors =
-    "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100";
+  const buttonColors = "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100";
   const disabledColors = "border-zinc-800 text-zinc-600";
 
   // Start: disabled when running, starting, stopping, or any action loading

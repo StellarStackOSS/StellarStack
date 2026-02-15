@@ -24,4 +24,4 @@ const Switch = ({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
   );
 };
 
-export default Switch
+export default Switch;

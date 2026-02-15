@@ -20,10 +20,10 @@ export interface GameServerInfo {
 
 // Resource usage with limits
 export interface ResourceUsage {
-  current: number;      // Current usage (percentage or absolute value)
-  limit: number;        // Maximum limit
-  percentage: number;   // Usage as percentage of limit
-  history: number[];    // Historical data points for graphs
+  current: number; // Current usage (percentage or absolute value)
+  limit: number; // Maximum limit
+  percentage: number; // Usage as percentage of limit
+  history: number[]; // Historical data points for graphs
 }
 
 // Per-core CPU usage
@@ -37,7 +37,7 @@ export interface CoreUsage {
 export interface CpuInfo {
   usage: ResourceUsage;
   cores: number;
-  frequency: number;    // Current frequency in GHz
+  frequency: number; // Current frequency in GHz
   coreUsage?: CoreUsage[]; // Per-core usage data
   model?: string;
   architecture?: string;
@@ -50,10 +50,10 @@ export interface CpuInfo {
 // Memory/RAM specific information
 export interface MemoryInfo {
   usage: ResourceUsage;
-  used: number;         // Used memory in GB
-  total: number;        // Total memory in GB
-  type?: string;        // e.g., "DDR5"
-  speed?: number;       // e.g., 6000 MT/s
+  used: number; // Used memory in GB
+  total: number; // Total memory in GB
+  type?: string; // e.g., "DDR5"
+  speed?: number; // e.g., 6000 MT/s
   channels?: string;
   slots?: string;
   timings?: string;
@@ -62,24 +62,24 @@ export interface MemoryInfo {
 // Disk/Storage specific information
 export interface DiskInfo {
   usage: ResourceUsage;
-  used: number;         // Used space in GB
-  total: number;        // Total space in GB
-  type?: string;        // e.g., "NVMe SSD"
+  used: number; // Used space in GB
+  total: number; // Total space in GB
+  type?: string; // e.g., "NVMe SSD"
   model?: string;
   interface?: string;
   readSpeed?: string;
   writeSpeed?: string;
-  health?: number;      // Percentage
+  health?: number; // Percentage
 }
 
 // Network specific information
 export interface NetworkInfo {
-  download: number;         // Current download speed in Mbps
-  upload: number;           // Current upload speed in Mbps
+  download: number; // Current download speed in Mbps
+  upload: number; // Current upload speed in Mbps
   downloadHistory: number[];
   uploadHistory: number[];
   totalDownloaded?: number; // Total bytes downloaded
-  totalUploaded?: number;   // Total bytes uploaded
+  totalUploaded?: number; // Total bytes uploaded
   ip?: string;
   port?: number;
   protocol?: string;
@@ -112,7 +112,7 @@ export interface SystemInfo {
   os: string;
   osVersion: string;
   kernel: string;
-  uptime: number;       // Uptime in seconds
+  uptime: number; // Uptime in seconds
   dockerVersion?: string;
 }
 
@@ -192,7 +192,9 @@ export interface ServerState {
   setOffline: (offline: boolean) => void;
   setServer: (server: ServerInstance) => void;
   updateServerStatus: (status: ContainerStatus) => void;
-  updateResourceUsage: (updates: Partial<Pick<ServerInstance, 'cpu' | 'memory' | 'disk' | 'network'>>) => void;
+  updateResourceUsage: (
+    updates: Partial<Pick<ServerInstance, "cpu" | "memory" | "disk" | "network">>
+  ) => void;
   addConsoleLine: (line: ConsoleEntry) => void;
   clearConsole: () => void;
 }
@@ -215,7 +217,7 @@ export interface ApiResponse<T> {
 }
 
 export interface ServerListResponse {
-  servers: Pick<ServerInstance, 'id' | 'name' | 'status'>[];
+  servers: Pick<ServerInstance, "id" | "name" | "status">[];
 }
 
 export interface ServerDetailsResponse {

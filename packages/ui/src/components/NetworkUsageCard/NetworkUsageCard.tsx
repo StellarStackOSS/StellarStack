@@ -7,7 +7,11 @@ import { InfoTooltip, InfoRow } from "../InfoTooltip/InfoTooltip";
 import { DualSparkline } from "../Sparkline/Sparkline";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
-import type { NetworkUsageCardProps, NetworkTooltipData, NetworkUsageCardLabels } from "../DashboardCardsTypes/Types";
+import type {
+  NetworkUsageCardProps,
+  NetworkTooltipData,
+  NetworkUsageCardLabels,
+} from "../DashboardCardsTypes/Types";
 
 interface NetworkUsageCardComponentProps extends NetworkUsageCardProps {
   isOffline: boolean;
@@ -37,7 +41,9 @@ const NetworkUsageCard = ({
 
   if (isXxs) {
     return (
-      <UsageCard className={cn("h-full flex items-center justify-between px-6", isOffline && "opacity-60")}>
+      <UsageCard
+        className={cn("flex h-full items-center justify-between px-6", isOffline && "opacity-60")}
+      >
         <span className={cn("font-mono text-sm", isOffline ? "text-zinc-500" : "text-blue-400")}>
           ↓ {isOffline ? "-- " : <AnimatedNumber value={download} decimals={1} />} MB/s
         </span>
@@ -66,17 +72,27 @@ const NetworkUsageCard = ({
         />
       )}
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
-        <div className={cn(
-          "tracking-wide text-zinc-400",
-          isXs ? "text-[10px]" : isCompact ? "text-xs" : "text-sm"
-        )}>
-          <div className="flex justify-between items-center">
-            <span className={isOffline ? "text-zinc-500" : "text-blue-400"}>{isXs ? "↓" : `↓ ${labels.download}`}</span>
-            <span className={cn(valueColor, "font-mono")}>{isOffline ? "--" : <AnimatedNumber value={download} decimals={1} />} MB/s</span>
+        <div
+          className={cn(
+            "tracking-wide text-zinc-400",
+            isXs ? "text-[10px]" : isCompact ? "text-xs" : "text-sm"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className={isOffline ? "text-zinc-500" : "text-blue-400"}>
+              {isXs ? "↓" : `↓ ${labels.download}`}
+            </span>
+            <span className={cn(valueColor, "font-mono")}>
+              {isOffline ? "--" : <AnimatedNumber value={download} decimals={1} />} MB/s
+            </span>
           </div>
-          <div className="flex justify-between items-center mt-0.5">
-            <span className={isOffline ? "text-zinc-500" : "text-purple-400"}>{isXs ? "↑" : `↑ ${labels.upload}`}</span>
-            <span className={cn(valueColor, "font-mono")}>{isOffline ? "--" : <AnimatedNumber value={upload} decimals={1} />} MB/s</span>
+          <div className="mt-0.5 flex items-center justify-between">
+            <span className={isOffline ? "text-zinc-500" : "text-purple-400"}>
+              {isXs ? "↑" : `↑ ${labels.upload}`}
+            </span>
+            <span className={cn(valueColor, "font-mono")}>
+              {isOffline ? "--" : <AnimatedNumber value={upload} decimals={1} />} MB/s
+            </span>
           </div>
         </div>
         {downloadHistory && uploadHistory && (

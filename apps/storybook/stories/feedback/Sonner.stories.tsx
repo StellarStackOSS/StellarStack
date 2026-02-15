@@ -21,7 +21,9 @@ export default meta;
 type Story = StoryObj<typeof Toaster>;
 
 export const Success: Story = {
-  render: () => <Button onClick={() => toast.success("Operation successful!")}>Show Success</Button>,
+  render: () => (
+    <Button onClick={() => toast.success("Operation successful!")}>Show Success</Button>
+  ),
 };
 
 export const Error: Story = {

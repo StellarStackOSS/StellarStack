@@ -43,11 +43,7 @@ const DragDropGridMockProvider = ({
     isEditing: false,
   };
 
-  return (
-    <DragDropGridContext.Provider value={mockValue}>
-      {children}
-    </DragDropGridContext.Provider>
-  );
+  return <DragDropGridContext.Provider value={mockValue}>{children}</DragDropGridContext.Provider>;
 };
 
 export default DragDropGridMockProvider;

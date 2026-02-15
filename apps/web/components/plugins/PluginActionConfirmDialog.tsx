@@ -80,9 +80,9 @@ export const PluginActionConfirmDialog = ({
           {isDestructive && (
             <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-4">
               <div className="flex gap-3">
-                <BsExclamationTriangle className="h-5 w-5 mt-0.5 shrink-0 text-red-500" />
+                <BsExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                 <div className="text-sm text-red-300">
-                  <p className="font-semibold mb-2">This action will modify server files</p>
+                  <p className="mb-2 font-semibold">This action will modify server files</p>
                   <ul className="space-y-1 text-xs">
                     <li>• Files in the installation directory will be replaced</li>
                     <li>• Configuration files may be overwritten</li>
@@ -113,7 +113,7 @@ export const PluginActionConfirmDialog = ({
             <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="flex items-center gap-2 text-sm font-medium text-zinc-200 cursor-pointer">
+                  <Label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-200">
                     <BsCheckCircle className="h-4 w-4 text-green-500" />
                     Create Backup Before Installing
                   </Label>
@@ -141,7 +141,7 @@ export const PluginActionConfirmDialog = ({
 
           {/* Required Permissions Info */}
           <div className="rounded-lg border border-zinc-700/50 bg-zinc-800/30 p-3">
-            <p className="text-xs font-medium text-zinc-300 mb-2">Required Permissions:</p>
+            <p className="mb-2 text-xs font-medium text-zinc-300">Required Permissions:</p>
             <ul className="space-y-1 text-xs text-zinc-400">
               {isDestructive && (
                 <>

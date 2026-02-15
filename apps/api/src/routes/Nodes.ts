@@ -376,9 +376,15 @@ nodes.get("/:id/stats", RequireAdmin, async (c) => {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      console.error(`Daemon stats request failed: ${response.status} ${response.statusText}`, errorText);
+      console.error(
+        `Daemon stats request failed: ${response.status} ${response.statusText}`,
+        errorText
+      );
       return c.json(
-        { error: "Failed to fetch stats from daemon", details: `${response.status} ${response.statusText}` },
+        {
+          error: "Failed to fetch stats from daemon",
+          details: `${response.status} ${response.statusText}`,
+        },
         500
       );
     }
@@ -387,7 +393,13 @@ nodes.get("/:id/stats", RequireAdmin, async (c) => {
     return c.json(stats);
   } catch (error) {
     console.error("Failed to connect to daemon:", error);
-    return c.json({ error: "Failed to connect to daemon", details: error instanceof Error ? error.message : String(error) }, 500);
+    return c.json(
+      {
+        error: "Failed to connect to daemon",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      500
+    );
   }
 });
 

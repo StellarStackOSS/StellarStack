@@ -169,7 +169,7 @@ const SplitPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-end">
@@ -193,12 +193,12 @@ const SplitPage = (): JSX.Element | null => {
             {/* Child Server Warning */}
             {isChildServer && (
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-amber-900/30 bg-muted p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-amber-900/30 p-1 pt-2">
                   <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                     <BsExclamationTriangle className="h-3 w-3 text-amber-400" />
                     <span className="text-amber-400">Notice</span>
                   </div>
-                  <div className="flex flex-1 items-center gap-3 rounded-lg border border-amber-900/20 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 items-center gap-3 rounded-lg border border-amber-900/20 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     <img
                       src="/icons/24-triangle-warning.svg"
                       alt="Warning"
@@ -219,9 +219,9 @@ const SplitPage = (): JSX.Element | null => {
             {/* Current Resources */}
             {!isChildServer && (
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Current Resources</div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     <div className="grid grid-cols-3 gap-6">
                       <div>
                         <div className="text-xs tracking-wider text-zinc-500 uppercase">Memory</div>
@@ -247,11 +247,11 @@ const SplitPage = (): JSX.Element | null => {
 
             {/* Child Servers */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                   Child Servers {children.length > 0 && `(${children.length})`}
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
                       <Spinner />

@@ -68,7 +68,9 @@ const formatCronExpression = (cronExpr: string): string => {
 };
 
 // Data transformation: Convert schedule to nodes and edges with vertical layout
-const scheduleToNodesAndEdges = (schedule: ScheduleVisualizerData): {
+const scheduleToNodesAndEdges = (
+  schedule: ScheduleVisualizerData
+): {
   nodes: VisualizerNode[];
   edges: VisualizerEdge[];
 } => {

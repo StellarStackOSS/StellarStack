@@ -15,7 +15,7 @@ export const Horizontal: Story = {
     <div className="w-60">
       <div className="text-sm font-medium">Title</div>
       <Separator className="my-2" />
-      <div className="text-sm text-muted-foreground">Description below the separator</div>
+      <div className="text-muted-foreground text-sm">Description below the separator</div>
     </div>
   ),
 };

@@ -249,48 +249,51 @@ const FilesPage = (): JSX.Element | null => {
     }
   }, [serverId, server?.disk]);
 
-  const fetchFiles = useCallback(async (isPolling: boolean = false) => {
-    if (!isPolling) {
-      setIsLoading(true);
-    }
-    try {
-      const data = await servers.files.list(
-        serverId,
-        displayPath === "/" ? undefined : displayPath
-      );
-      const mappedFiles: FileItem[] = data.files.map((f: FileInfo) => ({
-        id: f.path,
-        name: f.name,
-        type: f.type === "directory" ? "folder" : "file",
-        size: f.type === "directory" ? "--" : formatFileSize(f.size),
-        sizeBytes: f.size,
-        modified: new Date(f.modified).toLocaleString(),
-        path: f.path,
-      }));
-
-      // Only update if the file list actually changed
-      const hasChanged =
-        filesRef.current.length !== mappedFiles.length ||
-        !filesRef.current.every((f, i) => f.id === mappedFiles[i]?.id);
-
-      if (hasChanged) {
-        filesRef.current = mappedFiles;
-        setFiles(mappedFiles);
-      }
-    } catch (error) {
+  const fetchFiles = useCallback(
+    async (isPolling: boolean = false) => {
       if (!isPolling) {
-        toast.error("Failed to fetch files");
+        setIsLoading(true);
       }
-      if (filesRef.current.length > 0) {
-        filesRef.current = [];
-        setFiles([]);
+      try {
+        const data = await servers.files.list(
+          serverId,
+          displayPath === "/" ? undefined : displayPath
+        );
+        const mappedFiles: FileItem[] = data.files.map((f: FileInfo) => ({
+          id: f.path,
+          name: f.name,
+          type: f.type === "directory" ? "folder" : "file",
+          size: f.type === "directory" ? "--" : formatFileSize(f.size),
+          sizeBytes: f.size,
+          modified: new Date(f.modified).toLocaleString(),
+          path: f.path,
+        }));
+
+        // Only update if the file list actually changed
+        const hasChanged =
+          filesRef.current.length !== mappedFiles.length ||
+          !filesRef.current.every((f, i) => f.id === mappedFiles[i]?.id);
+
+        if (hasChanged) {
+          filesRef.current = mappedFiles;
+          setFiles(mappedFiles);
+        }
+      } catch (error) {
+        if (!isPolling) {
+          toast.error("Failed to fetch files");
+        }
+        if (filesRef.current.length > 0) {
+          filesRef.current = [];
+          setFiles([]);
+        }
+      } finally {
+        if (!isPolling) {
+          setIsLoading(false);
+        }
       }
-    } finally {
-      if (!isPolling) {
-        setIsLoading(false);
-      }
-    }
-  }, [serverId, displayPath]);
+    },
+    [serverId, displayPath]
+  );
 
   useEffect(() => {
     fetchFiles();
@@ -437,10 +440,13 @@ const FilesPage = (): JSX.Element | null => {
   }, [mediaPreviewOpen, uploadModalOpen, handleDroppedFiles]);
 
   // Navigation helpers - updates local state to trigger row animations
-  const navigateToFolder = useCallback((folderName: string) => {
-    const newPath = displayPath === "/" ? `/${folderName}` : `${displayPath}/${folderName}`;
-    router.push(`/servers/${serverId}/files${newPath}`, undefined);
-  }, [displayPath, serverId, router]);
+  const navigateToFolder = useCallback(
+    (folderName: string) => {
+      const newPath = displayPath === "/" ? `/${folderName}` : `${displayPath}/${folderName}`;
+      router.push(`/servers/${serverId}/files${newPath}`, undefined);
+    },
+    [displayPath, serverId, router]
+  );
 
   const navigateUp = useCallback(() => {
     if (displayPath === "/") return;
@@ -667,10 +673,13 @@ const FilesPage = (): JSX.Element | null => {
     }
   }, [newFileNameInput, displayPath, serverId, playSound, isEditable, router]);
 
-  const handleEdit = useCallback((file: FileItem) => {
-    // Navigate to the dedicated file edit page
-    router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(file.path)}`);
-  }, [serverId, router]);
+  const handleEdit = useCallback(
+    (file: FileItem) => {
+      // Navigate to the dedicated file edit page
+      router.push(`/servers/${serverId}/files/edit?path=${encodeURIComponent(file.path)}`);
+    },
+    [serverId, router]
+  );
 
   const handleUploadClick = useCallback(() => {
     setUploadFiles([]);
@@ -739,13 +748,16 @@ const FilesPage = (): JSX.Element | null => {
     return binaryExtensions.includes(ext);
   }, []);
 
-  const calculateSpeed = useCallback((startTime: number, totalBytes: number, currentTime: number): string => {
-    const elapsed = (currentTime - startTime) / 1000;
-    if (elapsed === 0) return "0 KB/s";
-    const speed = totalBytes / elapsed / 1024;
-    if (speed < 1024) return `${speed.toFixed(1)} KB/s`;
-    return `${(speed / 1024).toFixed(1)} MB/s`;
-  }, []);
+  const calculateSpeed = useCallback(
+    (startTime: number, totalBytes: number, currentTime: number): string => {
+      const elapsed = (currentTime - startTime) / 1000;
+      if (elapsed === 0) return "0 KB/s";
+      const speed = totalBytes / elapsed / 1024;
+      if (speed < 1024) return `${speed.toFixed(1)} KB/s`;
+      return `${(speed / 1024).toFixed(1)} MB/s`;
+    },
+    []
+  );
 
   const confirmUpload = useCallback(async () => {
     if (uploadFiles.length === 0) return;
@@ -824,7 +836,19 @@ const FilesPage = (): JSX.Element | null => {
     setUploadFiles([]);
     fetchDiskUsage();
     setIsUploading(false);
-  }, [uploadFiles, displayPath, serverId, isBinaryFile, addUpload, updateUpload, removeUpload, formatFileSize, calculateSpeed, playSound, fetchDiskUsage]);
+  }, [
+    uploadFiles,
+    displayPath,
+    serverId,
+    isBinaryFile,
+    addUpload,
+    updateUpload,
+    removeUpload,
+    formatFileSize,
+    calculateSpeed,
+    playSound,
+    fetchDiskUsage,
+  ]);
 
   const columns: ColumnDef<FileItem>[] = useMemo(
     () => [
@@ -1062,7 +1086,16 @@ const FilesPage = (): JSX.Element | null => {
         },
       },
     ],
-    [displayPath, serverId, navigateToFolder, handleEdit, handleDelete, handleRename, handleEditPermissions, isEditable]
+    [
+      displayPath,
+      serverId,
+      navigateToFolder,
+      handleEdit,
+      handleDelete,
+      handleRename,
+      handleEditPermissions,
+      isEditable,
+    ]
   );
 
   // Toggle hidden files visibility
@@ -1134,7 +1167,7 @@ const FilesPage = (): JSX.Element | null => {
     <>
       <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-          <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+          <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
             {/* Header */}
             <FadeIn delay={0}>
               <div className="mb-6 flex items-center justify-between">
@@ -1190,9 +1223,9 @@ const FilesPage = (): JSX.Element | null => {
             <div className="space-y-4">
               {/* Storage Card */}
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Storage</div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     <div className="flex items-center gap-4">
                       <img src="/icons/24-file-download.svg" alt="storage_icon" />
                       <div className="flex-1">
@@ -1222,9 +1255,9 @@ const FilesPage = (): JSX.Element | null => {
 
               {/* Folders Card */}
               <FadeIn delay={0.1}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Folders</div>
-                  <div className="relative flex h-72 flex-row flex-nowrap justify-center overflow-scroll rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background relative flex h-72 flex-row flex-nowrap justify-center overflow-scroll rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     {/* filter out and display all the folder as well as their quanity */}
                     {displayFiles.some((file) => file.type === "folder") ? (
                       <div className="flex flex-wrap items-center gap-4 pb-2">
@@ -1351,13 +1384,13 @@ const FilesPage = (): JSX.Element | null => {
 
               {/* Files Table Card */}
               <FadeIn delay={0.2}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                     Files{" "}
                     {table.getFilteredRowModel().rows.length > 0 &&
                       `(${table.getFilteredRowModel().rows.length})`}
                   </div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                     <DataTable
                       table={table}
                       columns={columns}

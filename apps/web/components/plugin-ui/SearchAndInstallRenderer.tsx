@@ -148,7 +148,11 @@ export const SearchAndInstallRenderer = ({
           className="flex-1"
         />
         <TextureButton onClick={() => handleSearch(searchQuery)} disabled={isLoading}>
-          {isLoading ? <BsArrowClockwise className="h-4 w-4 animate-spin" /> : <BsSearch className="h-4 w-4" />}
+          {isLoading ? (
+            <BsArrowClockwise className="h-4 w-4 animate-spin" />
+          ) : (
+            <BsSearch className="h-4 w-4" />
+          )}
         </TextureButton>
       </div>
 
@@ -234,7 +238,10 @@ export const SearchAndInstallRenderer = ({
               {resultCard.metadata && (
                 <div className="space-y-2">
                   {(resultCard.metadata as MetadataConfig[]).map((meta: MetadataConfig) => (
-                    <div key={meta.field} className="flex items-center justify-between rounded bg-white/5 p-2">
+                    <div
+                      key={meta.field}
+                      className="flex items-center justify-between rounded bg-white/5 p-2"
+                    >
                       <span className="text-sm text-gray-400">{meta.label}</span>
                       <Badge variant="secondary" className="text-xs">
                         {formatMetadataValue(selectedItem[meta.field], meta.format)}

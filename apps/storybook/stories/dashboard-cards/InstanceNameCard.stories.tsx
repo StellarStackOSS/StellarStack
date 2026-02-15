@@ -14,7 +14,13 @@ const meta: Meta<typeof InstanceNameCard> = {
   title: "Dashboard Cards/InstanceNameCard",
   component: InstanceNameCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;

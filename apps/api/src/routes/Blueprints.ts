@@ -195,9 +195,10 @@ blueprints.post("/", RequireAdmin, async (c) => {
       description: parsed.data.description || null,
       category: parsed.data.category || null,
       author: parsed.data.author || null,
-      dockerImages: Object.keys(parsed.data.dockerImages).length > 0
-        ? parsed.data.dockerImages
-        : { "Default": "alpine:latest" },
+      dockerImages:
+        Object.keys(parsed.data.dockerImages).length > 0
+          ? parsed.data.dockerImages
+          : { Default: "alpine:latest" },
       startup: parsed.data.startup,
       config: (parsed.data.config || {}) as Prisma.InputJsonValue,
       scripts: (parsed.data.scripts || {}) as Prisma.InputJsonValue,
@@ -315,9 +316,10 @@ blueprints.post("/import/egg", RequireAdmin, async (c) => {
 
       // Store complete Pterodactyl structures as-is
       fileDenylist: egg.file_denylist || [],
-      dockerImages: Object.keys(cleanedDockerImages).length > 0
-        ? cleanedDockerImages
-        : { "Default": "alpine:latest" },
+      dockerImages:
+        Object.keys(cleanedDockerImages).length > 0
+          ? cleanedDockerImages
+          : { Default: "alpine:latest" },
       startup: egg.startup || "",
       config: egg.config || {},
       scripts: egg.scripts || {},

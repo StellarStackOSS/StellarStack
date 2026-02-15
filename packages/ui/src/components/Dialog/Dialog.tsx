@@ -10,15 +10,21 @@ const Dialog = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>)
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 };
 
-const DialogTrigger = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>): JSX.Element => {
+const DialogTrigger = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>): JSX.Element => {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 };
 
-const DialogPortal = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>): JSX.Element => {
+const DialogPortal = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>): JSX.Element => {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 };
 
-const DialogClose = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>): JSX.Element => {
+const DialogClose = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>): JSX.Element => {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 };
 
@@ -52,7 +58,7 @@ const DialogContent = ({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid max-h-[90vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid max-h-[90vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
           className
         )}
         {...props}

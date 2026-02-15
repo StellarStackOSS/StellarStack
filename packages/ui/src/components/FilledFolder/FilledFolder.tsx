@@ -38,20 +38,7 @@ const FilledFolder = ({ folderName, folderQuantity }: FilledFolderProps): JSX.El
       whileHover="hover"
       initial="rest"
       animate="rest"
-      className="
-        relative
-        rounded-lg
-        cursor-pointer
-        border border-transparent hover:border-white/10
-        duration-300 transition-all
-        hover:bg-white/5
-        flex flex-col items-center justify-between
-        p-4 text-center
-        w-32 h-40
-        sm:w-48 sm:h-48
-        md:w-56 md:h-56
-        lg:w-64 lg:h-64
-      "
+      className="relative flex h-40 w-32 cursor-pointer flex-col items-center justify-between rounded-lg border border-transparent p-4 text-center transition-all duration-300 hover:border-white/10 hover:bg-white/5 sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-64 lg:w-64"
       style={{
         // @ts-expect-error CSS custom property
         "--folder-scale": "1",
@@ -68,21 +55,21 @@ const FilledFolder = ({ folderName, folderQuantity }: FilledFolderProps): JSX.El
         <img
           src="/custom/folder_line.png"
           alt="folder-line"
-          className="absolute bottom-[35%] left-1/2 -translate-x-1/2 opacity-75 z-50 w-[90%]"
+          className="absolute bottom-[35%] left-1/2 z-50 w-[90%] -translate-x-1/2 opacity-75"
         />
 
         {/* Folder back */}
         <img
           src="/custom/folder_back.png"
           alt="folder-back"
-          className="absolute inset-0 w-full z-10"
+          className="absolute inset-0 z-10 w-full"
         />
 
         {/* Left sheet */}
         <motion.img
           src="/custom/folder_sheet.png"
           alt="folder-sheet-left"
-          className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
           style={{
             width: "calc(5rem * var(--folder-scale))",
             x: "-18%",
@@ -98,7 +85,7 @@ const FilledFolder = ({ folderName, folderQuantity }: FilledFolderProps): JSX.El
         <motion.img
           src="/custom/folder_sheet_text.png"
           alt="folder-sheet-center"
-          className="absolute left-1/2 -translate-x-1/2 z-30 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2"
           style={{
             width: "calc(5rem * var(--folder-scale))",
           }}
@@ -113,7 +100,7 @@ const FilledFolder = ({ folderName, folderQuantity }: FilledFolderProps): JSX.El
         <motion.img
           src="/custom/folder_sheet.png"
           alt="folder-sheet-right"
-          className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2"
           style={{
             width: "calc(5rem * var(--folder-scale))",
             x: "18%",
@@ -129,14 +116,14 @@ const FilledFolder = ({ folderName, folderQuantity }: FilledFolderProps): JSX.El
         <img
           src="/custom/folder_front.png"
           alt="folder-front"
-          className="absolute inset-0 w-full z-40 translate-y-[4%] scale-120"
+          className="absolute inset-0 z-40 w-full translate-y-[4%] scale-120"
         />
       </div>
 
       {/* Text */}
-      <div className="flex gap-1 flex-col">
-        <p className="font-semibold leading-tight">{folderName}</p>
-        <p className="text-white/50 text-sm">
+      <div className="flex flex-col gap-1">
+        <p className="leading-tight font-semibold">{folderName}</p>
+        <p className="text-sm text-white/50">
           {folderQuantity} {folderQuantity === 1 ? "file" : "files"}
         </p>
       </div>

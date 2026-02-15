@@ -80,7 +80,10 @@ const FormItem = ({ className, ...props }: React.ComponentProps<"div">): JSX.Ele
   );
 };
 
-const FormLabel = ({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>): JSX.Element => {
+const FormLabel = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof LabelPrimitive.Root>): JSX.Element => {
   const { error, formItemId } = useFormField();
 
   return (

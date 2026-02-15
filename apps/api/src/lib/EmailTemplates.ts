@@ -241,17 +241,47 @@ If you didn't try to sign in, please secure your account immediately by changing
 export const ServerAlertEmail = (params: {
   name: string;
   serverName: string;
-  alertType: "started" | "stopped" | "crashed" | "high_resource" | "backup_complete" | "backup_failed";
+  alertType:
+    | "started"
+    | "stopped"
+    | "crashed"
+    | "high_resource"
+    | "backup_complete"
+    | "backup_failed";
   details?: string;
   timestamp: string;
 }): { html: string; text: string } => {
   const alertMessages: Record<string, { title: string; message: string; color: string }> = {
-    started: { title: "Server Started", message: "Your server has been started successfully.", color: "#22c55e" },
-    stopped: { title: "Server Stopped", message: "Your server has been stopped.", color: "#f59e0b" },
-    crashed: { title: "Server Crashed", message: "Your server has crashed unexpectedly.", color: "#ef4444" },
-    high_resource: { title: "High Resource Usage", message: "Your server is experiencing high resource usage.", color: "#f59e0b" },
-    backup_complete: { title: "Backup Complete", message: "Your server backup has completed successfully.", color: "#22c55e" },
-    backup_failed: { title: "Backup Failed", message: "Your server backup has failed.", color: "#ef4444" },
+    started: {
+      title: "Server Started",
+      message: "Your server has been started successfully.",
+      color: "#22c55e",
+    },
+    stopped: {
+      title: "Server Stopped",
+      message: "Your server has been stopped.",
+      color: "#f59e0b",
+    },
+    crashed: {
+      title: "Server Crashed",
+      message: "Your server has crashed unexpectedly.",
+      color: "#ef4444",
+    },
+    high_resource: {
+      title: "High Resource Usage",
+      message: "Your server is experiencing high resource usage.",
+      color: "#f59e0b",
+    },
+    backup_complete: {
+      title: "Backup Complete",
+      message: "Your server backup has completed successfully.",
+      color: "#22c55e",
+    },
+    backup_failed: {
+      title: "Backup Failed",
+      message: "Your server backup has failed.",
+      color: "#ef4444",
+    },
   };
 
   const alert = alertMessages[params.alertType];
@@ -269,12 +299,16 @@ export const ServerAlertEmail = (params: {
         <span class="meta-label">Time</span>
         <span class="meta-value">${params.timestamp}</span>
       </div>
-      ${params.details ? `
+      ${
+        params.details
+          ? `
       <div class="meta-row">
         <span class="meta-label">Details</span>
         <span class="meta-value">${params.details}</span>
       </div>
-      ` : ""}
+      `
+          : ""
+      }
     </div>
     <p style="text-align: center;">
       <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/servers" class="button">View Dashboard</a>
@@ -301,9 +335,7 @@ View your dashboard: ${process.env.FRONTEND_URL || "http://localhost:3000"}/serv
 /**
  * Welcome email template
  */
-export const WelcomeEmail = (params: {
-  name: string;
-}): { html: string; text: string } => {
+export const WelcomeEmail = (params: { name: string }): { html: string; text: string } => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
   const html = wrapTemplate(`

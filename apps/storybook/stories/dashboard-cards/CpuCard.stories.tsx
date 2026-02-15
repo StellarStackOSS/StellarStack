@@ -7,7 +7,13 @@ const meta: Meta<typeof CpuCard> = {
   title: "Dashboard Cards/CpuCard",
   component: CpuCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;
