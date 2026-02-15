@@ -122,8 +122,8 @@ deploy-preview:
     - npm install -g @railway/cli
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
     - ENV_NAME="preview-${SLUG}"
-    - railway environment delete "$ENV_NAME" --yes || true
-    - railway environment create "$ENV_NAME"
+    - railway environment delete "$ENV_NAME" || true
+    - railway environment new "$ENV_NAME"
     - railway up --service web --environment "$ENV_NAME" --detach
     - railway up --service api --environment "$ENV_NAME" --detach
     - railway up --service home --environment "$ENV_NAME" --detach
@@ -154,8 +154,8 @@ deploy-dev:
     - npm install -g @railway/cli
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
     - ENV_NAME="dev-${SLUG}"
-    - railway environment delete "$ENV_NAME" --yes || true
-    - railway environment create "$ENV_NAME"
+    - railway environment delete "$ENV_NAME" || true
+    - railway environment new "$ENV_NAME"
     - railway up --service web --environment "$ENV_NAME" --detach
     - railway up --service api --environment "$ENV_NAME" --detach
     - railway up --service home --environment "$ENV_NAME" --detach
@@ -184,7 +184,7 @@ cleanup-preview:
     - npm install -g @railway/cli
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
     - ENV_NAME="preview-${SLUG}"
-    - railway environment delete "$ENV_NAME" --yes
+    - railway environment delete "$ENV_NAME"
   environment:
     name: preview/$CI_COMMIT_REF_SLUG
     action: stop
@@ -209,7 +209,7 @@ cleanup-dev:
     - npm install -g @railway/cli
     - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
     - ENV_NAME="dev-${SLUG}"
-    - railway environment delete "$ENV_NAME" --yes
+    - railway environment delete "$ENV_NAME"
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     action: stop

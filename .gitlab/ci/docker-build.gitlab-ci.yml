@@ -17,8 +17,6 @@ docker-build:
   image: docker:latest
   services:
     - docker:dind
-  tags:
-    - self-hosted
   parallel:
     matrix:
       - SERVICE: api
