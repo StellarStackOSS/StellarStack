@@ -107,7 +107,7 @@ code-analysis:
   stage: analysis
   needs: [test-jsdom, test-dom, test-node]
   script:
-    - pnpm jscpd --pattern "apps/**/*.{ts,tsx}" --threshold 5
+    - pnpm jscpd --pattern "apps/api/src/**/*.ts" --pattern "apps/web/**/*.{ts,tsx}" --pattern "apps/home/**/*.{ts,tsx}" --pattern "packages/ui/src/**/*.{ts,tsx}" --ignore "**/node_modules/**" --ignore "**/.next/**" --ignore "**/dist/**" --ignore "**/stories/**" --threshold 5
     - pnpm format:check
 
 # ─── Deploy Preview (Railway) ──────────────────────────────────────
