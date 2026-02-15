@@ -151,6 +151,30 @@ code-analysis:
       railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
         | jq -r '(.data.project.services.edges // [])[] | .node.name'
     }
+  - |
+    ensure_service() {
+      # $1 = service name — returns existing or newly created service ID
+      SVC_ID=$(get_service_id "$1")
+      if [ -n "$SVC_ID" ]; then
+        echo "$SVC_ID"
+        return
+      fi
+      echo "Creating service: $1" >&2
+      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\" }) { id } }\"}" \
+        | jq -r '.data.serviceCreate.id'
+    }
+  - |
+    ensure_database_service() {
+      # $1 = service name, $2 = Docker image (e.g., postgres:16, redis:7)
+      SVC_ID=$(get_service_id "$1")
+      if [ -n "$SVC_ID" ]; then
+        echo "$SVC_ID"
+        return
+      fi
+      echo "Creating database service: $1 ($2)" >&2
+      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\", source: { image: \\\"$2\\\" } }) { id } }\"}" \
+        | jq -r '.data.serviceCreate.id'
+    }
 
   # ── Variable management ──
   - |
@@ -218,30 +242,18 @@ code-analysis:
         echo "Created environment: $ENV_ID"
       fi
 
-      echo "=== Listing project services ==="
+      echo "=== Ensuring all services exist ==="
       list_services
+      API_SVC_ID=$(ensure_service "api")
+      WEB_SVC_ID=$(ensure_service "web")
+      DAEMON_SVC_ID=$(ensure_service "mock-daemon")
+      PG_SVC_ID=$(ensure_database_service "Postgres" "postgres:16")
+      REDIS_SVC_ID=$(ensure_database_service "Redis" "redis:7")
+      echo "API=$API_SVC_ID  WEB=$WEB_SVC_ID  DAEMON=$DAEMON_SVC_ID  PG=$PG_SVC_ID  REDIS=$REDIS_SVC_ID"
 
-      echo "=== Resolving service IDs ==="
-      API_SVC_ID=$(get_service_id "api")
-      WEB_SVC_ID=$(get_service_id "web")
-      DAEMON_SVC_ID=$(get_service_id "mock-daemon")
-      if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ]; then
-        echo "ERROR: Could not resolve all service IDs. API=$API_SVC_ID WEB=$WEB_SVC_ID DAEMON=$DAEMON_SVC_ID" >&2
-        echo "Services named 'api', 'web', and 'mock-daemon' must exist in the Railway project." >&2
-        return 1
-      fi
-      echo "API=$API_SVC_ID  WEB=$WEB_SVC_ID  DAEMON=$DAEMON_SVC_ID"
-
-      # Find Postgres + Redis services (Railway spins up per-env instances automatically)
-      PG_SVC_ID=$(get_service_id "Postgres")
-      [ -z "$PG_SVC_ID" ] && PG_SVC_ID=$(get_service_id "postgres")
-      [ -z "$PG_SVC_ID" ] && PG_SVC_ID=$(get_service_id "PostgreSQL")
-      REDIS_SVC_ID=$(get_service_id "Redis")
-      [ -z "$REDIS_SVC_ID" ] && REDIS_SVC_ID=$(get_service_id "redis")
-      echo "PG=$PG_SVC_ID  REDIS=$REDIS_SVC_ID"
-
-      if [ -z "$PG_SVC_ID" ] || [ -z "$REDIS_SVC_ID" ]; then
-        echo "ERROR: Could not find Postgres or Redis service. Check 'list_services' output above." >&2
+      if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ] || [ -z "$PG_SVC_ID" ] || [ -z "$REDIS_SVC_ID" ]; then
+        echo "ERROR: Failed to ensure all services exist" >&2
+        list_services
         return 1
       fi
 
@@ -251,15 +263,9 @@ code-analysis:
 
       # Use Railway reference variables — resolved at deploy time to the
       # per-environment Postgres/Redis instances automatically
-      PG_SVC_NAME=$(railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
-        | jq -r "(.data.project.services.edges // [])[] | select(.node.id == \"$PG_SVC_ID\") | .node.name")
-      REDIS_SVC_NAME=$(railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
-        | jq -r "(.data.project.services.edges // [])[] | select(.node.id == \"$REDIS_SVC_ID\") | .node.name")
-      echo "PG service name: $PG_SVC_NAME  Redis service name: $REDIS_SVC_NAME"
-
       echo "=== Setting API environment variables ==="
-      set_service_var "$API_SVC_ID" "$ENV_ID" "DATABASE_URL" "\${{${PG_SVC_NAME}.DATABASE_URL}}"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_URL" "\${{${REDIS_SVC_NAME}.REDIS_URL}}"
+      set_service_var "$API_SVC_ID" "$ENV_ID" "DATABASE_URL" "\${{Postgres.DATABASE_URL}}"
+      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_URL" "\${{Redis.REDIS_URL}}"
       set_service_var "$API_SVC_ID" "$ENV_ID" "FRONTEND_URL" "$PANEL_URL"
       set_service_var "$API_SVC_ID" "$ENV_ID" "API_URL" "$API_URL"
       set_service_var "$API_SVC_ID" "$ENV_ID" "BETTER_AUTH_SECRET" "$BETTER_AUTH_SECRET"
