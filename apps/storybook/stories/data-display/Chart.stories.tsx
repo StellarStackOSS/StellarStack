@@ -4,7 +4,17 @@ import ChartContainer, {
   ChartTooltipContent,
   type ChartConfig,
 } from "@stellarUI/components/Chart/Chart";
-import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 
 const CHART_DATA = [
   { month: "Jan", desktop: 186, mobile: 80 },
@@ -70,8 +80,20 @@ export const AreaChartStory: Story = {
         <XAxis dataKey="month" />
         <YAxis />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Area type="monotone" dataKey="desktop" stroke="var(--color-desktop)" fill="var(--color-desktop)" fillOpacity={0.3} />
-        <Area type="monotone" dataKey="mobile" stroke="var(--color-mobile)" fill="var(--color-mobile)" fillOpacity={0.3} />
+        <Area
+          type="monotone"
+          dataKey="desktop"
+          stroke="var(--color-desktop)"
+          fill="var(--color-desktop)"
+          fillOpacity={0.3}
+        />
+        <Area
+          type="monotone"
+          dataKey="mobile"
+          stroke="var(--color-mobile)"
+          fill="var(--color-mobile)"
+          fillOpacity={0.3}
+        />
       </AreaChart>
     </ChartContainer>
   ),

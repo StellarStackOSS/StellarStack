@@ -5,7 +5,8 @@ export const fileKeys = {
   all: (serverId: string) => ["files", serverId] as const,
   lists: (serverId: string) => [...fileKeys.all(serverId), "list"] as const,
   list: (serverId: string, path?: string) => [...fileKeys.lists(serverId), path || "/"] as const,
-  content: (serverId: string, path: string) => [...fileKeys.all(serverId), "content", path] as const,
+  content: (serverId: string, path: string) =>
+    [...fileKeys.all(serverId), "content", path] as const,
   diskUsage: (serverId: string) => [...fileKeys.all(serverId), "diskUsage"] as const,
 };
 
@@ -59,8 +60,15 @@ export const useFileMutations = (serverId: string) => {
   });
 
   const create = useMutation({
-    mutationFn: ({ path, type, content }: { path: string; type: "file" | "directory"; content?: string }) =>
-      servers.files.create(serverId, path, type, content),
+    mutationFn: ({
+      path,
+      type,
+      content,
+    }: {
+      path: string;
+      type: "file" | "directory";
+      content?: string;
+    }) => servers.files.create(serverId, path, type, content),
     onSuccess: (_, { path }) => invalidateFiles(path),
   });
 

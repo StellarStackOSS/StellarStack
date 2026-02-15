@@ -80,9 +80,15 @@ const authConfig = {
       enabled: !!process.env.DISCORD_CLIENT_ID,
     },
   },
-  trustedOrigins: process.env.DESKTOP_MODE === "true"
-    ? ["http://localhost:3000", "http://localhost:3001", "http://localhost:1420", "tauri://localhost"]
-    : [process.env.FRONTEND_URL || "http://localhost:3000"],
+  trustedOrigins:
+    process.env.DESKTOP_MODE === "true"
+      ? [
+          "http://localhost:3000",
+          "http://localhost:3001",
+          "http://localhost:1420",
+          "tauri://localhost",
+        ]
+      : [process.env.FRONTEND_URL || "http://localhost:3000"],
   user: {
     additionalFields: {
       role: {
@@ -103,6 +109,8 @@ const authConfig = {
 
 // BetterAuth plugin type inference doesn't fully resolve with custom plugins,
 // so we cast through unknown to the expected return type.
-export const auth: ReturnType<typeof betterAuth> = betterAuth(authConfig) as unknown as ReturnType<typeof betterAuth>;
+export const auth: ReturnType<typeof betterAuth> = betterAuth(authConfig) as unknown as ReturnType<
+  typeof betterAuth
+>;
 
 export type Auth = typeof auth;

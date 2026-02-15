@@ -41,4 +41,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export default Toaster
+export default Toaster;

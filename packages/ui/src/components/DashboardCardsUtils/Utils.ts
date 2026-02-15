@@ -23,15 +23,24 @@ export const formatUptime = (seconds: number): { value: string; unit: string; fu
 
 export const cardMetadata: Record<string, { name: string; description: string }> = {
   "instance-name": { name: "Instance Name", description: "Display the server instance name" },
-  "container-controls": { name: "Container Controls", description: "Start, stop, restart, and kill controls" },
-  "system-info": { name: "System Information", description: "Node details including location and ID" },
+  "container-controls": {
+    name: "Container Controls",
+    description: "Start, stop, restart, and kill controls",
+  },
+  "system-info": {
+    name: "System Information",
+    description: "Node details including location and ID",
+  },
   "network-info": { name: "Network Info", description: "IP addresses and open ports" },
-  "cpu": { name: "CPU Usage", description: "Real-time CPU utilization with history" },
-  "ram": { name: "RAM Usage", description: "Memory usage with history graph" },
-  "disk": { name: "Disk Usage", description: "Storage utilization with history" },
+  cpu: { name: "CPU Usage", description: "Real-time CPU utilization with history" },
+  ram: { name: "RAM Usage", description: "Memory usage with history graph" },
+  disk: { name: "Disk Usage", description: "Storage utilization with history" },
   "network-usage": { name: "Network Usage", description: "Download and upload speeds" },
-  "console": { name: "Console", description: "Server console with command input" },
+  console: { name: "Console", description: "Server console with command input" },
   "players-online": { name: "Players Online", description: "Connected players count and list" },
-  "container-uptime": { name: "Container Uptime", description: "How long the container has been running" },
+  "container-uptime": {
+    name: "Container Uptime",
+    description: "How long the container has been running",
+  },
   "recent-logs": { name: "Recent Logs", description: "Compact view of recent log entries" },
 };

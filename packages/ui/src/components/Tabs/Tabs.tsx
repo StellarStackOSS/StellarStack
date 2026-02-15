@@ -1,14 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
+import * as React from "react";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
 
-import { cn } from "@stellarUI/lib/Utils"
+import { cn } from "@stellarUI/lib/Utils";
 
-const Tabs = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) => {
+const Tabs = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>) => {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
@@ -18,10 +15,7 @@ const Tabs = ({
   );
 };
 
-const TabsList = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) => {
+const TabsList = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) => {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
@@ -64,4 +58,4 @@ const TabsContent = ({
 };
 
 export { TabsList, TabsTrigger, TabsContent };
-export default Tabs
+export default Tabs;

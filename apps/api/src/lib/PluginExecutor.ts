@@ -115,9 +115,7 @@ export class PluginActionExecutor {
       const manifest = plugin.manifest as unknown as PluginManifest;
 
       // 2. Find action definition
-      const action = manifest.actions?.find(
-        (a) => a.id === actionId
-      );
+      const action = manifest.actions?.find((a) => a.id === actionId);
 
       if (!action) {
         return {
@@ -150,12 +148,7 @@ export class PluginActionExecutor {
       // 4. Route to built-in or community plugin handler
       if (plugin.isBuiltIn) {
         // Built-in plugins execute directly in this process
-        return await this.executeBuiltInAction(
-          actionId,
-          request,
-          action,
-          executorContext
-        );
+        return await this.executeBuiltInAction(actionId, request, action, executorContext);
       } else {
         // Community plugins execute in isolated worker process
         return await this.executeCommunityPluginAction(
@@ -207,11 +200,7 @@ export class PluginActionExecutor {
     for (const operation of operations) {
       try {
         // Resolve template variables in operation
-        const resolvedOp = this.resolveOperationTemplates(
-          operation,
-          request.inputs,
-          context
-        );
+        const resolvedOp = this.resolveOperationTemplates(operation, request.inputs, context);
 
         // Execute based on operation type
         switch (resolvedOp.type) {
@@ -320,7 +309,12 @@ export class PluginActionExecutor {
   static isActionDestructive(action: PluginAction): boolean {
     if (!action.operations) return false;
 
-    const destructiveTypes = ["download-to-server", "write-file", "delete-file", "delete-all-files"];
+    const destructiveTypes = [
+      "download-to-server",
+      "write-file",
+      "delete-file",
+      "delete-all-files",
+    ];
     return action.operations.some((op: Operation) => destructiveTypes.includes(op.type));
   }
 
@@ -335,8 +329,7 @@ export class PluginActionExecutor {
     try {
       const timestamp = new Date().toISOString().split("T")[0];
       const name =
-        backupName ||
-        `plugin-${context.pluginId}-${timestamp}-${Date.now().toString().slice(-6)}`;
+        backupName || `plugin-${context.pluginId}-${timestamp}-${Date.now().toString().slice(-6)}`;
 
       console.log(
         `[Plugin:${context.pluginId}] Creating backup "${name}" before destructive operation`
@@ -351,9 +344,7 @@ export class PluginActionExecutor {
         throw new Error("Backup creation failed");
       }
 
-      console.log(
-        `[Plugin:${context.pluginId}] Backup created: ${result.backup_id}`
-      );
+      console.log(`[Plugin:${context.pluginId}] Backup created: ${result.backup_id}`);
       return result.backup_id;
     } catch (error) {
       console.error(`[Plugin] Failed to create backup:`, error);
@@ -401,14 +392,22 @@ export class PluginActionExecutor {
   // Operation Implementations
   // ============================================
 
-  private async executeDownload(
-    operation: Operation,
-    context: PluginContext
-  ): Promise<void> {
+  private async executeDownload(operation: Operation, context: PluginContext): Promise<void> {
     // Download file from URL and write to server
-    const { url, dest_path, destPath, directory, decompress = false, headers = {} } = operation as Operation & {
-      url?: string; dest_path?: string; destPath?: string; directory?: string;
-      decompress?: boolean; headers?: Record<string, string>;
+    const {
+      url,
+      dest_path,
+      destPath,
+      directory,
+      decompress = false,
+      headers = {},
+    } = operation as Operation & {
+      url?: string;
+      dest_path?: string;
+      destPath?: string;
+      directory?: string;
+      decompress?: boolean;
+      headers?: Record<string, string>;
     };
     const finalPath = dest_path || destPath;
 
@@ -432,26 +431,27 @@ export class PluginActionExecutor {
       throw new Error(result.message || "Download failed");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] Download complete: ${result.message}`
-    );
+    console.log(`[Plugin:${context.pluginId}] Download complete: ${result.message}`);
   }
 
-  private async executeWriteFile(
-    operation: Operation,
-    context: PluginContext
-  ): Promise<void> {
-    const { path, content, append = false, mode } = operation as Operation & {
-      path?: string; content?: unknown; append?: boolean; mode?: string;
+  private async executeWriteFile(operation: Operation, context: PluginContext): Promise<void> {
+    const {
+      path,
+      content,
+      append = false,
+      mode,
+    } = operation as Operation & {
+      path?: string;
+      content?: unknown;
+      append?: boolean;
+      mode?: string;
     };
 
     if (!path || content === undefined) {
       throw new Error("Write file operation requires path and content");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] Writing file ${path} on server ${context.serverId}`
-    );
+    console.log(`[Plugin:${context.pluginId}] Writing file ${path} on server ${context.serverId}`);
 
     const result = await DaemonClient.writeFile(context.serverId, {
       path,
@@ -464,26 +464,20 @@ export class PluginActionExecutor {
       throw new Error(result.message || "Write failed");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] File write complete: ${result.message}`
-    );
+    console.log(`[Plugin:${context.pluginId}] File write complete: ${result.message}`);
   }
 
-  private async executeDeleteFile(
-    operation: Operation,
-    context: PluginContext
-  ): Promise<void> {
+  private async executeDeleteFile(operation: Operation, context: PluginContext): Promise<void> {
     const { path, recursive = false } = operation as Operation & {
-      path?: string; recursive?: boolean;
+      path?: string;
+      recursive?: boolean;
     };
 
     if (!path) {
       throw new Error("Delete file operation requires path");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] Deleting file ${path} on server ${context.serverId}`
-    );
+    console.log(`[Plugin:${context.pluginId}] Deleting file ${path} on server ${context.serverId}`);
 
     const result = await DaemonClient.deleteFile(context.serverId, {
       path,
@@ -494,18 +488,11 @@ export class PluginActionExecutor {
       throw new Error(result.message || "Delete failed");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] File delete complete: ${result.message}`
-    );
+    console.log(`[Plugin:${context.pluginId}] File delete complete: ${result.message}`);
   }
 
-  private async executeDeleteAllFiles(
-    operation: Operation,
-    context: PluginContext
-  ): Promise<void> {
-    console.log(
-      `[Plugin:${context.pluginId}] Deleting all files on server ${context.serverId}`
-    );
+  private async executeDeleteAllFiles(operation: Operation, context: PluginContext): Promise<void> {
+    console.log(`[Plugin:${context.pluginId}] Deleting all files on server ${context.serverId}`);
 
     const result = await DaemonClient.deleteAllFiles(context.serverId);
 
@@ -513,17 +500,13 @@ export class PluginActionExecutor {
       throw new Error(result.message || "Delete all files failed");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] All files deleted: ${result.message}`
-    );
+    console.log(`[Plugin:${context.pluginId}] All files deleted: ${result.message}`);
   }
 
-  private async executeSendCommand(
-    operation: Operation,
-    context: PluginContext
-  ): Promise<void> {
+  private async executeSendCommand(operation: Operation, context: PluginContext): Promise<void> {
     const { command, timeout = 5000 } = operation as Operation & {
-      command?: string; timeout?: number;
+      command?: string;
+      timeout?: number;
     };
 
     if (!command) {
@@ -543,9 +526,7 @@ export class PluginActionExecutor {
       throw new Error(result.message || "Command send failed");
     }
 
-    console.log(
-      `[Plugin:${context.pluginId}] Command sent: ${result.message}`
-    );
+    console.log(`[Plugin:${context.pluginId}] Command sent: ${result.message}`);
   }
 
   private async executeRestartServer(context: PluginContext): Promise<void> {

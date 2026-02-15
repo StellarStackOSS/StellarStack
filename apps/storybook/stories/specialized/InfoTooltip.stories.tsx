@@ -6,7 +6,13 @@ const meta: Meta<typeof InfoTooltip> = {
   title: "Specialized/InfoTooltip",
   component: InfoTooltip,
   tags: ["autodocs"],
-  decorators: [(Story) => <TooltipProvider><Story /></TooltipProvider>],
+  decorators: [
+    (Story) => (
+      <TooltipProvider>
+        <Story />
+      </TooltipProvider>
+    ),
+  ],
   argTypes: {
     visible: { control: "boolean" },
   },

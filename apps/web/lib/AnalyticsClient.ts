@@ -10,15 +10,15 @@ import type {
   NodeMetrics,
   ServerResourceMetrics,
 } from "@/lib/types/Analytics";
-import { GetApiEndpoint } from '@/lib/PublicEnv';
+import { GetApiEndpoint } from "@/lib/PublicEnv";
 
 /**
  * Make API request helper
  */
 const request = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const config: RequestInit = {
-    method: 'GET',
-    credentials: 'include',
+    method: "GET",
+    credentials: "include",
     ...options,
   };
 
@@ -40,7 +40,6 @@ const request = async <T>(endpoint: string, options: RequestInit = {}): Promise<
  * Provides methods to fetch various analytics data
  */
 class AnalyticsClient {
-
   /**
    * Fetch complete analytics dashboard data for specified time range
    * @param timeRange - Time range for analytics (24h, 7d, 30d, 90d, 1y)
@@ -48,7 +47,7 @@ class AnalyticsClient {
    * @example
    * const data = await analyticsClient.getDashboardMetrics('7d');
    */
-  async getDashboardMetrics(timeRange: AnalyticsTimeRange = '7d'): Promise<AnalyticsDashboardData> {
+  async getDashboardMetrics(timeRange: AnalyticsTimeRange = "7d"): Promise<AnalyticsDashboardData> {
     return request<AnalyticsDashboardData>(`/api/analytics/dashboard?timeRange=${timeRange}`);
   }
 
@@ -59,7 +58,7 @@ class AnalyticsClient {
    * const metrics = await analyticsClient.getSystemMetrics();
    */
   async getSystemMetrics(): Promise<SystemMetrics> {
-    return request<SystemMetrics>('/api/analytics/system-metrics');
+    return request<SystemMetrics>("/api/analytics/system-metrics");
   }
 
   /**
@@ -69,7 +68,7 @@ class AnalyticsClient {
    * const nodes = await analyticsClient.getNodeMetrics();
    */
   async getNodeMetrics(): Promise<NodeMetrics[]> {
-    return request<NodeMetrics[]>('/api/analytics/node-metrics');
+    return request<NodeMetrics[]>("/api/analytics/node-metrics");
   }
 
   /**
@@ -81,7 +80,7 @@ class AnalyticsClient {
    * const nodeServers = await analyticsClient.getServerMetrics('node-1');
    */
   async getServerMetrics(nodeId?: string): Promise<ServerResourceMetrics[]> {
-    const query = nodeId ? `?nodeId=${nodeId}` : '';
+    const query = nodeId ? `?nodeId=${nodeId}` : "";
     return request<ServerResourceMetrics[]>(`/api/analytics/server-metrics${query}`);
   }
 
@@ -92,7 +91,7 @@ class AnalyticsClient {
    * @example
    * const cpuData = await analyticsClient.getCpuTimeSeries('24h');
    */
-  async getCpuTimeSeries(timeRange: AnalyticsTimeRange = '7d') {
+  async getCpuTimeSeries(timeRange: AnalyticsTimeRange = "7d") {
     return request(`/api/analytics/cpu-series?timeRange=${timeRange}`);
   }
 
@@ -103,7 +102,7 @@ class AnalyticsClient {
    * @example
    * const memoryData = await analyticsClient.getMemoryTimeSeries('24h');
    */
-  async getMemoryTimeSeries(timeRange: AnalyticsTimeRange = '7d') {
+  async getMemoryTimeSeries(timeRange: AnalyticsTimeRange = "7d") {
     return request(`/api/analytics/memory-series?timeRange=${timeRange}`);
   }
 
@@ -114,7 +113,7 @@ class AnalyticsClient {
    * @example
    * const diskData = await analyticsClient.getDiskTimeSeries('30d');
    */
-  async getDiskTimeSeries(timeRange: AnalyticsTimeRange = '7d') {
+  async getDiskTimeSeries(timeRange: AnalyticsTimeRange = "7d") {
     return request(`/api/analytics/disk-series?timeRange=${timeRange}`);
   }
 
@@ -125,7 +124,7 @@ class AnalyticsClient {
    * const backupMetrics = await analyticsClient.getBackupStorageMetrics();
    */
   async getBackupStorageMetrics() {
-    return request('/api/analytics/backup-storage');
+    return request("/api/analytics/backup-storage");
   }
 
   /**
@@ -135,7 +134,7 @@ class AnalyticsClient {
    * const blueprints = await analyticsClient.getBlueprintMetrics();
    */
   async getBlueprintMetrics() {
-    return request('/api/analytics/blueprint-metrics');
+    return request("/api/analytics/blueprint-metrics");
   }
 
   /**
@@ -145,7 +144,7 @@ class AnalyticsClient {
    * const apiMetrics = await analyticsClient.getApiMetrics();
    */
   async getApiMetrics() {
-    return request('/api/analytics/api-metrics');
+    return request("/api/analytics/api-metrics");
   }
 
   /**
@@ -155,7 +154,7 @@ class AnalyticsClient {
    * const webhookMetrics = await analyticsClient.getWebhookMetrics();
    */
   async getWebhookMetrics() {
-    return request('/api/analytics/webhook-metrics');
+    return request("/api/analytics/webhook-metrics");
   }
 
   /**
@@ -166,7 +165,10 @@ class AnalyticsClient {
    * @example
    * const csvBlob = await analyticsClient.exportAnalytics('7d', 'csv');
    */
-  async exportAnalytics(timeRange: AnalyticsTimeRange = '7d', format: 'csv' | 'json' | 'pdf' = 'csv') {
+  async exportAnalytics(
+    timeRange: AnalyticsTimeRange = "7d",
+    format: "csv" | "json" | "pdf" = "csv"
+  ) {
     return request(`/api/analytics/export?timeRange=${timeRange}&format=${format}`);
   }
 }

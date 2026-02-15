@@ -12,7 +12,13 @@ const meta: Meta<typeof PlayersOnlineCard> = {
   title: "Dashboard Cards/PlayersOnlineCard",
   component: PlayersOnlineCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;
@@ -25,7 +31,12 @@ export const WithPlayers: Story = {
     players: MOCK_PLAYERS,
     maxPlayers: 20,
     containerStatus: "running",
-    labels: { title: "Players Online", players: "Players", max: "Max", noPlayers: "No players online" },
+    labels: {
+      title: "Players Online",
+      players: "Players",
+      max: "Max",
+      noPlayers: "No players online",
+    },
   },
 };
 
@@ -36,6 +47,11 @@ export const Empty: Story = {
     players: [],
     maxPlayers: 20,
     containerStatus: "running",
-    labels: { title: "Players Online", players: "Players", max: "Max", noPlayers: "No players online" },
+    labels: {
+      title: "Players Online",
+      players: "Players",
+      max: "Max",
+      noPlayers: "No players online",
+    },
   },
 };

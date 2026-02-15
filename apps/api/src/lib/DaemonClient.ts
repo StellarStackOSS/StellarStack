@@ -109,17 +109,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/download`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/download`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -139,17 +136,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/write`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/write`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -169,17 +163,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/delete`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/delete`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -196,17 +187,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/delete-all`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/delete-all`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -226,17 +214,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/backup`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/backup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -256,17 +241,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/control`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/control`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -286,17 +268,14 @@ export class DaemonClient {
     const daemonUrl = await this.getDaemonUrl(serverId);
     const token = await this.getDaemonToken(serverId);
 
-    const response = await fetch(
-      `${daemonUrl}/api/servers/${serverId}/plugins/command`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    const response = await fetch(`${daemonUrl}/api/servers/${serverId}/plugins/command`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
 
     if (!response.ok) {
       const error = await response.json();

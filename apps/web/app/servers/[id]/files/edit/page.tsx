@@ -167,7 +167,7 @@ export default function FileEditPage() {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
@@ -209,12 +209,12 @@ export default function FileEditPage() {
 
           {/* Editor Card */}
           <FadeIn delay={0.05} className="flex flex-1 flex-col">
-            <div className="flex flex-1 flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+            <div className="bg-muted flex flex-1 flex-col rounded-lg border border-white/5 p-1 pt-2">
               <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                 <File className="h-3 w-3" />
                 Editor
               </div>
-              <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
+              <div className="from-card via-secondary to-background flex flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                 {isLoading ? (
                   <div className="flex flex-1 items-center justify-center py-12">
                     <Spinner />

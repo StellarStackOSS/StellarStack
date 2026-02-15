@@ -30,7 +30,7 @@ export const Right: Story = {
           <SheetDescription>Sheet content on the right side.</SheetDescription>
         </SheetHeader>
         <div className="py-4">
-          <p className="text-sm text-muted-foreground">Sheet body content.</p>
+          <p className="text-muted-foreground text-sm">Sheet body content.</p>
         </div>
       </SheetContent>
     </Sheet>

@@ -17,7 +17,10 @@ export const useServers = () => {
   });
 };
 
-export const useServer = (id: string | undefined, options?: { refetchInterval?: number | false }) => {
+export const useServer = (
+  id: string | undefined,
+  options?: { refetchInterval?: number | false }
+) => {
   return useQuery({
     queryKey: serverKeys.detail(id!),
     queryFn: () => servers.get(id!),
@@ -97,14 +100,12 @@ export const useServerMutations = () => {
   });
 
   const setStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      servers.setStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: string }) => servers.setStatus(id, status),
     onSuccess: (_, { id }) => invalidateServer(id),
   });
 
   const sendCommand = useMutation({
-    mutationFn: ({ id, command }: { id: string; command: string }) =>
-      servers.command(id, command),
+    mutationFn: ({ id, command }: { id: string; command: string }) => servers.command(id, command),
   });
 
   return {

@@ -26,7 +26,7 @@ export const Default: Story = {
         <CardDescription>Card description goes here.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">Card content area.</p>
+        <p className="text-muted-foreground text-sm">Card content area.</p>
       </CardContent>
     </Card>
   ),
@@ -39,11 +39,13 @@ export const WithAction: Story = {
         <CardTitle>Notifications</CardTitle>
         <CardDescription>You have 3 unread messages.</CardDescription>
         <CardAction>
-          <Button variant="outline" size="sm">View All</Button>
+          <Button variant="outline" size="sm">
+            View All
+          </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">Notification content here.</p>
+        <p className="text-muted-foreground text-sm">Notification content here.</p>
       </CardContent>
     </Card>
   ),
@@ -57,7 +59,7 @@ export const WithFooter: Story = {
         <CardDescription>Manage your preferences.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">Settings content here.</p>
+        <p className="text-muted-foreground text-sm">Settings content here.</p>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <Button variant="outline">Cancel</Button>

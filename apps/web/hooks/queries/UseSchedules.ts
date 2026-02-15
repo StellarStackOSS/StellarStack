@@ -6,7 +6,8 @@ export const scheduleKeys = {
   lists: (serverId: string) => [...scheduleKeys.all(serverId), "list"] as const,
   list: (serverId: string) => [...scheduleKeys.lists(serverId)] as const,
   details: (serverId: string) => [...scheduleKeys.all(serverId), "detail"] as const,
-  detail: (serverId: string, scheduleId: string) => [...scheduleKeys.details(serverId), scheduleId] as const,
+  detail: (serverId: string, scheduleId: string) =>
+    [...scheduleKeys.details(serverId), scheduleId] as const,
 };
 
 export const useSchedules = (serverId: string | undefined) => {

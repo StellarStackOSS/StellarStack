@@ -42,52 +42,22 @@ export const SchemaRenderer = ({
 
   switch (schema.type) {
     case "search-and-install":
-      return (
-        <SearchAndInstallRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <SearchAndInstallRenderer schema={schema} {...commonProps} />;
 
     case "form":
-      return (
-        <FormRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <FormRenderer schema={schema} {...commonProps} />;
 
     case "data-table":
-      return (
-        <DataTableRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <DataTableRenderer schema={schema} {...commonProps} />;
 
     case "action-button":
-      return (
-        <ActionButtonRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <ActionButtonRenderer schema={schema} {...commonProps} />;
 
     case "stats":
-      return (
-        <StatsRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <StatsRenderer schema={schema} {...commonProps} />;
 
     case "compound":
-      return (
-        <CompoundRenderer
-          schema={schema}
-          {...commonProps}
-        />
-      );
+      return <CompoundRenderer schema={schema} {...commonProps} />;
 
     default:
       const _exhaustive: never = schema;

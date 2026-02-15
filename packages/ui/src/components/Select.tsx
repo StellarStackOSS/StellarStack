@@ -11,11 +11,15 @@ const Select = ({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>)
   return <SelectPrimitive.Root data-slot="select" {...props} />;
 };
 
-const SelectGroup = ({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>): JSX.Element => {
+const SelectGroup = ({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Group>): JSX.Element => {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
 };
 
-const SelectValue = ({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>): JSX.Element => {
+const SelectValue = ({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Value>): JSX.Element => {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 };
 
@@ -85,7 +89,10 @@ const SelectContent = ({
   );
 };
 
-const SelectLabel = ({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>): JSX.Element => {
+const SelectLabel = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Label>): JSX.Element => {
   return (
     <SelectPrimitive.Label
       data-slot="select-label"

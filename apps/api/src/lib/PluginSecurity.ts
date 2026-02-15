@@ -72,10 +72,7 @@ export class PluginSecurityAnalyzer {
   // Analysis Methods
   // ============================================
 
-  private async analyzeManifest(
-    pluginDir: string,
-    issues: SecurityIssue[]
-  ): Promise<void> {
+  private async analyzeManifest(pluginDir: string, issues: SecurityIssue[]): Promise<void> {
     try {
       const manifestPath = path.join(pluginDir, "stellarstack.json");
       const content = await fs.readFile(manifestPath, "utf-8");
@@ -203,10 +200,7 @@ export class PluginSecurityAnalyzer {
     }
   }
 
-  private async checkDependencies(
-    pluginDir: string,
-    issues: SecurityIssue[]
-  ): Promise<void> {
+  private async checkDependencies(pluginDir: string, issues: SecurityIssue[]): Promise<void> {
     try {
       const packagePath = path.join(pluginDir, "package.json");
       const content = await fs.readFile(packagePath, "utf-8");
@@ -250,10 +244,7 @@ export class PluginSecurityAnalyzer {
     }
   }
 
-  private async checkFilePermissions(
-    pluginDir: string,
-    issues: SecurityIssue[]
-  ): Promise<void> {
+  private async checkFilePermissions(pluginDir: string, issues: SecurityIssue[]): Promise<void> {
     try {
       // Check for potentially dangerous files
       const dangerousPatterns = [
@@ -284,10 +275,7 @@ export class PluginSecurityAnalyzer {
     }
   }
 
-  private async lookForSecrets(
-    pluginDir: string,
-    issues: SecurityIssue[]
-  ): Promise<void> {
+  private async lookForSecrets(pluginDir: string, issues: SecurityIssue[]): Promise<void> {
     try {
       const jsFiles = await this.findFiles(pluginDir, /\.(js|ts|json)$/);
 
@@ -324,11 +312,7 @@ export class PluginSecurityAnalyzer {
   // Helper Methods
   // ============================================
 
-  private async findFiles(
-    dir: string,
-    pattern: RegExp,
-    maxFiles = 500
-  ): Promise<string[]> {
+  private async findFiles(dir: string, pattern: RegExp, maxFiles = 500): Promise<string[]> {
     const results: string[] = [];
 
     const walk = async (currentPath: string) => {
@@ -363,10 +347,7 @@ export class PluginSecurityAnalyzer {
     return results;
   }
 
-  private async findAllFiles(
-    dir: string,
-    maxFiles = 1000
-  ): Promise<string[]> {
+  private async findAllFiles(dir: string, maxFiles = 1000): Promise<string[]> {
     const results: string[] = [];
 
     const walk = async (currentPath: string) => {
@@ -401,9 +382,10 @@ export class PluginSecurityAnalyzer {
     return results;
   }
 
-  private calculateRiskLevel(
-    issues: SecurityIssue[]
-  ): { score: number; riskLevel: "safe" | "low" | "medium" | "high" | "critical" } {
+  private calculateRiskLevel(issues: SecurityIssue[]): {
+    score: number;
+    riskLevel: "safe" | "low" | "medium" | "high" | "critical";
+  } {
     // Count issues by severity
     const critical = issues.filter((i) => i.severity === "critical").length;
     const errors = issues.filter((i) => i.severity === "error").length;

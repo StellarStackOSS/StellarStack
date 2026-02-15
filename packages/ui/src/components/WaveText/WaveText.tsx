@@ -31,11 +31,7 @@ interface WaveTextProps {
  * @param props - WaveText configuration
  * @returns Animated text element with wave effect
  */
-const WaveText = ({
-  text,
-  className,
-  baseClassName = "text-zinc-600",
-}: WaveTextProps) => {
+const WaveText = ({ text, className, baseClassName = "text-zinc-600" }: WaveTextProps) => {
   const [waveIndex, setWaveIndex] = useState(-1);
   const isAnimatingRef = useRef(false);
   const WAVE_WIDTH = 4;

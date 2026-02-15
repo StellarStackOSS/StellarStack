@@ -139,7 +139,7 @@ const ServerPluginsPage = () => {
 
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
-      <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+      <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
         {/* Header */}
         <FadeIn delay={0}>
           <div className="mb-6 flex items-center justify-between">
@@ -158,9 +158,9 @@ const ServerPluginsPage = () => {
           </div>
         ) : tabPlugins.length === 0 ? (
           <FadeIn delay={0.05}>
-            <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+            <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
               <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Extensions</div>
-              <div className="flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background py-20 shadow-lg shadow-black/20">
+              <div className="from-card via-secondary to-background flex flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b py-20 shadow-lg shadow-black/20">
                 <BsPuzzle className="mb-4 h-12 w-12 text-zinc-700" />
                 <h3 className="mb-2 text-sm font-medium text-zinc-400">No Extensions Available</h3>
                 <p className="max-w-sm text-center text-xs text-zinc-600">
@@ -174,7 +174,7 @@ const ServerPluginsPage = () => {
           <div className="space-y-4">
             {/* Plugin Tab Bar */}
             <FadeIn delay={0.05}>
-              <div className="flex flex-wrap gap-2 rounded-lg border border-white/5 bg-muted p-2">
+              <div className="bg-muted flex flex-wrap gap-2 rounded-lg border border-white/5 p-2">
                 {tabPlugins.map((plugin) =>
                   (plugin.uiMetadata?.serverTabs || []).map((tab) => {
                     const tabId = `${plugin.pluginId}:${tab.id}`;
@@ -198,11 +198,11 @@ const ServerPluginsPage = () => {
 
             {/* Active Tab Content */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-muted p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                   {activeTab?.label || "Extension"}
                 </div>
-                <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-card via-secondary to-background shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                   {renderActiveTab()}
                 </div>
               </div>

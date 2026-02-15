@@ -28,7 +28,11 @@ import { TextureButton } from "@stellarUI/components/TextureButton";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 import ServerStatusBadge from "@/components/ServerStatusBadge/ServerStatusBadge";
 
-const buildDisplayData = (server: Server | null, statsData: StatsWithHistory, realDiskUsageBytes: number) => {
+const buildDisplayData = (
+  server: Server | null,
+  statsData: StatsWithHistory,
+  realDiskUsageBytes: number
+) => {
   const stats = statsData.current;
 
   const cpuPercent = stats?.cpu_absolute ?? 0;
@@ -99,7 +103,8 @@ const buildDisplayData = (server: Server | null, statsData: StatsWithHistory, re
     networkConfig: {
       publicIp: server?.allocations?.[0]?.ip || "0.0.0.0",
       privateIp: "10.0.0.1",
-      openPorts: server?.allocations?.map((a: Allocation) => ({ port: a.port, protocol: "TCP" })) || [],
+      openPorts:
+        server?.allocations?.map((a: Allocation) => ({ port: a.port, protocol: "TCP" })) || [],
       macAddress: "00:00:00:00:00:00",
       ipAddress: server?.allocations?.[0]?.ip || "0.0.0.0",
       port: server?.allocations?.[0]?.port || 25565,
@@ -116,7 +121,11 @@ const buildDisplayData = (server: Server | null, statsData: StatsWithHistory, re
     node: server?.node
       ? {
           id: server.node.id || "unknown",
-          shortId: String((server.node as unknown as Record<string, unknown>).shortId || server.node.id?.substring(0, 8) || "unknown"),
+          shortId: String(
+            (server.node as unknown as Record<string, unknown>).shortId ||
+              server.node.id?.substring(0, 8) ||
+              "unknown"
+          ),
           name: server.node.displayName || "Node",
           location: getLocationString(),
           region: server.node.location?.country || "Unknown",
@@ -250,7 +259,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (isInstalling) {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerInstallingPlaceholder serverName={server?.name} />
       </div>
     );
@@ -258,7 +267,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (server?.status === "SUSPENDED") {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
@@ -266,7 +275,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (server?.status === "MAINTENANCE") {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerMaintenancePlaceholder serverName={server?.name} />
       </div>
     );
@@ -274,7 +283,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
 
   if (isLoading && !wsConnected) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
+      <div className="bg-background flex min-h-svh items-center justify-center">
         <div className="flex items-center gap-3">
           <Spinner className="h-5 w-5" />
         </div>
@@ -295,7 +304,7 @@ const ServerOverviewPage = (): JSX.Element | null => {
           </div>
         )}
 
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-card px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           <FadeIn delay={0}>
             <div className="mb-6 flex items-center justify-between">
               <div className="flex w-2/3 flex-row justify-end gap-2">

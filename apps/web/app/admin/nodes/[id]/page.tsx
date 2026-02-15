@@ -357,7 +357,9 @@ export default function NodeDetailPage() {
                         <Input
                           type="text"
                           value={formData.displayName}
-                          onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, displayName: e.target.value })
+                          }
                           required
                         />
                       </div>
@@ -416,7 +418,10 @@ export default function NodeDetailPage() {
                             type="number"
                             value={formData.sftpPort}
                             onChange={(e) =>
-                              setFormData({ ...formData, sftpPort: parseInt(e.target.value) || 2022 })
+                              setFormData({
+                                ...formData,
+                                sftpPort: parseInt(e.target.value) || 2022,
+                              })
                             }
                             min={1}
                             max={65535}
@@ -706,7 +711,9 @@ export default function NodeDetailPage() {
                                 <Input
                                   type="text"
                                   value={rangeForm.ip}
-                                  onChange={(e) => setRangeForm({ ...rangeForm, ip: e.target.value })}
+                                  onChange={(e) =>
+                                    setRangeForm({ ...rangeForm, ip: e.target.value })
+                                  }
                                   placeholder="0.0.0.0"
                                   required
                                 />

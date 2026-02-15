@@ -6,7 +6,9 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@stellarUI/lib/Utils";
 
-const DropdownMenu = ({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>): JSX.Element => {
+const DropdownMenu = ({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>): JSX.Element => {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 };
 
@@ -42,7 +44,9 @@ const DropdownMenuContent = ({
   );
 };
 
-const DropdownMenuGroup = ({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Group>): JSX.Element => {
+const DropdownMenuGroup = ({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Group>): JSX.Element => {
   return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 };
 
@@ -155,7 +159,10 @@ const DropdownMenuSeparator = ({
   );
 };
 
-const DropdownMenuShortcut = ({ className, ...props }: React.ComponentProps<"span">): JSX.Element => {
+const DropdownMenuShortcut = ({
+  className,
+  ...props
+}: React.ComponentProps<"span">): JSX.Element => {
   return (
     <span
       data-slot="dropdown-menu-shortcut"
@@ -165,7 +172,9 @@ const DropdownMenuShortcut = ({ className, ...props }: React.ComponentProps<"spa
   );
 };
 
-const DropdownMenuSub = ({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>): JSX.Element => {
+const DropdownMenuSub = ({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>): JSX.Element => {
   return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />;
 };
 

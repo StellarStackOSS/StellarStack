@@ -4,7 +4,11 @@ import type { JSX } from "react";
 import { cn } from "@stellarUI/lib/Utils";
 import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
-import type { CardProps, NetworkInfoData, NetworkInfoCardLabels } from "../DashboardCardsTypes/Types";
+import type {
+  CardProps,
+  NetworkInfoData,
+  NetworkInfoCardLabels,
+} from "../DashboardCardsTypes/Types";
 
 interface NetworkInfoCardProps extends CardProps {
   networkInfo: NetworkInfoData;
@@ -25,13 +29,20 @@ const NetworkInfoCard = ({ itemId, networkInfo, labels }: NetworkInfoCardProps):
   const badgeBg = "bg-zinc-800 text-zinc-300";
 
   const visiblePorts = isLarge ? networkInfo.openPorts : networkInfo.openPorts.slice(0, 3);
-  const portsString = networkInfo.openPorts.slice(0, 3).map(p => p.port).join(", ");
+  const portsString = networkInfo.openPorts
+    .slice(0, 3)
+    .map((p) => p.port)
+    .join(", ");
 
   if (isXxs) {
     return (
-      <UsageCard className="h-full flex items-center justify-between px-6">
-        <span className={cn("text-xs font-medium uppercase", "text-zinc-400")}>{labels.titleShort}</span>
-        <span className={cn("text-sm font-mono truncate ml-4", "text-zinc-100")}>{networkInfo.publicIp}</span>
+      <UsageCard className="flex h-full items-center justify-between px-6">
+        <span className={cn("text-xs font-medium uppercase", "text-zinc-400")}>
+          {labels.titleShort}
+        </span>
+        <span className={cn("ml-4 truncate font-mono text-sm", "text-zinc-100")}>
+          {networkInfo.publicIp}
+        </span>
       </UsageCard>
     );
   }
@@ -39,28 +50,31 @@ const NetworkInfoCard = ({ itemId, networkInfo, labels }: NetworkInfoCardProps):
   return (
     <UsageCard title={isXs ? labels.titleShort : labels.title} className="h-full">
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
-        <div className={cn(
-          isXs ? "space-y-1 text-[10px]" : isCompact ? "space-y-2 text-xs" : "space-y-3 text-sm"
-        )}>
+        <div
+          className={cn(
+            isXs ? "space-y-1 text-[10px]" : isCompact ? "space-y-2 text-xs" : "space-y-3 text-sm"
+          )}
+        >
           <div>
-            <div className={cn(labelColor, "mb-0.5", isXs ? "text-[9px]" : "text-xs")}>{isXs ? labels.publicIpShort : labels.publicIp}</div>
-            <div className={cn(valueColor, "font-mono", isXs && "text-[10px]")}>{networkInfo.publicIp}</div>
+            <div className={cn(labelColor, "mb-0.5", isXs ? "text-[9px]" : "text-xs")}>
+              {isXs ? labels.publicIpShort : labels.publicIp}
+            </div>
+            <div className={cn(valueColor, "font-mono", isXs && "text-[10px]")}>
+              {networkInfo.publicIp}
+            </div>
           </div>
           {!isXs && !isCompact && networkInfo.privateIp && (
             <div>
-              <div className={cn(labelColor, "text-xs mb-0.5")}>{labels.privateIp}</div>
+              <div className={cn(labelColor, "mb-0.5 text-xs")}>{labels.privateIp}</div>
               <div className={cn(valueColor, "font-mono")}>{networkInfo.privateIp}</div>
             </div>
           )}
           {!isXs && (
             <div>
-              <div className={cn(labelColor, "text-xs mb-0.5")}>{labels.openPorts}</div>
-              <div className={cn(
-                "flex flex-wrap gap-1 mt-1",
-                isLarge && "gap-2"
-              )}>
+              <div className={cn(labelColor, "mb-0.5 text-xs")}>{labels.openPorts}</div>
+              <div className={cn("mt-1 flex flex-wrap gap-1", isLarge && "gap-2")}>
                 {visiblePorts.map((portInfo) => (
-                  <span key={portInfo.port} className={cn("px-2 py-0.5 rounded text-xs", badgeBg)}>
+                  <span key={portInfo.port} className={cn("rounded px-2 py-0.5 text-xs", badgeBg)}>
                     {portInfo.port} {portInfo.protocol}
                   </span>
                 ))}
@@ -69,13 +83,13 @@ const NetworkInfoCard = ({ itemId, networkInfo, labels }: NetworkInfoCardProps):
           )}
           {isXs && (
             <div>
-              <div className={cn(labelColor, "text-[9px] mb-0.5")}>{labels.portsShort}</div>
+              <div className={cn(labelColor, "mb-0.5 text-[9px]")}>{labels.portsShort}</div>
               <div className={cn(valueColor, "font-mono text-[10px]")}>{portsString}</div>
             </div>
           )}
           {isLarge && networkInfo.macAddress && (
             <div>
-              <div className={cn(labelColor, "text-xs mb-0.5")}>{labels.macAddress}</div>
+              <div className={cn(labelColor, "mb-0.5 text-xs")}>{labels.macAddress}</div>
               <div className={cn(valueColor, "font-mono")}>{networkInfo.macAddress}</div>
             </div>
           )}

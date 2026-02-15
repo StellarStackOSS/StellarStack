@@ -220,10 +220,7 @@ plugins.post("/:pluginId/actions/:actionId", RequireAuth, async (c) => {
     });
 
     if (!plugin || plugin.status !== "enabled") {
-      return c.json(
-        { error: "Plugin not found or not enabled" },
-        plugin ? 400 : 404
-      );
+      return c.json({ error: "Plugin not found or not enabled" }, plugin ? 400 : 404);
     }
 
     // Check plugin has required permissions for this action
@@ -267,12 +264,7 @@ plugins.post("/:pluginId/actions/:actionId", RequireAuth, async (c) => {
       userId: user.id,
     };
 
-    const result = await pluginActionExecutor.executeAction(
-      pluginId,
-      actionId,
-      request,
-      context
-    );
+    const result = await pluginActionExecutor.executeAction(pluginId, actionId, request, context);
 
     const duration = Date.now() - startTime;
 
@@ -443,7 +435,10 @@ plugins.get("/curseforge/mod/:modId", RequireAuth, async (c) => {
     });
 
     if (!response.ok) {
-      return c.json({ error: "CurseForge API error" }, response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503);
+      return c.json(
+        { error: "CurseForge API error" },
+        response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503
+      );
     }
 
     const data = await response.json();
@@ -488,7 +483,10 @@ plugins.get("/curseforge/mod/:modId/files", RequireAuth, async (c) => {
     });
 
     if (!response.ok) {
-      return c.json({ error: "CurseForge API error" }, response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503);
+      return c.json(
+        { error: "CurseForge API error" },
+        response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503
+      );
     }
 
     const data = await response.json();
@@ -650,7 +648,10 @@ plugins.get("/modrinth/project/:slugOrId", RequireAuth, async (c) => {
     });
 
     if (!response.ok) {
-      return c.json({ error: "Modrinth API error" }, response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503);
+      return c.json(
+        { error: "Modrinth API error" },
+        response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503
+      );
     }
 
     const data = await response.json();
@@ -681,7 +682,10 @@ plugins.get("/modrinth/project/:slugOrId/versions", RequireAuth, async (c) => {
     });
 
     if (!response.ok) {
-      return c.json({ error: "Modrinth API error" }, response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503);
+      return c.json(
+        { error: "Modrinth API error" },
+        response.status as 400 | 401 | 403 | 404 | 500 | 502 | 503
+      );
     }
 
     const data = await response.json();
@@ -862,11 +866,11 @@ plugins.post("/install", RequireAdmin, async (c) => {
 
     console.log(`[Plugins] Installing plugin from ${repoUrl}...`);
 
-    const plugin = await pluginInstaller.installFromGit({
+    const plugin = (await pluginInstaller.installFromGit({
       repoUrl,
       branch: branch || "main",
       trustLevel: "community",
-    }) as { pluginId: string; name: string };
+    })) as { pluginId: string; name: string };
 
     console.log(`[Plugins] Plugin ${plugin.pluginId} installed successfully`);
 
@@ -894,7 +898,7 @@ plugins.post("/:pluginId/update", RequireAdmin, async (c) => {
 
     console.log(`[Plugins] Updating plugin ${pluginId}...`);
 
-    const plugin = await pluginInstaller.update(pluginId) as { pluginId: string; name: string };
+    const plugin = (await pluginInstaller.update(pluginId)) as { pluginId: string; name: string };
 
     console.log(`[Plugins] Plugin ${pluginId} updated successfully`);
 

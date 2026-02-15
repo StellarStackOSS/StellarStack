@@ -12,9 +12,5 @@ interface ActionButtonRendererProps {
 }
 
 export const ActionButtonRenderer = ({ schema }: ActionButtonRendererProps): JSX.Element => {
-  return (
-    <TextureButton disabled>
-      {schema.label}
-    </TextureButton>
-  );
+  return <TextureButton disabled>{schema.label}</TextureButton>;
 };

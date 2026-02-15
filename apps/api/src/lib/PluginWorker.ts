@@ -5,8 +5,8 @@
  * Provides IPC-based communication, permission enforcement, and resource limits.
  */
 
-import { fork, ChildProcess } from 'child_process';
-import { randomUUID } from 'crypto';
+import { fork, ChildProcess } from "child_process";
+import { randomUUID } from "crypto";
 
 // ============================================
 // Types
@@ -20,13 +20,13 @@ export interface WorkerOptions {
 }
 
 export interface PluginRequest {
-  type: 'action' | 'api-call' | 'init' | 'shutdown';
+  type: "action" | "api-call" | "init" | "shutdown";
   requestId: string;
   data?: Record<string, unknown>;
 }
 
 export interface PluginResponse {
-  type: 'success' | 'error' | 'ready';
+  type: "success" | "error" | "ready";
   requestId: string;
   data?: unknown;
   error?: string;
@@ -61,24 +61,24 @@ export class PluginWorker {
       try {
         // Fork the worker runner in a separate process
         this.process = fork(`${__dirname}/plugin-worker-runner.js`, [], {
-          stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+          stdio: ["pipe", "pipe", "pipe", "ipc"],
           detached: false,
           timeout: this.timeout,
         });
 
         // Handle IPC messages from worker
-        this.process.on('message', (msg: PluginResponse) => {
+        this.process.on("message", (msg: PluginResponse) => {
           this.handleWorkerMessage(msg);
         });
 
         // Handle worker errors
-        this.process.on('error', (error) => {
+        this.process.on("error", (error) => {
           console.error(`[PluginWorker] Worker error for ${this.pluginId}:`, error);
           reject(error);
         });
 
         // Handle worker exit
-        this.process.on('exit', (code, signal) => {
+        this.process.on("exit", (code, signal) => {
           console.log(`[PluginWorker] Worker process exited: code=${code}, signal=${signal}`);
           this.isReady = false;
           this.process = null;
@@ -86,7 +86,7 @@ export class PluginWorker {
 
         // Initialize the worker
         this.sendMessage({
-          type: 'init',
+          type: "init",
           requestId: randomUUID(),
           data: {
             pluginId: this.pluginId,
@@ -96,7 +96,7 @@ export class PluginWorker {
 
         // Wait for ready message
         const initTimer = setTimeout(() => {
-          reject(new Error('Plugin worker initialization timeout'));
+          reject(new Error("Plugin worker initialization timeout"));
         }, 10000);
 
         const checkReady = setInterval(() => {
@@ -115,16 +115,13 @@ export class PluginWorker {
   /**
    * Execute a plugin action
    */
-  async executeAction(
-    actionId: string,
-    request: Record<string, unknown>
-  ): Promise<unknown> {
+  async executeAction(actionId: string, request: Record<string, unknown>): Promise<unknown> {
     if (!this.isReady) {
-      throw new Error('Plugin worker not ready');
+      throw new Error("Plugin worker not ready");
     }
 
     return this.sendRequestAndWait({
-      type: 'action',
+      type: "action",
       requestId: randomUUID(),
       data: {
         actionId,
@@ -138,11 +135,11 @@ export class PluginWorker {
    */
   async apiCall(method: string, params: Record<string, unknown>): Promise<unknown> {
     if (!this.isReady) {
-      throw new Error('Plugin worker not ready');
+      throw new Error("Plugin worker not ready");
     }
 
     return this.sendRequestAndWait({
-      type: 'api-call',
+      type: "api-call",
       requestId: randomUUID(),
       data: {
         method,
@@ -157,7 +154,7 @@ export class PluginWorker {
   stop(): void {
     if (this.process) {
       console.log(`[PluginWorker] Stopping worker for ${this.pluginId}`);
-      this.process.kill('SIGTERM');
+      this.process.kill("SIGTERM");
       this.isReady = false;
 
       // Clean up pending requests
@@ -199,7 +196,7 @@ export class PluginWorker {
   }
 
   private handleWorkerMessage(msg: PluginResponse): void {
-    if (msg.type === 'ready') {
+    if (msg.type === "ready") {
       this.isReady = true;
       console.log(`[PluginWorker] Plugin ${this.pluginId} worker ready`);
       return;
@@ -214,10 +211,10 @@ export class PluginWorker {
     clearTimeout(request.timer);
     this.pendingRequests.delete(msg.requestId);
 
-    if (msg.type === 'success') {
+    if (msg.type === "success") {
       request.resolve(msg.data);
-    } else if (msg.type === 'error') {
-      request.reject(new Error(msg.error || 'Unknown worker error'));
+    } else if (msg.type === "error") {
+      request.reject(new Error(msg.error || "Unknown worker error"));
     }
   }
 }

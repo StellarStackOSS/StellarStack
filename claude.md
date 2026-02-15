@@ -22,6 +22,7 @@ This document defines the coding standards for the StellarStack project. All con
 All code must be fully typed. The `any` type is forbidden except in exceptional circumstances with explicit justification in a comment.
 
 **❌ Bad:**
+
 ```typescript
 const handleData = (data: any): any => {
   return data.value;
@@ -29,6 +30,7 @@ const handleData = (data: any): any => {
 ```
 
 **✅ Good:**
+
 ```typescript
 interface DataPayload {
   value: string;
@@ -45,6 +47,7 @@ const HandleData = (data: DataPayload): string => {
 Every data structure must have a corresponding interface or type definition. Use `interface` for objects that will be extended, `type` for unions and complex types.
 
 **✅ Good:**
+
 ```typescript
 // For extensible objects
 interface BaseUser {
@@ -57,7 +60,7 @@ interface AdminUser extends BaseUser {
 }
 
 // For unions and complex types
-type UserRole = 'admin' | 'user' | 'guest';
+type UserRole = "admin" | "user" | "guest";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -71,6 +74,7 @@ type ApiResponse<T> = {
 Use generics to create reusable type-safe utilities.
 
 **✅ Good:**
+
 ```typescript
 interface PaginatedResponse<T> {
   items: T[];
@@ -84,9 +88,7 @@ interface ApiError {
   code: string;
 }
 
-type Result<T> =
-  | { success: true; data: T }
-  | { success: false; error: ApiError };
+type Result<T> = { success: true; data: T } | { success: false; error: ApiError };
 ```
 
 ---
@@ -101,6 +103,7 @@ type Result<T> =
 - **Variables**: camelCase (e.g., `userData`, `isLoading`, `apiUrl`)
 
 **File structure example:**
+
 ```
 src/
 ├── components/
@@ -130,20 +133,22 @@ src/
 Do not create `index.ts` files for re-exporting functions or components. Import directly from the module file.
 
 **❌ Bad:**
+
 ```typescript
 // index.ts
-export { UserProfile } from './UserProfile';
-export { Button } from './Button';
+export { UserProfile } from "./UserProfile";
+export { Button } from "./Button";
 
 // consumer.tsx
-import { UserProfile, Button } from './components';
+import { UserProfile, Button } from "./components";
 ```
 
 **✅ Good:**
+
 ```typescript
 // consumer.tsx
-import UserProfile from './components/UserProfile';
-import Button from './components/Button';
+import UserProfile from "./components/UserProfile";
+import Button from "./components/Button";
 ```
 
 ### Export Default
@@ -151,6 +156,7 @@ import Button from './components/Button';
 Always use `export default` for the primary export from a module.
 
 **✅ Good:**
+
 ```typescript
 // UserProfile.tsx
 interface UserProfileProps {
@@ -173,6 +179,7 @@ export default UserProfile;
 All functions must be defined as const arrow functions. Do not use function declarations or classes.
 
 **❌ Bad:**
+
 ```typescript
 function GetUserData(userId: string): Promise<User> {
   // ...
@@ -190,6 +197,7 @@ class UserService {
 ```
 
 **✅ Good:**
+
 ```typescript
 const GetUserData = async (userId: string): Promise<User> => {
   // ...
@@ -211,6 +219,7 @@ const UserService = {
 Always specify explicit return types.
 
 **✅ Good:**
+
 ```typescript
 // Simple function
 const Add = (a: number, b: number): number => {
@@ -251,6 +260,7 @@ const Greeting = ({ name, greeting = 'Hello' }: GreetingProps): JSX.Element => {
 React components are functions that follow the same const-based pattern.
 
 **✅ Good:**
+
 ```typescript
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary';
@@ -281,6 +291,7 @@ export default Button;
 All functions and components must have JSDoc comments documenting their purpose, parameters, and return type.
 
 **✅ Good:**
+
 ```typescript
 /**
  * Formats a date string into a human-readable format.
@@ -289,12 +300,12 @@ All functions and components must have JSDoc comments documenting their purpose,
  * @param locale - The locale for formatting (default: 'en-US')
  * @returns Formatted date string (e.g., "January 15, 2024")
  */
-const FormatDate = (date: string | Date, locale: string = 'en-US'): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+const FormatDate = (date: string | Date, locale: string = "en-US"): string => {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 ```
@@ -304,7 +315,8 @@ const FormatDate = (date: string | Date, locale: string = 'en-US'): string => {
 All React components must document their props and behavior.
 
 **✅ Good:**
-```typescript
+
+````typescript
 interface CardProps {
   /** The title displayed at the top of the card */
   title: string;
@@ -343,13 +355,14 @@ const Card = ({ title, description, children, className }: CardProps): JSX.Eleme
 };
 
 export default Card;
-```
+````
 
 ### JSDoc for Interfaces & Types
 
 Document complex interfaces and types, especially those used across multiple files.
 
 **✅ Good:**
+
 ```typescript
 /**
  * Represents a user in the system.
@@ -372,7 +385,7 @@ interface User {
 /**
  * User roles available in the system.
  */
-type UserRole = 'admin' | 'moderator' | 'user' | 'guest';
+type UserRole = "admin" | "moderator" | "user" | "guest";
 ```
 
 ---
@@ -384,6 +397,7 @@ type UserRole = 'admin' | 'moderator' | 'user' | 'guest';
 If code is duplicated in 2+ places, extract it into a shared function or component.
 
 **❌ Bad (Duplicated):**
+
 ```typescript
 // UserList.tsx
 const UserList = () => {
@@ -415,6 +429,7 @@ const AdminPanel = () => {
 ```
 
 **✅ Good (Shared Component):**
+
 ```typescript
 // UserCard.tsx
 interface UserCardProps {
@@ -474,6 +489,7 @@ const AdminPanel = () => {
 Create reusable utility functions for common tasks.
 
 **✅ Good:**
+
 ```typescript
 // StringUtils.ts
 
@@ -489,7 +505,7 @@ const Capitalize = (str: string): string => {
  */
 const Truncate = (str: string, maxLength: number): string => {
   if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength) + '...';
+  return str.slice(0, maxLength) + "...";
 };
 
 /**
@@ -508,13 +524,14 @@ export default { Capitalize, Truncate, IsValidEmail };
 Define constants at the module level in UPPER_SNAKE_CASE.
 
 **✅ Good:**
+
 ```typescript
 // UserService.ts
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_USERNAME_LENGTH = 50;
 const USER_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-const ADMIN_ROLES = ['admin', 'superadmin'] as const;
+const ADMIN_ROLES = ["admin", "superadmin"] as const;
 
 const FetchUsers = async (page: number = 1): Promise<User[]> => {
   const pageSize = DEFAULT_PAGE_SIZE;
@@ -531,6 +548,7 @@ const FetchUsers = async (page: number = 1): Promise<User[]> => {
 Always define a `Props` interface for components.
 
 **✅ Good:**
+
 ```typescript
 interface ModalProps {
   isOpen: boolean;
@@ -564,6 +582,7 @@ export default Modal;
 For native HTML elements, extend the appropriate HTML attributes interface.
 
 **✅ Good:**
+
 ```typescript
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -588,6 +607,7 @@ export default Input;
 Custom hooks should be named with the `Use` prefix and follow PascalCase.
 
 **✅ Good:**
+
 ```typescript
 // UseUserData.ts
 
@@ -616,7 +636,7 @@ const UseUserData = (userId: string): UseUserDataReturn => {
       setUser(userData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -641,6 +661,7 @@ export default UseUserData;
 Define error types instead of using generic Error.
 
 **✅ Good:**
+
 ```typescript
 interface ApiError {
   code: string;
@@ -661,12 +682,12 @@ type ApplicationError = ApiError | ValidationError | Error;
  */
 const HandleError = (error: unknown): ApplicationError => {
   if (error instanceof Error) {
-    if ('code' in error && 'statusCode' in error) {
+    if ("code" in error && "statusCode" in error) {
       return error as ApiError;
     }
     return error;
   }
-  return new Error('Unknown error occurred');
+  return new Error("Unknown error occurred");
 };
 ```
 
@@ -675,6 +696,7 @@ const HandleError = (error: unknown): ApplicationError => {
 Use a Result type for functions that can fail.
 
 **✅ Good:**
+
 ```typescript
 interface Success<T> {
   ok: true;
@@ -691,20 +713,20 @@ type Result<T> = Success<T> | Failure;
 /**
  * Attempts to parse JSON safely.
  */
-const ParseJson = <T,>(json: string): Result<T> => {
+const ParseJson = <T>(json: string): Result<T> => {
   try {
     const data = JSON.parse(json) as T;
     return { ok: true, data };
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error : new Error('Failed to parse JSON'),
+      error: error instanceof Error ? error : new Error("Failed to parse JSON"),
     };
   }
 };
 
 // Usage
-const result = ParseJson<User>('{}');
+const result = ParseJson<User>("{}");
 if (result.ok) {
   console.log(result.data);
 } else {
@@ -718,7 +740,7 @@ if (result.ok) {
 
 Here's a complete example following all standards:
 
-```typescript
+````typescript
 // UserProfileCard.tsx
 
 import React from 'react';
@@ -801,7 +823,7 @@ const UserProfileCard = ({ user, onEdit, onDelete, className }: UserProfileCardP
 };
 
 export default UserProfileCard;
-```
+````
 
 ---
 
@@ -819,4 +841,3 @@ export default UserProfileCard;
 - [ ] Custom hooks use `Use` prefix
 - [ ] Error types are explicitly defined
 - [ ] React components extend HTML attributes when appropriate
-

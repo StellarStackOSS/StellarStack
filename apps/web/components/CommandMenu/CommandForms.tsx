@@ -123,7 +123,7 @@ export const CommandForms = () => {
         }}
         isLoading={false}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           You'll be taken to the schedules page where you can create a detailed schedule with cron
           expressions and multiple tasks.
         </p>
@@ -146,7 +146,7 @@ export const CommandForms = () => {
         }}
         isLoading={false}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           You'll be taken to the file manager where you can upload and manage your server files.
         </p>
       </FormModal>

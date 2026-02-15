@@ -30,9 +30,19 @@ export const Counting: Story = {
       <div className="flex flex-col items-center gap-4">
         <AnimatedNumber value={value} className="text-4xl font-bold" suffix="%" />
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => setValue((v) => v + 10)}>+10</Button>
-          <Button size="sm" onClick={() => setValue((v) => Math.max(0, v - 10))}>-10</Button>
-          <Button size="sm" variant="outline" onClick={() => setValue(Math.round(Math.random() * 100))}>Random</Button>
+          <Button size="sm" onClick={() => setValue((v) => v + 10)}>
+            +10
+          </Button>
+          <Button size="sm" onClick={() => setValue((v) => Math.max(0, v - 10))}>
+            -10
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setValue(Math.round(Math.random() * 100))}
+          >
+            Random
+          </Button>
         </div>
       </div>
     );

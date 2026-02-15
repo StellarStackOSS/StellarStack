@@ -25,7 +25,11 @@ import {
 } from "@xyflow/react";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import Button from "@stellarUI/components/Button/Button";
-import ContextMenu, { ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@stellarUI/components/ContextMenu/ContextMenu";
+import ContextMenu, {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@stellarUI/components/ContextMenu/ContextMenu";
 import Input from "@stellarUI/components/Input/Input";
 import Switch from "@stellarUI/components/Switch/Switch";
 import Label from "@stellarUI/components/Label/Label";
@@ -937,10 +941,7 @@ const blueprintToNodes = (
   const typedConfig = config as PterodactylEgg["config"];
   const hasConfig =
     typedConfig &&
-    (typedConfig.files ||
-      typedConfig.startup ||
-      typedConfig.logs ||
-      typedConfig.stop);
+    (typedConfig.files || typedConfig.startup || typedConfig.logs || typedConfig.stop);
 
   if (hasConfig) {
     const configId = getId("config");

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import { SiGitlab } from 'react-icons/si';
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { SiGitlab } from "react-icons/si";
 
 /**
  * Call-to-Action section encouraging users to get started with StellarStack.
@@ -53,32 +53,26 @@ const CTA = () => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         variants={containerVariants}
-        className="flex flex-col gap-8 items-center text-center"
+        className="flex flex-col items-center gap-8 text-center"
       >
-        <motion.h2 variants={itemVariants} className="text-3xl sm:text-4xl lg:text-6xl max-w-3xl">
+        <motion.h2 variants={itemVariants} className="max-w-3xl text-3xl sm:text-4xl lg:text-6xl">
           Ready to simplify your game server infrastructure?
         </motion.h2>
 
-        <motion.p
-          variants={itemVariants}
-          className="text-lg opacity-80 max-w-2xl leading-relaxed"
-        >
+        <motion.p variants={itemVariants} className="max-w-2xl text-lg leading-relaxed opacity-80">
           Join thousands of server administrators using StellarStack. Get started with self-hosting
           or contribute to the open-source project.
         </motion.p>
 
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col sm:flex-row gap-6 mt-6"
-        >
+        <motion.div variants={itemVariants} className="mt-6 flex flex-col gap-6 sm:flex-row">
           <motion.a
             href="#"
             whileHover="hover"
             initial="rest"
             variants={buttonVariants}
-            className="flex items-center justify-center gap-2 px-8 py-3 bg-white text-black  font-semibold hover:bg-white/90 transition-colors"
+            className="flex items-center justify-center gap-2 bg-white px-8 py-3 font-semibold text-black transition-colors hover:bg-white/90"
           >
             <span>Get Started</span>
             <motion.div variants={arrowVariants}>
@@ -93,7 +87,7 @@ const CTA = () => {
             whileHover="hover"
             initial="rest"
             variants={buttonVariants}
-            className="flex items-center justify-center gap-2 px-8 py-3 border border-white/40  font-semibold hover:bg-white/5 transition-colors"
+            className="flex items-center justify-center gap-2 border border-white/40 px-8 py-3 font-semibold transition-colors hover:bg-white/5"
           >
             <SiGitlab size={20} />
             <span>View on GitLab</span>
@@ -102,7 +96,7 @@ const CTA = () => {
 
         <motion.div
           variants={itemVariants}
-          className="mt-8 pt-8 border-t border-white/20 text-sm opacity-60"
+          className="mt-8 border-t border-white/20 pt-8 text-sm opacity-60"
         >
           <p>No credit card required • Self-hosted • Fully open-source</p>
         </motion.div>

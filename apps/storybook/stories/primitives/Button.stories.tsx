@@ -45,9 +45,15 @@ export const AllSizes: Story = {
       <Button size="sm">Small</Button>
       <Button size="default">Default</Button>
       <Button size="lg">Large</Button>
-      <Button size="icon"><Mail /></Button>
-      <Button size="icon-sm"><Mail /></Button>
-      <Button size="icon-lg"><Mail /></Button>
+      <Button size="icon">
+        <Mail />
+      </Button>
+      <Button size="icon-sm">
+        <Mail />
+      </Button>
+      <Button size="icon-lg">
+        <Mail />
+      </Button>
     </div>
   ),
 };

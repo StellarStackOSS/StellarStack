@@ -89,6 +89,7 @@ Create `stellarstack.json`:
 Perfect for settings, configuration, and data collection.
 
 **Properties:**
+
 - `type`: "form"
 - `title`: Form title
 - `description`: Form description
@@ -99,6 +100,7 @@ Perfect for settings, configuration, and data collection.
 - `successMessage`: Message shown on success
 
 **Field Types:**
+
 - `string`: Text input
 - `number`: Number input
 - `boolean`: Checkbox
@@ -139,6 +141,7 @@ Perfect for settings, configuration, and data collection.
 Perfect for browsing and installing mods, plugins, or content.
 
 **Properties:**
+
 - `type`: "search-and-install"
 - `searchAction`: Action to search items
 - `detailAction`: Action to get item details
@@ -146,6 +149,7 @@ Perfect for browsing and installing mods, plugins, or content.
 - `fields`: UI field definitions
 
 **Field Definitions:**
+
 - `searchInput`: Search box configuration
 - `resultCard`: How to display search results
 - `installModal`: Install confirmation dialog (optional)
@@ -184,6 +188,7 @@ Perfect for browsing and installing mods, plugins, or content.
 Perfect for displaying lists of items with actions.
 
 **Properties:**
+
 - `type`: "data-table"
 - `title`: Table title
 - `loadAction`: Action to load data
@@ -221,11 +226,13 @@ Perfect for displaying lists of items with actions.
 Perfect for displaying metrics and KPIs.
 
 **Properties:**
+
 - `type`: "stats"
 - `loadAction`: Action to fetch stats
 - `items`: Stat definitions
 
 **Item Properties:**
+
 - `id`: Stat identifier
 - `label`: Display label
 - `icon`: Icon name
@@ -259,6 +266,7 @@ Perfect for displaying metrics and KPIs.
 Perfect for single-click actions.
 
 **Properties:**
+
 - `type`: "action-button"
 - `label`: Button text
 - `actionId`: Action to trigger
@@ -286,6 +294,7 @@ Perfect for single-click actions.
 Combines multiple schemas into sections.
 
 **Properties:**
+
 - `type`: "compound"
 - `layout`: "vertical", "horizontal", "grid"
 - `sections`: Array of sections with schema
@@ -341,6 +350,7 @@ Actions define what happens when users interact with your plugin UI.
 ### Supported Operations
 
 **send-command**
+
 - Sends a console command to the server
 - Supports template variables: `{{paramName}}`, `{{config.keyName}}`
 
@@ -352,6 +362,7 @@ Actions define what happens when users interact with your plugin UI.
 ```
 
 **download-to-server**
+
 - Downloads a file and saves it on the server
 
 ```json
@@ -364,6 +375,7 @@ Actions define what happens when users interact with your plugin UI.
 ```
 
 **write-file**
+
 - Writes content to a file on the server
 
 ```json
@@ -375,6 +387,7 @@ Actions define what happens when users interact with your plugin UI.
 ```
 
 **delete-file**
+
 - Deletes a file from the server
 
 ```json
@@ -385,6 +398,7 @@ Actions define what happens when users interact with your plugin UI.
 ```
 
 **restart-server**
+
 - Restarts the game server
 
 ```json
@@ -394,9 +408,11 @@ Actions define what happens when users interact with your plugin UI.
 ```
 
 **stop-server**, **start-server**
+
 - Stops or starts the server
 
 **create-backup**
+
 - Creates a server backup
 
 ## Template Variables
@@ -423,15 +439,15 @@ Declare what the plugin is allowed to do:
 ```json
 {
   "permissions": [
-    "files.read",      // Read files
-    "files.write",     // Write files
-    "files.*",         // All file operations
-    "console.send",    // Send commands
-    "control.start",   // Start server
-    "control.stop",    // Stop server
-    "control.*",       // All control operations
-    "activity.read",   // Read activity logs
-    "backups.create"   // Create backups
+    "files.read", // Read files
+    "files.write", // Write files
+    "files.*", // All file operations
+    "console.send", // Send commands
+    "control.start", // Start server
+    "control.stop", // Stop server
+    "control.*", // All control operations
+    "activity.read", // Read activity logs
+    "backups.create" // Create backups
   ]
 }
 ```
@@ -449,7 +465,7 @@ Plugins can have user-configurable settings:
         "type": "string",
         "title": "API Key",
         "description": "Your API key",
-        "sensitive": true  // Encrypted at rest
+        "sensitive": true // Encrypted at rest
       },
       "autoRestart": {
         "type": "boolean",
@@ -485,6 +501,7 @@ To install a plugin from a Git repository:
 4. Click Install
 
 The plugin will be:
+
 - Downloaded and extracted
 - Analyzed for security
 - Registered in the system
@@ -512,16 +529,19 @@ To share your plugin with the community:
 ## Troubleshooting
 
 **Plugin not showing up:**
+
 - Check that `stellarstack.json` is valid JSON
 - Verify `pluginId` is unique
 - Ensure required fields are present
 
 **Actions not executing:**
+
 - Check action `id` matches in UI schema
 - Verify operations are syntactically correct
 - Check permissions are declared
 
 **Security analysis warning:**
+
 - Review operation commands for anything risky
 - Ensure no hardcoded secrets in manifest
 - Use `{{config.keyName}}` for secrets instead

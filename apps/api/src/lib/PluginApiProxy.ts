@@ -5,7 +5,7 @@
  * All API calls from workers are validated against plugin permissions.
  */
 
-import { db } from './Db';
+import { db } from "./Db";
 
 // ============================================
 // Permission Mapping
@@ -13,28 +13,28 @@ import { db } from './Db';
 
 const API_PERMISSION_MAP: Record<string, string> = {
   // Server API
-  'GET /api/servers': 'servers.read',
-  'GET /api/servers/:serverId': 'servers.read',
-  'PATCH /api/servers/:serverId': 'servers.write',
+  "GET /api/servers": "servers.read",
+  "GET /api/servers/:serverId": "servers.read",
+  "PATCH /api/servers/:serverId": "servers.write",
 
   // Files API
-  'GET /api/servers/:serverId/files': 'files.read',
-  'POST /api/servers/:serverId/files': 'files.write',
-  'DELETE /api/servers/:serverId/files': 'files.delete',
+  "GET /api/servers/:serverId/files": "files.read",
+  "POST /api/servers/:serverId/files": "files.write",
+  "DELETE /api/servers/:serverId/files": "files.delete",
 
   // Console API
-  'POST /api/servers/:serverId/console': 'console.send',
+  "POST /api/servers/:serverId/console": "console.send",
 
   // Control API
-  'POST /api/servers/:serverId/start': 'control.start',
-  'POST /api/servers/:serverId/stop': 'control.stop',
-  'POST /api/servers/:serverId/restart': 'control.restart',
+  "POST /api/servers/:serverId/start": "control.start",
+  "POST /api/servers/:serverId/stop": "control.stop",
+  "POST /api/servers/:serverId/restart": "control.restart",
 
   // Backups
-  'POST /api/servers/:serverId/backups': 'backups.create',
+  "POST /api/servers/:serverId/backups": "backups.create",
 
   // Activity/Logs
-  'GET /api/servers/:serverId/activity': 'activity.read',
+  "GET /api/servers/:serverId/activity": "activity.read",
 };
 
 // ============================================
@@ -77,15 +77,15 @@ export class PluginAPIProxy {
       }
 
       // Wildcard match (e.g., "files.*" matches "files.read")
-      if (perm.endsWith('.*')) {
+      if (perm.endsWith(".*")) {
         const prefix = perm.slice(0, -2); // Remove ".*"
-        if (requiredPerm.startsWith(prefix + '.')) {
+        if (requiredPerm.startsWith(prefix + ".")) {
           return true;
         }
       }
 
       // Universal wildcard
-      if (perm === '*') {
+      if (perm === "*") {
         return true;
       }
     }
@@ -98,8 +98,8 @@ export class PluginAPIProxy {
    */
   private static patternMatches(pattern: string, endpoint: string): boolean {
     // Simple pattern matching for :paramName
-    const patternParts = pattern.split('/');
-    const endpointParts = endpoint.split('/');
+    const patternParts = pattern.split("/");
+    const endpointParts = endpoint.split("/");
 
     if (patternParts.length !== endpointParts.length) {
       return false;
@@ -110,7 +110,7 @@ export class PluginAPIProxy {
       const endpointPart = endpointParts[i];
 
       // Parameter match (starts with :)
-      if (patternPart.startsWith(':')) {
+      if (patternPart.startsWith(":")) {
         continue;
       }
 
@@ -142,9 +142,7 @@ export class PluginAPIProxy {
 
       // Check permission
       if (!this.checkPermission(method, endpoint, plugin.permissions)) {
-        throw new Error(
-          `Plugin ${pluginId} lacks permission for ${method} ${endpoint}`
-        );
+        throw new Error(`Plugin ${pluginId} lacks permission for ${method} ${endpoint}`);
       }
 
       // In a real implementation, execute the API call here
@@ -156,7 +154,7 @@ export class PluginAPIProxy {
         message: `API call executed: ${method} ${endpoint}`,
       };
     } catch (error) {
-      console.error('[PluginAPIProxy] API call error:', error);
+      console.error("[PluginAPIProxy] API call error:", error);
       throw error;
     }
   }

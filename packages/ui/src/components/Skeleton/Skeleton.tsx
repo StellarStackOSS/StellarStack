@@ -1,4 +1,4 @@
-import { cn } from "@stellarUI/lib/Utils"
+import { cn } from "@stellarUI/lib/Utils";
 
 const Skeleton = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
@@ -10,4 +10,4 @@ const Skeleton = ({ className, ...props }: React.ComponentProps<"div">) => {
   );
 };
 
-export default Skeleton
+export default Skeleton;

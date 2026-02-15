@@ -451,9 +451,9 @@ const PluginsPage = () => {
                   <div>
                     <h3 className="mb-2 text-sm font-medium text-zinc-300">Community Extensions</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Community developers can build extensions using the StellarStack Extension SDK.
-                      Click "Install from Git" to install community-developed extensions from GitHub or
-                      GitLab repositories.
+                      Community developers can build extensions using the StellarStack Extension
+                      SDK. Click "Install from Git" to install community-developed extensions from
+                      GitHub or GitLab repositories.
                     </p>
                   </div>
                 </div>
@@ -526,20 +526,20 @@ const PluginsPage = () => {
                 disabled={isInstalling}
               />
               <p className="text-xs text-zinc-500">
-                Enter the full URL to the Git repository containing the extension's stellarstack.json
-                manifest.
+                Enter the full URL to the Git repository containing the extension's
+                stellarstack.json manifest.
               </p>
             </div>
 
             {/* Security Warning */}
             <div className="rounded-lg border border-yellow-900/50 bg-yellow-950/20 p-3">
               <div className="flex gap-2">
-                <BsExclamationTriangle className="h-4 w-4 mt-0.5 shrink-0 text-yellow-600" />
+                <BsExclamationTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
                 <div className="text-xs text-yellow-700">
-                  <p className="font-medium mb-1">Only install extensions you trust</p>
+                  <p className="mb-1 font-medium">Only install extensions you trust</p>
                   <p>
-                    Community extensions run in isolated processes but still have access to your server
-                    data. Review the source code before installing.
+                    Community extensions run in isolated processes but still have access to your
+                    server data. Review the source code before installing.
                   </p>
                 </div>
               </div>

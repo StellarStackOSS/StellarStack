@@ -1,6 +1,6 @@
 "use client";
 
-import {ServerStatusPlaceholder} from "../ServerStatusPlaceholder";
+import { ServerStatusPlaceholder } from "../ServerStatusPlaceholder";
 
 interface ServerSuspendedPlaceholderProps {
   serverName?: string;

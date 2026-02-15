@@ -1,10 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import DataTable from "@stellarUI/components/DataTable/DataTable";
-import {
-  useReactTable,
-  getCoreRowModel,
-  type ColumnDef,
-} from "@tanstack/react-table";
+import { useReactTable, getCoreRowModel, type ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
 
 interface MockUser {

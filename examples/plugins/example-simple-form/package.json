@@ -5,7 +5,12 @@
   "type": "module",
   "author": "StellarStack Community",
   "license": "MIT",
-  "keywords": ["stellarstack", "plugin", "example", "form"],
+  "keywords": [
+    "stellarstack",
+    "plugin",
+    "example",
+    "form"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }

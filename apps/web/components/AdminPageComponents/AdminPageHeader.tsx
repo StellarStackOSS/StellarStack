@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@stellarUI/lib/Utils";
-import {TextureButton} from "@stellarUI/components/TextureButton";
+import { TextureButton } from "@stellarUI/components/TextureButton";
 import { ArrowLeft } from "lucide-react";
 
 interface AdminPageHeaderProps {
@@ -29,32 +29,17 @@ export const AdminPageHeader = ({
     <div className="mb-8 flex items-center justify-between">
       <div className="flex items-center gap-4">
         {showBackButton && (
-          <TextureButton variant="minimal"
-            onClick={() => router.push("/admin")}
-          >
+          <TextureButton variant="minimal" onClick={() => router.push("/admin")}>
             <ArrowLeft className="h-4 w-4" />
           </TextureButton>
         )}
         <div>
-          <h1
-            className={cn(
-              "text-2xl font-light tracking-wider",
-              "text-zinc-100"
-            )}
-          >
-            {title}
-          </h1>
-          {description && (
-            <p className={cn("mt-1 text-sm", "text-zinc-500")}>
-              {description}
-            </p>
-          )}
+          <h1 className={cn("text-2xl font-light tracking-wider", "text-zinc-100")}>{title}</h1>
+          {description && <p className={cn("mt-1 text-sm", "text-zinc-500")}>{description}</p>}
         </div>
       </div>
       {action && (
-        <TextureButton
-          onClick={action.onClick}
-        >
+        <TextureButton onClick={action.onClick}>
           {action.icon}
           {action.label}
         </TextureButton>

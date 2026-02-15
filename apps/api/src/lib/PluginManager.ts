@@ -91,7 +91,16 @@ export interface PluginManifest {
       options?: Array<{ label: string; value: unknown }>;
     }>;
     operations: Array<{
-      type: "download-to-server" | "write-file" | "delete-file" | "delete-all-files" | "send-command" | "restart-server" | "stop-server" | "start-server" | "create-backup";
+      type:
+        | "download-to-server"
+        | "write-file"
+        | "delete-file"
+        | "delete-all-files"
+        | "send-command"
+        | "restart-server"
+        | "stop-server"
+        | "start-server"
+        | "create-backup";
       [key: string]: unknown;
     }>;
   }>;
@@ -547,7 +556,9 @@ class PluginManager {
     }
 
     this.initialized = true;
-    console.log(`[Plugins] Initialized ${enabledPlugins.length} plugin(s) with ${this.activeWorkers.size} worker process(es)`);
+    console.log(
+      `[Plugins] Initialized ${enabledPlugins.length} plugin(s) with ${this.activeWorkers.size} worker process(es)`
+    );
   }
 
   /**
@@ -601,8 +612,12 @@ class PluginManager {
           manifest: manifest as unknown as Prisma.InputJsonValue,
           config: (manifest.defaultConfig || {}) as unknown as Prisma.InputJsonValue,
           defaultConfig: (manifest.defaultConfig || {}) as unknown as Prisma.InputJsonValue,
-          configSchema: manifest.configSchema ? (manifest.configSchema as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-          uiMetadata: uiMetadata ? (uiMetadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          configSchema: manifest.configSchema
+            ? (manifest.configSchema as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          uiMetadata: uiMetadata
+            ? (uiMetadata as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         },
       });
       console.log(`[Plugins] Registered built-in plugin: ${manifest.name}`);
@@ -624,8 +639,12 @@ class PluginManager {
           permissions: manifest.permissions || [],
           manifest: manifest as unknown as Prisma.InputJsonValue,
           defaultConfig: (manifest.defaultConfig || {}) as unknown as Prisma.InputJsonValue,
-          configSchema: manifest.configSchema ? (manifest.configSchema as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-          uiMetadata: uiMetadata ? (uiMetadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          configSchema: manifest.configSchema
+            ? (manifest.configSchema as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          uiMetadata: uiMetadata
+            ? (uiMetadata as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         },
       });
       console.log(`[Plugins] Updated built-in plugin: ${manifest.name} to v${manifest.version}`);
@@ -1050,10 +1069,7 @@ class PluginManager {
       gameTypes: plugin.gameTypes,
       permissions: plugin.permissions,
       // SECURITY: Filter out sensitive config fields before sending to client
-      config: this.filterSensitiveConfig(
-        plugin.config as Record<string, unknown>,
-        configSchema
-      ),
+      config: this.filterSensitiveConfig(plugin.config as Record<string, unknown>, configSchema),
       defaultConfig: this.filterSensitiveConfig(
         plugin.defaultConfig as Record<string, unknown>,
         configSchema

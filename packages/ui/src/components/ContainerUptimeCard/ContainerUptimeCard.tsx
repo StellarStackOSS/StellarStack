@@ -6,7 +6,11 @@ import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
 import { formatUptime } from "../DashboardCardsUtils/Utils";
-import type { CardProps, ContainerStatus, ContainerUptimeCardLabels } from "../DashboardCardsTypes/Types";
+import type {
+  CardProps,
+  ContainerStatus,
+  ContainerUptimeCardLabels,
+} from "../DashboardCardsTypes/Types";
 
 interface ContainerUptimeCardProps extends CardProps {
   isOffline: boolean;
@@ -33,9 +37,13 @@ const ContainerUptimeCard = ({
 
   if (isXxs) {
     return (
-      <UsageCard className={cn("h-full flex items-center justify-between px-6", isOffline && "opacity-60")}>
-        <span className={cn("text-xs font-medium uppercase", "text-zinc-400")}>{labels.titleShort}</span>
-        <span className={cn("text-xl font-mono", "text-zinc-100")}>
+      <UsageCard
+        className={cn("flex h-full items-center justify-between px-6", isOffline && "opacity-60")}
+      >
+        <span className={cn("text-xs font-medium uppercase", "text-zinc-400")}>
+          {labels.titleShort}
+        </span>
+        <span className={cn("font-mono text-xl", "text-zinc-100")}>
           {isOffline || !isRunning ? "--" : uptime.full}
         </span>
       </UsageCard>
@@ -46,25 +54,15 @@ const ContainerUptimeCard = ({
     <UsageCard title={labels.title} className={cn("h-full", isOffline && "opacity-60")}>
       <UsageCardContent className={isXs ? "space-y-1" : undefined}>
         <div className="flex items-baseline gap-2">
-          <span className={cn(
-            "text-zinc-100",
-            isXs ? "text-2xl" : "text-4xl"
-          )}>
+          <span className={cn("text-zinc-100", isXs ? "text-2xl" : "text-4xl")}>
             {isOffline || !isRunning ? "--" : <AnimatedNumber value={parseInt(uptime.value)} />}
           </span>
-          <span className={cn(
-            "uppercase",
-            "text-zinc-500",
-            isXs ? "text-xs" : "text-sm"
-          )}>
+          <span className={cn("uppercase", "text-zinc-500", isXs ? "text-xs" : "text-sm")}>
             {isRunning ? uptime.unit : ""}
           </span>
         </div>
         {!isXs && (
-          <div className={cn(
-            "text-xs mt-2",
-            "text-zinc-500"
-          )}>
+          <div className={cn("mt-2 text-xs", "text-zinc-500")}>
             {isRunning ? uptime.full : labels.containerStopped}
           </div>
         )}

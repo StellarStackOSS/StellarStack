@@ -6,7 +6,7 @@
 /**
  * Time range for analytics data
  */
-export type AnalyticsTimeRange = '24h' | '7d' | '30d' | '90d' | '1y';
+export type AnalyticsTimeRange = "24h" | "7d" | "30d" | "90d" | "1y";
 
 /**
  * Metric data point with timestamp
@@ -38,7 +38,7 @@ export interface SystemMetrics {
 export interface NodeMetrics {
   nodeId: string;
   nodeName: string;
-  status: 'online' | 'offline' | 'degraded';
+  status: "online" | "offline" | "degraded";
   cpuUsage: number;
   memoryUsage: number;
   memoryLimit: number;
@@ -56,7 +56,7 @@ export interface NodeMetrics {
 export interface ServerResourceMetrics {
   serverId: string;
   serverName: string;
-  status: 'running' | 'stopped' | 'installing' | 'suspended' | 'error';
+  status: "running" | "stopped" | "installing" | "suspended" | "error";
   cpuUsage: number;
   memoryUsage: number;
   memoryLimit: number;

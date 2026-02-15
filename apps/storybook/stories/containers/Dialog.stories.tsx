@@ -31,7 +31,7 @@ export const Interactive: Story = {
           <DialogTitle>Dialog Title</DialogTitle>
           <DialogDescription>This is a description of the dialog.</DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">Dialog body content goes here.</p>
+        <p className="text-muted-foreground text-sm">Dialog body content goes here.</p>
         <DialogFooter>
           <Button variant="outline">Cancel</Button>
           <Button>Confirm</Button>

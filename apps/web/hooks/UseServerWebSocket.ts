@@ -163,9 +163,7 @@ export const useServerWebSocket = ({
                     .map((entry: { line: string; timestamp: number }) => {
                       const text = StripAnsi(entry.line).replace(/\r?\n$/, "");
                       const timestamp = entry.timestamp ? new Date(entry.timestamp) : new Date();
-                      return text.trim()
-                        ? { text, type: "stdout" as const, timestamp }
-                        : null;
+                      return text.trim() ? { text, type: "stdout" as const, timestamp } : null;
                     })
                     .filter((line: ConsoleLine | null): line is ConsoleLine => line !== null);
 

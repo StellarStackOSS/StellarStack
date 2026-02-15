@@ -12,12 +12,7 @@ interface RecentLogsCardProps extends CardProps {
   labels: RecentLogsCardLabels;
 }
 
-const RecentLogsCard = ({
-  itemId,
-  isOffline,
-  logs,
-  labels,
-}: RecentLogsCardProps): JSX.Element => {
+const RecentLogsCard = ({ itemId, isOffline, logs, labels }: RecentLogsCardProps): JSX.Element => {
   const { getItemSize } = useDragDropGrid();
   const size = getItemSize(itemId);
 
@@ -25,24 +20,26 @@ const RecentLogsCard = ({
 
   const getLevelColor = (level: string): string => {
     switch (level) {
-      case "error": return "text-red-400";
-      case "warning": return "text-amber-400";
-      default: return "text-zinc-400";
+      case "error":
+        return "text-red-400";
+      case "warning":
+        return "text-amber-400";
+      default:
+        return "text-zinc-400";
     }
   };
 
   return (
-    <UsageCard title={labels.title} className={cn("h-full flex flex-col", isOffline && "opacity-60")}>
+    <UsageCard
+      title={labels.title}
+      className={cn("flex h-full flex-col", isOffline && "opacity-60")}
+    >
       <UsageCardContent className="flex-1 overflow-hidden">
-        <div className="space-y-0.5 overflow-y-auto h-full font-mono text-[10px]">
+        <div className="h-full space-y-0.5 overflow-y-auto font-mono text-[10px]">
           {logs.slice(0, isXs ? 5 : 8).map((log, i) => (
             <div key={i} className="flex gap-2">
-              <span className={cn("shrink-0", "text-zinc-600")}>
-                {log.time}
-              </span>
-              <span className={cn("truncate", getLevelColor(log.level))}>
-                {log.message}
-              </span>
+              <span className={cn("shrink-0", "text-zinc-600")}>{log.time}</span>
+              <span className={cn("truncate", getLevelColor(log.level))}>{log.message}</span>
             </div>
           ))}
         </div>

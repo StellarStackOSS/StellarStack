@@ -3,7 +3,10 @@
 import { useParams, usePathname } from "next/navigation";
 import { type JSX, memo } from "react";
 import { SidebarInset, SidebarProvider } from "@stellarUI/components/Sidebar/Sidebar";
-import { ServerProvider, useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import {
+  ServerProvider,
+  useServer,
+} from "components/ServerStatusPages/ServerProvider/ServerProvider";
 import { ServerMaintenancePlaceholder } from "@/components/ServerStatusPages/ServerMaintenancePlaceholder/ServerMaintenancePlaceholder";
 import { ServerSuspendedPlaceholder } from "@/components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import { ServerRestoringPlaceholder } from "@/components/ServerStatusPages/ServerRestoringPlaceholder/ServerRestoringPlaceholder";
@@ -44,7 +47,7 @@ const ServerStatusWrapper = ({ children }: { children: React.ReactNode }): JSX.E
   // Show suspended placeholder if server is suspended
   if (server?.status === "SUSPENDED") {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerSuspendedPlaceholder serverName={server?.name} />
       </div>
     );
@@ -53,7 +56,7 @@ const ServerStatusWrapper = ({ children }: { children: React.ReactNode }): JSX.E
   // Show maintenance placeholder if server is under maintenance
   if (server?.status === "MAINTENANCE") {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerMaintenancePlaceholder serverName={server?.name} />
       </div>
     );
@@ -62,7 +65,7 @@ const ServerStatusWrapper = ({ children }: { children: React.ReactNode }): JSX.E
   // Show restoring placeholder if server is being restored from backup
   if (server?.status === "RESTORING") {
     return (
-      <div className="min-h-svh bg-background">
+      <div className="bg-background min-h-svh">
         <ServerRestoringPlaceholder serverName={server?.name} />
       </div>
     );

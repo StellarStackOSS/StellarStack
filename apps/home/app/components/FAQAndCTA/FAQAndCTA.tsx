@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowRight } from 'lucide-react';
-import {SiGitlab} from "react-icons/si";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, ArrowRight } from "lucide-react";
+import { SiGitlab } from "react-icons/si";
 
 interface FAQItemData {
   id: number;
@@ -14,11 +14,19 @@ interface FAQItemData {
 /**
  * Individual FAQ item with expandable answer.
  */
-const FAQItem = ({ item, isOpen, onClick }: { item: FAQItemData; isOpen: boolean; onClick: () => void }) => {
+const FAQItem = ({
+  item,
+  isOpen,
+  onClick,
+}: {
+  item: FAQItemData;
+  isOpen: boolean;
+  onClick: () => void;
+}) => {
   const contentVariants = {
     collapsed: { height: 0, opacity: 0 },
     expanded: {
-      height: 'auto',
+      height: "auto",
       opacity: 1,
       transition: {
         height: { duration: 0.3 },
@@ -45,19 +53,19 @@ const FAQItem = ({ item, isOpen, onClick }: { item: FAQItemData; isOpen: boolean
     <motion.div
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: '-50px' }}
+      viewport={{ once: true, margin: "-50px" }}
       variants={itemVariants}
-      className="border border-white/20 overflow-hidden hover:border-white/40 transition-colors"
+      className="overflow-hidden border border-white/20 transition-colors hover:border-white/40"
     >
       <motion.button
         onClick={onClick}
-        className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
+        className="flex w-full items-center justify-between px-6 py-4 transition-colors hover:bg-white/5"
       >
-        <span className="text-lg font-medium text-left">{item.question}</span>
+        <span className="text-left text-lg font-medium">{item.question}</span>
         <motion.div
           variants={chevronVariants}
           initial="collapsed"
-          animate={isOpen ? 'expanded' : 'collapsed'}
+          animate={isOpen ? "expanded" : "collapsed"}
         >
           <ChevronDown size={20} className="flex-shrink-0" />
         </motion.div>
@@ -72,7 +80,7 @@ const FAQItem = ({ item, isOpen, onClick }: { item: FAQItemData; isOpen: boolean
             variants={contentVariants}
             className="overflow-hidden"
           >
-            <div className="px-6 py-4 border-t border-white/20 text-sm opacity-80">
+            <div className="border-t border-white/20 px-6 py-4 text-sm opacity-80">
               {item.answer}
             </div>
           </motion.div>
@@ -91,27 +99,27 @@ const FAQAndCTA = () => {
   const faqs: FAQItemData[] = [
     {
       id: 1,
-      question: 'What is StellarStack?',
+      question: "What is StellarStack?",
       answer:
-        'StellarStack is a modern, open-source game server management panel designed for self-hosting on your own infrastructure. It provides a user-friendly interface for managing game servers with complete control over your data and resources.',
+        "StellarStack is a modern, open-source game server management panel designed for self-hosting on your own infrastructure. It provides a user-friendly interface for managing game servers with complete control over your data and resources.",
     },
     {
       id: 2,
-      question: 'Is StellarStack free to use?',
+      question: "Is StellarStack free to use?",
       answer:
-        'Yes, StellarStack is completely free and open source. You can download it, modify it, and deploy it on your own infrastructure without any licensing fees.',
+        "Yes, StellarStack is completely free and open source. You can download it, modify it, and deploy it on your own infrastructure without any licensing fees.",
     },
     {
       id: 3,
-      question: 'What games does StellarStack support?',
+      question: "What games does StellarStack support?",
       answer:
-        'StellarStack supports a wide variety of game servers. The extensible architecture allows you to add support for any game server type. Check our documentation for the full list of officially supported games.',
+        "StellarStack supports a wide variety of game servers. The extensible architecture allows you to add support for any game server type. Check our documentation for the full list of officially supported games.",
     },
     {
       id: 4,
-      question: 'Can I host StellarStack on my own server?',
+      question: "Can I host StellarStack on my own server?",
       answer:
-        'Absolutely! StellarStack is designed to be self-hosted. You have complete control over your infrastructure, data, and deployment. We provide documentation to help you get started with various hosting options.',
+        "Absolutely! StellarStack is designed to be self-hosted. You have complete control over your infrastructure, data, and deployment. We provide documentation to help you get started with various hosting options.",
     },
   ];
 
@@ -138,12 +146,12 @@ const FAQAndCTA = () => {
 
   return (
     <div className="w-full border-b border-white/20 px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
         {/* FAQ Section */}
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
           className="flex flex-col gap-12"
         >
@@ -159,7 +167,7 @@ const FAQAndCTA = () => {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: "-100px" }}
             variants={containerVariants}
             className="flex flex-col gap-4"
           >
@@ -178,16 +186,16 @@ const FAQAndCTA = () => {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
-          className="flex flex-col gap-8 justify-center"
+          className="flex flex-col justify-center gap-8"
         >
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-3xl sm:text-4xl lg:text-6xl leading-tight"
+            className="text-3xl leading-tight sm:text-4xl lg:text-6xl"
           >
             Ready to simplify your game server infrastructure?
           </motion.h2>
@@ -197,9 +205,10 @@ const FAQAndCTA = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-lg opacity-80 leading-relaxed"
+            className="text-lg leading-relaxed opacity-80"
           >
-            Join thousands of server administrators using StellarStack. Get started with self-hosting or contribute to the open-source project.
+            Join thousands of server administrators using StellarStack. Get started with
+            self-hosting or contribute to the open-source project.
           </motion.p>
 
           <motion.div
@@ -207,13 +216,13 @@ const FAQAndCTA = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="flex flex-col gap-4 mt-6"
+            className="mt-6 flex flex-col gap-4"
           >
             <a
               href="https://gitlab.com/StellarStackOSS/stellarstack"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-8 py-3 border border-white/40 font-semibold hover:bg-white/5 transition-colors"
+              className="flex items-center justify-center gap-2 border border-white/40 px-8 py-3 font-semibold transition-colors hover:bg-white/5"
             >
               <SiGitlab size={20} />
               <span>View on GitLab</span>
@@ -225,7 +234,7 @@ const FAQAndCTA = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="mt-8 pt-8 border-t border-white/20 text-sm opacity-60"
+            className="mt-8 border-t border-white/20 pt-8 text-sm opacity-60"
           >
             <p>No credit card required • Self-hosted • Fully open-source</p>
           </motion.div>

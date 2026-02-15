@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import type { JSX } from "react";
-import { motion } from 'framer-motion';
-import { Check, X } from 'lucide-react';
+import { motion } from "framer-motion";
+import { Check, X } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -46,72 +46,184 @@ const COMPARISON_DATA: ComparisonFeature[] = [
   {
     name: "File Manager",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: true, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: true,
+      "Crafty Controller": true,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Scheduled Tasks",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: false,
+      "Crafty Controller": true,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Free and Open Source",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: true, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: false },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: true,
+      "Crafty Controller": true,
+      Multicraft: false,
+      TCAdmin: false,
+      AMP: false,
+    },
   },
   {
     name: "Multilingual",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: true,
+      "Crafty Controller": true,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Database Management",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "OAuth",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: true,
+      "Crafty Controller": true,
+      Multicraft: false,
+      TCAdmin: false,
+      AMP: true,
+    },
   },
   {
     name: "Webhooks",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": true, Multicraft: false, TCAdmin: false, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: false,
+      "Crafty Controller": true,
+      Multicraft: false,
+      TCAdmin: false,
+      AMP: true,
+    },
   },
   {
     name: "Roles & Permissions",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": true, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: false,
+      "Crafty Controller": true,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Announcements",
     stellarStack: true,
-    competitors: { Pelican: false, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: false,
+      Pterodactyl: false,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: false,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Themes",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: true, "Crafty Controller": false, Multicraft: true, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: true,
+      "Crafty Controller": false,
+      Multicraft: true,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Plugins",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: false,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Self Update",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: false, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: true, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: false,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: false,
+      TCAdmin: true,
+      AMP: true,
+    },
   },
   {
     name: "Captcha Login",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: false, AMP: false },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: false,
+      TCAdmin: false,
+      AMP: false,
+    },
   },
   {
     name: "Remote Backups",
     stellarStack: true,
-    competitors: { Pelican: true, Pterodactyl: true, PufferPanel: false, "Crafty Controller": false, Multicraft: false, TCAdmin: false, AMP: true },
+    competitors: {
+      Pelican: true,
+      Pterodactyl: true,
+      PufferPanel: false,
+      "Crafty Controller": false,
+      Multicraft: false,
+      TCAdmin: false,
+      AMP: true,
+    },
   },
 ];
 
@@ -124,14 +236,14 @@ const COMPARISON_DATA: ComparisonFeature[] = [
 const FeatureIcon = ({ supported }: { supported: boolean }): JSX.Element => {
   if (supported) {
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/20">
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20">
         <Check size={14} className="text-emerald-400" />
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20">
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20">
       <X size={14} className="text-red-400" />
     </span>
   );
@@ -170,7 +282,7 @@ const Comparison = (): JSX.Element => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         variants={containerVariants}
         className="flex flex-col gap-12"
       >
@@ -181,27 +293,27 @@ const Comparison = (): JSX.Element => {
           transition={{ duration: 0.5 }}
           className="flex flex-col gap-4"
         >
-          <span className="text-sm opacity-60 uppercase tracking-wider">Comparison</span>
+          <span className="text-sm tracking-wider uppercase opacity-60">Comparison</span>
           <h2 className="text-3xl sm:text-4xl lg:text-6xl">How StellarStack Stacks Up</h2>
-          <p className="text-lg opacity-80 max-w-2xl">
+          <p className="max-w-2xl text-lg opacity-80">
             See how StellarStack compares to other game server management solutions
           </p>
         </motion.div>
 
-        <div className="border border-white/20 overflow-hidden">
+        <div className="overflow-hidden border border-white/20">
           <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow className="border-b-2 border-white/20 hover:bg-transparent">
-                <TableHead className="px-6 py-4 text-left font-semibold text-white min-w-[180px]">
+                <TableHead className="min-w-[180px] px-6 py-4 text-left font-semibold text-white">
                   Feature
                 </TableHead>
-                <TableHead className="px-4 py-4 text-center font-semibold text-white border-l border-white/20 bg-white/5">
+                <TableHead className="border-l border-white/20 bg-white/5 px-4 py-4 text-center font-semibold text-white">
                   StellarStack
                 </TableHead>
                 {COMPETITORS.map((name) => (
                   <TableHead
                     key={name}
-                    className="px-4 py-4 text-center font-semibold text-white/60 border-l border-white/20"
+                    className="border-l border-white/20 px-4 py-4 text-center font-semibold text-white/60"
                   >
                     {name}
                   </TableHead>
@@ -214,15 +326,15 @@ const Comparison = (): JSX.Element => {
                   key={feature.name}
                   initial="hidden"
                   whileInView="visible"
-                  viewport={{ once: true, margin: '-30px' }}
+                  viewport={{ once: true, margin: "-30px" }}
                   variants={rowVariants}
                   transition={{ delay: index * 0.03, duration: 0.4 }}
-                  className="border-b border-white/20 hover:bg-white/5 transition-colors"
+                  className="border-b border-white/20 transition-colors hover:bg-white/5"
                 >
                   <TableCell className="px-6 py-3 text-left font-medium text-white/90">
                     {feature.name}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-center border-l border-white/20 bg-white/5">
+                  <TableCell className="border-l border-white/20 bg-white/5 px-4 py-3 text-center">
                     <div className="flex items-center justify-center">
                       <FeatureIcon supported={feature.stellarStack} />
                     </div>
@@ -230,7 +342,7 @@ const Comparison = (): JSX.Element => {
                   {COMPETITORS.map((name) => (
                     <TableCell
                       key={name}
-                      className="px-4 py-3 text-center border-l border-white/20"
+                      className="border-l border-white/20 px-4 py-3 text-center"
                     >
                       <div className="flex items-center justify-center">
                         <FeatureIcon supported={feature.competitors[name]} />

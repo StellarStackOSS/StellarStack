@@ -34,7 +34,9 @@ const GenerateCoreUsage = (count = 8): CoreUsage[] => {
  * @param count - Number of lines to generate
  * @returns Array of console line objects
  */
-const GenerateConsoleLines = (count = 20): Array<{
+const GenerateConsoleLines = (
+  count = 20
+): Array<{
   id: string;
   timestamp: number;
   level: "info" | "error" | "default";
@@ -45,7 +47,7 @@ const GenerateConsoleLines = (count = 20): Array<{
     "[Server] Starting Minecraft server...",
     "[Server] Loading world data...",
     "[Server] Preparing spawn area: 42%",
-    "[Server] Done (3.241s)! For help, type \"help\"",
+    '[Server] Done (3.241s)! For help, type "help"',
     "[INFO] Player Steve joined the game",
     "[INFO] Player Alex joined the game",
     "[WARN] Can't keep up! Is the server overloaded?",

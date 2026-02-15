@@ -1,4 +1,4 @@
-import { Loader } from "lucide-react"
+import { Loader } from "lucide-react";
 import { cn } from "@stellarUI/lib/Utils";
 
 const Spinner = ({ className, ...props }: React.ComponentProps<"svg">) => {
@@ -12,4 +12,4 @@ const Spinner = ({ className, ...props }: React.ComponentProps<"svg">) => {
   );
 };
 
-export default Spinner
+export default Spinner;

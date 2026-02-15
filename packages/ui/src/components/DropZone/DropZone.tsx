@@ -1,8 +1,8 @@
 "use client";
 
-import {type DragEvent, useCallback, useState} from "react";
-import {cn} from "@stellarUI/lib/Utils";
-import {BsCloudUpload} from "react-icons/bs";
+import { type DragEvent, useCallback, useState } from "react";
+import { cn } from "@stellarUI/lib/Utils";
+import { BsCloudUpload } from "react-icons/bs";
 import type { DropZoneProps, UploadButtonProps } from "../AnimationsTypes/Types";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";

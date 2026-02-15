@@ -172,7 +172,11 @@ settings.post("/cloudflare/test", RequireAdmin, async (c) => {
       }
     );
 
-    const data = (await response.json()) as { success: boolean; errors?: Array<{ message: string }>; result: { id: string; name: string; status: string } };
+    const data = (await response.json()) as {
+      success: boolean;
+      errors?: Array<{ message: string }>;
+      result: { id: string; name: string; status: string };
+    };
 
     if (!data.success) {
       return c.json({
@@ -190,7 +194,10 @@ settings.post("/cloudflare/test", RequireAdmin, async (c) => {
       },
     });
   } catch (error: unknown) {
-    return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 
@@ -324,7 +331,10 @@ settings.post("/email/test", RequireAdmin, async (c) => {
 
     return c.json({ success: true, message: "Test email sent successfully" });
   } catch (error: unknown) {
-    return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" });
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 

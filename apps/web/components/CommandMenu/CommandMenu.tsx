@@ -13,11 +13,7 @@ import {
   CommandShortcut,
 } from "@stellarUI/components/Command/Command";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
-import {
-  Command,
-  CommandContext,
-  type CommandMenuState,
-} from "./commands/types";
+import { Command, CommandContext, type CommandMenuState } from "./commands/types";
 import { navigationCommands } from "./commands/Navigation";
 import { serverActionCommands } from "./commands/ServerActions";
 import { adminActionCommands } from "./commands/AdminActions";
@@ -222,24 +218,15 @@ export const CommandMenu = () => {
   return (
     <>
       <CommandDialog open={state.isOpen} onOpenChange={close}>
-        <CommandInput
-          placeholder="Search commands..."
-          value={search}
-          onValueChange={setSearch}
-        />
+        <CommandInput placeholder="Search commands..." value={search} onValueChange={setSearch} />
         <CommandList>
-          {filteredCommands.length === 0 && (
-            <CommandEmpty>No commands found.</CommandEmpty>
-          )}
+          {filteredCommands.length === 0 && <CommandEmpty>No commands found.</CommandEmpty>}
 
           {Object.entries(groupedCommands).map(([category, commands]) => {
             if (commands.length === 0) return null;
 
             return (
-              <CommandGroup
-                key={category}
-                heading={categoryLabels[category] || category}
-              >
+              <CommandGroup key={category} heading={categoryLabels[category] || category}>
                 {commands.map((command) => (
                   <CommandItem
                     key={command.id}
@@ -250,9 +237,7 @@ export const CommandMenu = () => {
                     <div className="flex flex-1 flex-col gap-0.5">
                       <span>{command.label}</span>
                       {command.description && (
-                        <span className="text-xs text-muted-foreground">
-                          {command.description}
-                        </span>
+                        <span className="text-muted-foreground text-xs">{command.description}</span>
                       )}
                     </div>
                     {command.shortcut && (

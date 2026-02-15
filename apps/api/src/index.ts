@@ -37,7 +37,7 @@ const IS_DESKTOP = process.env.DESKTOP_MODE === "true";
 
 // In desktop mode, allow any localhost origin (Vite dev server, Next.js, etc.)
 const corsOrigin = IS_DESKTOP
-  ? (origin: string) => origin.startsWith("http://localhost:") ? origin : FRONTEND_URL
+  ? (origin: string) => (origin.startsWith("http://localhost:") ? origin : FRONTEND_URL)
   : FRONTEND_URL;
 
 // Middleware
@@ -322,7 +322,10 @@ app.get(
           const session = await auth.api.getSession({ headers });
           if (session?.user) {
             console.log(`[WS] Cookie auth successful for user ${session.user.id}`);
-            wsManager.authenticateClient(ws.raw as unknown as import("ws").WebSocket, session.user.id);
+            wsManager.authenticateClient(
+              ws.raw as unknown as import("ws").WebSocket,
+              session.user.id
+            );
             ws.send(JSON.stringify({ type: "auth_success", userId: session.user.id }));
           } else {
             console.log("[WS] No valid session found in cookies");
@@ -350,7 +353,10 @@ app.get(
 
             if (session) {
               // Update client with authenticated user
-              wsManager.authenticateClient(ws.raw as unknown as import("ws").WebSocket, session.userId);
+              wsManager.authenticateClient(
+                ws.raw as unknown as import("ws").WebSocket,
+                session.userId
+              );
               ws.send(JSON.stringify({ type: "auth_success", userId: session.userId }));
             } else {
               ws.send(JSON.stringify({ type: "auth_error", error: "Invalid or expired session" }));

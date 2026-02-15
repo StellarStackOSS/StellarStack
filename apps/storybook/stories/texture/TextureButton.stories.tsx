@@ -9,7 +9,17 @@ const meta: Meta<typeof TextureButton> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "accent", "destructive", "minimal", "icon", "ghost", "success", "warning"],
+      options: [
+        "primary",
+        "secondary",
+        "accent",
+        "destructive",
+        "minimal",
+        "icon",
+        "ghost",
+        "success",
+        "warning",
+      ],
     },
     size: {
       control: "select",
@@ -47,7 +57,9 @@ export const Sizes: Story = {
       <TextureButton size="sm">Small</TextureButton>
       <TextureButton size="default">Default</TextureButton>
       <TextureButton size="lg">Large</TextureButton>
-      <TextureButton size="icon"><Plus /></TextureButton>
+      <TextureButton size="icon">
+        <Plus />
+      </TextureButton>
     </div>
   ),
 };
@@ -55,10 +67,18 @@ export const Sizes: Story = {
 export const WithIcons: Story = {
   render: () => (
     <div className="flex items-center gap-3">
-      <TextureButton variant="primary"><Plus className="h-4 w-4" /> Create</TextureButton>
-      <TextureButton variant="secondary"><Settings className="h-4 w-4" /> Settings</TextureButton>
-      <TextureButton variant="destructive"><Trash2 className="h-4 w-4" /> Delete</TextureButton>
-      <TextureButton variant="success"><Check className="h-4 w-4" /> Save</TextureButton>
+      <TextureButton variant="primary">
+        <Plus className="h-4 w-4" /> Create
+      </TextureButton>
+      <TextureButton variant="secondary">
+        <Settings className="h-4 w-4" /> Settings
+      </TextureButton>
+      <TextureButton variant="destructive">
+        <Trash2 className="h-4 w-4" /> Delete
+      </TextureButton>
+      <TextureButton variant="success">
+        <Check className="h-4 w-4" /> Save
+      </TextureButton>
     </div>
   ),
 };
@@ -66,9 +86,15 @@ export const WithIcons: Story = {
 export const IconOnly: Story = {
   render: () => (
     <div className="flex items-center gap-3">
-      <TextureButton size="icon" variant="primary"><Plus /></TextureButton>
-      <TextureButton size="icon" variant="secondary"><Settings /></TextureButton>
-      <TextureButton size="icon" variant="destructive"><Trash2 /></TextureButton>
+      <TextureButton size="icon" variant="primary">
+        <Plus />
+      </TextureButton>
+      <TextureButton size="icon" variant="secondary">
+        <Settings />
+      </TextureButton>
+      <TextureButton size="icon" variant="destructive">
+        <Trash2 />
+      </TextureButton>
     </div>
   ),
 };

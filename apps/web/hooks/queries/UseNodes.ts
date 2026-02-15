@@ -63,14 +63,24 @@ export const useNodeMutations = () => {
   });
 
   const addAllocation = useMutation({
-    mutationFn: ({ nodeId, data }: { nodeId: string; data: { ip: string; port: number; alias?: string } }) =>
-      nodes.addAllocation(nodeId, data),
+    mutationFn: ({
+      nodeId,
+      data,
+    }: {
+      nodeId: string;
+      data: { ip: string; port: number; alias?: string };
+    }) => nodes.addAllocation(nodeId, data),
     onSuccess: invalidateNodes,
   });
 
   const addAllocationRange = useMutation({
-    mutationFn: ({ nodeId, data }: { nodeId: string; data: { ip: string; startPort: number; endPort: number } }) =>
-      nodes.addAllocationRange(nodeId, data),
+    mutationFn: ({
+      nodeId,
+      data,
+    }: {
+      nodeId: string;
+      data: { ip: string; startPort: number; endPort: number };
+    }) => nodes.addAllocationRange(nodeId, data),
     onSuccess: invalidateNodes,
   });
 

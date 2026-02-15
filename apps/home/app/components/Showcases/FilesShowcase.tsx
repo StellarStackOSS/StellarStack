@@ -45,7 +45,7 @@ const FilesShowcase = (): JSX.Element => {
     >
       <div className="flex flex-col gap-4">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-sm text-white/60 px-1">
+        <div className="flex items-center gap-1.5 px-1 text-sm text-white/60">
           <span className="text-white/90">/</span>
           <BsChevronRight size={10} />
           <span className="text-white/90">home</span>
@@ -55,13 +55,13 @@ const FilesShowcase = (): JSX.Element => {
 
         {/* Storage bar */}
         <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-sm text-white/70">Storage</span>
             <span className="text-sm text-white/50">
               {STORAGE_USED_GB} GB / {STORAGE_TOTAL_GB} GB
             </span>
           </div>
-          <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
             <div
               className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
               style={{ width: `${storagePercentage}%` }}
@@ -70,9 +70,9 @@ const FilesShowcase = (): JSX.Element => {
         </div>
 
         {/* File table */}
-        <div className="rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] overflow-hidden">
+        <div className="overflow-hidden rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a]">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_80px_100px] gap-4 px-4 py-2.5 text-xs text-white/40 uppercase tracking-wider border-b border-white/5">
+          <div className="grid grid-cols-[1fr_80px_100px] gap-4 border-b border-white/5 px-4 py-2.5 text-xs tracking-wider text-white/40 uppercase">
             <span>Name</span>
             <span>Size</span>
             <span>Modified</span>
@@ -82,16 +82,16 @@ const FilesShowcase = (): JSX.Element => {
           {MOCK_FILES.map((file, index) => (
             <div
               key={file.id}
-              className={`grid grid-cols-[1fr_80px_100px] gap-4 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors ${
+              className={`grid grid-cols-[1fr_80px_100px] gap-4 px-4 py-2.5 text-sm transition-colors hover:bg-white/5 ${
                 index < MOCK_FILES.length - 1 ? "border-b border-white/5" : ""
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <FileIcon type={file.type} />
                 <span className="truncate text-white/90">{file.name}</span>
               </div>
               <span className="text-white/50">{file.size}</span>
-              <span className="text-white/40 text-xs">{file.modified}</span>
+              <span className="text-xs text-white/40">{file.modified}</span>
             </div>
           ))}
         </div>

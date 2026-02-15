@@ -5,7 +5,14 @@
   "type": "module",
   "author": "StellarStack Team",
   "license": "MIT",
-  "keywords": ["stellarstack", "plugin", "official", "modrinth", "mods", "modpacks"],
+  "keywords": [
+    "stellarstack",
+    "plugin",
+    "official",
+    "modrinth",
+    "mods",
+    "modpacks"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }

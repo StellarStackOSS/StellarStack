@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 interface StatItemProps {
   value: string;
@@ -28,9 +28,9 @@ const StatItem = ({ value, label, index }: StatItemProps) => {
     <motion.div
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: '-100px' }}
+      viewport={{ once: true, margin: "-100px" }}
       variants={variants}
-      className="flex flex-col gap-2 items-center"
+      className="flex flex-col items-center gap-2"
     >
       <motion.div
         className="text-5xl font-bold text-white"
@@ -41,7 +41,7 @@ const StatItem = ({ value, label, index }: StatItemProps) => {
       >
         {value}
       </motion.div>
-      <div className="text-sm opacity-80 text-center">{label}</div>
+      <div className="text-center text-sm opacity-80">{label}</div>
     </motion.div>
   );
 };
@@ -52,20 +52,20 @@ const StatItem = ({ value, label, index }: StatItemProps) => {
 const Stats = () => {
   const stats = [
     {
-      value: '100%',
-      label: 'Open Source',
+      value: "100%",
+      label: "Open Source",
     },
     {
-      value: '∞',
-      label: 'Customizable',
+      value: "∞",
+      label: "Customizable",
     },
     {
-      value: '24/7',
-      label: 'Community Support',
+      value: "24/7",
+      label: "Community Support",
     },
     {
-      value: '0',
-      label: 'License Cost',
+      value: "0",
+      label: "License Cost",
     },
   ];
 
@@ -85,7 +85,7 @@ const Stats = () => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         variants={containerVariants}
         className="flex flex-col gap-12"
       >
@@ -98,7 +98,7 @@ const Stats = () => {
         >
           Built by the Community
         </motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
             <StatItem key={stat.label} value={stat.value} label={stat.label} index={index} />
           ))}

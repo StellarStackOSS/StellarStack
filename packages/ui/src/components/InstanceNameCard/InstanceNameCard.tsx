@@ -55,14 +55,9 @@ const InstanceNameCard = ({
     isTransitioning ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-50"
   );
 
-
   return (
     <UsageCard className="flex h-full flex-row items-center justify-between">
-      <div
-        className={cn("font-mono text-2xl uppercase text-zinc-400")}
-      >
-        {instanceName}
-      </div>
+      <div className={cn("font-mono text-2xl text-zinc-400 uppercase")}>{instanceName}</div>
 
       <div className="flex flex-row gap-4">
         <span

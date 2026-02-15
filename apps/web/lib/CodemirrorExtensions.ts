@@ -1,7 +1,19 @@
 import { Extension } from "@codemirror/state";
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+} from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentOnInput } from "@codemirror/language";
+import {
+  syntaxHighlighting,
+  defaultHighlightStyle,
+  bracketMatching,
+  foldGutter,
+  indentOnInput,
+} from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { yaml } from "@codemirror/lang-yaml";
 import { markdown } from "@codemirror/lang-markdown";
@@ -105,10 +117,7 @@ export const getBaseExtensions = (readOnly: boolean = false): Extension[] => {
 /**
  * Get all extensions for a file
  */
-export const getExtensionsForFile = (
-  filename: string,
-  readOnly: boolean = false
-): Extension[] => {
+export const getExtensionsForFile = (filename: string, readOnly: boolean = false): Extension[] => {
   const language = detectLanguage(filename);
   const extensions = getBaseExtensions(readOnly);
 

@@ -12,9 +12,7 @@ export const { getPublicEnv, PublicEnv: _PublicEnv } = createPublicEnv({
  * is baked in at build time. In normal web deployments the runtime script
  * tag is rendered as usual.
  */
-export const PublicEnv = IS_DESKTOP
-  ? () => null
-  : _PublicEnv;
+export const PublicEnv = IS_DESKTOP ? () => null : _PublicEnv;
 
 /**
  * Get the API URL at runtime.

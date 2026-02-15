@@ -6,7 +6,13 @@ const meta: Meta<typeof SystemInformationCard> = {
   title: "Dashboard Cards/SystemInformationCard",
   component: SystemInformationCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;

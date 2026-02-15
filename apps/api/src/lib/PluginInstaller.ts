@@ -239,7 +239,9 @@ export class PluginInstaller {
 
       // Validate plugin ID format (alphanumeric, hyphens, underscores only)
       if (!/^[a-z0-9-_]+$/.test(manifest.id)) {
-        throw new Error("Invalid plugin ID. Must contain only lowercase letters, numbers, hyphens, and underscores.");
+        throw new Error(
+          "Invalid plugin ID. Must contain only lowercase letters, numbers, hyphens, and underscores."
+        );
       }
 
       // Validate version format (semver)
@@ -268,9 +270,7 @@ export class PluginInstaller {
     securityReport: SecurityReport
   ): "official" | "community" {
     // Check if this is an official StellarStack repository
-    const officialRepos = [
-      "gitlab.com/StellarStackOSS/",
-    ];
+    const officialRepos = ["gitlab.com/StellarStackOSS/"];
 
     const isOfficial = officialRepos.some((repo) => repoUrl.includes(repo));
 
@@ -333,7 +333,9 @@ export class PluginInstaller {
         manifest: manifest as unknown as Prisma.InputJsonValue,
         config: (manifest.defaultConfig || {}) as unknown as Prisma.InputJsonValue,
         defaultConfig: (manifest.defaultConfig || {}) as unknown as Prisma.InputJsonValue,
-        configSchema: manifest.configSchema ? (manifest.configSchema as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        configSchema: manifest.configSchema
+          ? (manifest.configSchema as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         trustLevel,
         securityScore: securityReport.score,
         securityReport: securityReport as unknown as Prisma.InputJsonValue,
@@ -374,7 +376,9 @@ export class PluginInstaller {
         gameTypes: manifest.gameTypes || ["*"],
         permissions: manifest.permissions || [],
         manifest: manifest as unknown as Prisma.InputJsonValue,
-        configSchema: manifest.configSchema ? (manifest.configSchema as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        configSchema: manifest.configSchema
+          ? (manifest.configSchema as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         trustLevel,
         securityScore: securityReport.score,
         securityReport: securityReport as unknown as Prisma.InputJsonValue,

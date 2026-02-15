@@ -1,6 +1,6 @@
 "use client";
 
-import React, {type JSX, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type PatternCell = "0" | "1" | "2" | "3";
 type Pattern = PatternCell[][];
@@ -158,7 +158,6 @@ const LightBoard = ({
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
 
   const drawState = controlledDrawState !== undefined ? controlledDrawState : defaultDrawState;
-
 
   // Calculate the number of columns based on container width
   useEffect(() => {
@@ -419,7 +418,7 @@ const LightBoard = ({
   );
 
   return (
-    <div ref={containerRef} className="rounded-lg contain">
+    <div ref={containerRef} className="contain rounded-lg">
       {columns > 0 && (
         <canvas
           ref={canvasRef}
@@ -428,7 +427,11 @@ const LightBoard = ({
           onMouseDown={!disableDrawing ? handleMouseDown : undefined}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          onMouseEnter={() => { if (controlledHoverState === undefined) { updateHoverState(true); } }}
+          onMouseEnter={() => {
+            if (controlledHoverState === undefined) {
+              updateHoverState(true);
+            }
+          }}
           onMouseLeave={() => {
             if (controlledHoverState === undefined) {
               updateHoverState(false);

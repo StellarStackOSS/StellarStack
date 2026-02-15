@@ -5,6 +5,7 @@ A reference implementation demonstrating the search-and-install UI schema patter
 ## Overview
 
 The Search and Install plugin provides:
+
 - 🔍 **Full-text search interface** for discovering content
 - ⚡ **One-click installation** with automatic downloads
 - 📦 **Template variable support** for dynamic content URLs
@@ -129,10 +130,12 @@ The `searchEndpoint` should return content in this format:
 **Purpose:** Download and install content to a server
 
 **Parameters:**
+
 - `contentId` (string, required): Unique identifier for the content
 - `contentName` (string, required): Display name of the content
 
 **Operations:**
+
 1. **download-to-server**: Fetch content from URL
    - `url`: Full download URL (supports `{{param}}` template variables)
    - `directory`: Destination directory on server (e.g., "mods", "plugins")
@@ -143,6 +146,7 @@ The `searchEndpoint` should return content in this format:
    - `timeout`: Optional command timeout in milliseconds
 
 **Example Flow:**
+
 1. User searches for content
 2. User clicks install button
 3. Content is downloaded to server
@@ -154,12 +158,13 @@ The `searchEndpoint` should return content in this format:
 
 The plugin requires these permissions to function:
 
-| Permission | Purpose |
-|-----------|---------|
-| `files.write` | Download and write content files to server |
-| `console.send` | Send console messages to notify players |
+| Permission     | Purpose                                    |
+| -------------- | ------------------------------------------ |
+| `files.write`  | Download and write content files to server |
+| `console.send` | Send console messages to notify players    |
 
 **Permission Scoping:**
+
 - Permissions are enforced at the action level
 - API calls are validated before execution
 - Unauthorized actions return 403 Forbidden
@@ -176,6 +181,7 @@ The plugin supports dynamic parameter substitution:
 ```
 
 **Available Variables:**
+
 - User-provided action parameters: `{{paramName}}`
 - Plugin config values: `{{config.keyName}}` (if config schema exists)
 
@@ -188,13 +194,14 @@ Renders a modern search interface with:
 ```typescript
 interface SearchAndInstallSchema {
   type: "search-and-install";
-  searchPlaceholder?: string;        // Hint text in search box
-  searchEndpoint: string;            // API endpoint to query
-  installAction: string;             // Action ID to execute on install
+  searchPlaceholder?: string; // Hint text in search box
+  searchEndpoint: string; // API endpoint to query
+  installAction: string; // Action ID to execute on install
 }
 ```
 
 **Features:**
+
 - Real-time search filtering
 - Result grid with cards
 - Detail modal with full information
@@ -208,6 +215,7 @@ interface SearchAndInstallSchema {
 To create a similar plugin:
 
 1. **Define your manifest** (`stellarstack.json`):
+
    ```json
    {
      "id": "your-plugin-id",
@@ -223,11 +231,14 @@ To create a similar plugin:
          }
        ]
      },
-     "actions": [ /* your actions */ ]
+     "actions": [
+       /* your actions */
+     ]
    }
    ```
 
 2. **Implement your search endpoint**:
+
    ```typescript
    // Receives query parameter and returns matching results
    app.get("/api/plugins/your-plugin-id/search", async (c) => {
@@ -317,17 +328,17 @@ Similar to CurseForge:
 ```typescript
 interface SearchResponse {
   results: {
-    id: string;           // Unique identifier
-    name: string;         // Display name
-    description: string;  // Full description
-    author: string;       // Content creator
-    version?: string;     // Current version
-    downloads?: number;   // Download count
-    updated?: ISO8601;    // Last update timestamp
-    image?: string;       // Display image URL
+    id: string; // Unique identifier
+    name: string; // Display name
+    description: string; // Full description
+    author: string; // Content creator
+    version?: string; // Current version
+    downloads?: number; // Download count
+    updated?: ISO8601; // Last update timestamp
+    image?: string; // Display image URL
   }[];
-  total?: number;         // Total results available
-  page?: number;          // Current page number
+  total?: number; // Total results available
+  page?: number; // Current page number
 }
 ```
 
@@ -335,11 +346,11 @@ interface SearchResponse {
 
 ```typescript
 interface ExecuteActionRequest {
-  serverId: string;       // Target server ID
+  serverId: string; // Target server ID
   inputs: {
-    contentId: string;    // From search results
-    contentName: string;  // Display name
-    [key: string]: any;   // Additional parameters
+    contentId: string; // From search results
+    contentName: string; // Display name
+    [key: string]: any; // Additional parameters
   };
   options?: {
     skipBackup?: boolean; // Skip pre-install backup
@@ -366,6 +377,7 @@ interface ExecuteActionRequest {
 ### Community Plugin Security
 
 When installing community plugins:
+
 1. ✅ Automated security analysis runs
 2. ✅ Trust level badge displayed (Official/Community)
 3. ✅ Security report available for review
@@ -446,6 +458,7 @@ MIT License - See LICENSE file for details
 ## Support
 
 For questions and support:
+
 - 📖 Read the [StellarStack documentation](https://docs.stellarstack.com)
 - 🐛 Report bugs on [GitLab Issues](https://gitlab.com/StellarStackOSS/example-search-install/-/issues)
 - 💬 Join the community [Discord server](https://discord.gg/stellarstack)
@@ -453,6 +466,7 @@ For questions and support:
 ## Changelog
 
 ### 1.0.0 (2024-01-30)
+
 - Initial release
 - Search and install UI schema
 - Download and command execution operations

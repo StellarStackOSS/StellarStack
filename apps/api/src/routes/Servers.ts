@@ -1473,7 +1473,11 @@ servers.get("/:serverId/stats", RequireServerAccess, async (c) => {
 
   try {
     // Get server info which includes state
-    const serverInfo = await daemonRequest(fullServer.node, "GET", `/api/servers/${server.id}`) as Record<string, unknown>;
+    const serverInfo = (await daemonRequest(
+      fullServer.node,
+      "GET",
+      `/api/servers/${server.id}`
+    )) as Record<string, unknown>;
     // Return basic stats - real-time stats come via WebSocket
     return c.json({
       state: (serverInfo.state as string) || "offline",
@@ -1703,7 +1707,8 @@ servers.patch("/:serverId/startup", RequireServerAccess, async (c) => {
 
   // Validate and update variables
   if (parsed.data.variables) {
-    const blueprintVariables = (fullServer.blueprint.variables as unknown as BlueprintVariable[]) || [];
+    const blueprintVariables =
+      (fullServer.blueprint.variables as unknown as BlueprintVariable[]) || [];
     const currentVariables = (fullServer.variables as Record<string, string>) || {};
 
     // Only allow updating user-editable variables
@@ -2313,12 +2318,12 @@ servers.post("/:serverId/backups", RequireServerAccess, RequireNotSuspended, asy
     const fullServer = await getServerWithNode(server.id);
     // Generate a UUID for the backup if not provided
     const backupUuid = body.uuid || crypto.randomUUID();
-    const backupResponse = await daemonRequest(
+    const backupResponse = (await daemonRequest(
       fullServer.node,
       "POST",
       `/api/servers/${server.id}/backup`,
       { uuid: backupUuid, ignore: body.ignore || [] }
-    ) as Record<string, unknown>;
+    )) as Record<string, unknown>;
 
     // Save backup record to database
     if (backupResponse.success) {
@@ -2791,7 +2796,10 @@ servers.post("/:serverId/schedules", RequireServerAccess, async (c) => {
         );
       }
     } catch (error: unknown) {
-      console.warn("[Schedule] Failed to sync to daemon:", error instanceof Error ? error.message : String(error));
+      console.warn(
+        "[Schedule] Failed to sync to daemon:",
+        error instanceof Error ? error.message : String(error)
+      );
       // Don't fail the request if daemon sync fails - schedule still works locally
     }
 
@@ -2881,7 +2889,10 @@ servers.patch("/:serverId/schedules/:scheduleId", RequireServerAccess, async (c)
         );
       }
     } catch (error: unknown) {
-      console.warn("[Schedule] Failed to sync to daemon:", error instanceof Error ? error.message : String(error));
+      console.warn(
+        "[Schedule] Failed to sync to daemon:",
+        error instanceof Error ? error.message : String(error)
+      );
       // Don't fail the request if daemon sync fails - schedule still works locally
     }
 
@@ -2936,7 +2947,10 @@ servers.delete("/:serverId/schedules/:scheduleId", RequireServerAccess, async (c
         );
       }
     } catch (error: unknown) {
-      console.warn("[Schedule] Failed to sync delete to daemon:", error instanceof Error ? error.message : String(error));
+      console.warn(
+        "[Schedule] Failed to sync delete to daemon:",
+        error instanceof Error ? error.message : String(error)
+      );
       // Don't fail the request if daemon sync fails - schedule is deleted locally
     }
 
@@ -3039,7 +3053,9 @@ servers.patch("/:serverId/schedules/:scheduleId/executing-task", RequireServerAc
 
     return c.json({ success: true, executingTaskIndex: updated.executingTaskIndex });
   } catch (error: unknown) {
-    console.error(`[Schedule] Failed to update executing task: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `[Schedule] Failed to update executing task: ${error instanceof Error ? error.message : String(error)}`
+    );
     return c.json({ error: "Failed to update executing task" }, 500);
   }
 });
@@ -3612,7 +3628,12 @@ servers.post("/:serverId/split", RequireServerAccess, RequireNotSuspended, async
       await db.server.delete({
         where: { id: childServer.id },
       });
-      return c.json({ error: `Failed to communicate with daemon: ${daemonError instanceof Error ? daemonError.message : String(daemonError)}` }, 500);
+      return c.json(
+        {
+          error: `Failed to communicate with daemon: ${daemonError instanceof Error ? daemonError.message : String(daemonError)}`,
+        },
+        500
+      );
     }
 
     await LogActivityFromContext(c, "server:split", {

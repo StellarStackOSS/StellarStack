@@ -31,7 +31,12 @@ import {
 } from "react-icons/bs";
 import AnalyticsCard from "@stellarUI/components/AnalyticsCard/AnalyticsCard";
 import { analyticsClient } from "@/lib/AnalyticsClient";
-import type { AnalyticsTimeRange, AnalyticsDashboardData, NodeMetrics, BackupStorageMetrics } from "@/lib/types/Analytics";
+import type {
+  AnalyticsTimeRange,
+  AnalyticsDashboardData,
+  NodeMetrics,
+  BackupStorageMetrics,
+} from "@/lib/types/Analytics";
 
 /**
  * Time range selector options

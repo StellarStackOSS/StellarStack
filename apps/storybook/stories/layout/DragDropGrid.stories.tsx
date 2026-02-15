@@ -13,8 +13,8 @@ type Story = StoryObj<typeof DragDropGridMockProvider>;
 export const MockProvider: Story = {
   render: () => (
     <DragDropGridMockProvider defaultSize="sm">
-      <div className="rounded-lg border border-border bg-card p-6">
-        <p className="text-sm text-foreground">
+      <div className="border-border bg-card rounded-lg border p-6">
+        <p className="text-foreground text-sm">
           Content inside DragDropGridMockProvider (size: sm)
         </p>
       </div>

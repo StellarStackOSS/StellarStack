@@ -22,7 +22,11 @@ const STORAGE_VERSION = 4;
  * Hook for persisting grid layout to localStorage.
  * Designed to be extended for backend sync with user accounts.
  */
-export const useGridStorage = ({ key, defaultItems, defaultHiddenCards = [] }: UseGridStorageOptions) => {
+export const useGridStorage = ({
+  key,
+  defaultItems,
+  defaultHiddenCards = [],
+}: UseGridStorageOptions) => {
   // Use ref to avoid re-running effect when defaultItems reference changes
   const defaultItemsRef = useRef(defaultItems);
   defaultItemsRef.current = defaultItems;
@@ -156,36 +160,30 @@ export const useGridStorage = ({ key, defaultItems, defaultHiddenCards = [] }: U
   );
 
   // Show a card - clears layouts so they regenerate with the new card
-  const showCard = useCallback(
-    (cardId: string) => {
-      setHiddenCards((prev) => {
-        if (!prev.includes(cardId)) return prev;
-        const newHidden = prev.filter((id) => id !== cardId);
-        // Update ref immediately so saveLayout uses correct value
-        hiddenCardsRef.current = newHidden;
-        return newHidden;
-      });
-      // Clear layouts so DragDropGrid regenerates them with the newly visible card
-      setLayouts(undefined);
-    },
-    []
-  );
+  const showCard = useCallback((cardId: string) => {
+    setHiddenCards((prev) => {
+      if (!prev.includes(cardId)) return prev;
+      const newHidden = prev.filter((id) => id !== cardId);
+      // Update ref immediately so saveLayout uses correct value
+      hiddenCardsRef.current = newHidden;
+      return newHidden;
+    });
+    // Clear layouts so DragDropGrid regenerates them with the newly visible card
+    setLayouts(undefined);
+  }, []);
 
   // Hide a card
-  const hideCard = useCallback(
-    (cardId: string) => {
-      setHiddenCards((prev) => {
-        if (prev.includes(cardId)) return prev;
-        const newHidden = [...prev, cardId];
-        // Update ref immediately so saveLayout uses correct value
-        hiddenCardsRef.current = newHidden;
-        return newHidden;
-      });
-      // Clear layouts so DragDropGrid regenerates them without the hidden card
-      setLayouts(undefined);
-    },
-    []
-  );
+  const hideCard = useCallback((cardId: string) => {
+    setHiddenCards((prev) => {
+      if (prev.includes(cardId)) return prev;
+      const newHidden = [...prev, cardId];
+      // Update ref immediately so saveLayout uses correct value
+      hiddenCardsRef.current = newHidden;
+      return newHidden;
+    });
+    // Clear layouts so DragDropGrid regenerates them without the hidden card
+    setLayouts(undefined);
+  }, []);
 
   // Reset to defaults
   const resetLayout = useCallback(() => {

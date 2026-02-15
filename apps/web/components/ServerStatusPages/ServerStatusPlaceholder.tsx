@@ -1,10 +1,10 @@
 "use client";
 
-import {ReactNode} from "react";
-import {Download, Loader2, RotateCcw, Server, Wrench} from "lucide-react";
-import {cn} from "@stellarUI/lib/Utils";
-import {motion} from "framer-motion";
-import {CgDanger} from "react-icons/cg";
+import { ReactNode } from "react";
+import { Download, Loader2, RotateCcw, Server, Wrench } from "lucide-react";
+import { cn } from "@stellarUI/lib/Utils";
+import { motion } from "framer-motion";
+import { CgDanger } from "react-icons/cg";
 
 type StatusType = "suspended" | "restoring" | "maintenance" | "installing";
 
@@ -13,15 +13,18 @@ interface ServerStatusPlaceholderProps {
   status: StatusType;
 }
 
-const STATUS_CONFIG: Record<StatusType, {
-  title: string;
-  icon: ReactNode;
-  badgeIcon: ReactNode;
-  badgeColor: string;
-  loadingElement: ReactNode;
-  message: string[];
-  animatedElement?: ReactNode;
-}> = {
+const STATUS_CONFIG: Record<
+  StatusType,
+  {
+    title: string;
+    icon: ReactNode;
+    badgeIcon: ReactNode;
+    badgeColor: string;
+    loadingElement: ReactNode;
+    message: string[];
+    animatedElement?: ReactNode;
+  }
+> = {
   suspended: {
     title: "Server Suspended",
     icon: <CgDanger className="h-3 w-3" />,
@@ -37,7 +40,10 @@ const STATUS_CONFIG: Record<StatusType, {
     title: "Restoring Backup",
     icon: <RotateCcw className="h-3 w-3" />,
     badgeIcon: (
-      <motion.div animate={{ rotate: -360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+      <motion.div
+        animate={{ rotate: -360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      >
         <RotateCcw className="h-3 w-3" />
       </motion.div>
     ),
@@ -137,7 +143,7 @@ const renderLoadingElement = (type: string | null, color: string) => {
     return (
       <div className="flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
-        <span className="text-xs tracking-wider uppercase text-zinc-500">
+        <span className="text-xs tracking-wider text-zinc-500 uppercase">
           Please wait while your server is being set up...
         </span>
       </div>
@@ -176,7 +182,11 @@ export const ServerStatusPlaceholder = ({ serverName, status }: ServerStatusPlac
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className={cn("absolute -right-2 -bottom-2 flex h-6 w-6 items-center justify-center rounded-full border", badgeColors.border, badgeColors.bg)}
+              className={cn(
+                "absolute -right-2 -bottom-2 flex h-6 w-6 items-center justify-center rounded-full border",
+                badgeColors.border,
+                badgeColors.bg
+              )}
             >
               <div className={badgeColors.text}>{config.badgeIcon}</div>
             </motion.div>
@@ -184,7 +194,7 @@ export const ServerStatusPlaceholder = ({ serverName, status }: ServerStatusPlac
         </div>
 
         <div className="space-y-2 text-center">
-          <h2 className="text-lg font-medium tracking-wider uppercase text-zinc-200">
+          <h2 className="text-lg font-medium tracking-wider text-zinc-200 uppercase">
             {config.title}
           </h2>
           {serverName && <p className="font-mono text-sm text-zinc-500">{serverName}</p>}

@@ -14,7 +14,13 @@ const meta: Meta<typeof RecentLogsCard> = {
   title: "Dashboard Cards/RecentLogsCard",
   component: RecentLogsCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;

@@ -14,7 +14,13 @@ const meta: Meta<typeof ContainerControlsCard> = {
   title: "Dashboard Cards/ContainerControlsCard",
   component: ContainerControlsCard,
   tags: ["autodocs"],
-  decorators: [(Story) => <DragDropGridMockProvider defaultSize="sm"><Story /></DragDropGridMockProvider>],
+  decorators: [
+    (Story) => (
+      <DragDropGridMockProvider defaultSize="sm">
+        <Story />
+      </DragDropGridMockProvider>
+    ),
+  ],
 };
 
 export default meta;

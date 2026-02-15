@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@stellarUI/components/Card/Card';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import React from "react";
+import Card, {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@stellarUI/components/Card/Card";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { AnalyticsComparison } from "./Types";
 
 /**
@@ -54,9 +59,9 @@ const TrendIndicator = ({ comparison }: { comparison: AnalyticsComparison }) => 
 
   return (
     <div className="flex items-center gap-1 text-sm">
-      {trend === 'up' && <TrendingUp className="h-4 w-4" />}
-      {trend === 'down' && <TrendingDown className="h-4 w-4" />}
-      {trend === 'stable' && <Minus className="h-4 w-4" />}
+      {trend === "up" && <TrendingUp className="h-4 w-4" />}
+      {trend === "down" && <TrendingDown className="h-4 w-4" />}
+      {trend === "stable" && <Minus className="h-4 w-4" />}
       <span className="font-medium">{Math.abs(percentageChange)}%</span>
     </div>
   );
@@ -93,7 +98,7 @@ const AnalyticsCard = ({
   isLoading = false,
 }: AnalyticsCardProps) => {
   return (
-    <Card className={onClick ? 'cursor-pointer' : ''} onClick={onClick}>
+    <Card className={onClick ? "cursor-pointer" : ""} onClick={onClick}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -105,19 +110,19 @@ const AnalyticsCard = ({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-10 bg-muted rounded animate-pulse" />
+          <div className="bg-muted h-10 animate-pulse rounded" />
         ) : (
           <div className="space-y-2">
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold">
-                {FormatLargeNumber(typeof value === 'number' ? value : 0)}
+                {FormatLargeNumber(typeof value === "number" ? value : 0)}
               </span>
-              {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+              {unit && <span className="text-muted-foreground text-sm">{unit}</span>}
             </div>
 
             {comparison && (
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">vs previous period</span>
+                <span className="text-muted-foreground text-xs">vs previous period</span>
                 <TrendIndicator comparison={comparison} />
               </div>
             )}

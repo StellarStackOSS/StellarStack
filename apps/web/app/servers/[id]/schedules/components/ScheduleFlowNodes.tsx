@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Handle,
-  Position,
-  Node,
-  NodeProps,
-} from "@xyflow/react";
+import { Handle, Position, Node, NodeProps } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
   BsPlayFill,
@@ -48,10 +43,7 @@ type ScheduleTaskNode = Node<ScheduleTaskNodeData, "scheduleTask">;
 type ScheduleEndNode = Node<ScheduleEndNodeData, "scheduleEnd">;
 
 // Action metadata
-const actionConfig: Record<
-  string,
-  { icon: JSX.Element; label: string }
-> = {
+const actionConfig: Record<string, { icon: JSX.Element; label: string }> = {
   power_start: {
     icon: <BsPlayFill className="h-4 w-4" />,
     label: "Start Server",
@@ -75,9 +67,7 @@ const actionConfig: Record<
 };
 
 // Schedule Start Node
-export const ScheduleStartNode = ({
-  data,
-}: NodeProps<ScheduleStartNode>) => {
+export const ScheduleStartNode = ({ data }: NodeProps<ScheduleStartNode>) => {
   return (
     <motion.div
       data-id="start-node"
@@ -97,18 +87,18 @@ export const ScheduleStartNode = ({
         <Label className="text-sm font-semibold text-zinc-100">Schedule Start</Label>
       </div>
 
-      <div className="space-y-3 mt-3">
+      <div className="mt-3 space-y-3">
         <div>
           <Label className="text-xs text-zinc-500">Name</Label>
-          <div className="text-sm text-zinc-100 truncate">{data.scheduleName}</div>
+          <div className="truncate text-sm text-zinc-100">{data.scheduleName}</div>
         </div>
 
         <div>
           <Label className="text-xs text-zinc-500">Schedule</Label>
-          <div className="text-xs text-zinc-300 font-mono bg-zinc-900/50 rounded px-2 py-1.5 mt-1">
+          <div className="mt-1 rounded bg-zinc-900/50 px-2 py-1.5 font-mono text-xs text-zinc-300">
             {data.cronExpression}
           </div>
-          <div className="text-xs text-zinc-400 mt-1">{data.formattedCron}</div>
+          <div className="mt-1 text-xs text-zinc-400">{data.formattedCron}</div>
         </div>
       </div>
 
@@ -118,9 +108,7 @@ export const ScheduleStartNode = ({
 };
 
 // Schedule Task Node
-export const ScheduleTaskNode = ({
-  data,
-}: NodeProps<ScheduleTaskNode>) => {
+export const ScheduleTaskNode = ({ data }: NodeProps<ScheduleTaskNode>) => {
   const config = actionConfig[data.action] || actionConfig.command;
   const truncatedPayload = data.payload
     ? data.payload.length > 30
@@ -148,28 +136,24 @@ export const ScheduleTaskNode = ({
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           {config?.icon}
-          <Label className="text-sm font-semibold text-zinc-100">
-            {config?.label}
-          </Label>
+          <Label className="text-sm font-semibold text-zinc-100">{config?.label}</Label>
         </div>
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-700/50 border border-zinc-600/50">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/50 bg-zinc-700/50">
           <span className="text-xs font-medium text-zinc-300">{data.sequence}</span>
         </div>
       </div>
 
-      <div className="space-y-3 mt-3">
+      <div className="mt-3 space-y-3">
         <div>
           <div className="text-xs text-zinc-500">
-            {data.triggerMode === "TIME_DELAY"
-              ? `${data.timeOffset}s delay`
-              : "On completion"}
+            {data.triggerMode === "TIME_DELAY" ? `${data.timeOffset}s delay` : "On completion"}
           </div>
         </div>
 
         {truncatedPayload && (
           <div>
             <Label className="text-xs text-zinc-500">Command</Label>
-            <div className="text-xs text-zinc-300 bg-zinc-900/50 rounded px-2 py-1.5 font-mono mt-1">
+            <div className="mt-1 rounded bg-zinc-900/50 px-2 py-1.5 font-mono text-xs text-zinc-300">
               {truncatedPayload}
             </div>
           </div>
@@ -183,9 +167,7 @@ export const ScheduleTaskNode = ({
 };
 
 // Schedule End Node
-export const ScheduleEndNode = ({
-  data,
-}: NodeProps<ScheduleEndNode>) => {
+export const ScheduleEndNode = ({ data }: NodeProps<ScheduleEndNode>) => {
   // End node pulses after all tasks: delay = 3 + 3*taskCount
   const pulseDelay = 3 + 3 * data.taskCount;
 
@@ -208,7 +190,7 @@ export const ScheduleEndNode = ({
         <Label className="text-sm font-semibold text-zinc-100">Complete</Label>
       </div>
 
-      <div className="text-xs text-zinc-400 mt-3">
+      <div className="mt-3 text-xs text-zinc-400">
         {data.taskCount} {data.taskCount === 1 ? "task" : "tasks"} executed
       </div>
 

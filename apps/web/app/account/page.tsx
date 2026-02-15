@@ -223,8 +223,7 @@ const AccountPage = (): JSX.Element | null => {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-end">
-            </div>
+            <div className="mb-6 flex items-center justify-end"></div>
           </FadeIn>
 
           {/* Account Settings Content */}
