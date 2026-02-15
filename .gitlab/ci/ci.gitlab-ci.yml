@@ -89,7 +89,7 @@ code-analysis:
 # ─── Railway + Cloudflare helper functions ─────────────────────────
 # Railway GraphQL API for environment/service management
 # Cloudflare API for DNS record management
-# PG + Redis credentials are pulled from Railway automatically.
+# Each environment gets its own Postgres + Redis instances via Railway.
 #
 # Required CI variables:
 #   RAILWAY_API_TOKEN       — Railway API token
@@ -100,7 +100,7 @@ code-analysis:
 
 .railway-deploy-script: &railway-deploy-script
   - npm install -g @railway/cli
-  - apt-get update -qq && apt-get install -yqq postgresql-client jq > /dev/null
+  - apt-get update -qq && apt-get install -yqq jq > /dev/null
   - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
   - RAILWAY_API="https://backboard.railway.com/graphql/v2"
 
@@ -111,7 +111,6 @@ code-analysis:
         -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
         -H "Content-Type: application/json" \
         -d "$1")
-      # Check for GraphQL errors
       ERRORS=$(echo "$RESPONSE" | jq -r '.errors[0].message // empty' 2>/dev/null)
       if [ -n "$ERRORS" ]; then
         echo "Railway API error: $ERRORS" >&2
@@ -146,69 +145,18 @@ code-analysis:
       railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
         | jq -r "(.data.project.services.edges // [])[] | select(.node.name == \"$1\") | .node.id"
     }
+  - |
+    list_services() {
+      # Debug helper — lists all service names in the project
+      railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
+        | jq -r '(.data.project.services.edges // [])[] | .node.name'
+    }
 
   # ── Variable management ──
   - |
     set_service_var() {
       # $1 = service ID, $2 = environment ID, $3 = var name, $4 = var value
       railway_gql "{\"query\":\"mutation { variableUpsert(input: { projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", name: \\\"$3\\\", value: \\\"$4\\\" }) }\"}" > /dev/null
-    }
-  - |
-    get_service_var() {
-      # $1 = service ID, $2 = environment ID, $3 = var name
-      # Returns the value of a single variable from a Railway service
-      railway_gql "{\"query\":\"{ variables(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") }\"}" \
-        | jq -r ".data.variables.\"$3\" // empty"
-    }
-
-  # ── Pull shared PG + Redis credentials from Railway ──
-  - |
-    load_shared_credentials() {
-      # Finds the production/default environment and reads PG + Redis vars
-      echo "=== Loading shared PG + Redis credentials from Railway ==="
-      DEFAULT_ENV_ID=$(get_env_id "production")
-      if [ -z "$DEFAULT_ENV_ID" ]; then
-        echo "WARN: No 'production' env found, trying 'default'..."
-        DEFAULT_ENV_ID=$(get_env_id "default")
-      fi
-      if [ -z "$DEFAULT_ENV_ID" ]; then
-        echo "ERROR: Could not find 'production' or 'default' environment" >&2
-        return 1
-      fi
-      echo "Default env ID: $DEFAULT_ENV_ID"
-
-      PG_SVC_ID=$(get_service_id "Postgres")
-      if [ -z "$PG_SVC_ID" ]; then
-        PG_SVC_ID=$(get_service_id "postgres")
-      fi
-      if [ -z "$PG_SVC_ID" ]; then
-        echo "ERROR: Could not find Postgres service in Railway project" >&2
-        return 1
-      fi
-
-      REDIS_SVC_ID=$(get_service_id "Redis")
-      if [ -z "$REDIS_SVC_ID" ]; then
-        REDIS_SVC_ID=$(get_service_id "redis")
-      fi
-      if [ -z "$REDIS_SVC_ID" ]; then
-        echo "ERROR: Could not find Redis service in Railway project" >&2
-        return 1
-      fi
-
-      echo "PG service=$PG_SVC_ID  Redis service=$REDIS_SVC_ID"
-
-      # Pull all PG variables at once and extract what we need
-      PG_VARS=$(railway_gql "{\"query\":\"{ variables(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$PG_SVC_ID\\\", environmentId: \\\"$DEFAULT_ENV_ID\\\") }\"}")
-      PGPASSWORD_VAL=$(echo "$PG_VARS" | jq -r '.data.variables.PGPASSWORD // .data.variables.POSTGRES_PASSWORD // empty')
-      PGUSER_VAL=$(echo "$PG_VARS" | jq -r '.data.variables.PGUSER // .data.variables.POSTGRES_USER // "stellar"')
-      PGPORT_VAL=$(echo "$PG_VARS" | jq -r '.data.variables.PGPORT // "5432"')
-
-      # Pull Redis URL
-      REDIS_VARS=$(railway_gql "{\"query\":\"{ variables(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$REDIS_SVC_ID\\\", environmentId: \\\"$DEFAULT_ENV_ID\\\") }\"}")
-      REDIS_PASSWORD_VAL=$(echo "$REDIS_VARS" | jq -r '.data.variables.REDIS_PASSWORD // .data.variables.REDISPASSWORD // empty')
-      REDIS_PORT_VAL=$(echo "$REDIS_VARS" | jq -r '.data.variables.REDIS_PORT // .data.variables.REDISPORT // "6379"')
-
-      echo "PG user=$PGUSER_VAL port=$PGPORT_VAL  Redis port=$REDIS_PORT_VAL"
     }
 
   # ── Custom domain management ──
@@ -217,26 +165,17 @@ code-analysis:
       # $1 = service ID, $2 = environment ID, $3 = domain
       railway_gql "{\"query\":\"mutation { customDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", domain: \\\"$3\\\" }) { id domain } }\"}"
     }
-
-  # ── Get Railway-generated service domain ──
-  - |
-    get_railway_domain() {
-      # $1 = service ID, $2 = environment ID
-      railway_gql "{\"query\":\"{ domains(serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") { serviceDomains { domain } } }\"}" \
-        | jq -r '.data.domains.serviceDomains[0].domain // empty'
-    }
-
-  # ── Ensure Railway service has a generated domain ──
   - |
     ensure_service_domain() {
       # $1 = service ID, $2 = environment ID
-      DOMAIN=$(get_railway_domain "$1" "$2")
+      # Returns existing Railway domain or creates one
+      DOMAIN=$(railway_gql "{\"query\":\"{ domains(serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") { serviceDomains { domain } } }\"}" \
+        | jq -r '.data.domains.serviceDomains[0].domain // empty')
       if [ -z "$DOMAIN" ]; then
-        railway_gql "{\"query\":\"mutation { serviceDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\" }) { domain } }\"}" \
-          | jq -r '.data.serviceDomainCreate.domain'
-      else
-        echo "$DOMAIN"
+        DOMAIN=$(railway_gql "{\"query\":\"mutation { serviceDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\" }) { domain } }\"}" \
+          | jq -r '.data.serviceDomainCreate.domain')
       fi
+      echo "$DOMAIN"
     }
 
   # ── Cloudflare DNS helpers ──
@@ -251,7 +190,7 @@ code-analysis:
     }
   - |
     delete_cf_record() {
-      # $1 = full domain name (e.g., slug-api.stellarstack.dev), $2 = zone ID
+      # $1 = full domain name, $2 = zone ID
       RECORD_ID=$(curl -sf "https://api.cloudflare.com/client/v4/zones/${2}/dns_records?name=$1" \
         -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
         | jq -r '.result[0].id // empty')
@@ -262,32 +201,10 @@ code-analysis:
       fi
     }
 
-  # ── Preview database management ──
-  - |
-    create_preview_db() {
-      # $1 = database name (e.g., stellar_slug)
-      # Uses credentials loaded by load_shared_credentials()
-      PGPASSWORD="$PGPASSWORD_VAL" psql \
-        -h dev-postgres.stellarstack.app -p "$PGPORT_VAL" -U "$PGUSER_VAL" -d postgres \
-        -c "SELECT 1 FROM pg_database WHERE datname = '$1'" | grep -q 1 \
-        || PGPASSWORD="$PGPASSWORD_VAL" psql \
-          -h dev-postgres.stellarstack.app -p "$PGPORT_VAL" -U "$PGUSER_VAL" -d postgres \
-          -c "CREATE DATABASE \"$1\""
-      echo "Database $1 ready"
-    }
-  - |
-    drop_preview_db() {
-      # $1 = database name
-      PGPASSWORD="$PGPASSWORD_VAL" psql \
-        -h dev-postgres.stellarstack.app -p "$PGPORT_VAL" -U "$PGUSER_VAL" -d postgres \
-        -c "DROP DATABASE IF EXISTS \"$1\"" 2>/dev/null
-      echo "Dropped database $1"
-    }
-
   # ── Full-stack deploy orchestrator ──
   - |
     deploy_full_stack() {
-      # $1 = env name (e.g., preview-slug), $2 = slug
+      # $1 = env name (e.g., dev-slug), $2 = slug
       echo "=== Creating environment: $1 ==="
       delete_env "$1"
       ENV_ID=$(create_env "$1")
@@ -297,12 +214,8 @@ code-analysis:
       fi
       echo "Environment ID: $ENV_ID"
 
-      echo "=== Loading shared service credentials ==="
-      load_shared_credentials
-
-      echo "=== Creating preview database ==="
-      DB_NAME="stellar_${2}"
-      create_preview_db "$DB_NAME"
+      echo "=== Listing project services ==="
+      list_services
 
       echo "=== Resolving service IDs ==="
       API_SVC_ID=$(get_service_id "api")
@@ -310,21 +223,39 @@ code-analysis:
       DAEMON_SVC_ID=$(get_service_id "mock-daemon")
       if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ]; then
         echo "ERROR: Could not resolve all service IDs. API=$API_SVC_ID WEB=$WEB_SVC_ID DAEMON=$DAEMON_SVC_ID" >&2
-        echo "Make sure services named 'api', 'web', and 'mock-daemon' exist in the Railway project." >&2
+        echo "Services named 'api', 'web', and 'mock-daemon' must exist in the Railway project." >&2
         return 1
       fi
       echo "API=$API_SVC_ID  WEB=$WEB_SVC_ID  DAEMON=$DAEMON_SVC_ID"
 
+      # Find Postgres + Redis services (Railway spins up per-env instances automatically)
+      PG_SVC_ID=$(get_service_id "Postgres")
+      [ -z "$PG_SVC_ID" ] && PG_SVC_ID=$(get_service_id "postgres")
+      [ -z "$PG_SVC_ID" ] && PG_SVC_ID=$(get_service_id "PostgreSQL")
+      REDIS_SVC_ID=$(get_service_id "Redis")
+      [ -z "$REDIS_SVC_ID" ] && REDIS_SVC_ID=$(get_service_id "redis")
+      echo "PG=$PG_SVC_ID  REDIS=$REDIS_SVC_ID"
+
+      if [ -z "$PG_SVC_ID" ] || [ -z "$REDIS_SVC_ID" ]; then
+        echo "ERROR: Could not find Postgres or Redis service. Check 'list_services' output above." >&2
+        return 1
+      fi
+
       PANEL_URL="https://${2}-panel.stellarstack.dev"
       API_URL="https://${2}-api.stellarstack.dev"
       DAEMON_URL="https://${2}-daemon.stellarstack.dev"
-      DB_URL="postgresql://${PGUSER_VAL}:${PGPASSWORD_VAL}@dev-postgres.stellarstack.app:${PGPORT_VAL}/${DB_NAME}"
-      REDIS_URL="redis://default:${REDIS_PASSWORD_VAL}@dev-redis.stellarstack.app:${REDIS_PORT_VAL}"
+
+      # Use Railway reference variables — resolved at deploy time to the
+      # per-environment Postgres/Redis instances automatically
+      PG_SVC_NAME=$(railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
+        | jq -r "(.data.project.services.edges // [])[] | select(.node.id == \"$PG_SVC_ID\") | .node.name")
+      REDIS_SVC_NAME=$(railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
+        | jq -r "(.data.project.services.edges // [])[] | select(.node.id == \"$REDIS_SVC_ID\") | .node.name")
+      echo "PG service name: $PG_SVC_NAME  Redis service name: $REDIS_SVC_NAME"
 
       echo "=== Setting API environment variables ==="
-      set_service_var "$API_SVC_ID" "$ENV_ID" "DATABASE_URL" "$DB_URL"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_URL" "$REDIS_URL"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_PREFIX" "${2}:"
+      set_service_var "$API_SVC_ID" "$ENV_ID" "DATABASE_URL" "\${{${PG_SVC_NAME}.DATABASE_URL}}"
+      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_URL" "\${{${REDIS_SVC_NAME}.REDIS_URL}}"
       set_service_var "$API_SVC_ID" "$ENV_ID" "FRONTEND_URL" "$PANEL_URL"
       set_service_var "$API_SVC_ID" "$ENV_ID" "API_URL" "$API_URL"
       set_service_var "$API_SVC_ID" "$ENV_ID" "BETTER_AUTH_SECRET" "$BETTER_AUTH_SECRET"
@@ -348,19 +279,15 @@ code-analysis:
       sleep 10
 
       echo "=== Setting up custom domains + DNS ==="
-
-      # Get Railway-generated domains for CNAME targets
       API_RAILWAY_DOMAIN=$(ensure_service_domain "$API_SVC_ID" "$ENV_ID")
       WEB_RAILWAY_DOMAIN=$(ensure_service_domain "$WEB_SVC_ID" "$ENV_ID")
       DAEMON_RAILWAY_DOMAIN=$(ensure_service_domain "$DAEMON_SVC_ID" "$ENV_ID")
       echo "Railway domains: API=$API_RAILWAY_DOMAIN  WEB=$WEB_RAILWAY_DOMAIN  DAEMON=$DAEMON_RAILWAY_DOMAIN"
 
-      # Create Cloudflare DNS records (all under stellarstack.dev)
       create_cf_record "${2}-api.stellarstack.dev" "$API_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
       create_cf_record "${2}-panel.stellarstack.dev" "$WEB_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
       create_cf_record "${2}-daemon.stellarstack.dev" "$DAEMON_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
 
-      # Add custom domains to Railway services
       add_custom_domain "$API_SVC_ID" "$ENV_ID" "${2}-api.stellarstack.dev"
       add_custom_domain "$WEB_SVC_ID" "$ENV_ID" "${2}-panel.stellarstack.dev"
       add_custom_domain "$DAEMON_SVC_ID" "$ENV_ID" "${2}-daemon.stellarstack.dev"
@@ -375,17 +302,11 @@ code-analysis:
   # ── Full-stack cleanup orchestrator ──
   - |
     cleanup_full_stack() {
-      # $1 = env name (e.g., preview-slug), $2 = slug
-      echo "=== Loading shared service credentials ==="
-      load_shared_credentials
-
+      # $1 = env name, $2 = slug
       echo "=== Cleaning up DNS records ==="
       delete_cf_record "${2}-api.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
       delete_cf_record "${2}-panel.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
       delete_cf_record "${2}-daemon.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
-
-      echo "=== Dropping preview database ==="
-      drop_preview_db "stellar_${2}"
 
       echo "=== Deleting Railway environment ==="
       delete_env "$1"
