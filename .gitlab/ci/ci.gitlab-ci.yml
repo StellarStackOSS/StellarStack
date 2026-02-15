@@ -363,31 +363,6 @@ code-analysis:
       echo "Cleanup complete for $1"
     }
 
-# ─── Deploy Preview (Railway) ──────────────────────────────────────
-deploy-preview:
-  stage: deploy
-  image: node:${NODE_VERSION}
-  needs: []
-  variables:
-    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
-  script:
-    - *railway-deploy-script
-    - deploy_full_stack "preview-${SLUG}" "${SLUG}"
-  environment:
-    name: preview/$CI_COMMIT_REF_SLUG
-    url: https://${CI_COMMIT_REF_SLUG}-panel.stellarstack.dev
-    auto_stop_in: 15 minutes
-    on_stop: cleanup-preview
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
-      allow_failure: true
-    - if: $CI_COMMIT_BRANCH
-      when: manual
-      allow_failure: true
-
 # ─── Deploy Dev (Railway — manual) ────────────────────────────────
 deploy-dev:
   stage: deploy
@@ -402,28 +377,6 @@ deploy-dev:
     name: dev/$CI_COMMIT_REF_SLUG
     url: https://${CI_COMMIT_REF_SLUG}-panel.stellarstack.dev
     on_stop: cleanup-dev
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: manual
-      allow_failure: true
-    - if: $CI_COMMIT_BRANCH
-      when: manual
-      allow_failure: true
-
-# ─── Cleanup Preview ───────────────────────────────────────────────
-cleanup-preview:
-  stage: cleanup
-  image: node:${NODE_VERSION}
-  variables:
-    GIT_STRATEGY: none
-  script:
-    - *railway-deploy-script
-    - cleanup_full_stack "preview-${SLUG}" "${SLUG}"
-  environment:
-    name: preview/$CI_COMMIT_REF_SLUG
-    action: stop
   rules:
     - if: $CI_COMMIT_TAG
       when: never
