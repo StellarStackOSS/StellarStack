@@ -55,36 +55,31 @@ sync-changelog:
   stage: release
   image: node:${NODE_VERSION}
   script:
-    - mkdir -p apps/docs/changelog
-
     - |
-      cat > apps/docs/changelog/releases.mdx << 'HEADER'
-      ---
-      title: 'Changelog'
-      description: 'Release history and version updates for StellarStack'
-      icon: 'clock'
-      ---
-
-      # Changelog
-
-      All notable changes to StellarStack are documented here. We follow [Semantic Versioning](https://semver.org/).
-
-      HEADER
-
-    - tail -n +2 CHANGELOG.md >> apps/docs/changelog/releases.mdx
-
-    - |
+      mkdir -p apps/docs/changelog
+      {
+        echo "---"
+        echo "title: 'Changelog'"
+        echo "description: 'Release history and version updates for StellarStack'"
+        echo "icon: 'clock'"
+        echo "---"
+        echo ""
+        echo "# Changelog"
+        echo ""
+        echo "All notable changes to StellarStack are documented here. We follow [Semantic Versioning](https://semver.org/)."
+        echo ""
+      } > apps/docs/changelog/releases.mdx
+      tail -n +2 CHANGELOG.md >> apps/docs/changelog/releases.mdx
       if git diff --quiet apps/docs/changelog/releases.mdx; then
         echo "No changes to sync"
         exit 0
       fi
-
-    - git config user.name "gitlab-ci[bot]"
-    - git config user.email "gitlab-ci[bot]@users.noreply.gitlab.com"
-    - git checkout -b docs/sync-changelog
-    - git add apps/docs/changelog/releases.mdx
-    - git commit -m "docs: sync changelog to docs"
-    - git push "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" docs/sync-changelog -o merge_request.create -o merge_request.title="docs: Update changelog in documentation" -o merge_request.remove_source_branch
+      git config user.name "gitlab-ci[bot]"
+      git config user.email "gitlab-ci[bot]@users.noreply.gitlab.com"
+      git checkout -b docs/sync-changelog
+      git add apps/docs/changelog/releases.mdx
+      git commit -m "docs: sync changelog to docs"
+      git push "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" docs/sync-changelog -o merge_request.create -o merge_request.title="docs: Update changelog in documentation" -o merge_request.remove_source_branch
   rules:
     - if: $CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"
       changes:
