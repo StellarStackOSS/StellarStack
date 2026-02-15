@@ -2,7 +2,7 @@
 
 import type {JSX} from "react";
 import {cn} from "@stellarUI/lib/Utils";
-import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
+import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { InfoTooltip } from "../InfoTooltip/InfoTooltip";
 import { Sparkline } from "../Sparkline/Sparkline";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";

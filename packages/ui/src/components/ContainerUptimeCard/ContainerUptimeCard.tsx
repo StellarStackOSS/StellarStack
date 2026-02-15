@@ -2,7 +2,7 @@
 
 import type { JSX } from "react";
 import { cn } from "@stellarUI/lib/Utils";
-import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
+import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
 import { formatUptime } from "../DashboardCardsUtils/Utils";
@@ -27,7 +27,6 @@ const ContainerUptimeCard = ({
 
   const isXxs = size === "xxs" || size === "xxs-wide";
   const isXs = size === "xs";
-  const isCompact = isXxs || isXs;
 
   const uptime = formatUptime(containerUptime);
   const isRunning = containerStatus === "running";

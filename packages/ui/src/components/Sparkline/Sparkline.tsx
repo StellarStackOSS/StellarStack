@@ -3,8 +3,6 @@
 import {
   Area,
   AreaChart,
-  Line,
-  LineChart,
   ResponsiveContainer,
   ComposedChart,
   YAxis,

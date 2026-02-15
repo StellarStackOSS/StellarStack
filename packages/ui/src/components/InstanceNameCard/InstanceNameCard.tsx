@@ -46,7 +46,6 @@ const InstanceNameCard = ({
   const anyLoading =
     loadingStates.start || loadingStates.stop || loadingStates.kill || loadingStates.restart;
 
-  const startDisabled = isRunning || isTransitioning || anyLoading;
   const stopDisabled = isStopped || isOffline || isTransitioning || anyLoading;
   const killDisabled = isStopped || isOffline || isTransitioning || anyLoading;
   const restartDisabled = isStopped || isOffline || isTransitioning || anyLoading;
@@ -69,7 +68,11 @@ const InstanceNameCard = ({
         <span
           onClick={() => {
             if (isTransitioning || anyLoading) return;
-            isRunning ? onStop() : onStart();
+            if (isRunning) {
+              onStop();
+            } else {
+              onStart();
+            }
           }}
           className={baseButtonClass}
         >

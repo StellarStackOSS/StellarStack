@@ -2,7 +2,7 @@
 
 import type { JSX } from "react";
 import { cn } from "@stellarUI/lib/Utils";
-import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
+import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
 import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
 import type { CardProps, Player, ContainerStatus, PlayersOnlineCardLabels } from "../DashboardCardsTypes/Types";
@@ -29,7 +29,6 @@ const PlayersOnlineCard = ({
   const isXxs = size === "xxs" || size === "xxs-wide";
   const isXs = size === "xs";
   const isSm = size === "sm";
-  const isCompact = isXxs || isXs;
 
   const isRunning = containerStatus === "running";
   const maxVisible = isSm ? 8 : 4;

@@ -5,8 +5,7 @@ import * as SliderPrimitive from "@radix-ui/react-slider"
 
 import { cn } from "@stellarUI/lib/Utils"
 
-interface SliderProps extends React.ComponentProps<typeof SliderPrimitive.Root> {
-}
+type SliderProps = React.ComponentProps<typeof SliderPrimitive.Root>;
 
 const Slider = ({
   className,

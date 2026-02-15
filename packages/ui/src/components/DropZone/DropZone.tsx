@@ -13,7 +13,6 @@ const DropZone = ({
   children,
   onDrop,
   onDragEnter,
-  onDragLeave,
   className,
   acceptedTypes,
   disabled = false,

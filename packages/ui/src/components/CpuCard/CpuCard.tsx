@@ -3,7 +3,7 @@
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@stellarUI/lib/Utils";
-import UsageCard, { UsageCardContent, UsageCardTitle } from "../UsageCard/UsageCard";
+import UsageCard, { UsageCardContent } from "../UsageCard/UsageCard";
 import { InfoTooltip } from "../InfoTooltip/InfoTooltip";
 import { Sparkline } from "../Sparkline/Sparkline";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
@@ -11,7 +11,6 @@ import { useDragDropGrid } from "../DragDropGrid/DragDropGrid";
 import CpuCoreGrid from "../CpuCoreGrid/CpuCoreGrid";
 import { getUsageColor } from "../DashboardCardsUtils/Utils";
 import type { CpuCardProps, CpuCardLabels } from "../DashboardCardsTypes/Types";
-import PixelText from "@stellarUI/components/PixelText/PixelText";
 
 interface CpuCardComponentProps extends CpuCardProps {
     isOffline: boolean;
