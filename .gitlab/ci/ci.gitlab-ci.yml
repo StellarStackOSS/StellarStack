@@ -139,6 +139,34 @@ deploy-preview:
       when: never
     - if: $CI_COMMIT_BRANCH
 
+# ─── Deploy Dev (Railway — manual) ────────────────────────────────
+deploy-dev:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  needs: []
+  variables:
+    RAILWAY_TOKEN: $RAILWAY_TOKEN
+    RAILWAY_PROJECT_ID: $RAILWAY_PROJECT_ID
+  script:
+    - npm install -g @railway/cli
+    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - ENV_NAME="dev-${SLUG}"
+    - railway environment delete "$ENV_NAME" --yes || true
+    - railway environment create "$ENV_NAME"
+    - railway up --service web --environment "$ENV_NAME" --detach
+    - railway up --service api --environment "$ENV_NAME" --detach
+    - railway up --service home --environment "$ENV_NAME" --detach
+    - echo "Deployed dev environment ${ENV_NAME}"
+  environment:
+    name: dev/$CI_COMMIT_REF_SLUG
+    on_stop: cleanup-dev
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+
 # ─── Cleanup Preview ───────────────────────────────────────────────
 cleanup-preview:
   stage: cleanup
@@ -158,6 +186,28 @@ cleanup-preview:
     - if: $CI_COMMIT_TAG
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+
+# ─── Cleanup Dev ──────────────────────────────────────────────────
+cleanup-dev:
+  stage: cleanup
+  image: node:${NODE_VERSION}
+  variables:
+    GIT_STRATEGY: none
+    RAILWAY_TOKEN: $RAILWAY_TOKEN
+  script:
+    - npm install -g @railway/cli
+    - SLUG=$(echo "$CI_COMMIT_REF_SLUG" | cut -c1-30)
+    - ENV_NAME="dev-${SLUG}"
+    - railway environment delete "$ENV_NAME" --yes
+  environment:
+    name: dev/$CI_COMMIT_REF_SLUG
+    action: stop
+  rules:
+    - if: $CI_COMMIT_TAG
       when: never
     - if: $CI_COMMIT_BRANCH
       when: manual
