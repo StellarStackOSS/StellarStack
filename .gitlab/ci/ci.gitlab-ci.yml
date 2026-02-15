@@ -107,17 +107,23 @@ code-analysis:
   # ── Railway GraphQL helper ──
   - |
     railway_gql() {
-      curl -sf -X POST "$RAILWAY_API" \
+      RESPONSE=$(curl -s -X POST "$RAILWAY_API" \
         -H "Authorization: Bearer $RAILWAY_TOKEN" \
         -H "Content-Type: application/json" \
-        -d "$1"
+        -d "$1")
+      # Check for GraphQL errors
+      ERRORS=$(echo "$RESPONSE" | jq -r '.errors[0].message // empty' 2>/dev/null)
+      if [ -n "$ERRORS" ]; then
+        echo "Railway API error: $ERRORS" >&2
+      fi
+      echo "$RESPONSE"
     }
 
   # ── Environment management ──
   - |
     get_env_id() {
       railway_gql "{\"query\":\"{ environments(projectId: \\\"$RAILWAY_PROJECT_ID\\\") { edges { node { id name } } } }\"}" \
-        | jq -r ".data.environments.edges[] | select(.node.name == \"$1\") | .node.id"
+        | jq -r "(.data.environments.edges // [])[] | select(.node.name == \"$1\") | .node.id"
     }
   - |
     delete_env() {
@@ -138,7 +144,7 @@ code-analysis:
     get_service_id() {
       # $1 = service name
       railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
-        | jq -r ".data.project.services.edges[] | select(.node.name == \"$1\") | .node.id"
+        | jq -r "(.data.project.services.edges // [])[] | select(.node.name == \"$1\") | .node.id"
     }
 
   # ── Variable management ──
@@ -165,16 +171,31 @@ code-analysis:
         echo "WARN: No 'production' env found, trying 'default'..."
         DEFAULT_ENV_ID=$(get_env_id "default")
       fi
+      if [ -z "$DEFAULT_ENV_ID" ]; then
+        echo "ERROR: Could not find 'production' or 'default' environment" >&2
+        return 1
+      fi
+      echo "Default env ID: $DEFAULT_ENV_ID"
 
       PG_SVC_ID=$(get_service_id "Postgres")
       if [ -z "$PG_SVC_ID" ]; then
         PG_SVC_ID=$(get_service_id "postgres")
+      fi
+      if [ -z "$PG_SVC_ID" ]; then
+        echo "ERROR: Could not find Postgres service in Railway project" >&2
+        return 1
       fi
 
       REDIS_SVC_ID=$(get_service_id "Redis")
       if [ -z "$REDIS_SVC_ID" ]; then
         REDIS_SVC_ID=$(get_service_id "redis")
       fi
+      if [ -z "$REDIS_SVC_ID" ]; then
+        echo "ERROR: Could not find Redis service in Railway project" >&2
+        return 1
+      fi
+
+      echo "PG service=$PG_SVC_ID  Redis service=$REDIS_SVC_ID"
 
       # Pull all PG variables at once and extract what we need
       PG_VARS=$(railway_gql "{\"query\":\"{ variables(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$PG_SVC_ID\\\", environmentId: \\\"$DEFAULT_ENV_ID\\\") }\"}")
@@ -270,6 +291,10 @@ code-analysis:
       echo "=== Creating environment: $1 ==="
       delete_env "$1"
       ENV_ID=$(create_env "$1")
+      if [ -z "$ENV_ID" ] || [ "$ENV_ID" = "null" ]; then
+        echo "ERROR: Failed to create environment '$1'" >&2
+        return 1
+      fi
       echo "Environment ID: $ENV_ID"
 
       echo "=== Loading shared service credentials ==="
@@ -283,6 +308,11 @@ code-analysis:
       API_SVC_ID=$(get_service_id "api")
       WEB_SVC_ID=$(get_service_id "web")
       DAEMON_SVC_ID=$(get_service_id "mock-daemon")
+      if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ]; then
+        echo "ERROR: Could not resolve all service IDs. API=$API_SVC_ID WEB=$WEB_SVC_ID DAEMON=$DAEMON_SVC_ID" >&2
+        echo "Make sure services named 'api', 'web', and 'mock-daemon' exist in the Railway project." >&2
+        return 1
+      fi
       echo "API=$API_SVC_ID  WEB=$WEB_SVC_ID  DAEMON=$DAEMON_SVC_ID"
 
       PANEL_URL="https://${2}-panel.stellarstack.dev"
