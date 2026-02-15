@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import ContainerUptimeCard from "@stellarUI/components/ContainerUptimeCard/ContainerUptimeCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const meta: Meta<typeof ContainerUptimeCard> = {
   title: "Dashboard Cards/ContainerUptimeCard",

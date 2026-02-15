@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  ContextMenu,
+import ContextMenu, {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { CpuCoreGrid } from "@stellarUI/components/CpuCoreGrid/CpuCoreGrid";
+import CpuCoreGrid from "@stellarUI/components/CpuCoreGrid/CpuCoreGrid";
 import { GenerateCoreUsage } from "../_helpers/MockData";
 
 const meta: Meta<typeof CpuCoreGrid> = {

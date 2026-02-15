@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import DropZone from "@stellarUI/components/DropZone/DropZone";
+import { DropZone } from "@stellarUI/components/DropZone/DropZone";
 
 const meta: Meta<typeof DropZone> = {
   title: "Layout/DropZone",

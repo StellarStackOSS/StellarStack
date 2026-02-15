@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Sheet,
+import Sheet, {
   SheetTrigger,
   SheetContent,
   SheetHeader,

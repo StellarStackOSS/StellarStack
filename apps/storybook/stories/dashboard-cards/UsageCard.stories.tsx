@@ -4,7 +4,7 @@ import UsageCard, {
   UsageCardContent,
   UsageCardFooter,
 } from "@stellarUI/components/UsageCard/UsageCard";
-import { DragDropGridMockProvider } from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
+import DragDropGridMockProvider from "@stellarUI/components/DragDropGrid/DragDropGridMockProvider";
 
 const meta: Meta<typeof UsageCard> = {
   title: "Dashboard Cards/UsageCard",

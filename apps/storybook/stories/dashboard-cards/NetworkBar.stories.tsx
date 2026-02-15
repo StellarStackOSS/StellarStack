@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { NetworkBar } from "@stellarUI/components/NetworkBar/NetworkBar";
+import NetworkBar from "@stellarUI/components/NetworkBar/NetworkBar";
 
 const meta: Meta<typeof NetworkBar> = {
   title: "Dashboard Cards/NetworkBar",

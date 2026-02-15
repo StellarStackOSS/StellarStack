@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { DataTable } from "@stellarUI/components/DataTable/DataTable";
+import DataTable from "@stellarUI/components/DataTable/DataTable";
 import {
   useReactTable,
   getCoreRowModel,
