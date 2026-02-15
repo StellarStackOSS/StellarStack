@@ -87,13 +87,12 @@ code-analysis:
     - pnpm format:check
 
 # ─── Railway + Cloudflare helper functions ─────────────────────────
-# Railway GraphQL API for environment/service management
-# Cloudflare API for DNS record management
-# Each environment gets its own Postgres + Redis instances via Railway.
+# Per-project Railway deploys: each preview gets an isolated Railway project
+# with its own Postgres, Redis, API, Web, and Mock Daemon services.
+# Cleanup = single projectDelete (removes everything).
 #
 # Required CI variables:
-#   RAILWAY_API_TOKEN       — Railway API token
-#   RAILWAY_PROJECT_ID      — Railway project ID
+#   RAILWAY_API_TOKEN       — Railway account API token
 #   CLOUDFLARE_API_TOKEN    — Cloudflare API token (DNS edit)
 #   CLOUDFLARE_ZONE_ID_DEV  — Zone ID for stellarstack.dev
 #   BETTER_AUTH_SECRET      — Auth secret for API
@@ -118,88 +117,76 @@ code-analysis:
       echo "$RESPONSE"
     }
 
-  # ── Environment management ──
+  # ── Project management ──
   - |
-    get_env_id() {
-      railway_gql "{\"query\":\"{ environments(projectId: \\\"$RAILWAY_PROJECT_ID\\\") { edges { node { id name } } } }\"}" \
-        | jq -r "(.data.environments.edges // [])[] | select(.node.name == \"$1\") | .node.id"
+    create_project() {
+      # $1 = project name
+      # Returns JSON with project ID and default environment ID
+      RESULT=$(railway_gql "{\"query\":\"mutation { projectCreate(input: { name: \\\"$1\\\" }) { id environments { edges { node { id name } } } } }\"}")
+      PROJECT_ID=$(echo "$RESULT" | jq -r '.data.projectCreate.id')
+      ENV_ID=$(echo "$RESULT" | jq -r '.data.projectCreate.environments.edges[0].node.id')
+      echo "${PROJECT_ID}:${ENV_ID}"
     }
   - |
-    delete_env() {
-      ENV_ID=$(get_env_id "$1")
-      if [ -n "$ENV_ID" ]; then
-        railway_gql "{\"query\":\"mutation { environmentDelete(id: \\\"$ENV_ID\\\") }\"}" > /dev/null
-        echo "Deleted environment $1"
-      fi
+    delete_project() {
+      # $1 = project ID
+      railway_gql "{\"query\":\"mutation { projectDelete(id: \\\"$1\\\") }\"}" > /dev/null
+      echo "Deleted Railway project: $1"
     }
   - |
-    create_env() {
-      railway_gql "{\"query\":\"mutation { environmentCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\" }) { id name } }\"}" \
-        | jq -r '.data.environmentCreate.id'
+    find_project_by_name() {
+      # $1 = project name — returns project ID or empty
+      railway_gql "{\"query\":\"{ projects { edges { node { id name } } } }\"}" \
+        | jq -r "(.data.projects.edges // [])[] | select(.node.name == \"$1\") | .node.id"
     }
 
-  # ── Service management ──
+  # ── Service creation ──
   - |
-    get_service_id() {
-      # $1 = service name
-      railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
-        | jq -r "(.data.project.services.edges // [])[] | select(.node.name == \"$1\") | .node.id"
-    }
-  - |
-    list_services() {
-      # Debug helper — lists all service names in the project
-      railway_gql "{\"query\":\"{ project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"}" \
-        | jq -r '(.data.project.services.edges // [])[] | .node.name'
-    }
-  - |
-    ensure_service() {
-      # $1 = service name — returns existing or newly created service ID
-      SVC_ID=$(get_service_id "$1")
-      if [ -n "$SVC_ID" ]; then
-        echo "$SVC_ID"
-        return
-      fi
-      echo "Creating service: $1" >&2
-      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\" }) { id } }\"}" \
+    create_service() {
+      # $1 = project ID, $2 = service name
+      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$2\\\", projectId: \\\"$1\\\" }) { id } }\"}" \
         | jq -r '.data.serviceCreate.id'
     }
   - |
-    ensure_database_service() {
-      # $1 = service name, $2 = Docker image (e.g., postgres:16, redis:7)
-      SVC_ID=$(get_service_id "$1")
-      if [ -n "$SVC_ID" ]; then
-        echo "$SVC_ID"
-        return
-      fi
-      echo "Creating database service: $1 ($2)" >&2
-      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$1\\\", projectId: \\\"$RAILWAY_PROJECT_ID\\\", source: { image: \\\"$2\\\" } }) { id } }\"}" \
+    create_db_service() {
+      # $1 = project ID, $2 = service name, $3 = Docker image
+      railway_gql "{\"query\":\"mutation { serviceCreate(input: { name: \\\"$2\\\", projectId: \\\"$1\\\", source: { image: \\\"$3\\\" } }) { id } }\"}" \
         | jq -r '.data.serviceCreate.id'
+    }
+
+  # ── Volume management ──
+  - |
+    create_volume() {
+      # $1 = project ID, $2 = service ID, $3 = mount path
+      railway_gql "{\"query\":\"mutation { volumeCreate(input: { projectId: \\\"$1\\\", serviceId: \\\"$2\\\", mountPath: \\\"$3\\\" }) { id } }\"}" \
+        | jq -r '.data.volumeCreate.id'
+    }
+
+  # ── Service instance configuration ──
+  - |
+    configure_service() {
+      # $1 = service ID, $2 = environment ID, $3 = JSON input fields
+      railway_gql "{\"query\":\"mutation { serviceInstanceUpdate(serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", input: $3) }\"}" > /dev/null
     }
 
   # ── Variable management ──
   - |
-    set_service_var() {
-      # $1 = service ID, $2 = environment ID, $3 = var name, $4 = var value
-      railway_gql "{\"query\":\"mutation { variableUpsert(input: { projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", name: \\\"$3\\\", value: \\\"$4\\\" }) }\"}" > /dev/null
+    set_service_vars() {
+      # $1 = project ID, $2 = environment ID, $3 = service ID, $4 = JSON vars object
+      railway_gql "{\"query\":\"mutation { variableCollectionUpsert(input: { projectId: \\\"$1\\\", environmentId: \\\"$2\\\", serviceId: \\\"$3\\\", variables: $4 }) }\"}" > /dev/null
     }
 
-  # ── Custom domain management ──
+  # ── Domain management ──
   - |
-    add_custom_domain() {
-      # $1 = service ID, $2 = environment ID, $3 = domain
-      railway_gql "{\"query\":\"mutation { customDomainCreate(input: { projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\", domain: \\\"$3\\\" }) { id domain } }\"}"
+    create_service_domain() {
+      # $1 = service ID, $2 = environment ID — returns Railway domain
+      railway_gql "{\"query\":\"mutation { serviceDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\" }) { domain } }\"}" \
+        | jq -r '.data.serviceDomainCreate.domain'
     }
   - |
-    ensure_service_domain() {
-      # $1 = service ID, $2 = environment ID
-      # Returns existing Railway domain or creates one
-      DOMAIN=$(railway_gql "{\"query\":\"{ domains(projectId: \\\"$RAILWAY_PROJECT_ID\\\", serviceId: \\\"$1\\\", environmentId: \\\"$2\\\") { serviceDomains { domain } } }\"}" \
-        | jq -r '.data.domains.serviceDomains[0].domain // empty')
-      if [ -z "$DOMAIN" ]; then
-        DOMAIN=$(railway_gql "{\"query\":\"mutation { serviceDomainCreate(input: { serviceId: \\\"$1\\\", environmentId: \\\"$2\\\" }) { domain } }\"}" \
-          | jq -r '.data.serviceDomainCreate.domain')
-      fi
-      echo "$DOMAIN"
+    add_custom_domain() {
+      # $1 = project ID, $2 = service ID, $3 = environment ID, $4 = domain
+      railway_gql "{\"query\":\"mutation { customDomainCreate(input: { projectId: \\\"$1\\\", serviceId: \\\"$2\\\", environmentId: \\\"$3\\\", domain: \\\"$4\\\" }) { id } }\"}" > /dev/null
     }
 
   # ── Cloudflare DNS helpers ──
@@ -225,108 +212,129 @@ code-analysis:
       fi
     }
 
-  # ── Full-stack deploy orchestrator ──
+  # ── Full-stack deploy orchestrator (per-project) ──
   - |
     deploy_full_stack() {
-      # $1 = env name (e.g., dev-slug), $2 = slug
-      echo "=== Ensuring environment: $1 ==="
-      ENV_ID=$(get_env_id "$1")
-      if [ -n "$ENV_ID" ]; then
-        echo "Reusing existing environment: $ENV_ID"
-      else
-        ENV_ID=$(create_env "$1")
-        if [ -z "$ENV_ID" ] || [ "$ENV_ID" = "null" ]; then
-          echo "ERROR: Failed to create environment '$1'" >&2
-          return 1
-        fi
-        echo "Created environment: $ENV_ID"
+      # $1 = slug (used for project name + subdomains)
+      local PROJ_NAME="stellar-preview-${1}"
+
+      echo "=== Creating Railway project: $PROJ_NAME ==="
+      # Delete existing project with same name (idempotent redeploy)
+      EXISTING_PROJ=$(find_project_by_name "$PROJ_NAME")
+      if [ -n "$EXISTING_PROJ" ]; then
+        echo "Deleting existing project: $EXISTING_PROJ"
+        delete_project "$EXISTING_PROJ"
+        sleep 3
       fi
 
-      echo "=== Ensuring all services exist ==="
-      list_services
-      API_SVC_ID=$(ensure_service "api")
-      WEB_SVC_ID=$(ensure_service "web")
-      DAEMON_SVC_ID=$(ensure_service "mock-daemon")
-      PG_SVC_ID=$(ensure_database_service "Postgres" "postgres:16")
-      REDIS_SVC_ID=$(ensure_database_service "Redis" "redis:7")
-      echo "API=$API_SVC_ID  WEB=$WEB_SVC_ID  DAEMON=$DAEMON_SVC_ID  PG=$PG_SVC_ID  REDIS=$REDIS_SVC_ID"
+      PROJ_ENV=$(create_project "$PROJ_NAME")
+      PROJ_ID=$(echo "$PROJ_ENV" | cut -d: -f1)
+      ENV_ID=$(echo "$PROJ_ENV" | cut -d: -f2)
 
-      if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ] || [ -z "$PG_SVC_ID" ] || [ -z "$REDIS_SVC_ID" ]; then
-        echo "ERROR: Failed to ensure all services exist" >&2
-        list_services
+      if [ -z "$PROJ_ID" ] || [ "$PROJ_ID" = "null" ]; then
+        echo "ERROR: Failed to create project" >&2
+        return 1
+      fi
+      echo "Project=$PROJ_ID  Environment=$ENV_ID"
+
+      # Save project ID for cleanup job
+      echo "$PROJ_ID" > /tmp/railway_project_id
+
+      echo "=== Creating database services ==="
+      PG_SVC_ID=$(create_db_service "$PROJ_ID" "Postgres" "postgres:16")
+      REDIS_SVC_ID=$(create_db_service "$PROJ_ID" "Redis" "redis:7-alpine")
+      echo "Postgres=$PG_SVC_ID  Redis=$REDIS_SVC_ID"
+
+      echo "=== Attaching volumes ==="
+      create_volume "$PROJ_ID" "$PG_SVC_ID" "/var/lib/postgresql/data"
+      create_volume "$PROJ_ID" "$REDIS_SVC_ID" "/data"
+
+      echo "=== Creating app services ==="
+      API_SVC_ID=$(create_service "$PROJ_ID" "api")
+      WEB_SVC_ID=$(create_service "$PROJ_ID" "web")
+      DAEMON_SVC_ID=$(create_service "$PROJ_ID" "mock-daemon")
+      echo "API=$API_SVC_ID  Web=$WEB_SVC_ID  Daemon=$DAEMON_SVC_ID"
+
+      if [ -z "$API_SVC_ID" ] || [ -z "$WEB_SVC_ID" ] || [ -z "$DAEMON_SVC_ID" ]; then
+        echo "ERROR: Failed to create all services" >&2
+        delete_project "$PROJ_ID"
         return 1
       fi
 
-      echo "=== Configuring Postgres + Redis ==="
-      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_PASSWORD" "stellar"
-      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_USER" "stellar"
-      set_service_var "$PG_SVC_ID" "$ENV_ID" "POSTGRES_DB" "stellar"
+      echo "=== Configuring service instances ==="
+      # Build from repo root so pnpm workspace deps resolve, then start per-app
+      configure_service "$API_SVC_ID" "$ENV_ID" "{ buildCommand: \\\"pnpm --filter @workspace/api exec prisma generate && pnpm --filter @workspace/api build\\\", startCommand: \\\"pnpm --filter @workspace/api start\\\" }"
+      configure_service "$WEB_SVC_ID" "$ENV_ID" "{ buildCommand: \\\"pnpm --filter web build\\\", startCommand: \\\"pnpm --filter web start\\\" }"
+      configure_service "$DAEMON_SVC_ID" "$ENV_ID" "{ buildCommand: \\\"pnpm --filter @workspace/mock-daemon build\\\", startCommand: \\\"pnpm --filter @workspace/mock-daemon start\\\" }"
 
-      PANEL_URL="https://${2}-panel.stellarstack.dev"
-      API_URL="https://${2}-api.stellarstack.dev"
-      DAEMON_URL="https://${2}-daemon.stellarstack.dev"
+      echo "=== Setting Postgres variables ==="
+      set_service_vars "$PROJ_ID" "$ENV_ID" "$PG_SVC_ID" "{ \\\"POSTGRES_USER\\\": \\\"stellar\\\", \\\"POSTGRES_PASSWORD\\\": \\\"stellar\\\", \\\"POSTGRES_DB\\\": \\\"stellar\\\" }"
 
-      # Use Railway reference variables — resolved at deploy time to the
-      # per-environment Postgres/Redis instances automatically
+      PANEL_URL="https://${1}-panel.stellarstack.dev"
+      API_URL="https://${1}-api.stellarstack.dev"
+      DAEMON_URL="https://${1}-daemon.stellarstack.dev"
+
       echo "=== Setting API environment variables ==="
-      set_service_var "$API_SVC_ID" "$ENV_ID" "DATABASE_URL" "\${{Postgres.DATABASE_URL}}"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "REDIS_URL" "\${{Redis.REDIS_URL}}"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "FRONTEND_URL" "$PANEL_URL"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "API_URL" "$API_URL"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "BETTER_AUTH_SECRET" "$BETTER_AUTH_SECRET"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "NODE_ENV" "production"
-      set_service_var "$API_SVC_ID" "$ENV_ID" "PORT" "3001"
+      set_service_vars "$PROJ_ID" "$ENV_ID" "$API_SVC_ID" "{ \\\"DATABASE_URL\\\": \\\"\${{Postgres.DATABASE_URL}}\\\", \\\"REDIS_URL\\\": \\\"\${{Redis.REDIS_URL}}\\\", \\\"FRONTEND_URL\\\": \\\"${PANEL_URL}\\\", \\\"API_URL\\\": \\\"${API_URL}\\\", \\\"BETTER_AUTH_SECRET\\\": \\\"${BETTER_AUTH_SECRET}\\\", \\\"NODE_ENV\\\": \\\"production\\\", \\\"PORT\\\": \\\"3001\\\" }"
 
       echo "=== Setting Web environment variables ==="
-      set_service_var "$WEB_SVC_ID" "$ENV_ID" "NEXT_PUBLIC_API_URL" "$API_URL"
-      set_service_var "$WEB_SVC_ID" "$ENV_ID" "NEXT_PUBLIC_WS_URL" "wss://${2}-api.stellarstack.dev"
-      set_service_var "$WEB_SVC_ID" "$ENV_ID" "NEXT_PUBLIC_DAEMON_URL" "$DAEMON_URL"
+      set_service_vars "$PROJ_ID" "$ENV_ID" "$WEB_SVC_ID" "{ \\\"NEXT_PUBLIC_API_URL\\\": \\\"${API_URL}\\\", \\\"NEXT_PUBLIC_WS_URL\\\": \\\"wss://${1}-api.stellarstack.dev\\\", \\\"NEXT_PUBLIC_DAEMON_URL\\\": \\\"${DAEMON_URL}\\\" }"
 
       echo "=== Setting Mock Daemon environment variables ==="
-      set_service_var "$DAEMON_SVC_ID" "$ENV_ID" "PORT" "8080"
+      set_service_vars "$PROJ_ID" "$ENV_ID" "$DAEMON_SVC_ID" "{ \\\"PORT\\\": \\\"8080\\\" }"
 
-      echo "=== Deploying services ==="
-      railway up --project "$RAILWAY_PROJECT_ID" --service api --environment "$1" --detach
-      railway up --project "$RAILWAY_PROJECT_ID" --service web --environment "$1" --detach
-      railway up --project "$RAILWAY_PROJECT_ID" --service mock-daemon --environment "$1" --detach
+      echo "=== Deploying app services ==="
+      railway up --project "$PROJ_ID" --service api --environment production --detach
+      railway up --project "$PROJ_ID" --service web --environment production --detach
+      railway up --project "$PROJ_ID" --service mock-daemon --environment production --detach
 
-      echo "=== Waiting for service domains to register ==="
-      sleep 10
+      echo "=== Waiting for deployments to register ==="
+      sleep 15
 
-      echo "=== Setting up custom domains + DNS ==="
-      API_RAILWAY_DOMAIN=$(ensure_service_domain "$API_SVC_ID" "$ENV_ID")
-      WEB_RAILWAY_DOMAIN=$(ensure_service_domain "$WEB_SVC_ID" "$ENV_ID")
-      DAEMON_RAILWAY_DOMAIN=$(ensure_service_domain "$DAEMON_SVC_ID" "$ENV_ID")
-      echo "Railway domains: API=$API_RAILWAY_DOMAIN  WEB=$WEB_RAILWAY_DOMAIN  DAEMON=$DAEMON_RAILWAY_DOMAIN"
+      echo "=== Setting up domains ==="
+      API_RAILWAY_DOMAIN=$(create_service_domain "$API_SVC_ID" "$ENV_ID")
+      WEB_RAILWAY_DOMAIN=$(create_service_domain "$WEB_SVC_ID" "$ENV_ID")
+      DAEMON_RAILWAY_DOMAIN=$(create_service_domain "$DAEMON_SVC_ID" "$ENV_ID")
+      echo "Railway domains: API=$API_RAILWAY_DOMAIN  Web=$WEB_RAILWAY_DOMAIN  Daemon=$DAEMON_RAILWAY_DOMAIN"
 
-      create_cf_record "${2}-api.stellarstack.dev" "$API_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
-      create_cf_record "${2}-panel.stellarstack.dev" "$WEB_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
-      create_cf_record "${2}-daemon.stellarstack.dev" "$DAEMON_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
+      # Cloudflare CNAME records
+      create_cf_record "${1}-api.stellarstack.dev" "$API_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
+      create_cf_record "${1}-panel.stellarstack.dev" "$WEB_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
+      create_cf_record "${1}-daemon.stellarstack.dev" "$DAEMON_RAILWAY_DOMAIN" "$CLOUDFLARE_ZONE_ID_DEV"
 
-      add_custom_domain "$API_SVC_ID" "$ENV_ID" "${2}-api.stellarstack.dev"
-      add_custom_domain "$WEB_SVC_ID" "$ENV_ID" "${2}-panel.stellarstack.dev"
-      add_custom_domain "$DAEMON_SVC_ID" "$ENV_ID" "${2}-daemon.stellarstack.dev"
+      # Railway custom domains
+      add_custom_domain "$PROJ_ID" "$API_SVC_ID" "$ENV_ID" "${1}-api.stellarstack.dev"
+      add_custom_domain "$PROJ_ID" "$WEB_SVC_ID" "$ENV_ID" "${1}-panel.stellarstack.dev"
+      add_custom_domain "$PROJ_ID" "$DAEMON_SVC_ID" "$ENV_ID" "${1}-daemon.stellarstack.dev"
 
       echo "========================================="
       echo "  Panel  → $PANEL_URL"
       echo "  API    → $API_URL"
       echo "  Daemon → $DAEMON_URL"
+      echo "  Railway Project → $PROJ_ID"
       echo "========================================="
     }
 
   # ── Full-stack cleanup orchestrator ──
   - |
     cleanup_full_stack() {
-      # $1 = env name, $2 = slug
+      # $1 = slug
+      local PROJ_NAME="stellar-preview-${1}"
+
       echo "=== Cleaning up DNS records ==="
-      delete_cf_record "${2}-api.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
-      delete_cf_record "${2}-panel.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
-      delete_cf_record "${2}-daemon.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
+      delete_cf_record "${1}-api.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
+      delete_cf_record "${1}-panel.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
+      delete_cf_record "${1}-daemon.stellarstack.dev" "$CLOUDFLARE_ZONE_ID_DEV"
 
-      echo "=== Deleting Railway environment ==="
-      delete_env "$1"
+      echo "=== Deleting Railway project ==="
+      PROJ_ID=$(find_project_by_name "$PROJ_NAME")
+      if [ -n "$PROJ_ID" ]; then
+        delete_project "$PROJ_ID"
+      else
+        echo "Project '$PROJ_NAME' not found — already deleted?"
+      fi
 
-      echo "Cleanup complete for $1"
+      echo "Cleanup complete for $PROJ_NAME"
     }
 
 # ─── Deploy Dev (Railway — manual) ────────────────────────────────
@@ -334,9 +342,11 @@ deploy-dev:
   stage: deploy
   image: node:${NODE_VERSION}
   needs: []
+  variables:
+    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
     - *railway-deploy-script
-    - deploy_full_stack "dev-${SLUG}" "${SLUG}"
+    - deploy_full_stack "${SLUG}"
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     url: https://${CI_COMMIT_REF_SLUG}-panel.stellarstack.dev
@@ -357,9 +367,10 @@ cleanup-dev:
   image: node:${NODE_VERSION}
   variables:
     GIT_STRATEGY: none
+    RAILWAY_API_TOKEN: $RAILWAY_TOKEN
   script:
     - *railway-deploy-script
-    - cleanup_full_stack "dev-${SLUG}" "${SLUG}"
+    - cleanup_full_stack "${SLUG}"
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     action: stop
