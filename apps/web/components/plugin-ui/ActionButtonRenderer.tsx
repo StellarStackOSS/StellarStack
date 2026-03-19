@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import type { ActionButtonSchema } from "@stellarstack/plugin-sdk";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 
@@ -10,10 +11,6 @@ interface ActionButtonRendererProps {
   pluginConfig?: Record<string, unknown>;
 }
 
-export function ActionButtonRenderer({ schema }: ActionButtonRendererProps) {
-  return (
-    <TextureButton disabled>
-      {schema.label}
-    </TextureButton>
-  );
-}
+export const ActionButtonRenderer = ({ schema }: ActionButtonRendererProps): JSX.Element => {
+  return <TextureButton disabled>{schema.label}</TextureButton>;
+};

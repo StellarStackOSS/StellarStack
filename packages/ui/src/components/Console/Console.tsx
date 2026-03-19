@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BsSend } from "react-icons/bs";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import type { ConsoleLine, ConsoleProps } from "./types";
 import TimestampColumnTooltip from "./TimestampTooltip";
 import { ScrollContext } from "./ScrollContext";
@@ -172,15 +172,15 @@ const Console = ({
   const displayLines = lines.slice(-maxLines);
 
   return (
-    <div className="bg-[#090909] border border-white/5 pt-2 p-1 rounded-lg flex flex-col h-full">
+    <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
       {/* Console Title Header */}
-      <div className="text-xs pl-2 pb-2 opacity-50 flex flex-row justify-between shrink-0">
+      <div className="flex shrink-0 flex-row justify-between pb-2 pl-2 text-xs opacity-50">
         <span>CONSOLE</span>
       </div>
 
       <div
         className={cn(
-          "relative flex h-full flex-col rounded-lg border transition-colors flex-1",
+          "relative flex h-full flex-1 flex-col rounded-lg border transition-colors",
           "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
           isOffline && "opacity-60",
           className
@@ -203,7 +203,10 @@ const Console = ({
                     });
                   }
                 }}
-                className={cn("text-xs cursor-pointer transition-colors", "text-zinc-500 hover:text-zinc-300")}
+                className={cn(
+                  "cursor-pointer text-xs transition-colors",
+                  "text-zinc-500 hover:text-zinc-300"
+                )}
               >
                 Scroll to bottom
               </button>
@@ -212,99 +215,99 @@ const Console = ({
           </div>
         </div>
 
-      {/* Console output */}
-      <ScrollContext.Provider value={scrollSignal}>
-        <div className="relative flex-1 overflow-hidden">
-          {/* Offline overlay - shows message instead of spinner when server is off */}
-          {isOffline && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
-              <div className="flex flex-col items-center gap-2">
-                <span className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
-                  Server is offline
-                </span>
+        {/* Console output */}
+        <ScrollContext.Provider value={scrollSignal}>
+          <div className="relative flex-1 overflow-hidden">
+            {/* Offline overlay - shows message instead of spinner when server is off */}
+            {isOffline && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
+                <div className="flex flex-col items-center gap-2">
+                  <span className={cn("text-xs tracking-wider uppercase", "text-zinc-500")}>
+                    Server is offline
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
-          {/* Top gradient when scrolled to bottom but can scroll up */}
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 right-0 left-0 z-10 h-8 transition-opacity duration-300",
-              "bg-gradient-to-b from-[#0f0f0f] to-transparent",
-              autoScroll && canScrollUp ? "opacity-100" : "opacity-0"
             )}
-          />
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            onMouseLeave={handleTimestampColumnLeave}
-            className={cn(
-              "scrollbar-thin scrollbar-track-transparent h-full overflow-x-hidden overflow-y-auto p-2 font-mono text-xs",
-              "scrollbar-thumb-zinc-700"
-            )}
-          >
-            <table className="w-full border-collapse">
-              <tbody>
-                {displayLines.map((line) => (
-                  <tr key={line.id} className={cn("group", "hover:bg-zinc-900/50")}>
-                    <td
-                      className={cn(
-                        "w-[110px] cursor-default py-0.5 pr-4 align-top whitespace-nowrap transition-colors",
-                        "text-zinc-600 hover:text-zinc-400"
-                      )}
-                      onMouseEnter={(e) => handleTimestampHover(line.timestamp, e)}
-                      onMouseMove={(e) => handleTimestampHover(line.timestamp, e)}
-                      onMouseLeave={handleTimestampColumnLeave}
-                    >
-                      {formatTimestamp(line.timestamp)}
-                    </td>
-                    <td
-                      className={cn(
-                        "py-0.5 break-words select-text",
-                        getLogLevelStyles(line.level)
-                      )}
-                    >
-                      {parseLinks(line.message)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Timestamp column tooltip */}
-            {hoveredTimestamp && tooltipPosition && (
-              <TimestampColumnTooltip timestamp={hoveredTimestamp} position={tooltipPosition} />
-            )}
-          </div>
-        </div>
-      </ScrollContext.Provider>
-
-      {/* Input */}
-      <form onSubmit={handleSubmit} className={cn("h-fit border-t border-zinc-200/10 p-2")}>
-        <div className="flex items-center gap-1">
-          <div className="w-full">
-            <Input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isOffline ? "Connection lost..." : "Enter command..."}
-              disabled={isOffline}
-              className={cn("mt-0", isOffline && "cursor-not-allowed")}
+            {/* Top gradient when scrolled to bottom but can scroll up */}
+            <div
+              className={cn(
+                "pointer-events-none absolute top-0 right-0 left-0 z-10 h-8 transition-opacity duration-300",
+                "bg-gradient-to-b from-[#0f0f0f] to-transparent",
+                autoScroll && canScrollUp ? "opacity-100" : "opacity-0"
+              )}
             />
-          </div>
-          {showSendButton && (
-            <TextureButton
-              type="submit"
-              disabled={isOffline || !inputValue.trim()}
-              variant="primary"
-              aria-label="Send command"
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              onMouseLeave={handleTimestampColumnLeave}
+              className={cn(
+                "scrollbar-thin scrollbar-track-transparent h-full overflow-x-hidden overflow-y-auto p-2 font-mono text-xs",
+                "scrollbar-thumb-zinc-700"
+              )}
             >
-              <BsSend className="h-4 w-4" />
-            </TextureButton>
-          )}
-        </div>
-      </form>
+              <table className="w-full border-collapse">
+                <tbody>
+                  {displayLines.map((line) => (
+                    <tr key={line.id} className={cn("group", "hover:bg-zinc-900/50")}>
+                      <td
+                        className={cn(
+                          "w-[110px] cursor-default py-0.5 pr-4 align-top whitespace-nowrap transition-colors",
+                          "text-zinc-600 hover:text-zinc-400"
+                        )}
+                        onMouseEnter={(e) => handleTimestampHover(line.timestamp, e)}
+                        onMouseMove={(e) => handleTimestampHover(line.timestamp, e)}
+                        onMouseLeave={handleTimestampColumnLeave}
+                      >
+                        {formatTimestamp(line.timestamp)}
+                      </td>
+                      <td
+                        className={cn(
+                          "py-0.5 break-words select-text",
+                          getLogLevelStyles(line.level)
+                        )}
+                      >
+                        {parseLinks(line.message)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Timestamp column tooltip */}
+              {hoveredTimestamp && tooltipPosition && (
+                <TimestampColumnTooltip timestamp={hoveredTimestamp} position={tooltipPosition} />
+              )}
+            </div>
+          </div>
+        </ScrollContext.Provider>
+
+        {/* Input */}
+        <form onSubmit={handleSubmit} className={cn("h-fit border-t border-zinc-200/10 p-2")}>
+          <div className="flex items-center gap-1">
+            <div className="w-full">
+              <Input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isOffline ? "Connection lost..." : "Enter command..."}
+                disabled={isOffline}
+                className={cn("mt-0", isOffline && "cursor-not-allowed")}
+              />
+            </div>
+            {showSendButton && (
+              <TextureButton
+                type="submit"
+                disabled={isOffline || !inputValue.trim()}
+                variant="primary"
+                aria-label="Send command"
+              >
+                <BsSend className="h-4 w-4" />
+              </TextureButton>
+            )}
+          </div>
+        </form>
       </div>
     </div>
   );

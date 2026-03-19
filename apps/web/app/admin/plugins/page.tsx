@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Switch from "@stellarUI/components/Switch/Switch";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
@@ -34,10 +33,10 @@ import {
   BsDownload,
   BsGit,
 } from "react-icons/bs";
-import { usePlugins, usePluginMutations } from "@/hooks/queries/use-plugins";
-import type { PluginInfo } from "@/lib/api";
+import { usePlugins, usePluginMutations } from "@/hooks/queries/UsePlugins";
+import type { PluginInfo } from "@/lib/Api";
 import { toast } from "sonner";
-import { pluginsApi } from "@/lib/api";
+import { pluginsApi } from "@/lib/Api";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "game-management": "Game Management",
@@ -146,7 +145,7 @@ const PluginsPage = () => {
       // Validate URL format (basic check)
       if (!installRepoUrl.includes("github.com") && !installRepoUrl.includes("gitlab.com")) {
         setInstallError(
-          "Only GitHub and GitLab repositories are supported. Please use a URL like https://github.com/username/plugin-name"
+          "Only GitHub and GitLab repositories are supported. Please use a URL like https://gitlab.com/username/plugin-name"
         );
         setIsInstalling(false);
         return;
@@ -250,7 +249,6 @@ const PluginsPage = () => {
         <FadeIn delay={0}>
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
               <div>
                 <h1 className="text-lg font-semibold text-zinc-100">Extensions</h1>
                 <p className="text-xs text-zinc-500">
@@ -453,9 +451,9 @@ const PluginsPage = () => {
                   <div>
                     <h3 className="mb-2 text-sm font-medium text-zinc-300">Community Extensions</h3>
                     <p className="text-xs leading-relaxed text-zinc-500">
-                      Community developers can build extensions using the StellarStack Extension SDK.
-                      Click "Install from Git" to install community-developed extensions from GitHub or
-                      GitLab repositories.
+                      Community developers can build extensions using the StellarStack Extension
+                      SDK. Click "Install from Git" to install community-developed extensions from
+                      GitHub or GitLab repositories.
                     </p>
                   </div>
                 </div>
@@ -518,7 +516,7 @@ const PluginsPage = () => {
               <Label className="text-sm text-zinc-200">Repository URL</Label>
               <Input
                 type="url"
-                placeholder="https://github.com/username/extension-name"
+                placeholder="https://gitlab.com/username/extension-name"
                 value={installRepoUrl}
                 onChange={(e) => {
                   setInstallRepoUrl(e.target.value);
@@ -528,20 +526,20 @@ const PluginsPage = () => {
                 disabled={isInstalling}
               />
               <p className="text-xs text-zinc-500">
-                Enter the full URL to the Git repository containing the extension's stellarstack.json
-                manifest.
+                Enter the full URL to the Git repository containing the extension's
+                stellarstack.json manifest.
               </p>
             </div>
 
             {/* Security Warning */}
             <div className="rounded-lg border border-yellow-900/50 bg-yellow-950/20 p-3">
               <div className="flex gap-2">
-                <BsExclamationTriangle className="h-4 w-4 mt-0.5 shrink-0 text-yellow-600" />
+                <BsExclamationTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
                 <div className="text-xs text-yellow-700">
-                  <p className="font-medium mb-1">Only install extensions you trust</p>
+                  <p className="mb-1 font-medium">Only install extensions you trust</p>
                   <p>
-                    Community extensions run in isolated processes but still have access to your server
-                    data. Review the source code before installing.
+                    Community extensions run in isolated processes but still have access to your
+                    server data. Review the source code before installing.
                   </p>
                 </div>
               </div>

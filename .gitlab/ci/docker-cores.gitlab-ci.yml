@@ -1,0 +1,95 @@
+# Docker Core Image Build Pipeline
+# Equivalent to the old .github/workflows/docker-cores-build.yml
+#
+# Discovers core Dockerfiles under docker/cores/ (excluding api and web)
+# and builds each as a separate image pushed to GitLab Container Registry.
+
+.docker-cores-rules:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+# ─── Discover core Dockerfiles ───────────────────────────────────────
+discover-cores:
+  extends: .docker-cores-rules
+  stage: build
+  image: alpine:latest
+  script:
+    - apk add --no-cache bash findutils jq
+    - |
+      DOCKERFILES=$(find docker/cores -name "Dockerfile" -type f | grep -v "docker/cores/api" | grep -v "docker/cores/web" | sort)
+
+      if [ -z "$DOCKERFILES" ]; then
+        echo "No core Dockerfiles found"
+        echo "HAS_CORES=false" > cores.env
+        exit 0
+      fi
+
+      echo "HAS_CORES=true" > cores.env
+      echo "Found Dockerfiles:"
+      echo "$DOCKERFILES"
+
+      # Generate a child pipeline YAML dynamically
+      cat > child-pipeline.yml << 'HEADER'
+      stages:
+        - build
+      HEADER
+
+      for DOCKERFILE in $DOCKERFILES; do
+        RELATIVE_PATH=$(echo "$DOCKERFILE" | sed 's|docker/cores/||' | sed 's|/Dockerfile$||')
+        RUNTIME=$(echo "$RELATIVE_PATH" | cut -d'/' -f1)
+        VERSION=$(echo "$RELATIVE_PATH" | cut -d'/' -f2)
+        CONTEXT="docker/cores/$RUNTIME"
+        IMAGE_NAME="${RUNTIME}-${VERSION}"
+
+        cat >> child-pipeline.yml << EOF
+
+      build-core-${IMAGE_NAME}:
+        stage: build
+        image: docker:latest
+        services:
+          - docker:dind
+        variables:
+          DOCKER_TLS_CERTDIR: "/certs"
+        script:
+          - echo "\$CI_REGISTRY_PASSWORD" | docker login -u "\$CI_REGISTRY_USER" --password-stdin \$CI_REGISTRY
+          - |
+            if [ -n "\$CI_COMMIT_TAG" ]; then
+              CORE_VERSION="\${CI_COMMIT_TAG#v}"
+            else
+              CORE_VERSION="\$VERSION"
+            fi
+          - IMAGE="\${CI_REGISTRY}/\${CI_PROJECT_PATH}/stellarstack-core-${IMAGE_NAME}"
+          - docker build
+              --tag "\${IMAGE}:\${CORE_VERSION}"
+              --tag "\${IMAGE}:latest"
+              --label "org.opencontainers.image.title=stellarstack-core-${IMAGE_NAME}"
+              --label "org.opencontainers.image.version=\${CORE_VERSION}"
+              --label "org.opencontainers.image.vendor=StellarStack"
+              --label "org.opencontainers.image.description=StellarStack ${RUNTIME} ${VERSION} runtime core"
+              -f "${DOCKERFILE}" "${CONTEXT}"
+          - docker push "\${IMAGE}:\${CORE_VERSION}"
+          - docker push "\${IMAGE}:latest"
+          - echo "${IMAGE_NAME} built — \${IMAGE}:\${CORE_VERSION}"
+      EOF
+      done
+  artifacts:
+    paths:
+      - child-pipeline.yml
+    reports:
+      dotenv: cores.env
+    expire_in: 1 hour
+
+# ─── Trigger child pipeline for core builds ──────────────────────────
+build-cores:
+  extends: .docker-cores-rules
+  stage: release
+  needs:
+    - job: discover-cores
+      artifacts: true
+  trigger:
+    include:
+      - artifact: child-pipeline.yml
+        job: discover-cores
+    strategy: depend

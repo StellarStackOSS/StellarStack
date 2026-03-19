@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Area,
-  AreaChart,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  ComposedChart,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, ResponsiveContainer, ComposedChart, YAxis } from "recharts";
 import { useId } from "react";
 import type { SparklineProps, DualSparklineProps } from "./types";
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { type JSX, useEffect, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
+
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import Input from "@stellarUI/components/Input/Input";
@@ -21,10 +21,11 @@ import {
   BsPerson,
   BsLink45Deg,
 } from "react-icons/bs";
-import { authClient, useSession } from "@/lib/auth-client";
+import { authClient, useSession } from "@/lib/AuthClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import GetErrorMessage from "@/lib/ErrorUtils";
 
 interface Passkey {
   id: string;
@@ -32,19 +33,6 @@ interface Passkey {
   createdAt: Date;
   credentialId: string;
 }
-
-/**
- * Safely extract error message from unknown error types
- */
-const GetErrorMessage = (error: Error | unknown, defaultMessage: string = "An error occurred"): string => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as Record<string, unknown>).message);
-  }
-  return defaultMessage;
-};
 
 const AccountPage = (): JSX.Element | null => {
   const queryClient = useQueryClient();
@@ -80,7 +68,9 @@ const AccountPage = (): JSX.Element | null => {
       };
       setProfile(userData);
       setOriginalProfile(userData);
-      setTwoFactorEnabled((session.user as any).twoFactorEnabled || false);
+      setTwoFactorEnabled(
+        (session.user as unknown as { twoFactorEnabled?: boolean }).twoFactorEnabled || false
+      );
     }
   }, [session]);
 
@@ -233,9 +223,7 @@ const AccountPage = (): JSX.Element | null => {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-            </div>
+            <div className="mb-6 flex items-center justify-end"></div>
           </FadeIn>
 
           {/* Account Settings Content */}

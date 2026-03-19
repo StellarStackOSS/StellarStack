@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@stellarUI/lib/utils";
-import type { FadeInProps, FadeDirection, StaggerContainerProps } from "../animations-types/types";
+import { cn } from "@stellarUI/lib/Utils";
+import type { FadeInProps, FadeDirection, StaggerContainerProps } from "../AnimationsTypes/Types";
 
 export type { FadeInProps, FadeDirection, StaggerContainerProps };
 
@@ -32,7 +32,9 @@ const FadeIn = ({
     <div
       className={cn(
         "transition-all",
-        isVisible ? "opacity-100 translate-x-0 translate-y-0" : `opacity-0 ${directionStyles[direction]}`,
+        isVisible
+          ? "translate-x-0 translate-y-0 opacity-100"
+          : `opacity-0 ${directionStyles[direction]}`,
         className
       )}
       style={{ transitionDuration: `${duration}ms` }}
@@ -52,11 +54,7 @@ const StaggerContainer = ({
   return (
     <div className={className}>
       {children.map((child, index) => (
-        <FadeIn
-          key={index}
-          delay={initialDelay + index * staggerDelay}
-          direction={direction}
-        >
+        <FadeIn key={index} delay={initialDelay + index * staggerDelay} direction={direction}>
           {child}
         </FadeIn>
       ))}

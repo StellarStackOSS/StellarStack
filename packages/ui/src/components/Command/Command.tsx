@@ -1,21 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Command as CommandPrimitive } from "cmdk"
-import { Search } from "lucide-react"
+import * as React from "react";
+import { Command as CommandPrimitive } from "cmdk";
+import { Search } from "lucide-react";
 
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils";
 import Dialog, {
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@stellarUI/components/Dialog/Dialog"
+} from "@stellarUI/components/Dialog/Dialog";
 
-const Command = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive>) => {
+const Command = ({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) => {
   return (
     <CommandPrimitive
       data-slot="command"
@@ -36,10 +33,10 @@ const CommandDialog = ({
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
-  title?: string
-  description?: string
-  className?: string
-  showCloseButton?: boolean
+  title?: string;
+  description?: string;
+  className?: string;
+  showCloseButton?: boolean;
 }) => {
   return (
     <Dialog {...props}>
@@ -64,10 +61,7 @@ const CommandInput = ({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) => {
   return (
-    <div
-      data-slot="command-input-wrapper"
-      className="flex h-9 items-center gap-2 border-b px-3"
-    >
+    <div data-slot="command-input-wrapper" className="flex h-9 items-center gap-2 border-b px-3">
       <Search className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         data-slot="command-input"
@@ -88,18 +82,13 @@ const CommandList = ({
   return (
     <CommandPrimitive.List
       data-slot="command-list"
-      className={cn(
-        "max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto",
-        className
-      )}
+      className={cn("max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto", className)}
       {...props}
     />
   );
 };
 
-const CommandEmpty = ({
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty>) => {
+const CommandEmpty = ({ ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>) => {
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
@@ -154,17 +143,11 @@ const CommandItem = ({
   );
 };
 
-const CommandShortcut = ({
-  className,
-  ...props
-}: React.ComponentProps<"span">) => {
+const CommandShortcut = ({ className, ...props }: React.ComponentProps<"span">) => {
   return (
     <span
       data-slot="command-shortcut"
-      className={cn(
-        "text-muted-foreground ml-auto text-xs tracking-widest",
-        className
-      )}
+      className={cn("text-muted-foreground ml-auto text-xs tracking-widest", className)}
       {...props}
     />
   );

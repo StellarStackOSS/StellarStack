@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Switch = ({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) => {
   return (
@@ -24,4 +24,4 @@ const Switch = ({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
   );
 };
 
-export default Switch
+export default Switch;

@@ -3,8 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Layout, Layouts } from "react-grid-layout";
 import { Responsive, WidthProvider } from "react-grid-layout";
-import { cn } from "@stellarUI/lib/utils";
-import { BsArrowsFullscreen, BsGripVertical } from "react-icons/bs";
+import { cn } from "@stellarUI/lib/Utils";
 import type {
   DragDropGridContextValue,
   DragDropGridProps,
@@ -17,7 +16,6 @@ import type {
 // Import react-grid-layout styles
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { TextureButton } from "@stellarUI/components/TextureButton";
 
 export type {
   GridSize,
@@ -133,14 +131,12 @@ const DragDropGrid = ({
   items: externalItems,
   onLayoutChange,
   onDropItem,
-  onRemoveItem,
   rowHeight = 60,
   gap = 16,
   isEditing = false,
   savedLayouts,
   removeConfirmLabels,
   isDroppable = false,
-  allItems: _allItems, // Destructure to prevent passing to DOM
   ...props
 }: DragDropGridProps) => {
   const [items, setItems] = useState<GridItemConfig[]>(externalItems);
@@ -199,27 +195,8 @@ const DragDropGrid = ({
     [items]
   );
 
-  const getItemAllowedSizes = useCallback(
-    (itemId: string): GridSize[] => {
-      const item = items.find((i) => i.i === itemId);
-      if (!item) return SIZE_ORDER;
-
-      // If allowedSizes is specified, use those
-      if (item.allowedSizes && item.allowedSizes.length > 0) {
-        return item.allowedSizes;
-      }
-
-      // Otherwise, use min/max range
-      const minIndex = item.minSize ? SIZE_ORDER.indexOf(item.minSize) : 0;
-      const maxIndex = item.maxSize ? SIZE_ORDER.indexOf(item.maxSize) : SIZE_ORDER.length - 1;
-
-      return SIZE_ORDER.slice(minIndex, maxIndex + 1);
-    },
-    [items]
-  );
-
   // Track which item is being resized
-  const [resizingItemId, setResizingItemId] = useState<string | null>(null);
+  const [, setResizingItemId] = useState<string | null>(null);
 
   const cycleItemSize = useCallback((itemId: string) => {
     // Get current items from state
@@ -370,8 +347,7 @@ const DragDropGrid = ({
       oldItem: Layout,
       newItem: Layout,
       placeholder: Layout,
-      event: MouseEvent,
-      element: HTMLElement
+      event: MouseEvent
     ) => {
       const allowedHeights = getAllowedHeights(newItem.i);
       if (allowedHeights.length === 0) return;
@@ -385,7 +361,6 @@ const DragDropGrid = ({
         };
       }
 
-      const currentItemIndex = allowedHeights.indexOf(oldItem.h);
       const deltaY = event.clientY - resizeStartRef.current.startY;
 
       // Calculate step threshold (pixels needed to move to next/prev size)
@@ -571,14 +546,7 @@ const DragDropGrid = ({
 };
 
 // Grid Item Component
-const GridItem = ({
-  itemId,
-  children,
-  className,
-  showRemoveHandle = true,
-  showDragHandle = true,
-  ...props
-}: GridItemProps) => {
+const GridItem = ({ itemId, children, className, ...props }: GridItemProps) => {
   const { isEditing } = useDragDropGrid();
 
   return (

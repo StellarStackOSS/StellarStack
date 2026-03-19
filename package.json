@@ -18,21 +18,32 @@
     "start:docs": "pnpm --filter docs start -p 8080",
     "start:home": "pnpm --filter home start -p 8080",
     "typecheck": "turbo typecheck",
+    "storybook": "pnpm --filter storybook dev",
     "build:desktop": "node apps/desktop/build.mjs",
-    "dev:desktop": "node apps/desktop/build.mjs --dev"
+    "dev:desktop": "node apps/desktop/build.mjs --dev",
+    "test": "vitest run --passWithNoTests",
+    "test:jsdom": "vitest run --project @stellarUI --passWithNoTests",
+    "test:dom": "vitest run --project web --passWithNoTests",
+    "test:node": "vitest run --project @workspace/api --passWithNoTests"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@vitest/coverage-v8": "^3.1.4",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "happy-dom": "^18.0.1",
     "husky": "^9.1.7",
     "jscpd": "^4.0.7",
+    "jsdom": "^26.1.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.5.5",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^3.1.4"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

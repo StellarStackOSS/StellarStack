@@ -1,30 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
+import * as React from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
 
-import { cn } from "@stellarUI/lib/utils"
+import { cn } from "@stellarUI/lib/Utils";
 
-interface SliderProps extends React.ComponentProps<typeof SliderPrimitive.Root> {
-}
+type SliderProps = React.ComponentProps<typeof SliderPrimitive.Root>;
 
-const Slider = ({
-  className,
-  defaultValue,
-  value,
-  min = 0,
-  max = 100,
-  ...props
-}: SliderProps) => {
+const Slider = ({ className, defaultValue, value, min = 0, max = 100, ...props }: SliderProps) => {
   const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
+    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
     [value, defaultValue, min, max]
-  )
+  );
 
   return (
     <SliderPrimitive.Root
@@ -60,7 +47,7 @@ const Slider = ({
           key={index}
           className={cn(
             "block size-4 shrink-0 border-2 transition-all hover:scale-110 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
-            "bg-zinc-200 border-zinc-400 hover:border-zinc-300"
+            "border-zinc-400 bg-zinc-200 hover:border-zinc-300"
           )}
         />
       ))}
@@ -68,4 +55,4 @@ const Slider = ({
   );
 };
 
-export default Slider
+export default Slider;

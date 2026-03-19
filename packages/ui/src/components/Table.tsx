@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 const Table = ({ className, ...props }: React.ComponentProps<"table">) => {
   return (
@@ -44,10 +44,7 @@ const TableRow = ({ className, ...props }: React.ComponentProps<"tr">) => {
   return (
     <tr
       data-slot="table-row"
-      className={cn(
-        "data-[state=selected]:bg-muted border-b transition-colors",
-        className
-      )}
+      className={cn("data-[state=selected]:bg-muted border-b transition-colors", className)}
       {...props}
     />
   );

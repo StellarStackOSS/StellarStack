@@ -1,8 +1,12 @@
 "use client";
 
 import NumberFlow from "@number-flow/react";
-import { cn } from "@stellarUI/lib/utils";
-import type { AnimatedNumberProps, CounterDigitProps, MechanicalCounterProps } from "../animations-types/types";
+import { cn } from "@stellarUI/lib/Utils";
+import type {
+  AnimatedNumberProps,
+  CounterDigitProps,
+  MechanicalCounterProps,
+} from "../AnimationsTypes/Types";
 
 export type { AnimatedNumberProps, CounterDigitProps, MechanicalCounterProps };
 
@@ -20,11 +24,11 @@ const AnimatedNumber = ({
       value={value}
       format={{
         minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
+        maximumFractionDigits: decimals,
       }}
       transformTiming={{
         duration: duration,
-        easing: "ease-out"
+        easing: "ease-out",
       }}
       prefix={prefix}
       suffix={suffix}
@@ -37,36 +41,21 @@ const AnimatedNumber = ({
 // Mechanical counter style number display
 const CounterDigit = ({ digit, className }: CounterDigitProps) => {
   return (
-    <span
-      className={cn(
-        "inline-block relative overflow-hidden",
-        className
-      )}
-    >
-      <span className="transition-transform duration-300 ease-out inline-block">
-        {digit}
-      </span>
+    <span className={cn("relative inline-block overflow-hidden", className)}>
+      <span className="inline-block transition-transform duration-300 ease-out">{digit}</span>
     </span>
   );
 };
 
-const MechanicalCounter = ({
-  value,
-  className,
-  digitClassName,
-}: MechanicalCounterProps) => {
+const MechanicalCounter = ({ value, className, digitClassName }: MechanicalCounterProps) => {
   const digits = Math.abs(value).toString().split("");
   const isNegative = value < 0;
 
   return (
-    <span className={cn("inline-flex tabular-nums font-mono", className)}>
+    <span className={cn("inline-flex font-mono tabular-nums", className)}>
       {isNegative && <span>-</span>}
       {digits.map((digit, index) => (
-        <CounterDigit
-          key={`${index}-${digit}`}
-          digit={digit}
-          className={digitClassName}
-        />
+        <CounterDigit key={`${index}-${digit}`} digit={digit} className={digitClassName} />
       ))}
     </span>
   );

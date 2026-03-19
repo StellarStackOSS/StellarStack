@@ -15,7 +15,6 @@ import ChartContainer, {
 } from "@stellarUI/components/Chart/Chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import {
@@ -30,9 +29,14 @@ import {
   BsMemory,
   BsDatabase,
 } from "react-icons/bs";
-import AnalyticsCard from "@/components/Analytics/AnalyticsCard";
-import { analyticsClient } from "@/lib/analytics-client";
-import type { AnalyticsTimeRange, AnalyticsDashboardData, NodeMetrics, BackupStorageMetrics } from "@/lib/types/analytics";
+import AnalyticsCard from "@stellarUI/components/AnalyticsCard/AnalyticsCard";
+import { analyticsClient } from "@/lib/AnalyticsClient";
+import type {
+  AnalyticsTimeRange,
+  AnalyticsDashboardData,
+  NodeMetrics,
+  BackupStorageMetrics,
+} from "@/lib/types/Analytics";
 
 /**
  * Time range selector options
@@ -80,11 +84,6 @@ const AnalyticsDashboardPage: React.FC = () => {
       <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
           <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
-            <FadeIn delay={0}>
-              <div className="mb-6 flex items-center justify-between">
-                <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-              </div>
-            </FadeIn>
             <FadeIn delay={0.05}>
               <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
                 <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] py-12 shadow-lg shadow-black/20">
@@ -108,8 +107,7 @@ const AnalyticsDashboardPage: React.FC = () => {
         <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <TextureButton
                   variant="minimal"
@@ -443,11 +441,6 @@ const AnalyticsLoadingSkeleton: React.FC = () => (
   <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
     <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
-        <FadeIn delay={0}>
-          <div className="mb-6 flex items-center justify-between">
-            <SidebarTrigger className="text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95" />
-          </div>
-        </FadeIn>
         <FadeIn delay={0.05}>
           <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
             <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">

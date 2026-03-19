@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSX } from "react";
 import type { DataTableSchema } from "@stellarstack/plugin-sdk";
 
 interface DataTableRendererProps {
@@ -9,11 +10,11 @@ interface DataTableRendererProps {
   pluginConfig?: Record<string, unknown>;
 }
 
-export function DataTableRenderer({ schema }: DataTableRendererProps) {
+export const DataTableRenderer = ({ schema }: DataTableRendererProps): JSX.Element => {
   return (
     <div className="rounded-md border border-white/10 bg-white/5 p-4">
       <h2 className="mb-2 text-lg font-semibold">{schema.title || "Table"}</h2>
       <p className="text-xs text-gray-500">Table rendering coming soon</p>
     </div>
   );
-}
+};

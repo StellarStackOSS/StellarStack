@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Dialog, { DialogContent, DialogHeader, DialogTitle } from "@stellarUI/components/Dialog/Dialog";
+import { type JSX, useEffect, useState, useRef } from "react";
+import Dialog, {
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@stellarUI/components/Dialog/Dialog";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
-import { cn } from "@stellarUI/lib/utils";
-import { getMediaType } from "@/lib/media-utils";
-import { getApiEndpoint } from "@/lib/public-env";
+import { cn } from "@stellarUI/lib/Utils";
+import { GetMediaType } from "@/lib/MediaUtils";
+import { GetApiEndpoint } from "@/lib/PublicEnv";
 import { MediaViewer } from "../../MediaViewer/MediaViewer";
 
 interface MediaPreviewModalProps {
@@ -24,7 +28,7 @@ interface MediaPreviewModalProps {
 /**
  * Modal for previewing media files from the file browser
  */
-export function MediaPreviewModal({
+export const MediaPreviewModal = ({
   isOpen,
   fileName,
   filePath,
@@ -35,7 +39,7 @@ export function MediaPreviewModal({
   fileSizeBytes,
   modified,
   fileType,
-}: MediaPreviewModalProps) {
+}: MediaPreviewModalProps): JSX.Element => {
   const [content, setContent] = useState<string>("");
   const [blobUrl, setBlobUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +70,7 @@ export function MediaPreviewModal({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Clean up previous blob URL
         if (blobUrlRef.current) {
           URL.revokeObjectURL(blobUrlRef.current);
@@ -74,7 +78,7 @@ export function MediaPreviewModal({
         }
         setBlobUrl("");
 
-        const mediaType = getMediaType(fileName);
+        const mediaType = GetMediaType(fileName);
 
         // For binary media (video/audio/images), use the binary download endpoint
         if (
@@ -84,13 +88,15 @@ export function MediaPreviewModal({
         ) {
           try {
             // Use the API's download endpoint with token authentication
-            const { servers } = await import("@/lib/api");
+            const { servers } = await import("@/lib/Api");
             const { token } = await servers.files.getDownloadToken(serverId, filePath);
-            
+
             if (cancelled) return;
-            
-            const downloadUrl = getApiEndpoint(`/api/servers/${serverId}/files/download?token=${token}`);
-            
+
+            const downloadUrl = GetApiEndpoint(
+              `/api/servers/${serverId}/files/download?token=${token}`
+            );
+
             const response = await fetch(downloadUrl, {
               credentials: "include", // Include cookies for auth
             });
@@ -138,14 +144,14 @@ export function MediaPreviewModal({
     };
   }, [isOpen, fileName, filePath, serverId]); // Removed fetchFile from dependencies
 
-  const mediaType = getMediaType(fileName);
+  const mediaType = GetMediaType(fileName);
   const isMedia = mediaType !== "unknown";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-6xl w-full">
+      <DialogContent className="w-full min-w-6xl">
         <DialogHeader>
-          <DialogTitle className="text-zinc-200 overflow-hidden text-clip max-w-md"></DialogTitle>
+          <DialogTitle className="max-w-md overflow-hidden text-clip text-zinc-200"></DialogTitle>
         </DialogHeader>
 
         <div
@@ -178,4 +184,4 @@ export function MediaPreviewModal({
       </DialogContent>
     </Dialog>
   );
-}
+};

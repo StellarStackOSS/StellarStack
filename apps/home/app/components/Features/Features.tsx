@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Smartphone, Shield, Zap } from 'lucide-react';
-import React from 'react';
+import { motion } from "framer-motion";
+import { Smartphone, Shield, Zap } from "lucide-react";
+import React from "react";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -15,13 +15,7 @@ interface FeatureCardProps {
 /**
  * Individual feature card styled to match Grid cards with centered icon.
  */
-const FeatureCard = ({
-  icon,
-  backgroundImage,
-  title,
-  description,
-  index,
-}: FeatureCardProps) => {
+const FeatureCard = ({ icon, backgroundImage, title, description, index }: FeatureCardProps) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -49,28 +43,28 @@ const FeatureCard = ({
       initial="hidden"
       animate="visible"
       whileInView="visible"
-      viewport={{ once: true, margin: '-50px' }}
+      viewport={{ once: true, margin: "-50px" }}
       variants={cardVariants}
       whileHover="hover"
-      className="flex flex-col gap-4 group bg-[#141414] border border-white/20 overflow-hidden transition-shadow hover:shadow-lg hover:shadow-white/10"
+      className="group flex flex-col gap-4 overflow-hidden border border-white/20 bg-[#141414] transition-shadow hover:shadow-lg hover:shadow-white/10"
     >
       <motion.div variants={hoverVariants} className="w-full">
-        <div className="w-full h-72 bg-orange-500/20 relative flex items-center justify-center overflow-hidden">
+        <div className="relative flex h-72 w-full items-center justify-center overflow-hidden bg-orange-500/20">
           <motion.img
             src={backgroundImage}
             alt="background"
-            className="w-full h-full object-cover absolute"
+            className="absolute h-full w-full object-cover"
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.4 }}
           />
-          <div className="w-20 h-20 bg-black/60 flex items-center justify-center z-10 text-3xl text-white">
+          <div className="z-10 flex h-20 w-20 items-center justify-center bg-black/60 text-3xl text-white">
             {icon}
           </div>
         </div>
       </motion.div>
       <div className="flex flex-col gap-2 px-4 py-4">
         <span className="text-xl">{title}</span>
-        <span className="opacity-80 text-sm">{description}</span>
+        <span className="text-sm opacity-80">{description}</span>
       </div>
     </motion.div>
   );
@@ -83,24 +77,23 @@ const Features = () => {
   const features = [
     {
       icon: <Smartphone size={32} className="text-white" />,
-      backgroundImage: '/bg-purple.png',
-      title: 'Mobile Responsive',
-      description:
-        'Check your servers anywhere, anytime on phone, tablet, or desktop.',
+      backgroundImage: "/bg-purple.png",
+      title: "Mobile Responsive",
+      description: "Check your servers anywhere, anytime on phone, tablet, or desktop.",
     },
     {
       icon: <Shield size={32} className="text-white" />,
-      backgroundImage: '/bg-orange.png',
-      title: 'Bank-Level Security',
+      backgroundImage: "/bg-orange.png",
+      title: "Bank-Level Security",
       description:
-        'Protected with 256-bit encryption and industry-standard protocols. Track with peace of mind.',
+        "Protected with 256-bit encryption and industry-standard protocols. Track with peace of mind.",
     },
     {
       icon: <Zap size={32} className="text-white" />,
-      backgroundImage: '/bg-green.png',
-      title: 'Lightweight & Fast',
+      backgroundImage: "/bg-green.png",
+      title: "Lightweight & Fast",
       description:
-        'No bloated downloads or slow loading. Access your servers instantly through web browser.',
+        "No bloated downloads or slow loading. Access your servers instantly through web browser.",
     },
   ];
 
@@ -120,7 +113,7 @@ const Features = () => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         variants={containerVariants}
         className="flex flex-col gap-12"
       >
@@ -131,10 +124,10 @@ const Features = () => {
           transition={{ duration: 0.5 }}
           className="flex flex-col gap-4"
         >
-          <span className="text-sm opacity-60 uppercase tracking-wider">Benefits</span>
+          <span className="text-sm tracking-wider uppercase opacity-60">Benefits</span>
           <h2 className="text-3xl sm:text-4xl lg:text-6xl">The benefits that matter most to you</h2>
         </motion.div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}

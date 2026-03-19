@@ -1,0 +1,265 @@
+# Desktop Release Pipeline — triggered by desktop-v* tags or manual
+#
+# Uses GitLab SaaS runners:
+#   - saas-linux-large-amd64   (Linux — Docker executor)
+#   - saas-macos-large-m2pro   (macOS — shell executor, bash)
+#   - saas-windows-medium-amd64 (Windows — shell executor, PowerShell)
+
+.desktop-release-rules:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^desktop-v/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        DESKTOP_VERSION: $VERSION
+      when: manual
+
+# ─── Daemon builds (Rust binary per platform) ─────────────────────
+
+desktop-daemon-build-linux:
+  extends:
+    - .rust-setup
+    - .desktop-release-rules
+  stage: build
+  script:
+    - cd apps/daemon
+    - cargo build --release --target x86_64-unknown-linux-gnu
+    - strip target/x86_64-unknown-linux-gnu/release/stellar-daemon || true
+  artifacts:
+    paths:
+      - apps/daemon/target/x86_64-unknown-linux-gnu/release/stellar-daemon
+    expire_in: 1 day
+
+desktop-daemon-build-macos:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-macos-large-m2pro]
+  before_script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
+  script:
+    - rustup target add x86_64-apple-darwin aarch64-apple-darwin
+    - cd apps/daemon
+    - cargo build --release --target aarch64-apple-darwin
+    - cargo build --release --target x86_64-apple-darwin
+    - strip target/aarch64-apple-darwin/release/stellar-daemon || true
+    - strip target/x86_64-apple-darwin/release/stellar-daemon || true
+  cache:
+    key: rust-daemon-macos
+    paths:
+      - apps/daemon/target/
+    policy: pull-push
+  artifacts:
+    paths:
+      - apps/daemon/target/aarch64-apple-darwin/release/stellar-daemon
+      - apps/daemon/target/x86_64-apple-darwin/release/stellar-daemon
+    expire_in: 1 day
+
+desktop-daemon-build-windows:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-windows-medium-amd64]
+  before_script:
+    - Invoke-WebRequest -Uri https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile rustup-init.exe
+    - Start-Process -FilePath .\rustup-init.exe -ArgumentList '-y','--default-toolchain','stable' -Wait -NoNewWindow
+    - $env:Path = [System.Environment]::GetEnvironmentVariable('Path','User') + ';' + $env:Path
+  script:
+    - rustup target add x86_64-pc-windows-msvc
+    - Set-Location apps\daemon
+    - cargo build --release --target x86_64-pc-windows-msvc
+  cache:
+    key: rust-daemon-windows
+    paths:
+      - apps\daemon\target\
+    policy: pull-push
+  artifacts:
+    paths:
+      - apps\daemon\target\x86_64-pc-windows-msvc\release\stellar-daemon.exe
+    expire_in: 1 day
+
+# ─── Tauri desktop app builds (per platform) ──────────────────────
+
+desktop-build-linux:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-linux-2xlarge-amd64]
+  image: rust:latest
+  needs:
+    - job: desktop-daemon-build-linux
+      artifacts: true
+  before_script:
+    - apt-get update && apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y nodejs
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+  script:
+    - pnpm install --frozen-lockfile
+    - mkdir -p apps/desktop/src-tauri/binaries
+    - cp apps/daemon/target/x86_64-unknown-linux-gnu/release/stellar-daemon
+        apps/desktop/src-tauri/binaries/stellar-daemon-x86_64-unknown-linux-gnu
+    - chmod +x apps/desktop/src-tauri/binaries/stellar-daemon-x86_64-unknown-linux-gnu
+    - DESKTOP_BUILD=true pnpm --filter web build:desktop
+    - node apps/api/build-desktop.mjs
+    - node apps/desktop/prepare-resources.mjs
+    - pnpm --filter desktop tauri build --target x86_64-unknown-linux-gnu
+  artifacts:
+    paths:
+      - apps/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/
+    expire_in: 1 day
+
+desktop-build-macos-arm:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-macos-large-m2pro]
+  needs:
+    - job: desktop-daemon-build-macos
+      artifacts: true
+  before_script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
+    - brew install node@20 || true
+    - export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+    - corepack enable
+    - corepack prepare pnpm@$PNPM_VERSION --activate
+  script:
+    - pnpm install --frozen-lockfile
+    - mkdir -p apps/desktop/src-tauri/binaries
+    - cp apps/daemon/target/aarch64-apple-darwin/release/stellar-daemon
+        apps/desktop/src-tauri/binaries/stellar-daemon-aarch64-apple-darwin
+    - chmod +x apps/desktop/src-tauri/binaries/stellar-daemon-aarch64-apple-darwin
+    - DESKTOP_BUILD=true pnpm --filter web build:desktop
+    - node apps/api/build-desktop.mjs
+    - node apps/desktop/prepare-resources.mjs
+    - pnpm --filter desktop tauri build --target aarch64-apple-darwin
+  artifacts:
+    paths:
+      - apps/desktop/src-tauri/target/aarch64-apple-darwin/release/bundle/
+    expire_in: 1 day
+
+desktop-build-macos-x64:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-macos-large-m2pro]
+  needs:
+    - job: desktop-daemon-build-macos
+      artifacts: true
+  before_script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
+    - rustup target add x86_64-apple-darwin
+    - brew install node@20 || true
+    - export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+    - corepack enable
+    - corepack prepare pnpm@$PNPM_VERSION --activate
+  script:
+    - pnpm install --frozen-lockfile
+    - mkdir -p apps/desktop/src-tauri/binaries
+    - cp apps/daemon/target/x86_64-apple-darwin/release/stellar-daemon
+        apps/desktop/src-tauri/binaries/stellar-daemon-x86_64-apple-darwin
+    - chmod +x apps/desktop/src-tauri/binaries/stellar-daemon-x86_64-apple-darwin
+    - DESKTOP_BUILD=true pnpm --filter web build:desktop
+    - node apps/api/build-desktop.mjs
+    - node apps/desktop/prepare-resources.mjs
+    - pnpm --filter desktop tauri build --target x86_64-apple-darwin
+  artifacts:
+    paths:
+      - apps/desktop/src-tauri/target/x86_64-apple-darwin/release/bundle/
+    expire_in: 1 day
+
+desktop-build-windows:
+  extends: .desktop-release-rules
+  stage: build
+  tags: [saas-windows-medium-amd64]
+  needs:
+    - job: desktop-daemon-build-windows
+      artifacts: true
+  before_script:
+    # Install Rust
+    - Invoke-WebRequest -Uri https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile rustup-init.exe
+    - Start-Process -FilePath .\rustup-init.exe -ArgumentList '-y','--default-toolchain','stable' -Wait -NoNewWindow
+    - $env:Path = [System.Environment]::GetEnvironmentVariable('Path','User') + ';' + $env:Path
+    # Install Node.js via Chocolatey
+    - choco install nodejs-lts -y --no-progress
+    - $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + $env:Path
+    - corepack enable
+    - corepack prepare "pnpm@$env:PNPM_VERSION" --activate
+  script:
+    - pnpm install --frozen-lockfile
+    - New-Item -ItemType Directory -Force -Path apps\desktop\src-tauri\binaries
+    - Copy-Item "apps\daemon\target\x86_64-pc-windows-msvc\release\stellar-daemon.exe"
+        "apps\desktop\src-tauri\binaries\stellar-daemon-x86_64-pc-windows-msvc.exe"
+    - $env:DESKTOP_BUILD = "true"
+    - pnpm --filter web build:desktop
+    - node apps/api/build-desktop.mjs
+    - node apps/desktop/prepare-resources.mjs
+    - pnpm --filter desktop tauri build --target x86_64-pc-windows-msvc
+  artifacts:
+    paths:
+      - apps\desktop\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\
+    expire_in: 1 day
+
+# ─── Collect artifacts and create release ──────────────────────────
+
+desktop-release:
+  extends: .desktop-release-rules
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: desktop-build-linux
+      artifacts: true
+    - job: desktop-build-macos-arm
+      artifacts: true
+    - job: desktop-build-macos-x64
+      artifacts: true
+    - job: desktop-build-windows
+      artifacts: true
+  script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        VERSION=${CI_COMMIT_TAG#desktop-v}
+        TAG=$CI_COMMIT_TAG
+      else
+        VERSION=$DESKTOP_VERSION
+        TAG="desktop-v${VERSION}"
+      fi
+      echo "VERSION=$VERSION" > release.env
+      echo "TAG=$TAG" >> release.env
+
+    # Collect all installers into release/
+    - mkdir -p release
+    - find apps/desktop/src-tauri/target -type f
+        \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" \)
+        -exec cp {} release/ \;
+    - cd release && sha256sum * > checksums.txt
+    - ls -lh
+  artifacts:
+    paths:
+      - release/
+    reports:
+      dotenv: release.env
+    expire_in: 7 days
+  release:
+    tag_name: $TAG
+    name: "Desktop v${VERSION}"
+    description: |
+      ## StellarStack Desktop v${VERSION}
+
+      ### Downloads
+
+      | Platform | Architecture | Format |
+      |----------|-------------|--------|
+      | Windows | x64 | `.exe` (NSIS installer) or `.msi` |
+      | macOS | Intel (x64) | `.dmg` |
+      | macOS | Apple Silicon (ARM) | `.dmg` |
+      | Linux | x64 | `.AppImage` or `.deb` |
+
+      ### Checksums
+
+      See `checksums.txt` in the release assets for SHA256 verification.
+
+      ### Notes
+
+      - **Windows:** Run the `.exe` installer or use the `.msi` for enterprise deployment.
+      - **macOS:** Open the `.dmg` and drag StellarStack to Applications.
+      - **Linux:** Make the `.AppImage` executable (`chmod +x`) and run, or install the `.deb` with `sudo dpkg -i`.
+      - Docker must be installed and running for database services.

@@ -1,7 +1,7 @@
 "use client";
 
-import { type WebhookEvent } from "@/lib/api";
-import { cn } from "@stellarUI/lib/utils";
+import { type WebhookEvent } from "@/lib/Api";
+import { cn } from "@stellarUI/lib/Utils";
 import { BsCheck2 } from "react-icons/bs";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Checkbox from "@stellarUI/components/Checkbox/Checkbox";
@@ -19,7 +19,8 @@ export const WebhookEventSelector = ({
 }: WebhookEventSelectorProps) => (
   <div className="space-y-2">
     {events.map((event) => (
-      <div className="flex flex-row select-none cursor-pointer gap-4 p-2 rounded-lg border border-white/10 hover:border-white/50 hover:bg-white/15 duration-150 transition-all bg-white/5"
+      <div
+        className="flex cursor-pointer flex-row gap-4 rounded-lg border border-white/10 bg-white/5 p-2 transition-all duration-150 select-none hover:border-white/50 hover:bg-white/15"
         key={event.value}
         onClick={() => onToggle(event.value)}
       >
@@ -42,17 +43,8 @@ export const WebhookEventSelector = ({
         {/*  )}*/}
         {/*</div>*/}
         <div className="flex-1">
-          <div
-            className={cn(
-              "text-sm font-medium",
-              "text-zinc-200"
-            )}
-          >
-            {event.label}
-          </div>
-          <div className={cn("text-xs", "text-zinc-500")}>
-            {event.description}
-          </div>
+          <div className={cn("text-sm font-medium", "text-zinc-200")}>{event.label}</div>
+          <div className={cn("text-xs", "text-zinc-500")}>{event.description}</div>
         </div>
       </div>
     ))}

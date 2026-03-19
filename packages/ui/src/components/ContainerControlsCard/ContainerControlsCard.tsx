@@ -1,13 +1,13 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import UsageCard from "../UsageCard/UsageCard";
 import type {
   CardProps,
   ContainerStatus,
   ContainerControlsCardLabels,
-} from "../dashboard-cards-types/types";
+} from "../DashboardCardsTypes/Types";
 
 interface ContainerControlsCardProps extends CardProps {
   isOffline: boolean;
@@ -47,8 +47,7 @@ const ContainerControlsCard = ({
 
   const buttonBase =
     "px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors border bg-transparent flex items-center justify-center gap-2 min-w-[80px]";
-  const buttonColors =
-    "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100";
+  const buttonColors = "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100";
   const disabledColors = "border-zinc-800 text-zinc-600";
 
   // Start: disabled when running, starting, stopping, or any action loading

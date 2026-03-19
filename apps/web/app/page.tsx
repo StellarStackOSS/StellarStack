@@ -2,9 +2,9 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
-import { signIn } from "@/lib/auth-client";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
+import { cn } from "@stellarUI/lib/Utils";
+import { signIn } from "@/lib/AuthClient";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import { toast } from "sonner";
 import LoginForm from "@/components/LoginForm/LoginForm";
 

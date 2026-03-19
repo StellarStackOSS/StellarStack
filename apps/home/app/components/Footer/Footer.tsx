@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@stellarUI/lib/utils";
-import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
+import { cn } from "@stellarUI/lib/Utils";
+import { BsDiscord, BsGitlab, BsTwitterX } from "react-icons/bs";
 import LightBoard from "@stellarUI/components/LightBoard/LightBoard";
 
 interface FooterProps {}
@@ -50,12 +50,12 @@ export const Footer = ({}: FooterProps) => {
             </p>
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/StellarStackOSS/StellarStack"
+                href="https://gitlab.com/StellarStackOSS/stellarstack"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn("transition-colors", "text-white/60 hover:text-white")}
               >
-                <BsGithub className="h-5 w-5" />
+                <BsGitlab className="h-5 w-5" />
               </a>
               <a
                 href="https://discord.stellarstack.app"

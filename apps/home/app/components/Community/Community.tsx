@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
-import React from 'react';
+import { motion } from "framer-motion";
+import { Star } from "lucide-react";
+import React from "react";
 
 interface TestimonialProps {
   name: string;
@@ -32,19 +32,19 @@ const TestimonialCard = ({ name, role, content, avatar, index }: TestimonialProp
     <motion.div
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: '-50px' }}
+      viewport={{ once: true, margin: "-50px" }}
       variants={variants}
       whileHover={{ y: -4 }}
-      className="flex flex-col gap-4 p-6 border border-white/20 hover:border-white/40 transition-colors"
+      className="flex flex-col gap-4 border border-white/20 p-6 transition-colors hover:border-white/40"
     >
       <div className="flex gap-1">
         {[...Array(5)].map((_, i) => (
           <Star key={i} size={16} className="fill-white/40 text-white/40" />
         ))}
       </div>
-      <p className="text-sm opacity-90 leading-relaxed">{content}</p>
+      <p className="text-sm leading-relaxed opacity-90">{content}</p>
       <div className="flex items-center gap-3 pt-2">
-        <div className="w-10 h-10 bg-white/20 flex items-center justify-center font-semibold text-sm">
+        <div className="flex h-10 w-10 items-center justify-center bg-white/20 text-sm font-semibold">
           {avatar}
         </div>
         <div className="flex flex-col gap-1">
@@ -62,35 +62,35 @@ const TestimonialCard = ({ name, role, content, avatar, index }: TestimonialProp
 const Community = () => {
   const testimonials: TestimonialProps[] = [
     {
-      name: 'Alex Chen',
-      role: 'Server Admin',
+      name: "Alex Chen",
+      role: "Server Admin",
       content:
-        'StellarStack has completely transformed how I manage my game servers. The interface is intuitive and the API is powerful.',
-      avatar: 'AC',
+        "StellarStack has completely transformed how I manage my game servers. The interface is intuitive and the API is powerful.",
+      avatar: "AC",
       index: 0,
     },
     {
-      name: 'Sarah Martinez',
-      role: 'Game Developer',
+      name: "Sarah Martinez",
+      role: "Game Developer",
       content:
-        'Finally, a game server management panel that actually respects my data and privacy. Being self-hosted is a game changer.',
-      avatar: 'SM',
+        "Finally, a game server management panel that actually respects my data and privacy. Being self-hosted is a game changer.",
+      avatar: "SM",
       index: 1,
     },
     {
-      name: 'Jordan Williams',
-      role: 'Community Manager',
+      name: "Jordan Williams",
+      role: "Community Manager",
       content:
-        'The team behind StellarStack is incredibly responsive. They listen to community feedback and continuously improve the platform.',
-      avatar: 'JW',
+        "The team behind StellarStack is incredibly responsive. They listen to community feedback and continuously improve the platform.",
+      avatar: "JW",
       index: 2,
     },
     {
-      name: 'Casey Rodriguez',
-      role: 'DevOps Engineer',
+      name: "Casey Rodriguez",
+      role: "DevOps Engineer",
       content:
-        'I was skeptical about another panel, but the architecture and extensibility of StellarStack won me over immediately.',
-      avatar: 'CR',
+        "I was skeptical about another panel, but the architecture and extensibility of StellarStack won me over immediately.",
+      avatar: "CR",
       index: 3,
     },
   ];
@@ -111,7 +111,7 @@ const Community = () => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-100px' }}
+        viewport={{ once: true, margin: "-100px" }}
         variants={containerVariants}
         className="flex flex-col gap-12"
       >
@@ -124,7 +124,7 @@ const Community = () => {
         >
           Loved by the Community
         </motion.h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {testimonials.map((testimonial) => (
             <TestimonialCard key={testimonial.name} {...testimonial} />
           ))}

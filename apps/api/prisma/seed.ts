@@ -3,7 +3,12 @@ import { auth } from "../src/lib/auth";
 
 const prisma = new PrismaClient();
 
-async function main() {
+/**
+ * Seeds the database with default location, admin user, and sample blueprint.
+ *
+ * @returns Promise that resolves when seeding is complete
+ */
+const main = async (): Promise<void> => {
   console.log("Seeding database...");
 
   // Create default location
@@ -177,7 +182,7 @@ echo "Download complete!"
   console.log("\nAdmin credentials:");
   console.log("  Email:", adminEmail);
   console.log("  Password:", adminPassword);
-}
+};
 
 main()
   .catch((e) => {

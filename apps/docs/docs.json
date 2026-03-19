@@ -65,9 +65,9 @@
     "global": {
       "anchors": [
         {
-          "anchor": "GitHub",
-          "href": "https://github.com/StellarStackOSS/StellarStack",
-          "icon": "github"
+          "anchor": "GitLab",
+          "href": "https://gitlab.com/StellarStackOSS/stellarstack",
+          "icon": "gitlab"
         },
         {
           "anchor": "Discord",
@@ -80,19 +80,19 @@
   "navbar": {
     "links": [
       {
-        "label": "GitHub",
-        "href": "https://github.com/StellarStackOSS/StellarStack"
+        "label": "GitLab",
+        "href": "https://gitlab.com/StellarStackOSS/stellarstack"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://github.com/StellarStackOSS/StellarStack"
+      "href": "https://gitlab.com/StellarStackOSS/stellarstack"
     }
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/StellarStackOSS/StellarStack",
+      "gitlab": "https://gitlab.com/StellarStackOSS/stellarstack",
       "discord": "https://discord.stellarstack.app"
     }
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type PatternCell = "0" | "1" | "2" | "3";
 type Pattern = PatternCell[][];
@@ -76,7 +76,7 @@ const textToPattern = (
     .map(() => []);
 
   letterPatterns.forEach((letterPattern) => {
-    fullPattern = fullPattern.map((row, i) => [...row, ...letterPattern?.[i]]);
+    fullPattern = fullPattern.map((row, i) => [...row, ...(letterPattern?.[i] ?? [])]);
   });
 
   // We add empty space above and below the pattern to center it
@@ -99,7 +99,7 @@ const textToPattern = (
   });
 };
 
-function getLightColor(state: PatternCell, colors: Partial<LightBoardColors>): string {
+const getLightColor = (state: PatternCell, colors: Partial<LightBoardColors>): string => {
   const mergedColors = { ...defaultColors, ...colors };
 
   switch (state) {
@@ -112,11 +112,11 @@ function getLightColor(state: PatternCell, colors: Partial<LightBoardColors>): s
     default:
       return mergedColors.background;
   }
-}
+};
 
 const defaultDrawState: PatternCell = "2";
 
-function LightBoard({
+const LightBoard = ({
   text,
   gap = 1,
   lightSize = 4,
@@ -128,11 +128,11 @@ function LightBoard({
   disableDrawing = true,
   controlledHoverState,
   onHoverStateChange,
-}: LightBoardProps) {
+}: LightBoardProps): JSX.Element => {
   // We decide how many rows and columns of lights we need
   const containerRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(0);
-  const mergedColors = { ...defaultColors, ...colors };
+  const mergedColors = useMemo(() => ({ ...defaultColors, ...colors }), [colors]);
 
   // We choose which font to use for our text
   const selectedFont = font === "default" ? defaultFont : sevenSegmentFont;
@@ -141,7 +141,7 @@ function LightBoard({
   // We keep track of whether we're drawing on the board
   const [isDrawing, setIsDrawing] = useState(false);
   // Use controlled state if provided, otherwise use local state
-  const [internalHoverState, setInternalHoverState] = useState(false);
+  const [, setInternalHoverState] = useState(false);
   // This is the brightness of the lights we're drawing (0 to 3)
 
   // This is our pattern of lights that make up the text
@@ -158,8 +158,6 @@ function LightBoard({
   const [lastUpdateTime, setLastUpdateTime] = useState(0);
 
   const drawState = controlledDrawState !== undefined ? controlledDrawState : defaultDrawState;
-
-  const isHovered = controlledHoverState !== undefined ? controlledHoverState : internalHoverState;
 
   // Calculate the number of columns based on container width
   useEffect(() => {
@@ -276,16 +274,16 @@ function LightBoard({
         // If we're still on the board...
         if (rowIndex >= 0 && rowIndex < rows && colIndex >= 0 && colIndex < columns) {
           // We figure out which light to change in our pattern
-          // @ts-ignore
+          // @ts-expect-error - pattern row length access after optional chaining
           const actualColIndex = (colIndex + offset) % basePattern?.[0].length;
 
           // If this light isn't already the brightness we want...
-          // @ts-ignore
+          // @ts-expect-error - dynamic index access on pattern array
           if (basePattern[rowIndex][actualColIndex] !== drawState) {
             // We update our pattern of lights
             setBasePattern((prevPattern) => {
               const newPattern = [...prevPattern];
-              // @ts-ignore
+              // @ts-expect-error - spreading pattern row for immutable update
               newPattern[rowIndex] = [...newPattern[rowIndex]];
               newPattern[rowIndex][actualColIndex] = drawState;
               return newPattern;
@@ -382,9 +380,9 @@ function LightBoard({
       const touch = event.touches[0];
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      // @ts-ignore
+      // @ts-expect-error - touch may be undefined but is guaranteed by touchstart event
       const x = touch.clientX - rect.left;
-      // @ts-ignore
+      // @ts-expect-error - touch may be undefined but is guaranteed by touchstart event
       const y = touch.clientY - rect.top;
       handleInteractionStart(x, y);
     },
@@ -397,9 +395,9 @@ function LightBoard({
       const touch = event.touches[0];
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      // @ts-ignore
+      // @ts-expect-error - touch may be undefined but is guaranteed by touchmove event
       const x = touch.clientX - rect.left;
-      // @ts-ignore
+      // @ts-expect-error - touch may be undefined but is guaranteed by touchmove event
       const y = touch.clientY - rect.top;
       handleInteractionMove(x, y);
     },
@@ -420,7 +418,7 @@ function LightBoard({
   );
 
   return (
-    <div ref={containerRef} className="rounded-lg contain">
+    <div ref={containerRef} className="contain rounded-lg">
       {columns > 0 && (
         <canvas
           ref={canvasRef}
@@ -429,9 +427,15 @@ function LightBoard({
           onMouseDown={!disableDrawing ? handleMouseDown : undefined}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          onMouseEnter={() => controlledHoverState === undefined && updateHoverState(true)}
+          onMouseEnter={() => {
+            if (controlledHoverState === undefined) {
+              updateHoverState(true);
+            }
+          }}
           onMouseLeave={() => {
-            controlledHoverState === undefined && updateHoverState(false);
+            if (controlledHoverState === undefined) {
+              updateHoverState(false);
+            }
             handleInteractionEnd();
           }}
           onTouchStart={!disableDrawing ? handleTouchStart : undefined}
@@ -446,7 +450,7 @@ function LightBoard({
       )}
     </div>
   );
-}
+};
 
 export default LightBoard;
 

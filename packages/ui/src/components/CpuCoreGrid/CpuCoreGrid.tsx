@@ -1,9 +1,9 @@
 "use client";
 
 import type { JSX } from "react";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { AnimatedNumber } from "../AnimatedNumber/AnimatedNumber";
-import type { CpuCoreGridProps } from "../dashboard-cards-types/types";
+import type { CpuCoreGridProps } from "../DashboardCardsTypes/Types";
 
 const CpuCoreGrid = ({ cores, isOffline }: CpuCoreGridProps): JSX.Element => {
   const getUsageColor = (percentage: number): string => {
@@ -17,10 +17,12 @@ const CpuCoreGrid = ({ cores, isOffline }: CpuCoreGridProps): JSX.Element => {
   const isCompact = coreCount > 16;
 
   return (
-    <div className={cn(
-      "flex-1 min-h-0 overflow-y-auto",
-      "scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
-    )}>
+    <div
+      className={cn(
+        "min-h-0 flex-1 overflow-y-auto",
+        "scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent"
+      )}
+    >
       <div
         className="grid gap-1"
         style={{
@@ -33,9 +35,9 @@ const CpuCoreGrid = ({ cores, isOffline }: CpuCoreGridProps): JSX.Element => {
             <div
               key={core.id}
               className={cn(
-                "relative transition-all border aspect-square",
+                "relative aspect-square border transition-all",
                 isCompact ? "p-1" : "p-2",
-                "bg-zinc-900/50 border-zinc-800"
+                "border-zinc-800 bg-zinc-900/50"
               )}
             >
               <div
@@ -44,22 +46,28 @@ const CpuCoreGrid = ({ cores, isOffline }: CpuCoreGridProps): JSX.Element => {
                   background: `linear-gradient(to top, ${color} ${core.percentage}%, transparent ${core.percentage}%)`,
                 }}
               />
-              <div className="relative text-center h-full flex flex-col justify-center">
-                <div className={cn(
-                  "font-medium uppercase leading-none",
-                  isCompact ? "text-[8px]" : "text-[10px]",
-                  "text-zinc-500"
-                )}>
+              <div className="relative flex h-full flex-col justify-center text-center">
+                <div
+                  className={cn(
+                    "leading-none font-medium uppercase",
+                    isCompact ? "text-[8px]" : "text-[10px]",
+                    "text-zinc-500"
+                  )}
+                >
                   {isCompact ? core.id : `C${core.id}`}
                 </div>
-                <div className={cn(
-                  "font-mono tabular-nums leading-tight mt-1",
-                  isCompact ? "text-[10px]" : "text-xs",
-                  isOffline
-                    ? "text-zinc-600"
-                    : "text-zinc-200"
-                )}>
-                  {isOffline ? "--" : <AnimatedNumber value={core.percentage} suffix="%" willChange />}
+                <div
+                  className={cn(
+                    "mt-1 font-mono leading-tight tabular-nums",
+                    isCompact ? "text-[10px]" : "text-xs",
+                    isOffline ? "text-zinc-600" : "text-zinc-200"
+                  )}
+                >
+                  {isOffline ? (
+                    "--"
+                  ) : (
+                    <AnimatedNumber value={core.percentage} suffix="%" willChange />
+                  )}
                 </div>
               </div>
             </div>

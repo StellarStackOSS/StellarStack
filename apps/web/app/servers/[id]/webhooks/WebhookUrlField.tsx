@@ -1,6 +1,6 @@
 "use client";
 
-import {cn} from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import Input from "@stellarUI/components/Input/Input";
 import Label from "@stellarUI/components/Label/Label";
 

@@ -2,21 +2,20 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
 import Input from "@stellarUI/components/Input/Input";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import Switch from "@stellarUI/components/Switch/Switch";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import FormModal from "@stellarUI/components/FormModal/FormModal";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import { BsGlobe, BsHddNetwork, BsKey, BsPlus, BsStar, BsStarFill, BsTrash } from "react-icons/bs";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
-import { type Allocation, features, servers, type SubdomainFeatureStatus } from "@/lib/api";
-import { useAuth } from "@/hooks/auth-provider/auth-provider";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
+import { type Allocation, features, servers, type SubdomainFeatureStatus } from "@/lib/Api";
+import { useAuth } from "@/hooks/AuthProvider/AuthProvider";
 import Label from "@stellarUI/components/Label/Label";
 
 interface Subdomain {
@@ -223,17 +222,10 @@ const NetworkPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <TextureButton
                   variant="primary"
@@ -253,7 +245,7 @@ const NetworkPage = (): JSX.Element | null => {
           <div className="space-y-4">
             {/* Port Allocations Card */}
             <FadeIn delay={0.05}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
                   <div className="flex items-center gap-2 text-xs opacity-50">
                     <BsHddNetwork className="h-3 w-3" />
@@ -263,7 +255,7 @@ const NetworkPage = (): JSX.Element | null => {
                     {allocations.length} / {allocationLimit} used
                   </span>
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
                       <Spinner />
@@ -351,7 +343,7 @@ const NetworkPage = (): JSX.Element | null => {
             {/* Subdomains Card - Only show if feature is enabled */}
             {subdomainFeature?.enabled && (
               <FadeIn delay={0.1}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="flex shrink-0 items-center justify-between pr-2 pb-2 pl-2">
                     <div className="flex items-center gap-2 text-xs opacity-50">
                       <BsGlobe className="h-3 w-3" />
@@ -367,7 +359,7 @@ const NetworkPage = (): JSX.Element | null => {
                       Add
                     </TextureButton>
                   </div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b shadow-lg shadow-black/20">
                     {subdomains.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12">
                         <BsGlobe className="mb-4 h-12 w-12 text-zinc-600" />
@@ -425,12 +417,12 @@ const NetworkPage = (): JSX.Element | null => {
 
             {/* SFTP Connection Card */}
             <FadeIn delay={subdomainFeature?.enabled ? 0.15 : 0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="flex shrink-0 items-center gap-2 pb-2 pl-2 text-xs opacity-50">
                   <BsKey className="h-3 w-3" />
                   SFTP Connection
                 </div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div>
                       <Label className="text-xs text-zinc-500">Host</Label>

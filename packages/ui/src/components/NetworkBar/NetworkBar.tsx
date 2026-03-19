@@ -1,4 +1,4 @@
-import { cn } from "@stellarUI/lib/utils";
+import { cn } from "@stellarUI/lib/Utils";
 
 interface NetworkBarProps {
   download: number; // percentage 0-100
@@ -12,10 +12,10 @@ const NetworkBar = ({ download, upload, segments = 6, compact = false }: Network
   const uploadGradient = "linear-gradient(to right, #4c1d95, #a855f7)";
 
   return (
-    <div className={compact ? "space-y-1 mt-auto pt-2" : "space-y-2 mt-auto pt-4"}>
+    <div className={compact ? "mt-auto space-y-1 pt-2" : "mt-auto space-y-2 pt-4"}>
       {/* Download bar */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-zinc-500 w-4">↓</span>
+        <span className="w-4 text-xs text-zinc-500">↓</span>
         <div className="relative h-2 flex-1">
           {/* Gray background */}
           <div className={cn("absolute inset-0", "bg-zinc-700")} />
@@ -41,7 +41,7 @@ const NetworkBar = ({ download, upload, segments = 6, compact = false }: Network
 
       {/* Upload bar */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-zinc-500 w-4">↑</span>
+        <span className="w-4 text-xs text-zinc-500">↑</span>
         <div className="relative h-2 flex-1">
           {/* Gray background */}
           <div className={cn("absolute inset-0", "bg-zinc-700")} />

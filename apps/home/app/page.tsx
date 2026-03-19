@@ -15,30 +15,30 @@ import Footer from "@/app/components/Footer/Footer";
 
 const page = () => {
   return (
-    <div className="flex flex-col items-center justify-center bg-[#101010] px-4 sm:px-8 lg:px-16 relative">
-        {/* Sideways scroll indicator */}
-        <div className="fixed bottom-8 right-10 z-50 hidden lg:flex items-center gap-3 rotate-90 origin-bottom-right text-white/30 text-xs tracking-[0.3em] uppercase select-none pointer-events-none">
-            <span>&copy; {new Date().getFullYear()} STELLARSTACK</span>
-        </div>
-        <div className="w-full h-full border-l border-r border-white/20">
-            <Header/>
-            <Hero/>
-            <Grid/>
-            <LineSpacer/>
-            <OverviewShowcase/>
-            <FilesShowcase/>
-            <SchedulesShowcase/>
-            <LineSpacer/>
-            <DesktopShowcase/>
-            <LineSpacer/>
-            <Features/>
-            <Stats/>
-            <LineSpacer/>
-            <Comparison/>
-            <FAQAndCTA/>
-            <Footer/>
-        </div>
+    <div className="relative flex flex-col items-center justify-center bg-[#101010] px-4 sm:px-8 lg:px-16">
+      {/* Sideways scroll indicator */}
+      <div className="pointer-events-none fixed right-10 bottom-8 z-50 hidden origin-bottom-right rotate-90 items-center gap-3 text-xs tracking-[0.3em] text-white/30 uppercase select-none lg:flex">
+        <span>&copy; {new Date().getFullYear()} STELLARSTACK</span>
+      </div>
+      <div className="h-full w-full border-r border-l border-white/20">
+        <Header />
+        <Hero />
+        <Grid />
+        <LineSpacer />
+        <OverviewShowcase />
+        <FilesShowcase />
+        <SchedulesShowcase />
+        <LineSpacer />
+        <DesktopShowcase />
+        <LineSpacer />
+        <Features />
+        <Stats />
+        <LineSpacer />
+        <Comparison />
+        <FAQAndCTA />
+        <Footer />
+      </div>
     </div>
-    );
-}
+  );
+};
 export default page;

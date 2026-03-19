@@ -2,9 +2,7 @@
 
 import { type JSX, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { cn } from "@stellarUI/lib/utils";
 import { TextureButton } from "@stellarUI/components/TextureButton";
-import { SidebarTrigger } from "@stellarUI/components/Sidebar/Sidebar";
 import ConfirmationModal from "@stellarUI/components/ConfirmationModal/ConfirmationModal";
 import Spinner from "@stellarUI/components/Spinner/Spinner";
 import Label from "@stellarUI/components/Label/Label";
@@ -12,11 +10,11 @@ import Input from "@stellarUI/components/Input/Input";
 import Textarea from "@stellarUI/components/Textarea";
 import { FadeIn } from "@stellarUI/components/FadeIn/FadeIn";
 import { BsArrowRepeat, BsCheckCircle, BsInfoCircle } from "react-icons/bs";
-import type { DockerImageOption, StartupVariable } from "@/lib/api";
-import { servers } from "@/lib/api";
-import { useServer } from "components/ServerStatusPages/server-provider/server-provider";
-import { ServerInstallingPlaceholder } from "components/ServerStatusPages/server-installing-placeholder/server-installing-placeholder";
-import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/server-suspended-placeholder/server-suspended-placeholder";
+import type { DockerImageOption, StartupVariable } from "@/lib/Api";
+import { servers } from "@/lib/Api";
+import { useServer } from "components/ServerStatusPages/ServerProvider/ServerProvider";
+import { ServerInstallingPlaceholder } from "components/ServerStatusPages/ServerInstallingPlaceholder/ServerInstallingPlaceholder";
+import { ServerSuspendedPlaceholder } from "components/ServerStatusPages/ServerSuspendedPlaceholder/ServerSuspendedPlaceholder";
 import { toast } from "sonner";
 
 const StartupPage = (): JSX.Element | null => {
@@ -180,17 +178,10 @@ const StartupPage = (): JSX.Element | null => {
   return (
     <FadeIn className="flex min-h-[calc(100svh-1rem)] w-full flex-col">
       <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col transition-colors">
-        <div className="relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg bg-black px-4 pb-4">
+        <div className="bg-card relative flex min-h-[calc(100svh-1rem)] w-full flex-col rounded-lg px-4 pb-4">
           {/* Header */}
           <FadeIn delay={0}>
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger
-                  className={cn(
-                    "text-zinc-400 transition-all hover:scale-110 hover:text-zinc-100 active:scale-95"
-                  )}
-                />
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 {hasChanges && (
                   <TextureButton
@@ -241,9 +232,9 @@ const StartupPage = (): JSX.Element | null => {
             {/* Docker Image Selector */}
             {dockerImages.length > 0 && (
               <FadeIn delay={0.05}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Docker Image</div>
-                  <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     <div className="flex flex-wrap gap-2">
                       {dockerImages.map((img) => (
                         <TextureButton
@@ -266,9 +257,9 @@ const StartupPage = (): JSX.Element | null => {
 
             {/* Startup Command Preview */}
             <FadeIn delay={0.1}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Startup Command</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <div className="overflow-x-auto rounded border border-zinc-700/50 bg-zinc-900/50 p-3 font-mono text-xs text-zinc-300">
                     {getStartupCommandPreview() || "No startup command configured"}
                   </div>
@@ -278,9 +269,9 @@ const StartupPage = (): JSX.Element | null => {
 
             {/* Custom Startup Commands */}
             <FadeIn delay={0.15}>
-              <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+              <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                 <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Custom Startup Commands</div>
-                <div className="flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                <div className="from-card via-secondary to-background flex flex-1 flex-col rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                   <p className="mb-3 text-xs text-zinc-400">
                     Additional commands to append to the startup command. These will be executed
                     after the main command.
@@ -298,9 +289,9 @@ const StartupPage = (): JSX.Element | null => {
             {/* Variables */}
             {variables.length === 0 ? (
               <FadeIn delay={0.2}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">Variables</div>
-                  <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-8 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col items-center justify-center rounded-lg border border-zinc-200/10 bg-gradient-to-b p-8 shadow-lg shadow-black/20">
                     <p className="text-sm text-zinc-500">
                       No startup variables configured for this blueprint.
                     </p>
@@ -309,11 +300,11 @@ const StartupPage = (): JSX.Element | null => {
               </FadeIn>
             ) : (
               <FadeIn delay={0.2}>
-                <div className="flex h-full flex-col rounded-lg border border-white/5 bg-[#090909] p-1 pt-2">
+                <div className="bg-muted flex h-full flex-col rounded-lg border border-white/5 p-1 pt-2">
                   <div className="shrink-0 pb-2 pl-2 text-xs opacity-50">
                     Variables ({variables.length})
                   </div>
-                  <div className="flex flex-1 flex-col gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] p-4 shadow-lg shadow-black/20">
+                  <div className="from-card via-secondary to-background flex flex-1 flex-col gap-3 rounded-lg border border-zinc-200/10 bg-gradient-to-b p-4 shadow-lg shadow-black/20">
                     {variables.map((variable, index) => (
                       <div
                         key={variable.envVariable}
