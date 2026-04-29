@@ -37,6 +37,7 @@
     "./schema/servers": "./src/schema/servers.ts",
     "./schema/backups": "./src/schema/backups.ts",
     "./schema/schedules": "./src/schema/schedules.ts",
+    "./schema/transfers": "./src/schema/transfers.ts",
     "./schema/audit": "./src/schema/audit.ts",
     "./schema/jobs": "./src/schema/jobs.ts"
   }

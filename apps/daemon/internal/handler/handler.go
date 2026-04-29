@@ -18,6 +18,7 @@ import (
 	"github.com/stellarstack/daemon/internal/files"
 	"github.com/stellarstack/daemon/internal/lifecycle"
 	"github.com/stellarstack/daemon/internal/s3"
+	"github.com/stellarstack/daemon/internal/transfer"
 )
 
 // Sender is anything that can emit a JSON-encoded envelope back to the API
@@ -32,9 +33,10 @@ type Sender interface {
 // `watchers` so power-action and lifecycle-transition handling can find
 // the existing state machine.
 type Handler struct {
-	cfg    *config.Config
-	docker *docker.Client
-	files  *files.Manager
+	cfg      *config.Config
+	docker   *docker.Client
+	files    *files.Manager
+	Transfer *transfer.Registry
 
 	mu       sync.Mutex
 	watchers map[string]*serverState
@@ -52,6 +54,7 @@ func New(cfg *config.Config) *Handler {
 		cfg:      cfg,
 		docker:   docker.New(""),
 		files:    files.New(cfg.DataDir),
+		Transfer: transfer.NewRegistry(),
 		watchers: map[string]*serverState{},
 	}
 }
@@ -102,6 +105,10 @@ func (h *Handler) HandleEnvelope(
 		return h.handleUploadBackupS3(ctx, envelope.ID, envelope.Message, send)
 	case "server.send_console":
 		return h.handleSendConsole(ctx, envelope.ID, envelope.Message, send)
+	case "server.prepare_transfer":
+		return h.handlePrepareTransfer(ctx, envelope.ID, envelope.Message, send)
+	case "server.push_transfer":
+		return h.handlePushTransfer(ctx, envelope.ID, envelope.Message, send)
 	default:
 		log.Printf("daemon: ignoring message type %q", typed.Type)
 		return writeEnvelope(ctx, send, envelope.ID, map[string]any{
@@ -534,6 +541,46 @@ func (h *Handler) handleUploadBackupS3(
 		"type": "ack",
 		"key":  key,
 	})
+}
+
+func (h *Handler) handlePrepareTransfer(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+		Token    string `json:"token"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	h.Transfer.Register(msg.Token, msg.ServerID)
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+func (h *Handler) handlePushTransfer(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID  string `json:"serverId"`
+		TargetURL string `json:"targetUrl"`
+		Token     string `json:"token"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	pushCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+	if err := transfer.PushToTarget(pushCtx, h.files, msg.ServerID, msg.TargetURL, msg.Token); err != nil {
+		log.Printf("daemon: push_transfer: %v", err)
+		return writeError(ctx, send, id, "transfers.push_failed", nil)
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
 }
 
 func (h *Handler) handleSendConsole(

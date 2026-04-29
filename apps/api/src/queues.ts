@@ -58,6 +58,13 @@ export type ServerCommandJobData = {
 }
 
 /**
+ * Payload shape for the `server.transfer` queue.
+ */
+export type ServerTransferJobData = {
+  transferId: string
+}
+
+/**
  * Aggregate of all BullMQ producers the API holds open.
  */
 export type Queues = {
@@ -65,6 +72,7 @@ export type Queues = {
   serverInstall: Queue<ServerInstallJobData>
   serverPower: Queue<ServerPowerJobData>
   serverCommand: Queue<ServerCommandJobData>
+  serverTransfer: Queue<ServerTransferJobData>
   backupCreate: Queue<BackupCreateJobData>
   backupRestore: Queue<BackupRestoreJobData>
   backupDelete: Queue<BackupDeleteJobData>
@@ -79,6 +87,7 @@ export const createQueues = (connection: IORedis): Queues => ({
   serverInstall: new Queue("server.install", { connection }),
   serverPower: new Queue("server.power", { connection }),
   serverCommand: new Queue("server.command", { connection }),
+  serverTransfer: new Queue("server.transfer", { connection }),
   backupCreate: new Queue("backup.create", { connection }),
   backupRestore: new Queue("backup.restore", { connection }),
   backupDelete: new Queue("backup.delete", { connection }),

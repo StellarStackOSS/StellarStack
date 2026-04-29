@@ -178,6 +178,134 @@ func (m *Manager) RestoreBackup(serverID, name string) error {
 	return nil
 }
 
+// ArchiveServerTo tars + gzips the server's bind-mount to `dstPath`
+// (creating parent directories as needed). Returns the archive's byte size.
+// Used by the transfer package to produce the outbound stream.
+func (m *Manager) ArchiveServerTo(serverID, dstPath string) (int64, error) {
+	srcRoot := filepath.Join(m.root, "servers", serverID)
+	if resolved, err := filepath.EvalSymlinks(srcRoot); err == nil {
+		srcRoot = resolved
+	}
+	if _, err := os.Stat(srcRoot); err != nil {
+		return 0, fmt.Errorf("server root: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+		return 0, err
+	}
+	out, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return 0, err
+	}
+	defer out.Close()
+
+	counter := &countingWriter{}
+	gz := gzip.NewWriter(io.MultiWriter(out, counter))
+	tw := tar.NewWriter(gz)
+
+	walkErr := filepath.Walk(srcRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(srcRoot, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		header.Name = rel
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+		if info.Mode().IsRegular() {
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			_, copyErr := io.Copy(tw, f)
+			closeErr := f.Close()
+			if copyErr != nil {
+				return copyErr
+			}
+			return closeErr
+		}
+		return nil
+	})
+	if walkErr != nil {
+		return 0, walkErr
+	}
+	if err := tw.Close(); err != nil {
+		return 0, err
+	}
+	if err := gz.Close(); err != nil {
+		return 0, err
+	}
+	return counter.bytes, nil
+}
+
+// RestoreBackupFromReader wipes the server's bind-mount and extracts an
+// archive stream (tar.gz) over it. Used by the transfer receive endpoint
+// where the stream arrives over HTTP rather than from a local file.
+func (m *Manager) RestoreBackupFromReader(serverID string, r io.Reader) error {
+	dstRoot := filepath.Join(m.root, "servers", serverID)
+	if err := os.RemoveAll(dstRoot); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dstRoot, 0o755); err != nil {
+		return err
+	}
+	if resolved, err := filepath.EvalSymlinks(dstRoot); err == nil {
+		dstRoot = resolved
+	}
+
+	gz, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+	tr := tar.NewReader(gz)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if strings.Contains(header.Name, "..") {
+			return fmt.Errorf("archive entry %q contains traversal", header.Name)
+		}
+		target := filepath.Join(dstRoot, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			_, copyErr := io.Copy(f, tr)
+			closeErr := f.Close()
+			if copyErr != nil {
+				return copyErr
+			}
+			if closeErr != nil {
+				return closeErr
+			}
+		}
+	}
+	return nil
+}
+
 // DeleteBackup removes the named archive file. Idempotent.
 func (m *Manager) DeleteBackup(serverID, name string) error {
 	path := filepath.Join(

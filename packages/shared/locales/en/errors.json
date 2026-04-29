@@ -47,6 +47,10 @@
   "backups.s3_credentials_missing": "S3 credentials are not configured for this server.",
   "backups.upload_failed": "Failed to upload backup to remote storage.",
 
+  "transfers.not_found": "Transfer not found.",
+  "transfers.same_node": "Source and target nodes are the same.",
+  "transfers.allocation_unavailable": "Target allocation is not available.",
+  "transfers.push_failed": "Failed to transfer server files to target node.",
   "transfers.target_unreachable": "Target node could not be reached.",
   "transfers.token_invalid": "Transfer token is invalid or expired.",
 

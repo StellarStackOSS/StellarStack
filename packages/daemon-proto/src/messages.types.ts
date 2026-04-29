@@ -41,6 +41,8 @@ export type DaemonMessage =
   | DeleteBackupMessage
   | UploadBackupS3Message
   | SendConsoleMessage
+  | PrepareTransferMessage
+  | PushTransferMessage
 
 /**
  * Initial daemon→worker message containing identity + capabilities.
@@ -250,6 +252,28 @@ export type SendConsoleMessage = {
   type: "server.send_console"
   serverId: string
   line: string
+}
+
+/**
+ * Worker → daemon (target): register a one-time token so the target will
+ * accept the inbound archive stream from the source daemon.
+ */
+export type PrepareTransferMessage = {
+  type: "server.prepare_transfer"
+  serverId: string
+  token: string
+}
+
+/**
+ * Worker → daemon (source): archive the server's bind-mount and HTTP-PUT
+ * it to `targetUrl` authenticated with `token`. The source daemon acks
+ * when the push is complete.
+ */
+export type PushTransferMessage = {
+  type: "server.push_transfer"
+  serverId: string
+  targetUrl: string
+  token: string
 }
 
 /**

@@ -42,6 +42,10 @@ export type ErrorCode =
   | "servers.lifecycle.crashed.container_exit"
   | "servers.lifecycle.start_timeout"
   | "servers.not_found"
+  | "transfers.allocation_unavailable"
+  | "transfers.not_found"
+  | "transfers.push_failed"
+  | "transfers.same_node"
   | "transfers.target_unreachable"
   | "transfers.token_invalid"
   | "validation.enum"
@@ -99,6 +103,10 @@ export const errorCodes = [
   "servers.lifecycle.crashed.container_exit",
   "servers.lifecycle.start_timeout",
   "servers.not_found",
+  "transfers.allocation_unavailable",
+  "transfers.not_found",
+  "transfers.push_failed",
+  "transfers.same_node",
   "transfers.target_unreachable",
   "transfers.token_invalid",
   "validation.enum",

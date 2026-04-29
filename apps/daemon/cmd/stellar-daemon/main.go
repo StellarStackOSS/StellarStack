@@ -23,6 +23,7 @@ import (
 	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/pairing"
 	"github.com/stellarstack/daemon/internal/sftp"
+	"github.com/stellarstack/daemon/internal/transfer"
 	"github.com/stellarstack/daemon/internal/ws"
 )
 
@@ -134,8 +135,10 @@ func startHTTPServer(
 	fileManager *files.Manager,
 ) *http.Server {
 	consoleServer := console.New(verifier, client.Handler())
+	transferHandler := transfer.NewHandler(client.Handler().Transfer, fileManager)
 	mux := http.NewServeMux()
 	gate := gateForScopes(verifier)
+	mux.Handle("/internal/transfer/", transferHandler)
 	mux.HandleFunc("/servers/", func(w http.ResponseWriter, r *http.Request) {
 		if consoleServer.HandleConsole(w, r) {
 			return

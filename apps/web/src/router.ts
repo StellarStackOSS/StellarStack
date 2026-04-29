@@ -21,6 +21,7 @@ import { Route as serverSchedulesRoute } from "@/routes/ServerSchedules"
 import { Route as serverUsersRoute } from "@/routes/ServerUsers"
 import { Route as serverNetworkRoute } from "@/routes/ServerNetwork"
 import { Route as serverSettingsRoute } from "@/routes/ServerSettings"
+import { Route as serverTransferRoute } from "@/routes/ServerTransfer"
 
 const adminTree = adminRoute.addChildren([
   adminIndexRoute,
@@ -37,6 +38,7 @@ const serverTree = serverRoute.addChildren([
   serverUsersRoute,
   serverNetworkRoute,
   serverSettingsRoute,
+  serverTransferRoute,
 ])
 
 const routeTree = rootRoute.addChildren([

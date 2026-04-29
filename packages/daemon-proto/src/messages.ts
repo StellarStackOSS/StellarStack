@@ -153,6 +153,19 @@ const sendConsoleSchema = z.object({
   line: z.string().max(8192),
 })
 
+const prepareTransferSchema = z.object({
+  type: z.literal("server.prepare_transfer"),
+  serverId: z.string(),
+  token: z.string().min(1),
+})
+
+const pushTransferSchema = z.object({
+  type: z.literal("server.push_transfer"),
+  serverId: z.string(),
+  targetUrl: z.string().url(),
+  token: z.string().min(1),
+})
+
 const uploadBackupS3Schema = z.object({
   type: z.literal("server.upload_backup_s3"),
   serverId: z.string(),
@@ -188,6 +201,8 @@ export const daemonMessageSchema = z.union([
   deleteBackupSchema,
   uploadBackupS3Schema,
   sendConsoleSchema,
+  prepareTransferSchema,
+  pushTransferSchema,
 ])
 
 /**

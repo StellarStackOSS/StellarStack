@@ -23,6 +23,8 @@ import type {
 } from "@/handlers/Backups.types"
 import { buildServerCommandHandler } from "@/handlers/ServerCommand"
 import type { ServerCommandJobData } from "@/handlers/ServerCommand.types"
+import { buildServerTransferHandler } from "@/handlers/ServerTransfer"
+import type { ServerTransferJobData } from "@/handlers/ServerTransfer.types"
 import { loadEnv } from "@/env"
 import { DaemonClient } from "@/lib/DaemonClient"
 import { startScheduler } from "@/lib/Scheduler"
@@ -109,6 +111,11 @@ const main = async (): Promise<void> => {
     db,
     logger,
   })
+  const handleServerTransfer = buildServerTransferHandler({
+    daemonClient,
+    db,
+    logger,
+  })
 
   const pingWorker = new Worker<PingJobData>(
     "ping",
@@ -173,6 +180,15 @@ const main = async (): Promise<void> => {
     logger.error({ jobId: job?.id, err }, "Server command failed")
   })
 
+  const transferWorker = new Worker<ServerTransferJobData>(
+    "server.transfer",
+    async (job) => handleServerTransfer(job),
+    { connection, concurrency: 2 }
+  )
+  transferWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Server transfer failed")
+  })
+
   const scheduler = startScheduler({ connection, db, logger })
 
   const handleShutdown = async (signal: NodeJS.Signals) => {
@@ -187,6 +203,7 @@ const main = async (): Promise<void> => {
       backupRestoreWorker.close(),
       backupDeleteWorker.close(),
       commandWorker.close(),
+      transferWorker.close(),
       connection.quit(),
       pubsub.quit(),
       daemonRespSubscriber.quit(),

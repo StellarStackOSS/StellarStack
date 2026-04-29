@@ -22,6 +22,7 @@ import { buildReadyRoute } from "@/routes/Ready"
 import { buildSchedulesRoute } from "@/routes/Schedules"
 import { buildServersRoute } from "@/routes/Servers"
 import { buildSubusersRoute } from "@/routes/Subusers"
+import { buildTransfersRoute } from "@/routes/Transfers"
 import type { Queues } from "@/queues"
 
 /**
@@ -61,6 +62,7 @@ export const createApp = (params: {
     .route("/servers", buildBackupsRoute({ auth, db, queues }))
     .route("/servers", buildSubusersRoute({ auth, db }))
     .route("/servers", buildSchedulesRoute({ auth, db }))
+    .route("/servers", buildTransfersRoute({ auth, db, queues }))
     .route("/daemon/pair", buildDaemonPairRoute({ db, env }))
 
   app.onError(createErrorHandler(logger))

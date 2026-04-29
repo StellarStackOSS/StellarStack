@@ -4,6 +4,7 @@ import * as blueprints from "@workspace/db/schema/blueprints"
 import * as servers from "@workspace/db/schema/servers"
 import * as backups from "@workspace/db/schema/backups"
 import * as schedules from "@workspace/db/schema/schedules"
+import * as transfers from "@workspace/db/schema/transfers"
 import * as audit from "@workspace/db/schema/audit"
 import * as jobs from "@workspace/db/schema/jobs"
 
@@ -20,6 +21,7 @@ export const schema = {
   ...servers,
   ...backups,
   ...schedules,
+  ...transfers,
   ...audit,
   ...jobs,
 }
