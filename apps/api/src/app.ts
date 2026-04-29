@@ -12,6 +12,7 @@ import { createErrorHandler } from "@/middleware/ErrorHandler"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildAdminRoute } from "@/routes/Admin"
 import { buildAuthRoute } from "@/routes/Auth"
+import { buildBackupsRoute } from "@/routes/Backups"
 import { buildDaemonPairRoute } from "@/routes/DaemonPair"
 import { buildDaemonWsRoute } from "@/routes/DaemonWs"
 import { buildEventsRoute } from "@/routes/Events"
@@ -55,6 +56,7 @@ export const createApp = (params: {
     .route("/me", buildMeRoute({ auth, db }))
     .route("/admin", buildAdminRoute({ auth, db, env, queues }))
     .route("/servers", buildServersRoute({ auth, db, queues }))
+    .route("/servers", buildBackupsRoute({ auth, db, queues }))
     .route("/daemon/pair", buildDaemonPairRoute({ db, env }))
 
   app.onError(createErrorHandler(logger))

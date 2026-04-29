@@ -28,7 +28,9 @@ const helloSchema = z.object({
   capabilities: z.array(z.string()),
 })
 
-const ackSchema = z.object({ type: z.literal("ack") })
+const ackSchema = z
+  .object({ type: z.literal("ack") })
+  .catchall(z.unknown())
 
 const errorSchema = z.object({
   type: z.literal("error"),
@@ -116,6 +118,49 @@ const consoleLogSchema = z.object({
   at: z.string(),
 })
 
+const createBackupSchema = z.object({
+  type: z.literal("server.create_backup"),
+  serverId: z.string(),
+  name: z.string(),
+})
+
+const restoreBackupSchema = z.object({
+  type: z.literal("server.restore_backup"),
+  serverId: z.string(),
+  name: z.string(),
+})
+
+const deleteBackupSchema = z.object({
+  type: z.literal("server.delete_backup"),
+  serverId: z.string(),
+  name: z.string(),
+  s3: z
+    .object({
+      endpoint: z.string(),
+      region: z.string(),
+      bucket: z.string(),
+      accessKeyId: z.string(),
+      secretAccessKey: z.string(),
+      forcePathStyle: z.boolean(),
+      key: z.string(),
+    })
+    .optional(),
+})
+
+const uploadBackupS3Schema = z.object({
+  type: z.literal("server.upload_backup_s3"),
+  serverId: z.string(),
+  name: z.string(),
+  endpoint: z.string(),
+  region: z.string(),
+  bucket: z.string(),
+  prefix: z.string(),
+  accessKeyId: z.string(),
+  secretAccessKey: z.string(),
+  forcePathStyle: z.boolean(),
+  sha256: z.string(),
+})
+
 /**
  * Zod schema for the worker↔daemon message union. Daemons validate inbound
  * frames against this; workers validate before publishing to the panel WS.
@@ -132,6 +177,10 @@ export const daemonMessageSchema = z.union([
   statsSchema,
   installLogSchema,
   consoleLogSchema,
+  createBackupSchema,
+  restoreBackupSchema,
+  deleteBackupSchema,
+  uploadBackupS3Schema,
 ])
 
 /**

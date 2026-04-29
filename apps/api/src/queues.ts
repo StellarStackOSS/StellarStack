@@ -28,12 +28,36 @@ export type ServerPowerJobData = {
 }
 
 /**
+ * Payload shape for the `backup.create` queue.
+ */
+export type BackupCreateJobData = {
+  backupId: string
+}
+
+/**
+ * Payload shape for the `backup.restore` queue.
+ */
+export type BackupRestoreJobData = {
+  backupId: string
+}
+
+/**
+ * Payload shape for the `backup.delete` queue.
+ */
+export type BackupDeleteJobData = {
+  backupId: string
+}
+
+/**
  * Aggregate of all BullMQ producers the API holds open.
  */
 export type Queues = {
   ping: Queue<{ message: string }>
   serverInstall: Queue<ServerInstallJobData>
   serverPower: Queue<ServerPowerJobData>
+  backupCreate: Queue<BackupCreateJobData>
+  backupRestore: Queue<BackupRestoreJobData>
+  backupDelete: Queue<BackupDeleteJobData>
 }
 
 /**
@@ -44,4 +68,7 @@ export const createQueues = (connection: IORedis): Queues => ({
   ping: new Queue("ping", { connection }),
   serverInstall: new Queue("server.install", { connection }),
   serverPower: new Queue("server.power", { connection }),
+  backupCreate: new Queue("backup.create", { connection }),
+  backupRestore: new Queue("backup.restore", { connection }),
+  backupDelete: new Queue("backup.delete", { connection }),
 })

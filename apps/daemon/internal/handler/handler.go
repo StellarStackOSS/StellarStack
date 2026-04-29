@@ -14,7 +14,9 @@ import (
 
 	"github.com/stellarstack/daemon/internal/config"
 	"github.com/stellarstack/daemon/internal/docker"
+	"github.com/stellarstack/daemon/internal/files"
 	"github.com/stellarstack/daemon/internal/lifecycle"
+	"github.com/stellarstack/daemon/internal/s3"
 )
 
 // Sender is anything that can emit a JSON-encoded envelope back to the API
@@ -31,6 +33,7 @@ type Sender interface {
 type Handler struct {
 	cfg    *config.Config
 	docker *docker.Client
+	files  *files.Manager
 
 	mu       sync.Mutex
 	watchers map[string]*serverState
@@ -47,6 +50,7 @@ func New(cfg *config.Config) *Handler {
 	return &Handler{
 		cfg:      cfg,
 		docker:   docker.New(""),
+		files:    files.New(cfg.DataDir),
 		watchers: map[string]*serverState{},
 	}
 }
@@ -87,6 +91,14 @@ func (h *Handler) HandleEnvelope(
 		return h.handlePower(ctx, envelope.ID, envelope.Message, send, "kill")
 	case "server.delete":
 		return h.handleDelete(ctx, envelope.ID, envelope.Message, send)
+	case "server.create_backup":
+		return h.handleCreateBackup(ctx, envelope.ID, envelope.Message, send)
+	case "server.restore_backup":
+		return h.handleRestoreBackup(ctx, envelope.ID, envelope.Message, send)
+	case "server.delete_backup":
+		return h.handleDeleteBackup(ctx, envelope.ID, envelope.Message, send)
+	case "server.upload_backup_s3":
+		return h.handleUploadBackupS3(ctx, envelope.ID, envelope.Message, send)
 	default:
 		log.Printf("daemon: ignoring message type %q", typed.Type)
 		return writeEnvelope(ctx, send, envelope.ID, map[string]any{
@@ -375,4 +387,148 @@ func writeError(
 		body["params"] = params
 	}
 	return writeEnvelope(ctx, send, id, body)
+}
+
+func (h *Handler) handleCreateBackup(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+		Name     string `json:"name"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	result, err := h.files.CreateBackup(msg.ServerID, msg.Name)
+	if err != nil {
+		log.Printf("daemon: create backup: %v", err)
+		return writeError(ctx, send, id, "backups.upload_failed", nil)
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{
+		"type":   "ack",
+		"path":   result.Path,
+		"bytes":  result.Bytes,
+		"sha256": result.SHA256,
+	})
+}
+
+func (h *Handler) handleRestoreBackup(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+		Name     string `json:"name"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	if err := h.files.RestoreBackup(msg.ServerID, msg.Name); err != nil {
+		log.Printf("daemon: restore backup: %v", err)
+		return writeError(ctx, send, id, "backups.upload_failed", nil)
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+func (h *Handler) handleDeleteBackup(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+		Name     string `json:"name"`
+		S3       *struct {
+			Endpoint        string `json:"endpoint"`
+			Region          string `json:"region"`
+			Bucket          string `json:"bucket"`
+			AccessKeyID     string `json:"accessKeyId"`
+			SecretAccessKey string `json:"secretAccessKey"`
+			ForcePathStyle  bool   `json:"forcePathStyle"`
+			Key             string `json:"key"`
+		} `json:"s3"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	if err := h.files.DeleteBackup(msg.ServerID, msg.Name); err != nil {
+		log.Printf("daemon: delete backup file: %v", err)
+	}
+	if msg.S3 != nil && msg.S3.Bucket != "" && msg.S3.Key != "" {
+		err := s3.DeleteObject(ctx, s3.Config{
+			Endpoint:        msg.S3.Endpoint,
+			Region:          msg.S3.Region,
+			Bucket:          msg.S3.Bucket,
+			AccessKeyID:     msg.S3.AccessKeyID,
+			SecretAccessKey: msg.S3.SecretAccessKey,
+			ForcePathStyle:  msg.S3.ForcePathStyle,
+		}, msg.S3.Key)
+		if err != nil {
+			log.Printf("daemon: delete s3 object: %v", err)
+		}
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+func (h *Handler) handleUploadBackupS3(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID    string `json:"serverId"`
+		Name        string `json:"name"`
+		Endpoint    string `json:"endpoint"`
+		Region      string `json:"region"`
+		Bucket      string `json:"bucket"`
+		Prefix      string `json:"prefix"`
+		AccessKeyID string `json:"accessKeyId"`
+		SecretKey   string `json:"secretAccessKey"`
+		ForcePath   bool   `json:"forcePathStyle"`
+		SHA256      string `json:"sha256"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	reader, err := h.files.BackupReader(msg.ServerID, msg.Name)
+	if err != nil {
+		return writeError(ctx, send, id, "backups.upload_failed", nil)
+	}
+	defer reader.Close()
+	stat, err := reader.Stat()
+	if err != nil {
+		return writeError(ctx, send, id, "backups.upload_failed", nil)
+	}
+	prefix := msg.Prefix
+	if prefix != "" && prefix[len(prefix)-1] != '/' {
+		prefix += "/"
+	}
+	key := prefix + msg.ServerID + "/" + msg.Name + ".tar.gz"
+	uploadCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+	err = s3.PutObject(uploadCtx, s3.Config{
+		Endpoint:        msg.Endpoint,
+		Region:          msg.Region,
+		Bucket:          msg.Bucket,
+		AccessKeyID:     msg.AccessKeyID,
+		SecretAccessKey: msg.SecretKey,
+		ForcePathStyle:  msg.ForcePath,
+	}, key, reader, stat.Size(), msg.SHA256)
+	if err != nil {
+		log.Printf("daemon: s3 put: %v", err)
+		return writeError(ctx, send, id, "backups.upload_failed", map[string]any{
+			"reason": err.Error(),
+		})
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{
+		"type": "ack",
+		"key":  key,
+	})
 }

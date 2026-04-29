@@ -15,6 +15,13 @@
       "when": 1777428763191,
       "tag": "0001_session_updated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777476507071,
+      "tag": "0002_backup_destinations",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,10 @@ export type DaemonMessage =
   | ServerStatsMessage
   | InstallLogMessage
   | ConsoleLogMessage
+  | CreateBackupMessage
+  | RestoreBackupMessage
+  | DeleteBackupMessage
+  | UploadBackupS3Message
 
 /**
  * Initial daemon→worker message containing identity + capabilities.
@@ -174,6 +178,66 @@ export type ConsoleLogMessage = {
   serverId: string
   line: string
   at: string
+}
+
+/**
+ * Worker → daemon: archive the server's bind-mount into a tar.gz at
+ * `${dataDir}/backups/{serverId}/{name}.tar.gz`. Daemon replies with an
+ * `ack` whose extra fields carry the on-disk path, byte count, and
+ * sha256 of the archive contents.
+ */
+export type CreateBackupMessage = {
+  type: "server.create_backup"
+  serverId: string
+  name: string
+}
+
+/**
+ * Worker → daemon: restore a previously-archived backup over the
+ * server's bind-mount. Container should be stopped first.
+ */
+export type RestoreBackupMessage = {
+  type: "server.restore_backup"
+  serverId: string
+  name: string
+}
+
+/**
+ * Worker → daemon: drop a backup's local archive (and optional S3
+ * object). Idempotent.
+ */
+export type DeleteBackupMessage = {
+  type: "server.delete_backup"
+  serverId: string
+  name: string
+  s3?: {
+    endpoint: string
+    region: string
+    bucket: string
+    accessKeyId: string
+    secretAccessKey: string
+    forcePathStyle: boolean
+    key: string
+  }
+}
+
+/**
+ * Worker → daemon: stream the local archive bytes to the configured
+ * S3-compatible bucket. Daemon replies with an `ack` whose `key` field
+ * carries the resulting object key.
+ */
+export type UploadBackupS3Message = {
+  type: "server.upload_backup_s3"
+  serverId: string
+  name: string
+  endpoint: string
+  region: string
+  bucket: string
+  prefix: string
+  accessKeyId: string
+  secretAccessKey: string
+  forcePathStyle: boolean
+  sha256: string
 }
 
 /**

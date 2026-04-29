@@ -11,6 +11,16 @@ import { buildServerInstallHandler } from "@/handlers/ServerInstall"
 import type { ServerInstallJobData } from "@/handlers/ServerInstall.types"
 import { buildServerPowerHandler } from "@/handlers/ServerPower"
 import type { ServerPowerJobData } from "@/handlers/ServerPower.types"
+import {
+  buildBackupCreateHandler,
+  buildBackupDeleteHandler,
+  buildBackupRestoreHandler,
+} from "@/handlers/Backups"
+import type {
+  BackupCreateJobData,
+  BackupDeleteJobData,
+  BackupRestoreJobData,
+} from "@/handlers/Backups.types"
 import { loadEnv } from "@/env"
 import { DaemonClient } from "@/lib/DaemonClient"
 import { createLogger } from "@/logger"
@@ -76,6 +86,21 @@ const main = async (): Promise<void> => {
     db,
     logger,
   })
+  const handleBackupCreate = buildBackupCreateHandler({
+    daemonClient,
+    db,
+    logger,
+  })
+  const handleBackupRestore = buildBackupRestoreHandler({
+    daemonClient,
+    db,
+    logger,
+  })
+  const handleBackupDelete = buildBackupDeleteHandler({
+    daemonClient,
+    db,
+    logger,
+  })
 
   const pingWorker = new Worker<PingJobData>(
     "ping",
@@ -104,6 +129,33 @@ const main = async (): Promise<void> => {
     logger.error({ jobId: job?.id, err }, "Server power job failed")
   })
 
+  const backupCreateWorker = new Worker<BackupCreateJobData>(
+    "backup.create",
+    async (job) => handleBackupCreate(job),
+    { connection, concurrency: 2 }
+  )
+  backupCreateWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Backup create failed")
+  })
+
+  const backupRestoreWorker = new Worker<BackupRestoreJobData>(
+    "backup.restore",
+    async (job) => handleBackupRestore(job),
+    { connection, concurrency: 2 }
+  )
+  backupRestoreWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Backup restore failed")
+  })
+
+  const backupDeleteWorker = new Worker<BackupDeleteJobData>(
+    "backup.delete",
+    async (job) => handleBackupDelete(job),
+    { connection, concurrency: 4 }
+  )
+  backupDeleteWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Backup delete failed")
+  })
+
   const handleShutdown = async (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Worker shutting down")
     daemonClient.shutdown()
@@ -111,6 +163,9 @@ const main = async (): Promise<void> => {
       pingWorker.close(),
       installWorker.close(),
       powerWorker.close(),
+      backupCreateWorker.close(),
+      backupRestoreWorker.close(),
+      backupDeleteWorker.close(),
       connection.quit(),
       pubsub.quit(),
       daemonRespSubscriber.quit(),
