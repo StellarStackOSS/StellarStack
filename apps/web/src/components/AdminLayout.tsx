@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import { Link, Outlet } from "@tanstack/react-router"
 
 import { Button } from "@workspace/ui/components/button"
@@ -14,6 +15,11 @@ import { useSession } from "@/lib/AuthClient"
  * Shell rendered for `/admin/*` routes. Owns the admin-only sidebar and
  * blocks non-admin sessions with a clear message — bouncing them to the
  * dashboard rather than silently 404-ing on the inner page.
+ *
+ * Mirrors the shadcn pattern: `SidebarProvider` carries
+ * `--sidebar-width` + `--header-height` CSS variables, the floating
+ * Sidebar sits next to a `SidebarInset`, and the inset hosts a sticky
+ * top bar plus an outlet for the child page.
  */
 export const AdminLayout = () => {
   const { data: session, isPending } = useSession()
@@ -42,16 +48,25 @@ export const AdminLayout = () => {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as CSSProperties
+      }
+    >
       <AdminSidebar />
       <SidebarInset>
-        <header className="border-border flex items-center gap-2 border-b px-4 py-2">
-          <SidebarTrigger />
-          <span className="text-muted-foreground text-xs">Admin</span>
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <span className="text-sm font-medium">Admin</span>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-          <Outlet />
-        </main>
+        <div className="flex flex-1 flex-col">
+          <main className="@container/main mx-auto w-full max-w-5xl flex-1 p-6">
+            <Outlet />
+          </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

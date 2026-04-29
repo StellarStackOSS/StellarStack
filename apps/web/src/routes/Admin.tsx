@@ -11,7 +11,6 @@ import { Route as rootRoute } from "@/routes/Root"
  */
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  id: "admin",
   path: "/admin",
   beforeLoad: async () => {
     const session = await authClient.getSession()

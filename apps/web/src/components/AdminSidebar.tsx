@@ -1,52 +1,75 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ArrowLeft01FreeIcon,
-  CubeFreeIcon,
-  GlobalNetworkFreeIcon,
-  UserMultipleFreeIcon,
+  ArrowLeft01Icon,
+  CubeIcon,
+  ServerStackIcon,
+  UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar"
 
-import { UserPopover } from "@/components/UserPopover"
-
-const adminItems = [
-  { to: "/admin/nodes", label: "Nodes", icon: GlobalNetworkFreeIcon },
-  { to: "/admin/blueprints", label: "Blueprints", icon: CubeFreeIcon },
-  { to: "/admin/users", label: "Users", icon: UserMultipleFreeIcon },
-] as const
+import { NavMain } from "@/components/NavMain"
+import { NavUser } from "@/components/NavUser"
+import type { NavItem } from "@/components/NavMain.types"
 
 /**
  * Admin-only sidebar shown across `/admin/*` routes. Lives independently
  * of the server-scoped sidebar so the two contexts can evolve separately.
  */
-export const AdminSidebar = () => {
+export const AdminSidebar = ({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) => {
   const location = useLocation()
 
+  const items: NavItem[] = [
+    {
+      title: "Nodes",
+      icon: ServerStackIcon,
+      to: "/admin/nodes",
+      isActive: location.pathname.startsWith("/admin/nodes"),
+    },
+    {
+      title: "Blueprints",
+      icon: CubeIcon,
+      to: "/admin/blueprints",
+      isActive: location.pathname.startsWith("/admin/blueprints"),
+    },
+    {
+      title: "Users",
+      icon: UserMultipleIcon,
+      to: "/admin/users",
+      isActive: location.pathname.startsWith("/admin/users"),
+    },
+  ]
+
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="Back to dashboard">
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              tooltip="Back to dashboard"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
+            >
               <Link to="/dashboard">
-                <span className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-7 items-center justify-center rounded-md">
-                  <HugeiconsIcon icon={ArrowLeft01FreeIcon} className="size-3.5" />
+                <span className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
                 </span>
                 <div className="grid flex-1 text-left text-xs leading-tight">
-                  <span className="truncate font-medium">StellarStack</span>
+                  <span className="truncate text-sm font-semibold">
+                    StellarStack
+                  </span>
                   <span className="text-muted-foreground truncate text-[0.65rem]">
                     Admin
                   </span>
@@ -57,34 +80,10 @@ export const AdminSidebar = () => {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Manage</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname.startsWith(item.to)}
-                    tooltip={item.label}
-                  >
-                    <Link to={item.to}>
-                      <HugeiconsIcon icon={item.icon} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain label="Manage" items={items} />
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <UserPopover />
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   )

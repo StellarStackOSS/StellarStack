@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  PlusSignFreeIcon,
-  Settings02FreeIcon,
+  Add01Icon,
+  Settings02Icon,
 } from "@hugeicons/core-free-icons"
 
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
@@ -66,14 +66,14 @@ export const DashboardPage = () => {
         <div className="flex items-center gap-2">
           <Link to="/servers/new">
             <Button size="sm">
-              <HugeiconsIcon icon={PlusSignFreeIcon} />
+              <HugeiconsIcon icon={Add01Icon} />
               New server
             </Button>
           </Link>
           {user?.isAdmin === true ? (
             <Link to="/admin/nodes">
               <Button variant="outline" size="sm">
-                <HugeiconsIcon icon={Settings02FreeIcon} />
+                <HugeiconsIcon icon={Settings02Icon} />
                 Admin
               </Button>
             </Link>

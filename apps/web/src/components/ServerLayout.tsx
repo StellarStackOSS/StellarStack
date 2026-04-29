@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react"
 import { Outlet, useParams } from "@tanstack/react-router"
+import { useTranslation } from "react-i18next"
 
 import {
   SidebarInset,
@@ -18,9 +20,15 @@ import { useSession } from "@/lib/AuthClient"
  * panel-event subscription, and the live status hook so per-tab pages get
  * a consistent view without each one re-subscribing. Children receive the
  * resolved server + filtered events + live status via React context.
+ *
+ * Uses the shadcn pattern: `SidebarProvider` carries the `--sidebar-width`
+ * + `--header-height` CSS variables, the floating Sidebar sits next to a
+ * `SidebarInset`, and the inset hosts a SiteHeader-style top bar plus the
+ * outlet for child route content.
  */
 export const ServerLayout = () => {
   const { id } = useParams({ from: "/servers/$id" })
+  const { t } = useTranslation()
   const { data: session, isPending } = useSession()
   const enabled = !isPending && session !== null
   const { state: wsState, events } = usePanelEvents(enabled)
@@ -53,20 +61,34 @@ export const ServerLayout = () => {
   )
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as CSSProperties
+      }
+    >
       <ServerSidebar server={server} liveStatus={liveStatus} />
       <SidebarInset>
-        <header className="border-border flex items-center gap-2 border-b px-4 py-2">
-          <SidebarTrigger />
-          <div className="text-muted-foreground text-xs">{status}</div>
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-medium">{server.name}</span>
+            <span className="text-muted-foreground text-xs">
+              {t(`lifecycle.${status}`, { ns: "common" })}
+            </span>
+          </div>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-          <ServerLayoutContext.Provider
-            value={{ server, status, events: filteredEvents, wsState }}
-          >
-            <Outlet />
-          </ServerLayoutContext.Provider>
-        </main>
+        <div className="flex flex-1 flex-col">
+          <main className="@container/main mx-auto w-full max-w-5xl flex-1 p-6">
+            <ServerLayoutContext.Provider
+              value={{ server, status, events: filteredEvents, wsState }}
+            >
+              <Outlet />
+            </ServerLayoutContext.Provider>
+          </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
