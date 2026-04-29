@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,7 @@ type serverState struct {
 	containerName string
 	watcher       *lifecycle.Watcher
 	lifecycle     lifecycle.Lifecycle
+	statsCancel   context.CancelFunc
 }
 
 // New returns a Handler bound to the local Docker socket.
@@ -72,6 +74,46 @@ func (h *Handler) powerLock(serverID string) *sync.Mutex {
 		h.powerLocks[serverID] = &sync.Mutex{}
 	}
 	return h.powerLocks[serverID]
+}
+
+// startStats launches a goroutine that streams Docker container stats and
+// emits server.stats frames via send. Any previously running stats goroutine
+// for the same server is cancelled first. The goroutine stops automatically
+// when the container exits or ctx is cancelled.
+func (h *Handler) startStats(ctx context.Context, state *serverState, send Sender) {
+	if state.statsCancel != nil {
+		state.statsCancel()
+	}
+	sctx, cancel := context.WithCancel(ctx)
+	state.statsCancel = cancel
+	go func() {
+		ch, err := h.docker.StatsStream(sctx, state.containerName)
+		if err != nil {
+			log.Printf("daemon: stats stream: %v", err)
+			return
+		}
+		for snap := range ch {
+			_ = writeEnvelope(sctx, send, "", map[string]any{
+				"type":             "server.stats",
+				"serverId":         strings.TrimPrefix(state.containerName, "stellar-"),
+				"memoryBytes":      snap.MemoryBytes,
+				"memoryLimitBytes": snap.MemoryLimitBytes,
+				"cpuFraction":      snap.CPUFraction,
+				"diskBytes":        int64(0),
+				"networkRxBytes":   snap.NetworkRxBytes,
+				"networkTxBytes":   snap.NetworkTxBytes,
+				"at":               time.Now().UTC().Format(time.RFC3339Nano),
+			})
+		}
+	}()
+}
+
+// stopStats cancels the running stats goroutine for a server, if any.
+func stopStats(state *serverState) {
+	if state.statsCancel != nil {
+		state.statsCancel()
+		state.statsCancel = nil
+	}
 }
 
 // HandleEnvelope inspects the message type and dispatches.
@@ -327,10 +369,10 @@ func (h *Handler) handlePower(
 			log.Printf("daemon: start container: %v", err)
 			return writeError(ctx, send, id, "internal.unexpected", nil)
 		}
+		h.startStats(context.Background(), state, send)
 		if len(state.lifecycle.Starting.Probes) > 0 {
 			state.watcher.OnStarting(context.Background(), state.lifecycle)
 		} else {
-			// No lifecycle config available — emit directly to running.
 			state.watcher.SetState(context.Background(), lifecycle.StateRunning, "servers.lifecycle.started")
 		}
 	case "stop":
@@ -338,10 +380,11 @@ func (h *Handler) handlePower(
 		if state.lifecycle.Stopping.GraceTimeoutMs > 0 {
 			grace = state.lifecycle.Stopping.GraceTimeoutMs / 1000
 		}
+		stopStats(state)
 		if len(state.lifecycle.Stopping.Probes) > 0 {
 			state.watcher.OnStopping(context.Background(), state.lifecycle)
 		} else {
-			state.watcher.Stop() // cancel crash detection before marking stopping
+			state.watcher.Stop()
 			state.watcher.SetState(context.Background(), lifecycle.StateStopping, "servers.lifecycle.stopping.requested")
 		}
 		if err := h.docker.StopContainer(ctx, containerName, grace); err != nil {
@@ -352,6 +395,7 @@ func (h *Handler) handlePower(
 			state.watcher.SetState(context.Background(), lifecycle.StateStopped, "servers.lifecycle.stopped")
 		}
 	case "kill":
+		stopStats(state)
 		if err := h.docker.KillContainer(ctx, containerName); err != nil {
 			log.Printf("daemon: kill container: %v", err)
 			return writeError(ctx, send, id, "internal.unexpected", nil)
@@ -384,6 +428,7 @@ func (h *Handler) handleDelete(
 	delete(h.watchers, msg.ServerID)
 	h.mu.Unlock()
 	if state != nil {
+		stopStats(state)
 		state.watcher.Stop()
 	}
 
