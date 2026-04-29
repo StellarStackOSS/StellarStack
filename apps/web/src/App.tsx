@@ -1,22 +1,23 @@
-import { Button } from "@workspace/ui/components/button"
+import { useState } from "react"
+import { QueryClientProvider } from "@tanstack/react-query"
+import { RouterProvider } from "@tanstack/react-router"
+
+import { createAppRouter } from "@/router"
+import { createQueryClient } from "@/lib/QueryClient"
 
 /**
- * Root application component. Currently a placeholder shell — replaced by the
- * TanStack Router tree once auth + dashboard scaffolding lands.
+ * Root application component. Builds the router + query client once for
+ * the lifetime of the page; both are otherwise threaded through context
+ * to descendants. The shared `QueryClient` is also stashed on the router
+ * context so route loaders can call `queryClient.fetchQuery`.
  */
 export const App = () => {
+  const [queryClient] = useState(() => createQueryClient())
+  const [router] = useState(() => createAppRouter(queryClient))
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">StellarStack</h1>
-          <p>Control panel scaffold ready.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="text-muted-foreground font-mono text-xs">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }

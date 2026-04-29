@@ -1,6 +1,7 @@
 import type IORedis from "ioredis"
 import type { NodeWebSocket } from "@hono/node-ws"
 import { Hono } from "hono"
+import { cors } from "hono/cors"
 import type { Logger } from "pino"
 
 import type { Db } from "@workspace/db/client.types"
@@ -27,13 +28,23 @@ import type { Queues } from "@/queues"
 export const createApp = (params: {
   auth: Auth
   db: Db
+  env: Env
   logger: Logger
   queues: Queues
   redis: IORedis
 }) => {
-  const { auth, db, logger, queues, redis } = params
+  const { auth, db, env, logger, queues, redis } = params
 
   const app = new Hono<{ Variables: ApiVariables }>()
+    .use(
+      "*",
+      cors({
+        origin: env.PUBLIC_APP_URL,
+        credentials: true,
+        allowHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
+        allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+      })
+    )
     .use("*", requestIdMiddleware)
     .route("/health", healthRoute)
     .route("/ready", buildReadyRoute({ db, redis }))

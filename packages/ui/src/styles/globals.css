@@ -1,7 +1,6 @@
-@import "../../node_modules/tailwindcss";
-@import "../../node_modules/tw-animate-css";
-@import "tailwind.css";
-@import "inter";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 @source "../../../apps/**/*.{ts,tsx}";

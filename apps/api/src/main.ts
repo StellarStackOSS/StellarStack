@@ -17,7 +17,7 @@ const main = async (): Promise<void> => {
   const queues = createQueues(redis)
   const auth = createAuth(db, env)
 
-  const app = createApp({ auth, db, logger, queues, redis })
+  const app = createApp({ auth, db, env, logger, queues, redis })
   const { upgradeWebSocket, injectWebSocket } = createNodeWebSocket({ app })
   attachWebSocketRoutes(app, { auth, env, logger, upgradeWebSocket })
 
