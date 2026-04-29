@@ -31,9 +31,17 @@ func New(verifier *stellarjwt.Verifier, h *handler.Handler) *Server {
 	return &Server{verifier: verifier, handler: h}
 }
 
-// Mount registers the console WS handler on the given mux.
-func (s *Server) Mount(mux *http.ServeMux) {
-	mux.HandleFunc("/servers/", s.handle)
+// HandleConsole is the dispatcher for `/servers/:id/ws` upgrades. Returns
+// true when the request matched (whether it succeeded or not); the daemon
+// main composes this with the file API dispatcher under a single mux
+// entry.
+func (s *Server) HandleConsole(w http.ResponseWriter, r *http.Request) bool {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) != 3 || parts[0] != "servers" || parts[2] != "ws" {
+		return false
+	}
+	s.handle(w, r)
+	return true
 }
 
 func (s *Server) handle(w http.ResponseWriter, r *http.Request) {

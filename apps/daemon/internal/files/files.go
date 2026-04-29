@@ -1,0 +1,352 @@
+// Package files implements the per-server file API mounted on the
+// daemon's HTTP listener. Browsers call into this directly using a JWT
+// minted by the API; SFTP traffic uses the same `safePath` jail logic.
+//
+// Every operation resolves the requested path inside the server's
+// bind-mount root and rejects anything that would escape via "..", absolute
+// paths, or symlinks. Errors flow back as JSON `{ "error": { code, ... } }`
+// envelopes mirroring the API's translation-key shape so the browser only
+// ever sees one error format.
+package files
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+)
+
+// Manager owns per-server file operations rooted under
+// `${dataDir}/servers/{serverId}`.
+type Manager struct {
+	root string
+}
+
+// New returns a Manager rooted at `root` (typically the daemon's
+// `cfg.DataDir`).
+func New(root string) *Manager {
+	return &Manager{root: root}
+}
+
+// Entry mirrors the wire shape returned by `GET /servers/:id/files`.
+type Entry struct {
+	Name    string    `json:"name"`
+	Path    string    `json:"path"`
+	IsDir   bool      `json:"isDir"`
+	Size    int64     `json:"size"`
+	Mode    string    `json:"mode"`
+	ModTime time.Time `json:"modTime"`
+}
+
+// SafePath resolves `requested` against the server's root, rejecting any
+// traversal attempt. Returns the absolute on-disk path on success.
+func (m *Manager) SafePath(serverID, requested string) (string, error) {
+	if strings.Contains(requested, "\x00") {
+		return "", errors.New("invalid path")
+	}
+	cleaned := filepath.Clean("/" + requested)
+	root := filepath.Join(m.root, "servers", serverID)
+	if resolvedRoot, err := filepath.EvalSymlinks(root); err == nil {
+		root = resolvedRoot
+	}
+	candidate := filepath.Join(root, cleaned)
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", errors.New("path escapes server root")
+	}
+	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+		rel2, err2 := filepath.Rel(root, resolved)
+		if err2 == nil && (rel2 == ".." || strings.HasPrefix(rel2, ".."+string(os.PathSeparator))) {
+			return "", errors.New("symlink escapes server root")
+		}
+	}
+	return candidate, nil
+}
+
+// List returns the directory listing at `path` for `serverID`. If the
+// server's root doesn't yet exist (server hasn't been provisioned on this
+// host) it returns an empty slice rather than 404 so the panel can still
+// render.
+func (m *Manager) List(serverID, path string) ([]Entry, error) {
+	abs, err := m.SafePath(serverID, path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []Entry{}, nil
+		}
+		return nil, err
+	}
+	if !info.IsDir() {
+		return nil, errors.New("not a directory")
+	}
+	entries, err := os.ReadDir(abs)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Entry, 0, len(entries))
+	for _, dirent := range entries {
+		fi, err := dirent.Info()
+		if err != nil {
+			continue
+		}
+		out = append(out, Entry{
+			Name:    dirent.Name(),
+			Path:    filepath.Join(filepath.Clean("/"+path), dirent.Name()),
+			IsDir:   dirent.IsDir(),
+			Size:    fi.Size(),
+			Mode:    fi.Mode().String(),
+			ModTime: fi.ModTime(),
+		})
+	}
+	return out, nil
+}
+
+// ReadAll returns the entire contents of `path`. Caller is responsible for
+// enforcing a max-bytes limit at the HTTP layer.
+func (m *Manager) ReadAll(serverID, path string) ([]byte, error) {
+	abs, err := m.SafePath(serverID, path)
+	if err != nil {
+		return nil, err
+	}
+	return os.ReadFile(abs)
+}
+
+// WriteAll writes `data` to `path`, creating parent directories as needed.
+func (m *Manager) WriteAll(serverID, path string, data []byte) error {
+	abs, err := m.SafePath(serverID, path)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(abs, data, 0o644)
+}
+
+// Mkdir creates the directory at `path` (with parents).
+func (m *Manager) Mkdir(serverID, path string) error {
+	abs, err := m.SafePath(serverID, path)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(abs, 0o755)
+}
+
+// Delete removes the file or directory at `path` (recursive).
+func (m *Manager) Delete(serverID, path string) error {
+	abs, err := m.SafePath(serverID, path)
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(abs)
+}
+
+// Rename moves `from` to `to`, both resolved inside the server root.
+func (m *Manager) Rename(serverID, from, to string) error {
+	src, err := m.SafePath(serverID, from)
+	if err != nil {
+		return err
+	}
+	dst, err := m.SafePath(serverID, to)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	return os.Rename(src, dst)
+}
+
+// HTTP routes ----------------------------------------------------------
+
+// AuthGate must return claims with the right scopes for the request, or
+// nil + an HTTP status to short-circuit. Wired by the daemon's main using
+// the JWT verifier.
+type AuthGate func(r *http.Request, requiredScopes ...string) (ok bool, status int)
+
+// HandleFiles is the dispatcher for `/servers/:id/files...` paths. The
+// daemon's main composes this with the console handler under a single
+// mux entry so two packages don't fight over `/servers/`.
+func (m *Manager) HandleFiles(w http.ResponseWriter, r *http.Request, gate AuthGate) bool {
+	serverID, sub, ok := splitPath(r.URL.Path)
+	if !ok {
+		return false
+	}
+	switch {
+	case sub == "/files" && r.Method == http.MethodGet:
+		m.handleList(w, r, serverID, gate)
+	case sub == "/files/content" && r.Method == http.MethodGet:
+		m.handleRead(w, r, serverID, gate)
+	case sub == "/files/content" && r.Method == http.MethodPut:
+		m.handleWrite(w, r, serverID, gate)
+	case sub == "/files/mkdir" && r.Method == http.MethodPost:
+		m.handleMkdir(w, r, serverID, gate)
+	case sub == "/files" && r.Method == http.MethodDelete:
+		m.handleDelete(w, r, serverID, gate)
+	case sub == "/files/rename" && r.Method == http.MethodPost:
+		m.handleRename(w, r, serverID, gate)
+	default:
+		return false
+	}
+	return true
+}
+
+func splitPath(urlPath string) (serverID string, sub string, ok bool) {
+	const prefix = "/servers/"
+	if !strings.HasPrefix(urlPath, prefix) {
+		return "", "", false
+	}
+	rest := urlPath[len(prefix):]
+	idx := strings.Index(rest, "/")
+	if idx == -1 {
+		return "", "", false
+	}
+	return rest[:idx], rest[idx:], true
+}
+
+func (m *Manager) handleList(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.read"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	path := r.URL.Query().Get("path")
+	entries, err := m.List(serverID, path)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"entries": entries})
+}
+
+func (m *Manager) handleRead(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.read"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	path := r.URL.Query().Get("path")
+	data, err := m.ReadAll(serverID, path)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	if len(data) > 5*1024*1024 {
+		writeError(w, http.StatusRequestEntityTooLarge, "files.too_large")
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	_, _ = w.Write(data)
+}
+
+func (m *Manager) handleWrite(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	path := r.URL.Query().Get("path")
+	data, err := io.ReadAll(io.LimitReader(r.Body, 10*1024*1024))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	if err := m.WriteAll(serverID, path, data); err != nil {
+		writeFsError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (m *Manager) handleMkdir(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	var body struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	if err := m.Mkdir(serverID, body.Path); err != nil {
+		writeFsError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (m *Manager) handleDelete(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.delete"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	path := r.URL.Query().Get("path")
+	if err := m.Delete(serverID, path); err != nil {
+		writeFsError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (m *Manager) handleRename(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	var body struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	if err := m.Rename(serverID, body.From, body.To); err != nil {
+		writeFsError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func writeError(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, map[string]any{
+		"error": map[string]any{"code": code, "requestId": "daemon"},
+	})
+}
+
+func writeFsError(w http.ResponseWriter, err error) {
+	if err == nil {
+		writeError(w, http.StatusInternalServerError, "internal.unexpected")
+		return
+	}
+	if strings.Contains(err.Error(), "escapes server root") {
+		writeError(w, http.StatusForbidden, "files.path_outside_jail")
+		return
+	}
+	if os.IsNotExist(err) {
+		writeError(w, http.StatusNotFound, "files.not_found")
+		return
+	}
+	if os.IsPermission(err) {
+		writeError(w, http.StatusForbidden, "files.read_only")
+		return
+	}
+	writeError(w, http.StatusInternalServerError, "internal.unexpected")
+	_ = fmt.Sprint(err)
+}

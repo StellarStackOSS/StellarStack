@@ -264,31 +264,9 @@ export const buildServersRoute = (params: {
     .post("/:id/ws-credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
-      const server = (
-        await db
-          .select()
-          .from(serversTable)
-          .where(eq(serversTable.id, id))
-          .limit(1)
-      )[0]
-      if (server === undefined) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      if (user.isAdmin !== true && server.ownerId !== user.id) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      const node = (
-        await db
-          .select()
-          .from(nodesTable)
-          .where(eq(nodesTable.id, server.nodeId))
-          .limit(1)
-      )[0]
-      if (node === undefined || node.daemonPublicKey === null) {
-        throw new ApiException("nodes.not_found", { status: 404 })
-      }
+      const { server, node } = await loadServerAndNode(db, user, id)
       const minted = await mintDaemonToken({
-        signingKeyHex: node.daemonPublicKey,
+        signingKeyHex: node.daemonPublicKey ?? "",
         userId: user.id,
         serverId: server.id,
         nodeId: node.id,
@@ -301,4 +279,73 @@ export const buildServersRoute = (params: {
         wsUrl: `${node.scheme === "https" ? "wss" : "ws"}://${node.fqdn}:${node.daemonPort}/servers/${server.id}/ws`,
       })
     })
+    .post("/:id/files-credentials", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const { server, node } = await loadServerAndNode(db, user, id)
+      const minted = await mintDaemonToken({
+        signingKeyHex: node.daemonPublicKey ?? "",
+        userId: user.id,
+        serverId: server.id,
+        nodeId: node.id,
+        scope: ["files.read", "files.write", "files.delete"],
+        ttlSeconds: 300,
+      })
+      return c.json({
+        token: minted.token,
+        expiresAt: minted.expiresAt.toISOString(),
+        baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}/servers/${server.id}`,
+      })
+    })
+    .post("/:id/sftp-credentials", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const { server, node } = await loadServerAndNode(db, user, id)
+      const minted = await mintDaemonToken({
+        signingKeyHex: node.daemonPublicKey ?? "",
+        userId: user.id,
+        serverId: server.id,
+        nodeId: node.id,
+        scope: ["sftp"],
+        ttlSeconds: 24 * 60 * 60,
+      })
+      return c.json({
+        host: node.fqdn,
+        port: node.sftpPort,
+        username: `${user.id}.${server.id}`,
+        password: minted.token,
+        expiresAt: minted.expiresAt.toISOString(),
+      })
+    })
+}
+
+const loadServerAndNode = async (
+  db: Db,
+  user: { id: string; isAdmin?: boolean | null },
+  serverId: string
+) => {
+  const server = (
+    await db
+      .select()
+      .from(serversTable)
+      .where(eq(serversTable.id, serverId))
+      .limit(1)
+  )[0]
+  if (server === undefined) {
+    throw new ApiException("servers.not_found", { status: 404 })
+  }
+  if (user.isAdmin !== true && server.ownerId !== user.id) {
+    throw new ApiException("servers.not_found", { status: 404 })
+  }
+  const node = (
+    await db
+      .select()
+      .from(nodesTable)
+      .where(eq(nodesTable.id, server.nodeId))
+      .limit(1)
+  )[0]
+  if (node === undefined || node.daemonPublicKey === null) {
+    throw new ApiException("nodes.not_found", { status: 404 })
+  }
+  return { server, node }
 }

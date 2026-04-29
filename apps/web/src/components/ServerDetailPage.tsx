@@ -8,6 +8,7 @@ import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
 import { ConsoleTerminal } from "@/components/ConsoleTerminal"
 import { EventLog } from "@/components/EventLog"
+import { FileManager } from "@/components/FileManager"
 import { useConsole } from "@/hooks/useConsole"
 import { usePanelEvents } from "@/hooks/usePanelEvents"
 import { useServer } from "@/hooks/useServers"
@@ -152,6 +153,7 @@ export const ServerDetailPage = ({ id }: { id: string }) => {
           lines={consoleStream.lines}
           onSend={consoleStream.send}
         />
+        <FileManager serverId={id} />
         <section className="border-border bg-card text-card-foreground rounded-md border p-4">
           <h2 className="mb-2 text-sm font-medium">Resources</h2>
           <dl className="grid grid-cols-3 gap-3 text-xs">

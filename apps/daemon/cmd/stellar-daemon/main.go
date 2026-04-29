@@ -19,8 +19,10 @@ import (
 
 	"github.com/stellarstack/daemon/internal/config"
 	"github.com/stellarstack/daemon/internal/console"
+	"github.com/stellarstack/daemon/internal/files"
 	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/pairing"
+	"github.com/stellarstack/daemon/internal/sftp"
 	"github.com/stellarstack/daemon/internal/ws"
 )
 
@@ -59,7 +61,20 @@ func runServe() error {
 	fmt.Printf("stellar-daemon %s starting (node=%s)\n", config.Version, displayNode(cfg))
 
 	client := ws.New(cfg)
-	httpServer := startConsoleServer(cfg, client)
+	verifier := stellarjwt.New(cfg.SigningKeyHex, cfg.NodeID)
+	fileManager := files.New(cfg.DataDir)
+
+	httpServer := startHTTPServer(cfg, client, verifier, fileManager)
+	sftpServer, err := sftp.New(cfg, verifier, fileManager)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stellar-daemon: sftp init: %v\n", err)
+	} else {
+		go func() {
+			if err := sftpServer.Listen(); err != nil {
+				fmt.Fprintf(os.Stderr, "stellar-daemon: sftp listen: %v\n", err)
+			}
+		}()
+	}
 
 	go func() {
 		<-ctx.Done()
@@ -71,27 +86,100 @@ func runServe() error {
 	return client.Run(ctx)
 }
 
-func startConsoleServer(cfg *config.Config, client *ws.Client) *http.Server {
-	verifier := stellarjwt.New(cfg.SigningKeyHex, cfg.NodeID)
+// gateForScopes returns a files.AuthGate that validates the JWT in
+// `?token=` carries every required scope and is bound to the path's
+// server id (the gate is invoked per-request so each call walks the
+// claims afresh).
+func gateForScopes(verifier *stellarjwt.Verifier) files.AuthGate {
+	return func(r *http.Request, requiredScopes ...string) (bool, int) {
+		token := r.URL.Query().Get("token")
+		if token == "" {
+			return false, http.StatusUnauthorized
+		}
+		claims, err := verifier.Verify(token)
+		if err != nil {
+			return false, http.StatusUnauthorized
+		}
+		serverID := extractServerID(r.URL.Path)
+		if serverID == "" || claims.Server != serverID {
+			return false, http.StatusUnauthorized
+		}
+		for _, scope := range requiredScopes {
+			if !claims.HasScope(scope) {
+				return false, http.StatusForbidden
+			}
+		}
+		return true, http.StatusOK
+	}
+}
+
+func extractServerID(urlPath string) string {
+	const prefix = "/servers/"
+	if len(urlPath) <= len(prefix) {
+		return ""
+	}
+	rest := urlPath[len(prefix):]
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '/' {
+			return rest[:i]
+		}
+	}
+	return rest
+}
+
+func startHTTPServer(
+	cfg *config.Config,
+	client *ws.Client,
+	verifier *stellarjwt.Verifier,
+	fileManager *files.Manager,
+) *http.Server {
 	consoleServer := console.New(verifier, client.Handler())
 	mux := http.NewServeMux()
-	consoleServer.Mount(mux)
+	gate := gateForScopes(verifier)
+	mux.HandleFunc("/servers/", func(w http.ResponseWriter, r *http.Request) {
+		if consoleServer.HandleConsole(w, r) {
+			return
+		}
+		if fileManager.HandleFiles(w, r, gate) {
+			return
+		}
+		http.NotFound(w, r)
+	})
+
 	addr := fmt.Sprintf("%s:%d", cfg.Listen.Host, cfg.Listen.Port)
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           withCORS(mux),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "stellar-daemon: console listen %s: %v\n", addr, err)
+		fmt.Fprintf(os.Stderr, "stellar-daemon: http listen %s: %v\n", addr, err)
 		return server
 	}
 	go func() {
 		_ = server.Serve(listener)
 	}()
-	fmt.Printf("stellar-daemon console listening on %s\n", addr)
+	fmt.Printf("stellar-daemon http listening on %s\n", addr)
 	return server
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Vary", "Origin")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func runConfigure(args []string) error {
