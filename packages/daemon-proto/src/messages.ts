@@ -149,3 +149,16 @@ export const daemonEnvelopeSchema = z.object({
  * for that shape.
  */
 export const panelEventSchemaRef = panelEventSchema
+
+/**
+ * Pub/sub envelope bridging the worker and the API's daemon WebSocket.
+ * Workers don't connect to daemons directly — the API holds every daemon
+ * socket. A worker publishes a `BridgeEnvelope` to `DAEMON_CMD_CHANNEL`,
+ * the API forwards the inner `envelope` to the matching daemon, and any
+ * frame the daemon sends back is rebroadcast as a `BridgeEnvelope` on
+ * `DAEMON_RESP_CHANNEL` for any worker to correlate by `envelope.id`.
+ */
+export const daemonBridgeEnvelopeSchema = z.object({
+  nodeId: z.string().min(1),
+  envelope: daemonEnvelopeSchema,
+})

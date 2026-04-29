@@ -7,6 +7,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   PANEL_EVENTS_CHANNEL: z.string().default("panel:events"),
+  DAEMON_CMD_CHANNEL: z.string().default("daemon:cmd"),
+  DAEMON_RESP_CHANNEL: z.string().default("daemon:resp"),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(8),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])

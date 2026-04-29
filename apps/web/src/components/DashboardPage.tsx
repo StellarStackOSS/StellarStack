@@ -3,19 +3,22 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { Button } from "@workspace/ui/components/button"
 
 import { EventLog } from "@/components/EventLog"
+import { ServerList } from "@/components/ServerList"
 import { useSession, authClient } from "@/lib/AuthClient"
 import { usePanelEvents } from "@/hooks/usePanelEvents"
+import { useServers } from "@/hooks/useServers"
 
 /**
- * Authenticated dashboard. For Milestone 4 this is intentionally minimal:
- * proves the session loads, the WS subscriber connects, and panel events
- * arrive in the browser. Real product surfaces (server list, blueprint
- * browser, etc.) replace this in later milestones.
+ * Authenticated dashboard. Lists the user's servers (admins see all) and
+ * surfaces a live event feed driven by the panel-event WS as a smoke
+ * surface for the install / lifecycle pipeline.
  */
 export const DashboardPage = () => {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const { state, events } = usePanelEvents(!isPending && session !== null)
+  const enabled = !isPending && session !== null
+  const { state, events } = usePanelEvents(enabled)
+  const serversQuery = useServers()
 
   const handleSignOut = async () => {
     await authClient.signOut()
@@ -40,6 +43,9 @@ export const DashboardPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link to="/servers/new">
+            <Button size="sm">+ New server</Button>
+          </Link>
           {session?.user.isAdmin === true ? (
             <>
               <Link to="/admin/nodes">
@@ -59,7 +65,15 @@ export const DashboardPage = () => {
           </Button>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
+        <section>
+          <h2 className="mb-2 text-sm font-medium">Your servers</h2>
+          <ServerList
+            servers={serversQuery.data?.servers ?? []}
+            loading={serversQuery.isLoading}
+            emptyMessage="No servers yet. Click “+ New server” to provision one."
+          />
+        </section>
         <EventLog state={state} events={events} />
       </main>
     </div>

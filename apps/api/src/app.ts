@@ -18,6 +18,7 @@ import { buildEventsRoute } from "@/routes/Events"
 import { healthRoute } from "@/routes/Health"
 import { buildMeRoute } from "@/routes/Me"
 import { buildReadyRoute } from "@/routes/Ready"
+import { buildServersRoute } from "@/routes/Servers"
 import type { Queues } from "@/queues"
 
 /**
@@ -53,6 +54,7 @@ export const createApp = (params: {
     .route("/auth", buildAuthRoute(auth))
     .route("/me", buildMeRoute({ auth, db }))
     .route("/admin", buildAdminRoute({ auth, db, env, queues }))
+    .route("/servers", buildServersRoute({ auth, db, queues }))
     .route("/daemon/pair", buildDaemonPairRoute({ db, env }))
 
   app.onError(createErrorHandler(logger))

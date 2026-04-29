@@ -9,6 +9,8 @@ import { Route as registerRoute } from "@/routes/Register"
 import { Route as dashboardRoute } from "@/routes/Dashboard"
 import { Route as adminNodesRoute } from "@/routes/AdminNodes"
 import { Route as adminBlueprintsRoute } from "@/routes/AdminBlueprints"
+import { Route as newServerRoute } from "@/routes/NewServer"
+import { Route as serverDetailRoute } from "@/routes/ServerDetail"
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -17,6 +19,8 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute,
   adminNodesRoute,
   adminBlueprintsRoute,
+  newServerRoute,
+  serverDetailRoute,
 ])
 
 /**

@@ -29,6 +29,10 @@
   "servers.lifecycle.crashed.console_match": "Server crashed: log pattern matched.",
   "servers.lifecycle.crashed.container_exit": "Container exited unexpectedly.",
   "servers.lifecycle.start_timeout": "Server didn't report ready within {{timeoutMs}}ms.",
+  "servers.install.creating_container": "Creating container…",
+  "servers.install.running_script": "Running install script…",
+  "servers.install.completed": "Install complete.",
+  "servers.install.failed": "Install failed: {{reason}}.",
 
   "files.not_found": "File or directory not found.",
   "files.path_outside_jail": "Path is outside the server's directory.",

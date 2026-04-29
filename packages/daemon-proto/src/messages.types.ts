@@ -175,3 +175,14 @@ export type ConsoleLogMessage = {
   line: string
   at: string
 }
+
+/**
+ * Pub/sub bridge envelope used to relay daemon traffic between the API
+ * (which holds the WS) and worker processes (which dispatch jobs). The
+ * API forwards `envelope` to the matching daemon's WS on the cmd channel
+ * and rebroadcasts anything the daemon emits back on the resp channel.
+ */
+export type DaemonBridgeEnvelope = {
+  nodeId: string
+  envelope: DaemonEnvelope
+}

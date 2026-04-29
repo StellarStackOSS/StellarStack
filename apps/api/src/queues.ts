@@ -12,18 +12,36 @@ export const createRedis = (env: Env): IORedis => {
 }
 
 /**
- * Aggregate of all BullMQ producers the API holds open. The worker side has
- * a corresponding consumer for each queue name.
+ * Payload shape for the `server.install` queue. The worker uses this to
+ * orchestrate create-container + run-install against the node's daemon.
  */
-export type Queues = {
-  ping: Queue<{ message: string }>
+export type ServerInstallJobData = {
+  serverId: string
 }
 
 /**
- * Build BullMQ producer queues. The `ping` queue is a smoke-test target used
- * during the foundation milestone; real queues (server.install, backup, etc.)
- * are added alongside their feature work.
+ * Payload shape for the `server.power` queue (start / stop / restart / kill).
+ */
+export type ServerPowerJobData = {
+  serverId: string
+  action: "start" | "stop" | "restart" | "kill"
+}
+
+/**
+ * Aggregate of all BullMQ producers the API holds open.
+ */
+export type Queues = {
+  ping: Queue<{ message: string }>
+  serverInstall: Queue<ServerInstallJobData>
+  serverPower: Queue<ServerPowerJobData>
+}
+
+/**
+ * Build BullMQ producer queues. The names here must match the consumer
+ * `Worker(name, ...)` constructors in `apps/worker`.
  */
 export const createQueues = (connection: IORedis): Queues => ({
-  ping: new Queue<{ message: string }>("ping", { connection }),
+  ping: new Queue("ping", { connection }),
+  serverInstall: new Queue("server.install", { connection }),
+  serverPower: new Queue("server.power", { connection }),
 })

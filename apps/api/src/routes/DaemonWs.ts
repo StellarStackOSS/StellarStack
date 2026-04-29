@@ -1,14 +1,18 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 
+import IORedis from "ioredis"
 import { Hono } from "hono"
 import { eq } from "drizzle-orm"
-import type IORedis from "ioredis"
 import type { Logger } from "pino"
 import type { NodeWebSocket } from "@hono/node-ws"
+import type { WSContext } from "hono/ws"
 
 import type { Db } from "@workspace/db/client.types"
 import { nodesTable } from "@workspace/db/schema/nodes"
-import { daemonEnvelopeSchema } from "@workspace/daemon-proto/messages"
+import {
+  daemonBridgeEnvelopeSchema,
+  daemonEnvelopeSchema,
+} from "@workspace/daemon-proto/messages"
 import { ApiException } from "@workspace/shared/errors"
 
 import type { ApiVariables } from "@/middleware/RequestId"
@@ -63,17 +67,24 @@ const verifyDaemonAuth = async (params: {
   return timingSafeEqual(presented, expected)
 }
 
+type ConnectedSocket = WSContext<unknown>
+
 /**
  * Daemon-facing WebSocket. Authenticated by an HMAC-SHA256 signature over
  * `${nodeId}.${unixSeconds}` keyed on the per-node signing secret
- * established at pair time. The daemon sends the node id, timestamp, and
- * signature as query params so the upgrade can be authenticated before any
- * frame is exchanged.
+ * established at pair time.
  *
- * Once the socket is open the daemon emits a `daemon.hello` envelope; the
- * route updates `nodes.connected_at`, then forwards every state-change /
- * stats / log frame onto the panel pub/sub channel where the browser-facing
- * /events route picks it up.
+ * The route is the single bridge between worker processes and connected
+ * daemons:
+ *
+ *  - **Worker → daemon:** the API process subscribes to
+ *    `DAEMON_CMD_CHANNEL`. Each `BridgeEnvelope` whose `nodeId` matches a
+ *    locally-connected socket is forwarded onto that socket verbatim.
+ *  - **Daemon → worker:** every inbound frame is rebroadcast on
+ *    `DAEMON_RESP_CHANNEL` so worker correlators can match on
+ *    `envelope.id` regardless of which API instance the daemon dialed.
+ *  - **Daemon → browser fanout:** state-change and stats frames also flow
+ *    onto `PANEL_EVENTS_CHANNEL` for the existing `/events` subscriber.
  */
 export const buildDaemonWsRoute = (params: {
   db: Db
@@ -83,6 +94,36 @@ export const buildDaemonWsRoute = (params: {
   upgradeWebSocket: NodeWebSocket["upgradeWebSocket"]
 }) => {
   const { db, env, logger, redis, upgradeWebSocket } = params
+
+  const sockets = new Map<string, ConnectedSocket>()
+  let cmdSubscriber: IORedis | null = null
+
+  const ensureCmdSubscriber = (): IORedis => {
+    if (cmdSubscriber !== null) {
+      return cmdSubscriber
+    }
+    const client = new IORedis(env.REDIS_URL)
+    client.subscribe(env.DAEMON_CMD_CHANNEL).catch((err) => {
+      logger.error({ err }, "daemon-cmd subscribe failed")
+    })
+    client.on("message", (_channel, payload) => {
+      const parsed = daemonBridgeEnvelopeSchema.safeParse(safeParse(payload))
+      if (!parsed.success) {
+        logger.warn(
+          { issues: parsed.error.issues },
+          "Dropping malformed daemon bridge envelope"
+        )
+        return
+      }
+      const target = sockets.get(parsed.data.nodeId)
+      if (target === undefined || target.readyState !== 1) {
+        return
+      }
+      target.send(JSON.stringify(parsed.data.envelope))
+    })
+    cmdSubscriber = client
+    return client
+  }
 
   return new Hono<{ Variables: ApiVariables }>().get(
     "/",
@@ -99,9 +140,11 @@ export const buildDaemonWsRoute = (params: {
       if (!ok) {
         throw new ApiException("nodes.pair.token_invalid", { status: 401 })
       }
+      ensureCmdSubscriber()
 
       return {
-        onOpen: async () => {
+        onOpen: async (_event, ws) => {
+          sockets.set(nodeId, ws)
           await db
             .update(nodesTable)
             .set({ connectedAt: new Date() })
@@ -120,12 +163,18 @@ export const buildDaemonWsRoute = (params: {
             )
             return
           }
+
+          await redis.publish(
+            env.DAEMON_RESP_CHANNEL,
+            JSON.stringify({ nodeId, envelope: parsed.data })
+          )
+
           const message = parsed.data.message
           if (
             message.type === "server.state_changed" ||
             message.type === "server.stats"
           ) {
-            const event =
+            const fanout =
               message.type === "server.state_changed"
                 ? {
                     type: "server.state.changed" as const,
@@ -148,11 +197,12 @@ export const buildDaemonWsRoute = (params: {
                   }
             await redis.publish(
               env.PANEL_EVENTS_CHANNEL,
-              JSON.stringify(event)
+              JSON.stringify(fanout)
             )
           }
         },
         onClose: async () => {
+          sockets.delete(nodeId)
           await db
             .update(nodesTable)
             .set({ connectedAt: null })
@@ -160,6 +210,7 @@ export const buildDaemonWsRoute = (params: {
           logger.info({ nodeId }, "Daemon disconnected")
         },
         onError: (_event, ws) => {
+          sockets.delete(nodeId)
           ws.close()
         },
       }

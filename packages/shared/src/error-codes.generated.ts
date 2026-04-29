@@ -32,6 +32,10 @@ export type ErrorCode =
   | "servers.create.allocation_unavailable"
   | "servers.create.no_free_allocation"
   | "servers.create.node_at_capacity"
+  | "servers.install.completed"
+  | "servers.install.creating_container"
+  | "servers.install.failed"
+  | "servers.install.running_script"
   | "servers.lifecycle.crashed.console_match"
   | "servers.lifecycle.crashed.container_exit"
   | "servers.lifecycle.start_timeout"
@@ -83,6 +87,10 @@ export const errorCodes = [
   "servers.create.allocation_unavailable",
   "servers.create.no_free_allocation",
   "servers.create.node_at_capacity",
+  "servers.install.completed",
+  "servers.install.creating_container",
+  "servers.install.failed",
+  "servers.install.running_script",
   "servers.lifecycle.crashed.console_match",
   "servers.lifecycle.crashed.container_exit",
   "servers.lifecycle.start_timeout",

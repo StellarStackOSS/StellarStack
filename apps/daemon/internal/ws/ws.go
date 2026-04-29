@@ -15,11 +15,13 @@ import (
 	"log"
 	"math"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 
 	"github.com/stellarstack/daemon/internal/config"
+	"github.com/stellarstack/daemon/internal/handler"
 )
 
 // Envelope is the wire shape mirrored from packages/daemon-proto/src/messages.types.ts.
@@ -39,12 +41,26 @@ type HelloMessage struct {
 
 // Client is the daemon-side handle to the worker/API control channel.
 type Client struct {
-	cfg *config.Config
+	cfg     *config.Config
+	handler *handler.Handler
 }
 
 // New returns a Client bound to the given config.
 func New(cfg *config.Config) *Client {
-	return &Client{cfg: cfg}
+	return &Client{cfg: cfg, handler: handler.New(cfg)}
+}
+
+// connSender wraps mutex-guarded writes to the same socket so concurrent
+// handler goroutines can push frames without racing.
+type connSender struct {
+	mu   *sync.Mutex
+	conn *websocket.Conn
+}
+
+func (s *connSender) Send(ctx context.Context, payload []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.conn.Write(ctx, websocket.MessageText, payload)
 }
 
 // Run dials the API control WS and keeps the connection alive until ctx is
@@ -84,6 +100,9 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "shutdown")
 
+	writeMu := &sync.Mutex{}
+	sender := &connSender{mu: writeMu, conn: conn}
+
 	hello := Envelope{ID: ""}
 	helloBody, err := json.Marshal(HelloMessage{
 		Type:            "daemon.hello",
@@ -100,19 +119,23 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("marshal envelope: %w", err)
 	}
-	if err := conn.Write(ctx, websocket.MessageText, helloBytes); err != nil {
+	if err := sender.Send(ctx, helloBytes); err != nil {
 		return fmt.Errorf("send hello: %w", err)
 	}
 
 	heartbeat := time.NewTicker(30 * time.Second)
 	defer heartbeat.Stop()
 
-	readErr := make(chan error, 1)
+	type readResult struct {
+		data []byte
+		err  error
+	}
+	reads := make(chan readResult)
 	go func() {
 		for {
-			_, _, err := conn.Read(ctx)
+			_, data, err := conn.Read(ctx)
+			reads <- readResult{data: data, err: err}
 			if err != nil {
-				readErr <- err
 				return
 			}
 		}
@@ -122,8 +145,15 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case err := <-readErr:
-			return err
+		case r := <-reads:
+			if r.err != nil {
+				return r.err
+			}
+			go func(payload []byte) {
+				if err := c.handler.HandleEnvelope(ctx, payload, sender); err != nil {
+					log.Printf("daemon: handle envelope: %v", err)
+				}
+			}(r.data)
 		case <-heartbeat.C:
 			if err := conn.Ping(ctx); err != nil {
 				return fmt.Errorf("ping: %w", err)

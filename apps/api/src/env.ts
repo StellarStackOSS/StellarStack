@@ -9,6 +9,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   PANEL_EVENTS_CHANNEL: z.string().default("panel:events"),
+  DAEMON_CMD_CHANNEL: z.string().default("daemon:cmd"),
+  DAEMON_RESP_CHANNEL: z.string().default("daemon:resp"),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
   PUBLIC_APP_URL: z.string().url(),
