@@ -41,11 +41,18 @@ export const DashboardPage = () => {
         </div>
         <div className="flex gap-2">
           {session?.user.isAdmin === true ? (
-            <Link to="/admin/nodes">
-              <Button variant="outline" size="sm">
-                Nodes
-              </Button>
-            </Link>
+            <>
+              <Link to="/admin/nodes">
+                <Button variant="outline" size="sm">
+                  Nodes
+                </Button>
+              </Link>
+              <Link to="/admin/blueprints">
+                <Button variant="outline" size="sm">
+                  Blueprints
+                </Button>
+              </Link>
+            </>
           ) : null}
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             Sign out

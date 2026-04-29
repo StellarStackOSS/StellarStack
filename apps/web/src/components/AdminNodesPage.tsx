@@ -120,6 +120,11 @@ export const AdminNodesPage = () => {
               Dashboard
             </Button>
           </Link>
+          <Link to="/admin/blueprints">
+            <Button variant="outline" size="sm">
+              Blueprints
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             Sign out
           </Button>

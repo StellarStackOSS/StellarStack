@@ -10,6 +10,7 @@
     "typecheck": "turbo typecheck",
     "db:push": "turbo run db:push",
     "db:migrate": "turbo run db:migrate",
+    "db:seed": "pnpm --filter @workspace/db db:seed",
     "dev:infra": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env up -d postgres redis minio mailpit",
     "dev:infra:down": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env down",
     "stack:up": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env up -d --build",

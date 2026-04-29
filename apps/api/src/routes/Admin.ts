@@ -11,6 +11,7 @@ import {
   type AuthVariables,
 } from "@/middleware/RequireSession"
 import type { Queues } from "@/queues"
+import { buildAdminBlueprintsRoute } from "@/routes/AdminBlueprints"
 import { buildAdminNodesRoute } from "@/routes/AdminNodes"
 
 const pingPayloadSchema = z.object({
@@ -55,4 +56,5 @@ export const buildAdminRoute = (params: {
       return c.json({ jobId: job.id ?? null })
     })
     .route("/nodes", buildAdminNodesRoute({ db, env }))
+    .route("/blueprints", buildAdminBlueprintsRoute({ db }))
 }
