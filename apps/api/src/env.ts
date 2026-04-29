@@ -8,6 +8,7 @@ const envSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
+  PANEL_EVENTS_CHANNEL: z.string().default("panel:events"),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
   PUBLIC_APP_URL: z.string().url(),
