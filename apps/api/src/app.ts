@@ -12,6 +12,8 @@ import { createErrorHandler } from "@/middleware/ErrorHandler"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildAdminRoute } from "@/routes/Admin"
 import { buildAuthRoute } from "@/routes/Auth"
+import { buildDaemonPairRoute } from "@/routes/DaemonPair"
+import { buildDaemonWsRoute } from "@/routes/DaemonWs"
 import { buildEventsRoute } from "@/routes/Events"
 import { healthRoute } from "@/routes/Health"
 import { buildMeRoute } from "@/routes/Me"
@@ -50,7 +52,8 @@ export const createApp = (params: {
     .route("/ready", buildReadyRoute({ db, redis }))
     .route("/auth", buildAuthRoute(auth))
     .route("/me", buildMeRoute({ auth, db }))
-    .route("/admin", buildAdminRoute({ auth, queues }))
+    .route("/admin", buildAdminRoute({ auth, db, env, queues }))
+    .route("/daemon/pair", buildDaemonPairRoute({ db, env }))
 
   app.onError(createErrorHandler(logger))
 
@@ -65,12 +68,32 @@ export const attachWebSocketRoutes = (
   app: ReturnType<typeof createApp>,
   params: {
     auth: Auth
+    db: Db
     env: Env
     logger: Logger
+    redis: IORedis
     upgradeWebSocket: NodeWebSocket["upgradeWebSocket"]
   }
 ): void => {
-  app.route("/events", buildEventsRoute(params))
+  app.route(
+    "/events",
+    buildEventsRoute({
+      auth: params.auth,
+      env: params.env,
+      logger: params.logger,
+      upgradeWebSocket: params.upgradeWebSocket,
+    })
+  )
+  app.route(
+    "/daemon/ws",
+    buildDaemonWsRoute({
+      db: params.db,
+      env: params.env,
+      logger: params.logger,
+      redis: params.redis,
+      upgradeWebSocket: params.upgradeWebSocket,
+    })
+  )
 }
 
 /**

@@ -8,12 +8,15 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/stellarstack/daemon/internal/config"
+	"github.com/stellarstack/daemon/internal/pairing"
+	"github.com/stellarstack/daemon/internal/ws"
 )
 
 func main() {
@@ -31,6 +34,9 @@ func run() error {
 		case "version":
 			fmt.Println(config.Version)
 			return nil
+		case "help", "-h", "--help":
+			printHelp()
+			return nil
 		}
 	}
 	return runServe()
@@ -45,21 +51,48 @@ func runServe() error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	fmt.Printf("stellar-daemon %s starting on %s:%d\n", config.Version, cfg.Listen.Host, cfg.Listen.Port)
+	fmt.Printf("stellar-daemon %s starting (node=%s)\n", config.Version, displayNode(cfg))
 
-	<-ctx.Done()
-	return nil
+	client := ws.New(cfg)
+	return client.Run(ctx)
 }
 
-// runConfigure claims a one-time pairing token from the panel, fetches the
-// node's runtime configuration, generates a signing keypair, and writes the
-// resulting daemon config to disk. Network logic is filled in alongside the
-// pairing milestone.
 func runConfigure(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("usage: stellar-daemon configure <token>")
+	flagSet := flag.NewFlagSet("configure", flag.ExitOnError)
+	apiURL := flagSet.String("api", "", "API base URL (overrides existing config)")
+	flagSet.Usage = func() {
+		fmt.Fprintln(flagSet.Output(), "Usage: stellar-daemon configure [--api <url>] <token>")
 	}
-	token := args[0]
-	fmt.Printf("configure: would claim token %q (not implemented)\n", token)
-	return nil
+	if err := flagSet.Parse(args); err != nil {
+		return err
+	}
+	if flagSet.NArg() != 1 {
+		flagSet.Usage()
+		return fmt.Errorf("expected exactly one positional <token>")
+	}
+	return pairing.Claim(flagSet.Arg(0), *apiURL)
+}
+
+func displayNode(cfg *config.Config) string {
+	if cfg.NodeID == "" {
+		return "(unpaired)"
+	}
+	if cfg.NodeName != "" {
+		return fmt.Sprintf("%s/%s", cfg.NodeName, cfg.NodeID)
+	}
+	return cfg.NodeID
+}
+
+func printHelp() {
+	fmt.Print(`stellar-daemon — StellarStack per-node agent
+
+Usage:
+  stellar-daemon                      run the daemon (default)
+  stellar-daemon configure <token>    claim a pairing token issued by the panel
+  stellar-daemon version              print the build version
+  stellar-daemon help                 show this message
+
+Environment:
+  STELLAR_CONFIG    override the on-disk config path
+`)
 }

@@ -12,6 +12,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
   PUBLIC_APP_URL: z.string().url(),
+  PAIRING_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   SMTP_URL: z.string().url(),
   EMAIL_FROM: z.string().email(),
   LOG_LEVEL: z

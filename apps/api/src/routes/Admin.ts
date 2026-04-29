@@ -1,29 +1,34 @@
 import { Hono } from "hono"
 import { z } from "zod"
 
+import type { Db } from "@workspace/db/client.types"
 import { ApiException, apiValidationError } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
+import type { Env } from "@/env"
 import {
   buildRequireSession,
   type AuthVariables,
 } from "@/middleware/RequireSession"
 import type { Queues } from "@/queues"
+import { buildAdminNodesRoute } from "@/routes/AdminNodes"
 
 const pingPayloadSchema = z.object({
   message: z.string().min(1).max(140).default("ping"),
 })
 
 /**
- * Build the `/admin` route group. Currently exposes a single smoke-test
- * action used to drive the api → BullMQ → worker → Redis pub/sub →
- * panel-event WS pipeline end to end before any product surface exists.
- *
- * Every handler enforces `user.isAdmin === true`; non-admin requests bounce
- * with the standard `permissions.denied` envelope.
+ * Build the `/admin` route group. Mounts admin-only sub-routes and shares
+ * a single `requireSession + isAdmin` gate so every child inherits the
+ * canonical `permissions.denied` envelope on a non-admin request.
  */
-export const buildAdminRoute = (params: { auth: Auth; queues: Queues }) => {
-  const { auth, queues } = params
+export const buildAdminRoute = (params: {
+  auth: Auth
+  db: Db
+  env: Env
+  queues: Queues
+}) => {
+  const { auth, db, env, queues } = params
   const requireSession = buildRequireSession(auth)
 
   return new Hono<{ Variables: AuthVariables }>()
@@ -49,4 +54,5 @@ export const buildAdminRoute = (params: { auth: Auth; queues: Queues }) => {
       })
       return c.json({ jobId: job.id ?? null })
     })
+    .route("/nodes", buildAdminNodesRoute({ db, env }))
 }

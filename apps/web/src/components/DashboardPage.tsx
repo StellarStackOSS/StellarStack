@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@workspace/ui/components/button"
 
@@ -39,9 +39,18 @@ export const DashboardPage = () => {
             Signed in as {session?.user.email}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
-          Sign out
-        </Button>
+        <div className="flex gap-2">
+          {session?.user.isAdmin === true ? (
+            <Link to="/admin/nodes">
+              <Button variant="outline" size="sm">
+                Nodes
+              </Button>
+            </Link>
+          ) : null}
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            Sign out
+          </Button>
+        </div>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
         <EventLog state={state} events={events} />

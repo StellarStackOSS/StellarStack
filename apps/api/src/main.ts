@@ -19,7 +19,14 @@ const main = async (): Promise<void> => {
 
   const app = createApp({ auth, db, env, logger, queues, redis })
   const { upgradeWebSocket, injectWebSocket } = createNodeWebSocket({ app })
-  attachWebSocketRoutes(app, { auth, env, logger, upgradeWebSocket })
+  attachWebSocketRoutes(app, {
+    auth,
+    db,
+    env,
+    logger,
+    redis,
+    upgradeWebSocket,
+  })
 
   const handleShutdown = async (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Shutting down")
