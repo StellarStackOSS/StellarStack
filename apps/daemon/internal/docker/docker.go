@@ -258,6 +258,117 @@ func (c *Client) InspectState(
 	return body.State, nil
 }
 
+// StatsSnapshot is one normalised stats sample produced from a Docker
+// stats stream frame. CPUFraction is the percentage of one core consumed
+// during the sampling window (1.0 = one full core); MemoryBytes excludes
+// the kernel's `cache` figure so it matches what `docker stats` displays.
+type StatsSnapshot struct {
+	MemoryBytes      int64
+	MemoryLimitBytes int64
+	CPUFraction      float64
+	NetworkRxBytes   int64
+	NetworkTxBytes   int64
+}
+
+// StatsStream subscribes to the Docker stats stream for the named
+// container. Each frame produces one StatsSnapshot on the returned
+// channel; the channel closes when the context is cancelled or the
+// container exits.
+func (c *Client) StatsStream(
+	ctx context.Context,
+	idOrName string,
+) (<-chan StatsSnapshot, error) {
+	out := make(chan StatsSnapshot, 8)
+	resp, err := c.do(
+		ctx,
+		http.MethodGet,
+		"/containers/"+idOrName+"/stats?stream=1",
+		nil,
+	)
+	if err != nil {
+		close(out)
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		_ = resp.Body.Close()
+		close(out)
+		return nil, c.errorFromResponse(resp, "stats stream")
+	}
+
+	go func() {
+		defer resp.Body.Close()
+		defer close(out)
+		decoder := json.NewDecoder(resp.Body)
+		var prev struct {
+			cpuTotal    int64
+			systemCPU   int64
+			haveBaseline bool
+		}
+		for {
+			var frame statsFrame
+			if err := decoder.Decode(&frame); err != nil {
+				return
+			}
+			snapshot := StatsSnapshot{
+				MemoryBytes:      frame.MemoryStats.Usage - frame.MemoryStats.Stats.Cache,
+				MemoryLimitBytes: frame.MemoryStats.Limit,
+			}
+			if snapshot.MemoryBytes < 0 {
+				snapshot.MemoryBytes = frame.MemoryStats.Usage
+			}
+			cpuDelta := frame.CPUStats.CPUUsage.TotalUsage - prev.cpuTotal
+			systemDelta := frame.CPUStats.SystemCPUUsage - prev.systemCPU
+			if prev.haveBaseline && systemDelta > 0 && cpuDelta > 0 {
+				cores := float64(frame.CPUStats.OnlineCPUs)
+				if cores == 0 {
+					cores = float64(len(frame.CPUStats.CPUUsage.PercpuUsage))
+				}
+				if cores == 0 {
+					cores = 1
+				}
+				snapshot.CPUFraction = (float64(cpuDelta) / float64(systemDelta)) * cores
+			}
+			prev.cpuTotal = frame.CPUStats.CPUUsage.TotalUsage
+			prev.systemCPU = frame.CPUStats.SystemCPUUsage
+			prev.haveBaseline = true
+
+			for _, net := range frame.Networks {
+				snapshot.NetworkRxBytes += net.RxBytes
+				snapshot.NetworkTxBytes += net.TxBytes
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case out <- snapshot:
+			}
+		}
+	}()
+	return out, nil
+}
+
+type statsFrame struct {
+	CPUStats struct {
+		CPUUsage struct {
+			TotalUsage   int64   `json:"total_usage"`
+			PercpuUsage  []int64 `json:"percpu_usage"`
+		} `json:"cpu_usage"`
+		SystemCPUUsage int64 `json:"system_cpu_usage"`
+		OnlineCPUs     int   `json:"online_cpus"`
+	} `json:"cpu_stats"`
+	MemoryStats struct {
+		Usage int64 `json:"usage"`
+		Limit int64 `json:"limit"`
+		Stats struct {
+			Cache int64 `json:"cache"`
+		} `json:"stats"`
+	} `json:"memory_stats"`
+	Networks map[string]struct {
+		RxBytes int64 `json:"rx_bytes"`
+		TxBytes int64 `json:"tx_bytes"`
+	} `json:"networks"`
+}
+
 // FollowLogs returns a stream of stdout/stderr lines for the named
 // container, following until the context is cancelled. Caller must drain
 // the channel.

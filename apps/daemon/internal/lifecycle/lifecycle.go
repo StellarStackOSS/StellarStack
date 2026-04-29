@@ -73,9 +73,10 @@ type Watcher struct {
 	docker        *docker.Client
 	send          Sender
 
-	mu     sync.Mutex
-	state  State
-	cancel context.CancelFunc
+	mu          sync.Mutex
+	state       State
+	cancel      context.CancelFunc
+	statsCancel context.CancelFunc
 }
 
 // New constructs a Watcher in the `installed_stopped` state. Call
@@ -121,6 +122,10 @@ func (w *Watcher) Stop() {
 		w.cancel()
 		w.cancel = nil
 	}
+	if w.statsCancel != nil {
+		w.statsCancel()
+		w.statsCancel = nil
+	}
 }
 
 // SetState forces the state without running probes. Used after a
@@ -131,7 +136,68 @@ func (w *Watcher) SetState(ctx context.Context, next State, code string) {
 	prev := w.state
 	w.state = next
 	w.mu.Unlock()
+	if next != StateRunning {
+		w.stopStatsStream()
+	}
 	w.emit(ctx, prev, next, code)
+}
+
+// startStatsStream subscribes to the docker stats endpoint for this
+// container and emits one server.stats envelope per frame. Replaces any
+// prior stream.
+func (w *Watcher) startStatsStream() {
+	w.stopStatsStream()
+	ctx, cancel := context.WithCancel(context.Background())
+	w.mu.Lock()
+	w.statsCancel = cancel
+	w.mu.Unlock()
+	go w.runStats(ctx)
+}
+
+// stopStatsStream cancels any in-flight stats stream.
+func (w *Watcher) stopStatsStream() {
+	w.mu.Lock()
+	cancel := w.statsCancel
+	w.statsCancel = nil
+	w.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+func (w *Watcher) runStats(ctx context.Context) {
+	stream, err := w.docker.StatsStream(ctx, w.containerName)
+	if err != nil {
+		log.Printf("lifecycle: stats stream: %v", err)
+		return
+	}
+	for snapshot := range stream {
+		w.emitStats(snapshot)
+	}
+}
+
+func (w *Watcher) emitStats(snapshot docker.StatsSnapshot) {
+	frame := map[string]any{
+		"id": "",
+		"message": map[string]any{
+			"type":             "server.stats",
+			"serverId":         w.serverID,
+			"memoryBytes":      snapshot.MemoryBytes,
+			"memoryLimitBytes": snapshot.MemoryLimitBytes,
+			"cpuFraction":      snapshot.CPUFraction,
+			"diskBytes":        0,
+			"networkRxBytes":   snapshot.NetworkRxBytes,
+			"networkTxBytes":   snapshot.NetworkTxBytes,
+			"at":               time.Now().UTC().Format(time.RFC3339Nano),
+		},
+	}
+	payload, err := json.Marshal(frame)
+	if err != nil {
+		return
+	}
+	if err := w.send.Send(context.Background(), payload); err != nil {
+		log.Printf("lifecycle: emit stats: %v", err)
+	}
 }
 
 func (w *Watcher) beginPhase(
@@ -182,8 +248,13 @@ func (w *Watcher) runPhase(
 		return
 	case match := <-results:
 		w.transitionTo(ctx, successState, match.code)
-		if successState == StateRunning && len(lifecycle.CrashDetection.Probes) > 0 {
-			w.armCrashDetection(lifecycle)
+		if successState == StateRunning {
+			w.startStatsStream()
+			if len(lifecycle.CrashDetection.Probes) > 0 {
+				w.armCrashDetection(lifecycle)
+			}
+		} else {
+			w.stopStatsStream()
 		}
 	case <-timer:
 		switch phase.OnTimeout {
@@ -354,6 +425,9 @@ func (w *Watcher) transitionTo(_ context.Context, next State, code string) {
 	cancel := w.cancel
 	w.cancel = nil
 	w.mu.Unlock()
+	if prev == StateRunning && next != StateRunning {
+		w.stopStatsStream()
+	}
 	w.emit(context.Background(), prev, next, code)
 	if cancel != nil {
 		cancel()

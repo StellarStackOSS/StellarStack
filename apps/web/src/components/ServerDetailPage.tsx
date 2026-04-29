@@ -9,8 +9,10 @@ import { translateApiError } from "@/lib/TranslateError"
 import { ConsoleTerminal } from "@/components/ConsoleTerminal"
 import { EventLog } from "@/components/EventLog"
 import { FileManager } from "@/components/FileManager"
+import { LiveStatsCard } from "@/components/LiveStatsCard"
 import { useConsole } from "@/hooks/useConsole"
 import { usePanelEvents } from "@/hooks/usePanelEvents"
+import { useServerStats } from "@/hooks/useServerStats"
 import { useServer } from "@/hooks/useServers"
 import { useServerPower } from "@/hooks/useServerPower"
 import { useSession } from "@/lib/AuthClient"
@@ -31,6 +33,7 @@ export const ServerDetailPage = ({ id }: { id: string }) => {
   const serverQuery = useServer(id)
   const { state: wsState, events } = usePanelEvents(enabled)
   const consoleStream = useConsole(id, enabled)
+  const stats = useServerStats(id, events)
   const power = useServerPower(id)
 
   const [powerError, setPowerError] = useState<string | null>(null)
@@ -148,6 +151,7 @@ export const ServerDetailPage = ({ id }: { id: string }) => {
             </p>
           ) : null}
         </section>
+        <LiveStatsCard stats={stats} />
         <ConsoleTerminal
           state={consoleStream.state}
           lines={consoleStream.lines}
