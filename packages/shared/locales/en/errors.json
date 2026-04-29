@@ -1,0 +1,48 @@
+{
+  "validation.failed": "One or more fields are invalid.",
+
+  "auth.login.invalid_credentials": "Invalid email or password.",
+  "auth.login.email_unverified": "Please verify your email before signing in.",
+  "auth.signup.email_taken": "An account with that email already exists.",
+  "auth.signup.disabled": "New registrations are currently disabled.",
+  "auth.session.expired": "Your session has expired. Please sign in again.",
+  "auth.session.invalid": "Your session is no longer valid.",
+
+  "permissions.denied": "You don't have permission to perform this action ({{statement}}).",
+
+  "nodes.not_found": "Node not found.",
+  "nodes.pair.token_invalid": "The pairing token is invalid.",
+  "nodes.pair.token_expired": "The pairing token has expired.",
+  "nodes.pair.token_already_claimed": "This pairing token has already been used.",
+  "nodes.unreachable": "Could not reach the node's daemon.",
+
+  "blueprints.not_found": "Blueprint not found.",
+  "blueprints.parse.unknown_field": "Unknown field in blueprint: {{field}}.",
+  "blueprints.parse.schema_version_unsupported": "Unsupported blueprint schema version: {{version}}.",
+
+  "servers.not_found": "Server not found.",
+  "servers.create.allocation_unavailable": "Allocation {{allocation}} is no longer available.",
+  "servers.create.node_at_capacity": "Node {{node}} doesn't have enough resources (needs {{requested}}, has {{available}}).",
+  "servers.create.no_free_allocation": "No free allocations are available on the selected node.",
+  "servers.action.invalid_state": "This action isn't allowed in the current server state ({{state}}).",
+  "servers.action.suspended": "This server is suspended.",
+  "servers.lifecycle.crashed.console_match": "Server crashed: log pattern matched.",
+  "servers.lifecycle.crashed.container_exit": "Container exited unexpectedly.",
+  "servers.lifecycle.start_timeout": "Server didn't report ready within {{timeoutMs}}ms.",
+
+  "files.not_found": "File or directory not found.",
+  "files.path_outside_jail": "Path is outside the server's directory.",
+  "files.too_large": "File exceeds the maximum allowed size ({{maxBytes}} bytes).",
+  "files.read_only": "This path is read-only.",
+
+  "backups.not_found": "Backup not found.",
+  "backups.locked": "This backup is locked and can't be deleted.",
+  "backups.s3_credentials_missing": "S3 credentials are not configured for this server.",
+  "backups.upload_failed": "Failed to upload backup to remote storage.",
+
+  "transfers.target_unreachable": "Target node could not be reached.",
+  "transfers.token_invalid": "Transfer token is invalid or expired.",
+
+  "rate_limit.exceeded": "Too many requests. Please slow down.",
+  "internal.unexpected": "An unexpected error occurred."
+}

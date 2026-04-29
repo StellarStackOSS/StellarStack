@@ -1,0 +1,42 @@
+{
+  "name": "@workspace/db",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workspace/shared": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.1.0",
+    "drizzle-kit": "^0.31.4",
+    "eslint": "^9.39.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "exports": {
+    "./client": "./src/client.ts",
+    "./client.types": "./src/client.types.ts",
+    "./schema": "./src/schema.ts",
+    "./schema/auth": "./src/schema/auth.ts",
+    "./schema/nodes": "./src/schema/nodes.ts",
+    "./schema/blueprints": "./src/schema/blueprints.ts",
+    "./schema/servers": "./src/schema/servers.ts",
+    "./schema/backups": "./src/schema/backups.ts",
+    "./schema/schedules": "./src/schema/schedules.ts",
+    "./schema/audit": "./src/schema/audit.ts",
+    "./schema/jobs": "./src/schema/jobs.ts"
+  }
+}

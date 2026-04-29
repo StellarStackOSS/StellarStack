@@ -1,0 +1,35 @@
+{
+  "name": "@workspace/shared",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "codegen:errors": "tsx scripts/codegen-errors.ts",
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.1.0",
+    "eslint": "^9.39.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "exports": {
+    "./errors": "./src/errors.ts",
+    "./errors.types": "./src/errors.types.ts",
+    "./events": "./src/events.ts",
+    "./events.types": "./src/events.types.ts",
+    "./jwt": "./src/jwt.ts",
+    "./jwt.types": "./src/jwt.types.ts",
+    "./blueprint": "./src/blueprint.ts",
+    "./blueprint.types": "./src/blueprint.types.ts",
+    "./error-codes": "./src/error-codes.generated.ts",
+    "./locales/*": "./locales/*"
+  }
+}

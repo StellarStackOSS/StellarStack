@@ -1,0 +1,6 @@
+{
+  "blueprint.minecraft.name": "Minecraft (Paper)",
+  "blueprint.minecraft.description": "A high-performance Minecraft server based on Paper.",
+  "blueprint.minecraft.variables.jar.name": "Jar file",
+  "blueprint.minecraft.variables.jar.description": "Path to the server jar, relative to the server directory."
+}

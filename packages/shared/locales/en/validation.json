@@ -1,0 +1,14 @@
+{
+  "validation.required": "This field is required.",
+  "validation.invalid": "This value is invalid.",
+  "validation.invalid_type": "Expected {{expected}}, got {{received}}.",
+  "validation.string.min": "Must be at least {{min}} characters.",
+  "validation.string.max": "Must be at most {{max}} characters.",
+  "validation.string.email": "Must be a valid email address.",
+  "validation.string.url": "Must be a valid URL.",
+  "validation.string.uuid": "Must be a valid UUID.",
+  "validation.string.regex": "Format is invalid.",
+  "validation.number.min": "Must be at least {{min}}.",
+  "validation.number.max": "Must be at most {{max}}.",
+  "validation.enum": "Value '{{received}}' is not one of the allowed options."
+}

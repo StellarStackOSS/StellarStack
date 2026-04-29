@@ -1,0 +1,26 @@
+{
+  "name": "@workspace/sdk",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workspace/shared": "workspace:*",
+    "hono": "^4.7.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "exports": {
+    "./client": "./src/client.ts",
+    "./client.types": "./src/client.types.ts"
+  }
+}

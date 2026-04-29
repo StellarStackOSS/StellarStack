@@ -1,0 +1,27 @@
+{
+  "lifecycle.installing": "Installing",
+  "lifecycle.installed_stopped": "Installed",
+  "lifecycle.starting": "Starting",
+  "lifecycle.running": "Running",
+  "lifecycle.stopping": "Stopping",
+  "lifecycle.stopped": "Stopped",
+  "lifecycle.crashed": "Crashed",
+
+  "actions.start": "Start",
+  "actions.stop": "Stop",
+  "actions.restart": "Restart",
+  "actions.kill": "Kill",
+  "actions.create": "Create",
+  "actions.delete": "Delete",
+  "actions.cancel": "Cancel",
+  "actions.save": "Save",
+  "actions.confirm": "Confirm",
+
+  "units.bytes": "B",
+  "units.kilobytes": "KB",
+  "units.megabytes": "MB",
+  "units.gigabytes": "GB",
+  "units.terabytes": "TB",
+  "units.cores": "{{count}} cores",
+  "units.percent": "{{value}}%"
+}
