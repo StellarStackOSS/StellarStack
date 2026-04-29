@@ -39,6 +39,9 @@
   "files.too_large": "File exceeds the maximum allowed size ({{maxBytes}} bytes).",
   "files.read_only": "This path is read-only.",
 
+  "schedules.not_found": "Schedule not found.",
+  "schedules.cron_invalid": "Cron expression is invalid: {{cron}}.",
+
   "backups.not_found": "Backup not found.",
   "backups.locked": "This backup is locked and can't be deleted.",
   "backups.s3_credentials_missing": "S3 credentials are not configured for this server.",

@@ -49,12 +49,22 @@ export type BackupDeleteJobData = {
 }
 
 /**
+ * Payload shape for the `server.command` queue. The worker pushes the
+ * console line over the daemon WS once it dequeues the job.
+ */
+export type ServerCommandJobData = {
+  serverId: string
+  line: string
+}
+
+/**
  * Aggregate of all BullMQ producers the API holds open.
  */
 export type Queues = {
   ping: Queue<{ message: string }>
   serverInstall: Queue<ServerInstallJobData>
   serverPower: Queue<ServerPowerJobData>
+  serverCommand: Queue<ServerCommandJobData>
   backupCreate: Queue<BackupCreateJobData>
   backupRestore: Queue<BackupRestoreJobData>
   backupDelete: Queue<BackupDeleteJobData>
@@ -68,6 +78,7 @@ export const createQueues = (connection: IORedis): Queues => ({
   ping: new Queue("ping", { connection }),
   serverInstall: new Queue("server.install", { connection }),
   serverPower: new Queue("server.power", { connection }),
+  serverCommand: new Queue("server.command", { connection }),
   backupCreate: new Queue("backup.create", { connection }),
   backupRestore: new Queue("backup.restore", { connection }),
   backupDelete: new Queue("backup.delete", { connection }),

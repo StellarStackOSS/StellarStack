@@ -27,6 +27,8 @@ export type ErrorCode =
   | "nodes.unreachable"
   | "permissions.denied"
   | "rate_limit.exceeded"
+  | "schedules.cron_invalid"
+  | "schedules.not_found"
   | "servers.action.invalid_state"
   | "servers.action.suspended"
   | "servers.create.allocation_unavailable"
@@ -82,6 +84,8 @@ export const errorCodes = [
   "nodes.unreachable",
   "permissions.denied",
   "rate_limit.exceeded",
+  "schedules.cron_invalid",
+  "schedules.not_found",
   "servers.action.invalid_state",
   "servers.action.suspended",
   "servers.create.allocation_unavailable",

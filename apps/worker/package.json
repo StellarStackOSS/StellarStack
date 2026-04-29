@@ -12,15 +12,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@workspace/db": "workspace:*",
     "@workspace/daemon-proto": "workspace:*",
+    "@workspace/db": "workspace:*",
     "@workspace/shared": "workspace:*",
     "bullmq": "^5.34.0",
+    "cron-parser": "^5.5.0",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.4.2",
-    "postgres": "^3.4.5",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
+    "postgres": "^3.4.5",
     "zod": "^4.1.0"
   },
   "devDependencies": {

@@ -147,6 +147,12 @@ const deleteBackupSchema = z.object({
     .optional(),
 })
 
+const sendConsoleSchema = z.object({
+  type: z.literal("server.send_console"),
+  serverId: z.string(),
+  line: z.string().max(8192),
+})
+
 const uploadBackupS3Schema = z.object({
   type: z.literal("server.upload_backup_s3"),
   serverId: z.string(),
@@ -181,6 +187,7 @@ export const daemonMessageSchema = z.union([
   restoreBackupSchema,
   deleteBackupSchema,
   uploadBackupS3Schema,
+  sendConsoleSchema,
 ])
 
 /**

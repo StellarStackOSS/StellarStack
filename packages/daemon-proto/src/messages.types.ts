@@ -40,6 +40,7 @@ export type DaemonMessage =
   | RestoreBackupMessage
   | DeleteBackupMessage
   | UploadBackupS3Message
+  | SendConsoleMessage
 
 /**
  * Initial daemon→worker message containing identity + capabilities.
@@ -238,6 +239,17 @@ export type UploadBackupS3Message = {
   secretAccessKey: string
   forcePathStyle: boolean
   sha256: string
+}
+
+/**
+ * Worker → daemon: write a single line (newline appended by the daemon)
+ * to the running container's stdin. Used by scheduled `command` tasks so
+ * the cron tick doesn't have to spin up a console WS.
+ */
+export type SendConsoleMessage = {
+  type: "server.send_console"
+  serverId: string
+  line: string
 }
 
 /**

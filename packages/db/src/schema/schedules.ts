@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm"
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -52,12 +53,12 @@ export const scheduleTasksTable = pgTable(
     scheduleId: uuid("schedule_id")
       .notNull()
       .references(() => schedulesTable.id, { onDelete: "cascade" }),
-    sortOrder: text("sort_order").notNull(),
+    sortOrder: integer("sort_order").notNull(),
     action: text("action", {
       enum: ["power", "command", "backup"],
     }).notNull(),
-    payload: jsonb("payload").$type<Record<string, string | number>>(),
-    delaySeconds: text("delay_seconds").notNull().default("0"),
+    payload: jsonb("payload").$type<Record<string, string | number | boolean>>(),
+    delaySeconds: integer("delay_seconds").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -68,3 +69,4 @@ export const scheduleTasksTable = pgTable(
 export type ScheduleRow = typeof schedulesTable.$inferSelect
 export type ScheduleInsert = typeof schedulesTable.$inferInsert
 export type ScheduleTaskRow = typeof scheduleTasksTable.$inferSelect
+export type ScheduleTaskInsert = typeof scheduleTasksTable.$inferInsert

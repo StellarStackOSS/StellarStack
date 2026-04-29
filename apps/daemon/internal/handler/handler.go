@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -99,6 +100,8 @@ func (h *Handler) HandleEnvelope(
 		return h.handleDeleteBackup(ctx, envelope.ID, envelope.Message, send)
 	case "server.upload_backup_s3":
 		return h.handleUploadBackupS3(ctx, envelope.ID, envelope.Message, send)
+	case "server.send_console":
+		return h.handleSendConsole(ctx, envelope.ID, envelope.Message, send)
 	default:
 		log.Printf("daemon: ignoring message type %q", typed.Type)
 		return writeEnvelope(ctx, send, envelope.ID, map[string]any{
@@ -531,4 +534,39 @@ func (h *Handler) handleUploadBackupS3(
 		"type": "ack",
 		"key":  key,
 	})
+}
+
+func (h *Handler) handleSendConsole(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+		Line     string `json:"line"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+
+	h.mu.Lock()
+	state := h.watchers[msg.ServerID]
+	h.mu.Unlock()
+	containerName := "stellar-" + msg.ServerID
+	if state != nil {
+		containerName = state.containerName
+	}
+
+	conn, _, err := h.docker.AttachConn(ctx, containerName)
+	if err != nil {
+		log.Printf("daemon: send_console attach: %v", err)
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	defer conn.Close()
+	if _, err := io.WriteString(conn, msg.Line+"\n"); err != nil {
+		log.Printf("daemon: send_console write: %v", err)
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
 }

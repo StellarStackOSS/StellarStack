@@ -21,8 +21,11 @@ import type {
   BackupDeleteJobData,
   BackupRestoreJobData,
 } from "@/handlers/Backups.types"
+import { buildServerCommandHandler } from "@/handlers/ServerCommand"
+import type { ServerCommandJobData } from "@/handlers/ServerCommand.types"
 import { loadEnv } from "@/env"
 import { DaemonClient } from "@/lib/DaemonClient"
+import { startScheduler } from "@/lib/Scheduler"
 import { createLogger } from "@/logger"
 import { createPubSubRedis, createWorkerRedis } from "@/redis"
 
@@ -101,6 +104,11 @@ const main = async (): Promise<void> => {
     db,
     logger,
   })
+  const handleServerCommand = buildServerCommandHandler({
+    daemonClient,
+    db,
+    logger,
+  })
 
   const pingWorker = new Worker<PingJobData>(
     "ping",
@@ -156,9 +164,21 @@ const main = async (): Promise<void> => {
     logger.error({ jobId: job?.id, err }, "Backup delete failed")
   })
 
+  const commandWorker = new Worker<ServerCommandJobData>(
+    "server.command",
+    async (job) => handleServerCommand(job),
+    { connection, concurrency: 8 }
+  )
+  commandWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Server command failed")
+  })
+
+  const scheduler = startScheduler({ connection, db, logger })
+
   const handleShutdown = async (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Worker shutting down")
     daemonClient.shutdown()
+    scheduler.stop()
     await Promise.allSettled([
       pingWorker.close(),
       installWorker.close(),
@@ -166,6 +186,7 @@ const main = async (): Promise<void> => {
       backupCreateWorker.close(),
       backupRestoreWorker.close(),
       backupDeleteWorker.close(),
+      commandWorker.close(),
       connection.quit(),
       pubsub.quit(),
       daemonRespSubscriber.quit(),
