@@ -7,12 +7,12 @@ import {
   backupDestinationsTable,
   backupsTable,
 } from "@workspace/db/schema/backups"
-import { serversTable } from "@workspace/db/schema/servers"
 import {
   ApiException,
   apiValidationError,
 } from "@workspace/shared/errors"
 
+import { loadServerAccess, requireScope } from "@/access"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -35,26 +35,6 @@ const upsertDestinationSchema = z.object({
   forcePathStyle: z.boolean().default(true),
 })
 
-const requireServerAccess = async (
-  db: Db,
-  user: { id: string; isAdmin?: boolean | null },
-  serverId: string
-) => {
-  const server = (
-    await db
-      .select()
-      .from(serversTable)
-      .where(eq(serversTable.id, serverId))
-      .limit(1)
-  )[0]
-  if (server === undefined) {
-    throw new ApiException("servers.not_found", { status: 404 })
-  }
-  if (user.isAdmin !== true && server.ownerId !== user.id) {
-    throw new ApiException("servers.not_found", { status: 404 })
-  }
-  return server
-}
 
 /**
  * Per-server backup CRUD + S3 destination config. Mounted under
@@ -74,7 +54,8 @@ export const buildBackupsRoute = (params: {
     .use("*", requireSession)
     .get("/:id/backups", async (c) => {
       const id = c.req.param("id")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.read")
       const rows = await db
         .select()
         .from(backupsTable)
@@ -84,7 +65,8 @@ export const buildBackupsRoute = (params: {
     })
     .post("/:id/backups", async (c) => {
       const id = c.req.param("id")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       const parsed = createBackupSchema.safeParse(await c.req.json())
       if (!parsed.success) {
         throw apiValidationError(parsed.error)
@@ -133,7 +115,8 @@ export const buildBackupsRoute = (params: {
     .post("/:id/backups/:bid/restore", async (c) => {
       const id = c.req.param("id")
       const bid = c.req.param("bid")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       const backup = (
         await db
           .select()
@@ -160,7 +143,8 @@ export const buildBackupsRoute = (params: {
     .delete("/:id/backups/:bid", async (c) => {
       const id = c.req.param("id")
       const bid = c.req.param("bid")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       const backup = (
         await db
           .select()
@@ -184,7 +168,8 @@ export const buildBackupsRoute = (params: {
     .post("/:id/backups/:bid/lock", async (c) => {
       const id = c.req.param("id")
       const bid = c.req.param("bid")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       const parsed = z
         .object({ locked: z.boolean() })
         .safeParse(await c.req.json())
@@ -203,7 +188,8 @@ export const buildBackupsRoute = (params: {
     })
     .get("/:id/destination", async (c) => {
       const id = c.req.param("id")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.read")
       const rows = await db
         .select()
         .from(backupDestinationsTable)
@@ -230,7 +216,8 @@ export const buildBackupsRoute = (params: {
     })
     .put("/:id/destination", async (c) => {
       const id = c.req.param("id")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       const parsed = upsertDestinationSchema.safeParse(await c.req.json())
       if (!parsed.success) {
         throw apiValidationError(parsed.error)
@@ -275,7 +262,8 @@ export const buildBackupsRoute = (params: {
     })
     .delete("/:id/destination", async (c) => {
       const id = c.req.param("id")
-      await requireServerAccess(db, c.get("user"), id)
+      const access = await loadServerAccess(db, c.get("user"), id)
+      requireScope(access, "backup.write")
       await db
         .delete(backupDestinationsTable)
         .where(eq(backupDestinationsTable.serverId, id))

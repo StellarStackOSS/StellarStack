@@ -10,6 +10,7 @@ import {
 } from "@workspace/db/schema/nodes"
 import {
   serverAllocationsTable,
+  serverSubusersTable,
   serverVariablesTable,
   serversTable,
 } from "@workspace/db/schema/servers"
@@ -18,6 +19,11 @@ import {
   apiValidationError,
 } from "@workspace/shared/errors"
 
+import {
+  filterScopes,
+  loadServerAccess,
+  requireScope,
+} from "@/access"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -57,30 +63,46 @@ export const buildServersRoute = (params: {
     .use("*", requireSession)
     .get("/", async (c) => {
       const user = c.get("user")
-      const rows = user.isAdmin === true
-        ? await db.select().from(serversTable)
-        : await db
-            .select()
-            .from(serversTable)
-            .where(eq(serversTable.ownerId, user.id))
-      return c.json({ servers: rows })
+      if (user.isAdmin === true) {
+        const rows = await db.select().from(serversTable)
+        return c.json({ servers: rows })
+      }
+      const ownedRows = await db
+        .select()
+        .from(serversTable)
+        .where(eq(serversTable.ownerId, user.id))
+      const subuserRows = await db
+        .select({ server: serversTable })
+        .from(serverSubusersTable)
+        .innerJoin(
+          serversTable,
+          eq(serverSubusersTable.serverId, serversTable.id)
+        )
+        .where(eq(serverSubusersTable.userId, user.id))
+      const seen = new Set<string>()
+      const merged: typeof ownedRows = []
+      for (const row of ownedRows) {
+        if (!seen.has(row.id)) {
+          seen.add(row.id)
+          merged.push(row)
+        }
+      }
+      for (const { server } of subuserRows) {
+        if (!seen.has(server.id)) {
+          seen.add(server.id)
+          merged.push(server)
+        }
+      }
+      return c.json({ servers: merged })
     })
     .get("/:id", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
-      const rows = await db
-        .select()
-        .from(serversTable)
-        .where(eq(serversTable.id, id))
-        .limit(1)
-      const row = rows[0]
-      if (row === undefined) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      if (user.isAdmin !== true && row.ownerId !== user.id) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      return c.json({ server: row })
+      const access = await loadServerAccess(db, user, id)
+      return c.json({
+        server: access.server,
+        access: { role: access.role, permissions: access.permissions },
+      })
     })
     .post("/", async (c) => {
       const parsed = createServerSchema.safeParse(await c.req.json())
@@ -238,25 +260,14 @@ export const buildServersRoute = (params: {
       if (!parsed.success) {
         throw apiValidationError(parsed.error)
       }
-      const server = (
-        await db
-          .select()
-          .from(serversTable)
-          .where(eq(serversTable.id, id))
-          .limit(1)
-      )[0]
-      if (server === undefined) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      if (user.isAdmin !== true && server.ownerId !== user.id) {
-        throw new ApiException("servers.not_found", { status: 404 })
-      }
-      if (server.suspended) {
+      const access = await loadServerAccess(db, user, id)
+      requireScope(access, "console.write")
+      if (access.server.suspended) {
         throw new ApiException("servers.action.suspended", { status: 403 })
       }
       await queues.serverPower.add(
         "power",
-        { serverId: server.id, action: parsed.data.action },
+        { serverId: access.server.id, action: parsed.data.action },
         { removeOnComplete: 100, removeOnFail: 100 }
       )
       return c.json({ ok: true })
@@ -264,47 +275,73 @@ export const buildServersRoute = (params: {
     .post("/:id/ws-credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
-      const { server, node } = await loadServerAndNode(db, user, id)
+      const access = await loadServerAccess(db, user, id)
+      const scope = filterScopes(access, [
+        "console.read",
+        "console.write",
+        "stats.read",
+      ])
+      if (scope.length === 0) {
+        throw new ApiException("permissions.denied", {
+          status: 403,
+          params: { statement: "console.read" },
+        })
+      }
+      const node = await loadNode(db, access.server.nodeId)
       const minted = await mintDaemonToken({
         signingKeyHex: node.daemonPublicKey ?? "",
         userId: user.id,
-        serverId: server.id,
+        serverId: access.server.id,
         nodeId: node.id,
-        scope: ["console.read", "console.write", "stats.read"],
+        scope,
         ttlSeconds: 60,
       })
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
-        wsUrl: `${node.scheme === "https" ? "wss" : "ws"}://${node.fqdn}:${node.daemonPort}/servers/${server.id}/ws`,
+        wsUrl: `${node.scheme === "https" ? "wss" : "ws"}://${node.fqdn}:${node.daemonPort}/servers/${access.server.id}/ws`,
       })
     })
     .post("/:id/files-credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
-      const { server, node } = await loadServerAndNode(db, user, id)
+      const access = await loadServerAccess(db, user, id)
+      const scope = filterScopes(access, [
+        "files.read",
+        "files.write",
+        "files.delete",
+      ])
+      if (scope.length === 0) {
+        throw new ApiException("permissions.denied", {
+          status: 403,
+          params: { statement: "files.read" },
+        })
+      }
+      const node = await loadNode(db, access.server.nodeId)
       const minted = await mintDaemonToken({
         signingKeyHex: node.daemonPublicKey ?? "",
         userId: user.id,
-        serverId: server.id,
+        serverId: access.server.id,
         nodeId: node.id,
-        scope: ["files.read", "files.write", "files.delete"],
+        scope,
         ttlSeconds: 300,
       })
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
-        baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}/servers/${server.id}`,
+        baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}/servers/${access.server.id}`,
       })
     })
     .post("/:id/sftp-credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
-      const { server, node } = await loadServerAndNode(db, user, id)
+      const access = await loadServerAccess(db, user, id)
+      requireScope(access, "sftp")
+      const node = await loadNode(db, access.server.nodeId)
       const minted = await mintDaemonToken({
         signingKeyHex: node.daemonPublicKey ?? "",
         userId: user.id,
-        serverId: server.id,
+        serverId: access.server.id,
         nodeId: node.id,
         scope: ["sftp"],
         ttlSeconds: 24 * 60 * 60,
@@ -312,40 +349,24 @@ export const buildServersRoute = (params: {
       return c.json({
         host: node.fqdn,
         port: node.sftpPort,
-        username: `${user.id}.${server.id}`,
+        username: `${user.id}.${access.server.id}`,
         password: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
       })
     })
 }
 
-const loadServerAndNode = async (
-  db: Db,
-  user: { id: string; isAdmin?: boolean | null },
-  serverId: string
-) => {
-  const server = (
-    await db
-      .select()
-      .from(serversTable)
-      .where(eq(serversTable.id, serverId))
-      .limit(1)
-  )[0]
-  if (server === undefined) {
-    throw new ApiException("servers.not_found", { status: 404 })
-  }
-  if (user.isAdmin !== true && server.ownerId !== user.id) {
-    throw new ApiException("servers.not_found", { status: 404 })
-  }
+const loadNode = async (db: Db, nodeId: string) => {
   const node = (
     await db
       .select()
       .from(nodesTable)
-      .where(eq(nodesTable.id, server.nodeId))
+      .where(eq(nodesTable.id, nodeId))
       .limit(1)
   )[0]
   if (node === undefined || node.daemonPublicKey === null) {
     throw new ApiException("nodes.not_found", { status: 404 })
   }
-  return { server, node }
+  return node
 }
+
