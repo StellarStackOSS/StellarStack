@@ -8,6 +8,7 @@
 package docker
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -149,6 +150,180 @@ func (c *Client) CreateContainer(
 	return decoded.ID, nil
 }
 
+// StartContainer starts the named container (idempotent — already-running
+// containers return nil).
+func (c *Client) StartContainer(ctx context.Context, idOrName string) error {
+	resp, err := c.do(ctx, http.MethodPost, "/containers/"+idOrName+"/start", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotModified {
+		return nil
+	}
+	if resp.StatusCode/100 != 2 {
+		return c.errorFromResponse(resp, "start container")
+	}
+	return nil
+}
+
+// StopContainer sends the container's configured stop signal and waits up
+// to `graceSeconds` before SIGKILL.
+func (c *Client) StopContainer(
+	ctx context.Context,
+	idOrName string,
+	graceSeconds int,
+) error {
+	q := url.Values{}
+	q.Set("t", fmt.Sprintf("%d", graceSeconds))
+	resp, err := c.do(ctx, http.MethodPost, "/containers/"+idOrName+"/stop?"+q.Encode(), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotModified {
+		return nil
+	}
+	if resp.StatusCode/100 != 2 {
+		return c.errorFromResponse(resp, "stop container")
+	}
+	return nil
+}
+
+// KillContainer SIGKILLs the named container.
+func (c *Client) KillContainer(ctx context.Context, idOrName string) error {
+	resp, err := c.do(ctx, http.MethodPost, "/containers/"+idOrName+"/kill", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return c.errorFromResponse(resp, "kill container")
+	}
+	return nil
+}
+
+// RestartContainer restarts the container with the configured stop signal
+// and `graceSeconds` grace period.
+func (c *Client) RestartContainer(
+	ctx context.Context,
+	idOrName string,
+	graceSeconds int,
+) error {
+	q := url.Values{}
+	q.Set("t", fmt.Sprintf("%d", graceSeconds))
+	resp, err := c.do(ctx, http.MethodPost, "/containers/"+idOrName+"/restart?"+q.Encode(), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return c.errorFromResponse(resp, "restart container")
+	}
+	return nil
+}
+
+// ContainerState is the State portion of a container inspect, used by the
+// lifecycle watcher's container_exit probe.
+type ContainerState struct {
+	Status    string `json:"Status"`
+	Running   bool   `json:"Running"`
+	ExitCode  int    `json:"ExitCode"`
+	OOMKilled bool   `json:"OOMKilled"`
+}
+
+// InspectState returns just the State portion of a container inspect.
+// Returns (nil, nil) when the container does not exist.
+func (c *Client) InspectState(
+	ctx context.Context,
+	idOrName string,
+) (*ContainerState, error) {
+	resp, err := c.do(ctx, http.MethodGet, "/containers/"+idOrName+"/json", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if resp.StatusCode/100 != 2 {
+		return nil, c.errorFromResponse(resp, "inspect container")
+	}
+	var body struct {
+		State *ContainerState `json:"State"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, fmt.Errorf("decode inspect: %w", err)
+	}
+	return body.State, nil
+}
+
+// FollowLogs returns a stream of stdout/stderr lines for the named
+// container, following until the context is cancelled. Caller must drain
+// the channel.
+func (c *Client) FollowLogs(
+	ctx context.Context,
+	idOrName string,
+) (<-chan LogLine, error) {
+	out := make(chan LogLine, 64)
+	go func() {
+		defer close(out)
+		c.streamLogs(ctx, idOrName, out)
+	}()
+	return out, nil
+}
+
+// AttachConn returns a hijacked connection attached to the container's
+// stdio for live console interaction (writes go to stdin, reads multiplex
+// stdout + stderr in the standard 8-byte-header frame format).
+func (c *Client) AttachConn(
+	ctx context.Context,
+	idOrName string,
+) (net.Conn, *bufio.Reader, error) {
+	q := url.Values{}
+	q.Set("stream", "1")
+	q.Set("stdin", "1")
+	q.Set("stdout", "1")
+	q.Set("stderr", "1")
+	conn, err := net.Dial("unix", c.socketPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("dial docker socket: %w", err)
+	}
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		"http://docker/"+apiVersion+"/containers/"+idOrName+"/attach?"+q.Encode(),
+		nil,
+	)
+	if err != nil {
+		conn.Close()
+		return nil, nil, err
+	}
+	req.Host = "docker"
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "tcp")
+	if err := req.Write(conn); err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("write attach request: %w", err)
+	}
+	reader := bufio.NewReader(conn)
+	resp, err := http.ReadResponse(reader, req)
+	if err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("read attach response: %w", err)
+	}
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		body, _ := io.ReadAll(resp.Body)
+		conn.Close()
+		return nil, nil, fmt.Errorf(
+			"attach: HTTP %d %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+	return conn, reader, nil
+}
+
 // RemoveContainer deletes the container by name or id, with optional force.
 func (c *Client) RemoveContainer(ctx context.Context, idOrName string, force bool) error {
 	q := url.Values{}
@@ -260,15 +435,21 @@ func (c *Client) RunInstall(
 			return
 		}
 
-		go c.streamLogs(ctx, id, logs)
+		streamDone := make(chan struct{})
+		go func() {
+			defer close(streamDone)
+			c.streamLogs(ctx, id, logs)
+		}()
 
 		waitResp, err := c.do(ctx, http.MethodPost, "/containers/"+id+"/wait", nil)
 		if err != nil {
+			<-streamDone
 			errs <- err
 			return
 		}
 		defer waitResp.Body.Close()
 		if waitResp.StatusCode/100 != 2 {
+			<-streamDone
 			errs <- c.errorFromResponse(waitResp, "wait install container")
 			return
 		}
@@ -276,9 +457,11 @@ func (c *Client) RunInstall(
 			StatusCode int `json:"StatusCode"`
 		}
 		if err := json.NewDecoder(waitResp.Body).Decode(&waitBody); err != nil {
+			<-streamDone
 			errs <- fmt.Errorf("decode wait response: %w", err)
 			return
 		}
+		<-streamDone
 		exit <- waitBody.StatusCode
 	}()
 

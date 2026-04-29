@@ -24,6 +24,7 @@ import {
   type AuthVariables,
 } from "@/middleware/RequireSession"
 import type { Queues } from "@/queues"
+import { mintDaemonToken } from "@/tokens"
 
 const createServerSchema = z.object({
   name: z.string().min(1).max(64),
@@ -227,5 +228,77 @@ export const buildServersRoute = (params: {
       )
 
       return c.json({ server: serverRow }, 201)
+    })
+    .post("/:id/power", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const parsed = z
+        .object({ action: z.enum(["start", "stop", "restart", "kill"]) })
+        .safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw apiValidationError(parsed.error)
+      }
+      const server = (
+        await db
+          .select()
+          .from(serversTable)
+          .where(eq(serversTable.id, id))
+          .limit(1)
+      )[0]
+      if (server === undefined) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      if (user.isAdmin !== true && server.ownerId !== user.id) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      if (server.suspended) {
+        throw new ApiException("servers.action.suspended", { status: 403 })
+      }
+      await queues.serverPower.add(
+        "power",
+        { serverId: server.id, action: parsed.data.action },
+        { removeOnComplete: 100, removeOnFail: 100 }
+      )
+      return c.json({ ok: true })
+    })
+    .post("/:id/ws-credentials", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const server = (
+        await db
+          .select()
+          .from(serversTable)
+          .where(eq(serversTable.id, id))
+          .limit(1)
+      )[0]
+      if (server === undefined) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      if (user.isAdmin !== true && server.ownerId !== user.id) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      const node = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, server.nodeId))
+          .limit(1)
+      )[0]
+      if (node === undefined || node.daemonPublicKey === null) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      const minted = await mintDaemonToken({
+        signingKeyHex: node.daemonPublicKey,
+        userId: user.id,
+        serverId: server.id,
+        nodeId: node.id,
+        scope: ["console.read", "console.write", "stats.read"],
+        ttlSeconds: 60,
+      })
+      return c.json({
+        token: minted.token,
+        expiresAt: minted.expiresAt.toISOString(),
+        wsUrl: `${node.scheme === "https" ? "wss" : "ws"}://${node.fqdn}:${node.daemonPort}/servers/${server.id}/ws`,
+      })
     })
 }

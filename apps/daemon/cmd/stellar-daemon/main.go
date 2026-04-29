@@ -10,11 +10,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/stellarstack/daemon/internal/config"
+	"github.com/stellarstack/daemon/internal/console"
+	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/pairing"
 	"github.com/stellarstack/daemon/internal/ws"
 )
@@ -54,7 +59,39 @@ func runServe() error {
 	fmt.Printf("stellar-daemon %s starting (node=%s)\n", config.Version, displayNode(cfg))
 
 	client := ws.New(cfg)
+	httpServer := startConsoleServer(cfg, client)
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = httpServer.Shutdown(shutdownCtx)
+	}()
+
 	return client.Run(ctx)
+}
+
+func startConsoleServer(cfg *config.Config, client *ws.Client) *http.Server {
+	verifier := stellarjwt.New(cfg.SigningKeyHex, cfg.NodeID)
+	consoleServer := console.New(verifier, client.Handler())
+	mux := http.NewServeMux()
+	consoleServer.Mount(mux)
+	addr := fmt.Sprintf("%s:%d", cfg.Listen.Host, cfg.Listen.Port)
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stellar-daemon: console listen %s: %v\n", addr, err)
+		return server
+	}
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	fmt.Printf("stellar-daemon console listening on %s\n", addr)
+	return server
 }
 
 func runConfigure(args []string) error {

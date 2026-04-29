@@ -9,10 +9,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/stellarstack/daemon/internal/config"
 	"github.com/stellarstack/daemon/internal/docker"
+	"github.com/stellarstack/daemon/internal/lifecycle"
 )
 
 // Sender is anything that can emit a JSON-encoded envelope back to the API
@@ -22,25 +24,39 @@ type Sender interface {
 	Send(ctx context.Context, payload []byte) error
 }
 
-// Handler routes inbound messages to docker calls.
+// Handler routes inbound messages to docker calls. Per-server state (the
+// lifecycle.Watcher and its blueprint lifecycle config) is held in
+// `watchers` so power-action and lifecycle-transition handling can find
+// the existing state machine.
 type Handler struct {
 	cfg    *config.Config
 	docker *docker.Client
+
+	mu       sync.Mutex
+	watchers map[string]*serverState
+}
+
+type serverState struct {
+	containerName string
+	watcher       *lifecycle.Watcher
+	lifecycle     lifecycle.Lifecycle
 }
 
 // New returns a Handler bound to the local Docker socket.
 func New(cfg *config.Config) *Handler {
 	return &Handler{
-		cfg:    cfg,
-		docker: docker.New(""),
+		cfg:      cfg,
+		docker:   docker.New(""),
+		watchers: map[string]*serverState{},
 	}
 }
 
-// HandleEnvelope inspects the message type and dispatches. Replies (ack /
-// error / streaming log lines) are written through `send`. Returns nil when
-// the frame was handled, even if the underlying operation produced an
-// error envelope — the caller doesn't need to know the difference.
-func (h *Handler) HandleEnvelope(ctx context.Context, raw []byte, send Sender) error {
+// HandleEnvelope inspects the message type and dispatches.
+func (h *Handler) HandleEnvelope(
+	ctx context.Context,
+	raw []byte,
+	send Sender,
+) error {
 	var envelope struct {
 		ID      string          `json:"id"`
 		Message json.RawMessage `json:"message"`
@@ -63,6 +79,14 @@ func (h *Handler) HandleEnvelope(ctx context.Context, raw []byte, send Sender) e
 		return h.handleCreateContainer(ctx, envelope.ID, envelope.Message, send)
 	case "server.run_install":
 		return h.handleRunInstall(ctx, envelope.ID, envelope.Message, send)
+	case "server.start":
+		return h.handlePower(ctx, envelope.ID, envelope.Message, send, "start")
+	case "server.stop":
+		return h.handlePower(ctx, envelope.ID, envelope.Message, send, "stop")
+	case "server.kill":
+		return h.handlePower(ctx, envelope.ID, envelope.Message, send, "kill")
+	case "server.delete":
+		return h.handleDelete(ctx, envelope.ID, envelope.Message, send)
 	default:
 		log.Printf("daemon: ignoring message type %q", typed.Type)
 		return writeEnvelope(ctx, send, envelope.ID, map[string]any{
@@ -78,19 +102,20 @@ func (h *Handler) handleCreateContainer(
 	send Sender,
 ) error {
 	var msg struct {
-		Type             string            `json:"type"`
-		ServerID         string            `json:"serverId"`
-		DockerImage      string            `json:"dockerImage"`
-		MemoryLimitMb    int64             `json:"memoryLimitMb"`
-		CPULimitPercent  int64             `json:"cpuLimitPercent"`
-		Environment      map[string]string `json:"environment"`
-		PortMappings     []struct {
+		Type            string            `json:"type"`
+		ServerID        string            `json:"serverId"`
+		DockerImage     string            `json:"dockerImage"`
+		MemoryLimitMb   int64             `json:"memoryLimitMb"`
+		CPULimitPercent int64             `json:"cpuLimitPercent"`
+		Environment     map[string]string `json:"environment"`
+		PortMappings    []struct {
 			IP            string `json:"ip"`
 			Port          int    `json:"port"`
 			ContainerPort int    `json:"containerPort"`
 		} `json:"portMappings"`
-		StartupCommand string `json:"startupCommand"`
-		StopSignal     string `json:"stopSignal"`
+		StartupCommand string              `json:"startupCommand"`
+		StopSignal     string              `json:"stopSignal"`
+		Lifecycle      lifecycle.Lifecycle `json:"lifecycle"`
 	}
 	if err := json.Unmarshal(raw, &msg); err != nil {
 		return writeError(ctx, send, id, "internal.unexpected", nil)
@@ -132,6 +157,15 @@ func (h *Handler) handleCreateContainer(
 		log.Printf("daemon: create container: %v", err)
 		return writeError(ctx, send, id, "internal.unexpected", nil)
 	}
+
+	h.mu.Lock()
+	h.watchers[msg.ServerID] = &serverState{
+		containerName: containerName,
+		watcher:       lifecycle.New(msg.ServerID, containerName, h.docker, send),
+		lifecycle:     msg.Lifecycle,
+	}
+	h.mu.Unlock()
+
 	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
 }
 
@@ -204,6 +238,113 @@ func (h *Handler) handleRunInstall(
 			}
 		}
 	}
+}
+
+func (h *Handler) handlePower(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+	action string,
+) error {
+	var msg struct {
+		ServerID string `json:"serverId"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+
+	h.mu.Lock()
+	state := h.watchers[msg.ServerID]
+	h.mu.Unlock()
+	containerName := "stellar-" + msg.ServerID
+	if state != nil {
+		containerName = state.containerName
+	}
+
+	switch action {
+	case "start":
+		if err := h.docker.StartContainer(ctx, containerName); err != nil {
+			log.Printf("daemon: start container: %v", err)
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		if state != nil {
+			state.watcher.OnStarting(context.Background(), state.lifecycle)
+		}
+	case "stop":
+		if state != nil {
+			state.watcher.OnStopping(context.Background(), state.lifecycle)
+		}
+		grace := 30
+		if state != nil && state.lifecycle.Stopping.GraceTimeoutMs > 0 {
+			grace = state.lifecycle.Stopping.GraceTimeoutMs / 1000
+		}
+		if err := h.docker.StopContainer(ctx, containerName, grace); err != nil {
+			log.Printf("daemon: stop container: %v", err)
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+	case "kill":
+		if err := h.docker.KillContainer(ctx, containerName); err != nil {
+			log.Printf("daemon: kill container: %v", err)
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		if state != nil {
+			state.watcher.SetState(
+				context.Background(),
+				lifecycle.StateStopped,
+				"servers.lifecycle.stop_forced",
+			)
+		}
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+func (h *Handler) handleDelete(
+	ctx context.Context,
+	id string,
+	raw json.RawMessage,
+	send Sender,
+) error {
+	var msg struct {
+		ServerID    string `json:"serverId"`
+		DeleteFiles bool   `json:"deleteFiles"`
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return writeError(ctx, send, id, "internal.unexpected", nil)
+	}
+
+	h.mu.Lock()
+	state := h.watchers[msg.ServerID]
+	delete(h.watchers, msg.ServerID)
+	h.mu.Unlock()
+	if state != nil {
+		state.watcher.Stop()
+	}
+
+	containerName := "stellar-" + msg.ServerID
+	_ = h.docker.RemoveContainer(ctx, containerName, true)
+	if msg.DeleteFiles {
+		_ = os.RemoveAll(filepath.Join(h.cfg.DataDir, "servers", msg.ServerID))
+	}
+	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+// LookupContainer returns the container name for a given server id (or
+// the conventional "stellar-{serverId}" if no watcher is registered).
+// Used by the console-WS attach endpoint to find the right target.
+func (h *Handler) LookupContainer(serverID string) string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if state, ok := h.watchers[serverID]; ok {
+		return state.containerName
+	}
+	return "stellar-" + serverID
+}
+
+// Docker returns the underlying Docker client. The console-WS endpoint
+// needs it to attach to a server's stdio.
+func (h *Handler) Docker() *docker.Client {
+	return h.docker
 }
 
 func writeEnvelope(

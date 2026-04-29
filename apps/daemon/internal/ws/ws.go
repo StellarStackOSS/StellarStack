@@ -50,6 +50,12 @@ func New(cfg *config.Config) *Client {
 	return &Client{cfg: cfg, handler: handler.New(cfg)}
 }
 
+// Handler exposes the underlying message handler so the console HTTP
+// server can share its container/lifecycle state.
+func (c *Client) Handler() *handler.Handler {
+	return c.handler
+}
+
 // connSender wraps mutex-guarded writes to the same socket so concurrent
 // handler goroutines can push frames without racing.
 type connSender struct {
