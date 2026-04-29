@@ -13,12 +13,39 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 
 	"github.com/stellarstack/daemon/internal/handler"
 	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 )
+
+const (
+	throttleLines    = 500
+	throttleWindowMs = 1000
+)
+
+type lineThrottle struct {
+	mu        sync.Mutex
+	count     int
+	windowEnd time.Time
+	throttled bool
+}
+
+func (t *lineThrottle) allow() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	now := time.Now()
+	if now.After(t.windowEnd) {
+		t.count = 0
+		t.windowEnd = now.Add(throttleWindowMs * time.Millisecond)
+		t.throttled = false
+	}
+	t.count++
+	return t.count <= throttleLines
+}
 
 // Server hosts the console WebSocket endpoint.
 type Server struct {
@@ -111,6 +138,7 @@ func pumpDockerToWS(
 	ws *websocket.Conn,
 	reader io.Reader,
 ) {
+	throttle := &lineThrottle{}
 	header := make([]byte, 8)
 	for {
 		if _, err := io.ReadFull(reader, header); err != nil {
@@ -131,6 +159,16 @@ func pumpDockerToWS(
 		}
 		for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
 			if line == "" {
+				continue
+			}
+			if !throttle.allow() {
+				if !throttle.throttled {
+					throttle.throttled = true
+					_ = ws.Write(ctx, websocket.MessageText, mustJSON(map[string]any{
+						"type":    "console.throttled",
+						"message": "Output rate limit reached; some lines dropped.",
+					}))
+				}
 				continue
 			}
 			frame := mustJSON(map[string]any{

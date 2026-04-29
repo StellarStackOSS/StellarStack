@@ -40,6 +40,9 @@ type Handler struct {
 
 	mu       sync.Mutex
 	watchers map[string]*serverState
+
+	powerLocksMu sync.Mutex
+	powerLocks   map[string]*sync.Mutex
 }
 
 type serverState struct {
@@ -57,6 +60,18 @@ func New(cfg *config.Config) *Handler {
 		Transfer: transfer.NewRegistry(),
 		watchers: map[string]*serverState{},
 	}
+}
+
+func (h *Handler) powerLock(serverID string) *sync.Mutex {
+	h.powerLocksMu.Lock()
+	defer h.powerLocksMu.Unlock()
+	if h.powerLocks == nil {
+		h.powerLocks = map[string]*sync.Mutex{}
+	}
+	if h.powerLocks[serverID] == nil {
+		h.powerLocks[serverID] = &sync.Mutex{}
+	}
+	return h.powerLocks[serverID]
 }
 
 // HandleEnvelope inspects the message type and dispatches.
@@ -174,6 +189,7 @@ func (h *Handler) handleCreateContainer(
 		MemoryLimitBytes: msg.MemoryLimitMb * 1024 * 1024,
 		CPULimitPercent:  msg.CPULimitPercent,
 		Ports:            ports,
+		ReadonlyRootfs:   true,
 	})
 	if err != nil {
 		log.Printf("daemon: create container: %v", err)
@@ -276,6 +292,12 @@ func (h *Handler) handlePower(
 		return writeError(ctx, send, id, "internal.unexpected", nil)
 	}
 
+	log.Printf("daemon: power action=%s server=%s", action, msg.ServerID)
+
+	lock := h.powerLock(msg.ServerID)
+	lock.Lock()
+	defer lock.Unlock()
+
 	h.mu.Lock()
 	state := h.watchers[msg.ServerID]
 	h.mu.Unlock()
@@ -284,39 +306,61 @@ func (h *Handler) handlePower(
 		containerName = state.containerName
 	}
 
+	// Ensure a watcher exists for servers that weren't installed in this
+	// daemon session (e.g. after a daemon restart). Without one, no
+	// state-change events are emitted to the panel.
+	if state == nil {
+		w := lifecycle.New(msg.ServerID, containerName, h.docker, send)
+		state = &serverState{
+			containerName: containerName,
+			watcher:       w,
+			lifecycle:     lifecycle.Lifecycle{},
+		}
+		h.mu.Lock()
+		h.watchers[msg.ServerID] = state
+		h.mu.Unlock()
+	}
+
 	switch action {
 	case "start":
 		if err := h.docker.StartContainer(ctx, containerName); err != nil {
 			log.Printf("daemon: start container: %v", err)
 			return writeError(ctx, send, id, "internal.unexpected", nil)
 		}
-		if state != nil {
+		if len(state.lifecycle.Starting.Probes) > 0 {
 			state.watcher.OnStarting(context.Background(), state.lifecycle)
+		} else {
+			// No lifecycle config available — emit directly to running.
+			state.watcher.SetState(context.Background(), lifecycle.StateRunning, "servers.lifecycle.started")
 		}
 	case "stop":
-		if state != nil {
-			state.watcher.OnStopping(context.Background(), state.lifecycle)
-		}
 		grace := 30
-		if state != nil && state.lifecycle.Stopping.GraceTimeoutMs > 0 {
+		if state.lifecycle.Stopping.GraceTimeoutMs > 0 {
 			grace = state.lifecycle.Stopping.GraceTimeoutMs / 1000
+		}
+		if len(state.lifecycle.Stopping.Probes) > 0 {
+			state.watcher.OnStopping(context.Background(), state.lifecycle)
+		} else {
+			state.watcher.Stop() // cancel crash detection before marking stopping
+			state.watcher.SetState(context.Background(), lifecycle.StateStopping, "servers.lifecycle.stopping.requested")
 		}
 		if err := h.docker.StopContainer(ctx, containerName, grace); err != nil {
 			log.Printf("daemon: stop container: %v", err)
 			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		if len(state.lifecycle.Stopping.Probes) == 0 {
+			state.watcher.SetState(context.Background(), lifecycle.StateStopped, "servers.lifecycle.stopped")
 		}
 	case "kill":
 		if err := h.docker.KillContainer(ctx, containerName); err != nil {
 			log.Printf("daemon: kill container: %v", err)
 			return writeError(ctx, send, id, "internal.unexpected", nil)
 		}
-		if state != nil {
-			state.watcher.SetState(
-				context.Background(),
-				lifecycle.StateStopped,
-				"servers.lifecycle.stop_forced",
-			)
-		}
+		state.watcher.SetState(
+			context.Background(),
+			lifecycle.StateStopped,
+			"servers.lifecycle.stop_forced",
+		)
 	}
 	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
 }

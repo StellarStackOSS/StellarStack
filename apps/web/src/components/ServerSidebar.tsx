@@ -2,6 +2,7 @@ import { useLocation, Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  ArrowDataTransferHorizontalIcon,
   ArrowLeft01Icon,
   Calendar03Icon,
   DashboardSquare02Icon,
@@ -101,6 +102,13 @@ export const ServerSidebar = ({
       to: "/servers/$id/network",
       params: { id: server.id },
       isActive: sub === "/network",
+    },
+    {
+      title: "Transfer",
+      icon: ArrowDataTransferHorizontalIcon,
+      to: "/servers/$id/transfer",
+      params: { id: server.id },
+      isActive: sub === "/transfer",
     },
     {
       title: "Settings",

@@ -2,8 +2,8 @@ import { Link, useLocation } from "@tanstack/react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
+  AuditIcon,
   CubeIcon,
-  FileTextIcon,
   ServerStackIcon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
@@ -52,7 +52,7 @@ export const AdminSidebar = ({
     },
     {
       title: "Audit Log",
-      icon: FileTextIcon,
+      icon: AuditIcon,
       to: "/admin/audit",
       isActive: location.pathname.startsWith("/admin/audit"),
     },

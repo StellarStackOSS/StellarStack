@@ -62,15 +62,17 @@ func (c *Client) EnsureImage(ctx context.Context, image string) error {
 // creating a server container. `Name` becomes the Docker container name;
 // `BindMount` is the host path mounted at /home/container.
 type CreateContainerOptions struct {
-	Name              string
-	Image             string
-	Env               map[string]string
-	Cmd               []string
-	StopSignal        string
-	BindMount         string
-	MemoryLimitBytes  int64
-	CPULimitPercent   int64
-	Ports             map[string]string
+	Name             string
+	Image            string
+	Env              map[string]string
+	Cmd              []string
+	StopSignal       string
+	BindMount        string
+	MemoryLimitBytes int64
+	CPULimitPercent  int64
+	Ports            map[string]string
+	ReadonlyRootfs   bool
+	DropCapabilities []string // defaults applied internally if nil
 }
 
 // CreateContainer creates a container from the given options and returns
@@ -92,11 +94,19 @@ func (c *Client) CreateContainer(
 		portBindings[containerPort] = []map[string]string{{"HostIp": "", "HostPort": hostBinding}}
 	}
 
+	capDrop := opts.DropCapabilities
+	if len(capDrop) == 0 {
+		capDrop = []string{"SETPCAP", "MKNOD", "NET_RAW", "SYS_CHROOT", "SYS_PTRACE", "AUDIT_WRITE", "DAC_READ_SEARCH"}
+	}
 	hostConfig := map[string]any{
-		"Memory":      opts.MemoryLimitBytes,
-		"NanoCpus":    opts.CPULimitPercent * 10_000_000,
-		"AutoRemove":  false,
-		"NetworkMode": "bridge",
+		"Memory":         opts.MemoryLimitBytes,
+		"NanoCpus":       opts.CPULimitPercent * 10_000_000,
+		"AutoRemove":     false,
+		"NetworkMode":    "bridge",
+		"ReadonlyRootfs": opts.ReadonlyRootfs,
+		"CapDrop":        capDrop,
+		"SecurityOpt":    []string{"no-new-privileges"},
+		"Tmpfs":          map[string]string{"/tmp": "size=100m,mode=1777"},
 	}
 	if opts.BindMount != "" {
 		hostConfig["Binds"] = []string{

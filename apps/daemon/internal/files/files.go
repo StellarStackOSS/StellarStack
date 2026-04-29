@@ -49,26 +49,48 @@ func (m *Manager) SafePath(serverID, requested string) (string, error) {
 	if strings.Contains(requested, "\x00") {
 		return "", errors.New("invalid path")
 	}
-	cleaned := filepath.Clean("/" + requested)
 	root := filepath.Join(m.root, "servers", serverID)
-	if resolvedRoot, err := filepath.EvalSymlinks(root); err == nil {
-		root = resolvedRoot
-	}
-	candidate := filepath.Join(root, cleaned)
-	rel, err := filepath.Rel(root, candidate)
+	// Resolve the root itself first so we compare against the canonical path.
+	resolvedRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
-		return "", err
-	}
-	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-		return "", errors.New("path escapes server root")
-	}
-	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
-		rel2, err2 := filepath.Rel(root, resolved)
-		if err2 == nil && (rel2 == ".." || strings.HasPrefix(rel2, ".."+string(os.PathSeparator))) {
-			return "", errors.New("symlink escapes server root")
+		if os.IsNotExist(err) {
+			// Root doesn't exist yet (pre-install). Fall back to lexical check.
+			resolvedRoot = root
+		} else {
+			return "", fmt.Errorf("resolve root: %w", err)
 		}
 	}
-	return candidate, nil
+
+	// Walk each component of the requested path, resolving symlinks as we go.
+	// This catches symlinks at intermediate directories.
+	cleaned := filepath.Clean("/" + requested)
+	parts := strings.Split(filepath.ToSlash(cleaned), "/")
+	current := resolvedRoot
+	for _, part := range parts {
+		if part == "" || part == "." {
+			continue
+		}
+		if part == ".." {
+			return "", errors.New("path escapes server root")
+		}
+		current = filepath.Join(current, part)
+		// Resolve symlinks at this level, but only if the path exists.
+		if resolved, err := filepath.EvalSymlinks(current); err == nil {
+			rel, err := filepath.Rel(resolvedRoot, resolved)
+			if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+				return "", errors.New("symlink escapes server root")
+			}
+			current = resolved
+		}
+		// If the path doesn't exist yet (e.g. creating a new file), that's fine —
+		// we just continue with the un-resolved path and let the caller create it.
+	}
+	// Final lexical escape check.
+	rel, err := filepath.Rel(resolvedRoot, current)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", errors.New("path escapes server root")
+	}
+	return current, nil
 }
 
 // List returns the directory listing at `path` for `serverID`. If the
