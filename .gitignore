@@ -36,6 +36,3 @@ npm-debug.log*
 # Go
 apps/daemon/bin
 apps/daemon/vendor
-
-# Drizzle
-packages/db/drizzle

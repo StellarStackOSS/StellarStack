@@ -44,12 +44,18 @@ importers:
       bullmq:
         specifier: ^5.34.0
         version: 5.76.3
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(gel@2.2.0)(kysely@0.28.16)(postgres@3.4.9)
       hono:
         specifier: ^4.7.0
         version: 4.12.15
       ioredis:
         specifier: ^5.4.2
         version: 5.10.1
+      nodemailer:
+        specifier: ^6.9.16
+        version: 6.10.1
       pino:
         specifier: ^9.5.0
         version: 9.14.0
@@ -66,6 +72,9 @@ importers:
       '@types/node':
         specifier: ^25.1.0
         version: 25.3.0
+      '@types/nodemailer':
+        specifier: ^6.4.17
+        version: 6.4.23
       eslint:
         specifier: ^9.39.2
         version: 9.39.3(jiti@2.6.1)
@@ -2454,6 +2463,9 @@ packages:
   '@types/node@25.3.0':
     resolution: {integrity: sha512-4K3bqJpXpqfg2XKGK9bpDTc6xO/xoUP/RBWS7AtRMug6zZFaRekiLzjVtAoZMquxoAbzBvy5nxQ7veS5eYzf8A==}
 
+  '@types/nodemailer@6.4.23':
+    resolution: {integrity: sha512-aFV3/NsYFLSx9mbb5gtirBSXJnAlrusoKNuPbxsASWc7vrKLmIrTQRpdcxNcSFL3VW2A2XpeLEavwb2qMi6nlQ==}
+
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
@@ -3987,6 +3999,10 @@ packages:
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
+
+  nodemailer@6.10.1:
+    resolution: {integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==}
+    engines: {node: '>=6.0.0'}
 
   npm-run-path@4.0.1:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
@@ -6820,6 +6836,10 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@types/nodemailer@6.4.23':
+    dependencies:
+      '@types/node': 25.3.0
+
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
       '@types/react': 19.2.14
@@ -8308,6 +8328,8 @@ snapshots:
       resolve: 1.22.11
 
   node-releases@2.0.27: {}
+
+  nodemailer@6.10.1: {}
 
   npm-run-path@4.0.1:
     dependencies:

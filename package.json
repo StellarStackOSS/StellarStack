@@ -10,8 +10,12 @@
     "typecheck": "turbo typecheck",
     "db:push": "turbo run db:push",
     "db:migrate": "turbo run db:migrate",
-    "dev:infra": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env up -d",
-    "dev:infra:down": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env down"
+    "dev:infra": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env up -d postgres redis minio mailpit",
+    "dev:infra:down": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env down",
+    "stack:up": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env up -d --build",
+    "stack:down": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env down",
+    "stack:logs": "docker compose -f infra/docker/compose.yaml --env-file infra/docker/.env logs -f",
+    "stack:dev": "docker compose -f infra/docker/compose.yaml -f infra/docker/compose.dev.yaml --env-file infra/docker/.env up --build --watch"
   },
   "devDependencies": {
     "prettier": "^3.8.1",

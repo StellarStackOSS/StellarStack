@@ -1,0 +1,64 @@
+name: stellarstack-dev
+
+services:
+  api:
+    build:
+      target: source
+    command: ["pnpm", "--filter", "api", "dev"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../..:/repo
+      - /repo/node_modules
+    ports:
+      - "${API_PORT}:3000"
+    develop:
+      watch:
+        - action: sync
+          path: ../../apps/api/src
+          target: /repo/apps/api/src
+        - action: sync
+          path: ../../packages
+          target: /repo/packages
+        - action: rebuild
+          path: ../../pnpm-lock.yaml
+
+  worker:
+    build:
+      target: source
+    command: ["pnpm", "--filter", "worker", "dev"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../..:/repo
+      - /repo/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ../../apps/worker/src
+          target: /repo/apps/worker/src
+        - action: sync
+          path: ../../packages
+          target: /repo/packages
+        - action: rebuild
+          path: ../../pnpm-lock.yaml
+
+  web:
+    build:
+      target: source
+    command: ["pnpm", "--filter", "web", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    ports:
+      - "${WEB_PORT}:5173"
+    volumes:
+      - ../..:/repo
+      - /repo/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ../../apps/web/src
+          target: /repo/apps/web/src
+        - action: sync
+          path: ../../packages
+          target: /repo/packages
+        - action: rebuild
+          path: ../../pnpm-lock.yaml

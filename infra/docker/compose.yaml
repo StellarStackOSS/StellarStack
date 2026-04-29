@@ -1,4 +1,4 @@
-name: stellarstack-dev
+name: stellarstack
 
 services:
   postgres:
@@ -62,7 +62,85 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+      SMTP_URL: smtp://mailpit:1025
+      EMAIL_FROM: ${EMAIL_FROM}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${API_PORT}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      PANEL_EVENTS_CHANNEL: panel:events
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-8}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${WEB_PORT}:80"
+
+  daemon:
+    build:
+      context: ../..
+      dockerfile: apps/daemon/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${DAEMON_PORT}:8080"
+      - "${DAEMON_SFTP_PORT}:2022"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - daemon-data:/var/lib/stellar
+    user: "0:0"
+
 volumes:
   postgres-data:
   redis-data:
   minio-data:
+  daemon-data:

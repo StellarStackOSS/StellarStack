@@ -1,12 +1,12 @@
-import type { Context, ErrorHandler } from "hono"
+import type { Context } from "hono"
 import type { Logger } from "pino"
+import type { ContentfulStatusCode } from "hono/utils/http-status"
 
 import { ApiException, serializeApiException } from "@workspace/shared/errors"
 
-const getRequestId = (c: Context): string => {
-  const value = c.get("requestId")
-  return typeof value === "string" ? value : "unknown"
-}
+import type { ApiVariables } from "@/middleware/RequestId"
+
+type ApiContext = Context<{ Variables: ApiVariables }>
 
 /**
  * Global error handler that converts thrown errors into the canonical
@@ -15,13 +15,13 @@ const getRequestId = (c: Context): string => {
  * logged at error level so a human can investigate.
  */
 export const createErrorHandler =
-  (logger: Logger): ErrorHandler =>
-  (err, c) => {
-    const requestId = getRequestId(c)
+  (logger: Logger) =>
+  (err: Error, c: ApiContext) => {
+    const requestId = c.get("requestId")
 
     if (err instanceof ApiException) {
       const payload = serializeApiException(err, requestId)
-      return c.json(payload.body, payload.status as never)
+      return c.json(payload.body, payload.status as ContentfulStatusCode)
     }
 
     logger.error(
@@ -30,5 +30,5 @@ export const createErrorHandler =
     )
     const fallback = new ApiException("internal.unexpected", { status: 500 })
     const payload = serializeApiException(fallback, requestId)
-    return c.json(payload.body, payload.status as never)
+    return c.json(payload.body, payload.status as ContentfulStatusCode)
   }

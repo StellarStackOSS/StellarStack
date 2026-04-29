@@ -15,7 +15,7 @@ const main = async (): Promise<void> => {
   const redis = createRedis(env)
   const queues = createQueues(redis)
   const auth = createAuth(db, env)
-  const app = createApp({ auth, logger })
+  const app = createApp({ auth, db, redis, logger })
 
   const handleShutdown = async (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Shutting down")
