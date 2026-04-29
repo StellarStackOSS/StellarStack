@@ -24,6 +24,7 @@ import {
   loadServerAccess,
   requireScope,
 } from "@/access"
+import { clientIp, writeAudit } from "@/audit"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -249,6 +250,16 @@ export const buildServersRoute = (params: {
         { removeOnComplete: 100, removeOnFail: 100 }
       )
 
+      writeAudit({
+        db,
+        actorId: user.id,
+        ip: clientIp(c),
+        action: "server.create",
+        targetType: "server",
+        targetId: serverRow.id,
+        metadata: { name: serverRow.name, nodeId: serverRow.nodeId },
+      })
+
       return c.json({ server: serverRow }, 201)
     })
     .post("/:id/power", async (c) => {
@@ -353,6 +364,67 @@ export const buildServersRoute = (params: {
         password: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
       })
+    })
+    .patch("/:id/suspend", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      if (user.isAdmin !== true) {
+        throw new ApiException("permissions.denied", {
+          status: 403,
+          params: { statement: "admin" },
+        })
+      }
+      const parsed = z
+        .object({ suspended: z.boolean() })
+        .safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw apiValidationError(parsed.error)
+      }
+      await loadServerAccess(db, user, id)
+      await db
+        .update(serversTable)
+        .set({ suspended: parsed.data.suspended, updatedAt: new Date() })
+        .where(eq(serversTable.id, id))
+      writeAudit({
+        db,
+        actorId: user.id,
+        ip: clientIp(c),
+        action: parsed.data.suspended ? "server.suspend" : "server.unsuspend",
+        targetType: "server",
+        targetId: id,
+      })
+      return c.json({ ok: true })
+    })
+    .delete("/:id", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role === "subuser") {
+        throw new ApiException("permissions.denied", {
+          status: 403,
+          params: { statement: "server.delete" },
+        })
+      }
+      await queues.serverPower.add(
+        "power",
+        { serverId: id, action: "kill" },
+        { removeOnComplete: 100, removeOnFail: 100 }
+      )
+      await db
+        .update(nodeAllocationsTable)
+        .set({ serverId: null })
+        .where(eq(nodeAllocationsTable.serverId, id))
+      await db.delete(serversTable).where(eq(serversTable.id, id))
+      writeAudit({
+        db,
+        actorId: user.id,
+        ip: clientIp(c),
+        action: "server.delete",
+        targetType: "server",
+        targetId: id,
+        metadata: { name: access.server.name },
+      })
+      return c.json({ ok: true })
     })
 }
 

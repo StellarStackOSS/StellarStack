@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
   CubeIcon,
+  FileTextIcon,
   ServerStackIcon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
@@ -48,6 +49,12 @@ export const AdminSidebar = ({
       icon: UserMultipleIcon,
       to: "/admin/users",
       isActive: location.pathname.startsWith("/admin/users"),
+    },
+    {
+      title: "Audit Log",
+      icon: FileTextIcon,
+      to: "/admin/audit",
+      isActive: location.pathname.startsWith("/admin/audit"),
     },
   ]
 

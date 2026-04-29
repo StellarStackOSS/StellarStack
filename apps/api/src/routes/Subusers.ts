@@ -11,6 +11,7 @@ import {
 } from "@workspace/shared/errors"
 import { daemonJwtScopes } from "@workspace/shared/jwt"
 
+import { clientIp, writeAudit } from "@/audit"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -124,6 +125,15 @@ export const buildSubusersRoute = (params: { auth: Auth; db: Db }) => {
           params: { statement: "subusers.duplicate" },
         })
       }
+      writeAudit({
+        db,
+        actorId: c.get("user").id,
+        ip: clientIp(c),
+        action: "subuser.invite",
+        targetType: "server",
+        targetId: id,
+        metadata: { userId: target.id },
+      })
       return c.json({ subuser: row }, 201)
     })
     .patch("/:id/subusers/:subId", async (c) => {
@@ -165,6 +175,15 @@ export const buildSubusersRoute = (params: { auth: Auth; db: Db }) => {
       if (deleted[0] === undefined) {
         throw new ApiException("servers.not_found", { status: 404 })
       }
+      writeAudit({
+        db,
+        actorId: c.get("user").id,
+        ip: clientIp(c),
+        action: "subuser.remove",
+        targetType: "server",
+        targetId: id,
+        metadata: { subuserId: subId },
+      })
       return c.json({ ok: true })
     })
 }

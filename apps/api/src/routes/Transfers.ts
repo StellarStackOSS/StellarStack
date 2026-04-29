@@ -10,6 +10,7 @@ import { serverTransfersTable } from "@workspace/db/schema/transfers"
 import { ApiException, apiValidationError } from "@workspace/shared/errors"
 
 import { loadServerAccess } from "@/access"
+import { clientIp, writeAudit } from "@/audit"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -133,6 +134,20 @@ export const buildTransfersRoute = (params: {
 
     await queues.serverTransfer.add("server.transfer", {
       transferId: transfer.id,
+    })
+
+    writeAudit({
+      db,
+      actorId: user.id,
+      ip: clientIp(c),
+      action: "server.transfer",
+      targetType: "server",
+      targetId: serverId,
+      metadata: {
+        transferId: transfer.id,
+        sourceNodeId: transfer.sourceNodeId,
+        targetNodeId: transfer.targetNodeId,
+      },
     })
 
     return c.json({ transfer }, 201)

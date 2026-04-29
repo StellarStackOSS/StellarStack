@@ -11,6 +11,7 @@ import { Route as adminRoute } from "@/routes/Admin"
 import { Route as adminIndexRoute } from "@/routes/AdminIndex"
 import { Route as adminNodesRoute } from "@/routes/AdminNodes"
 import { Route as adminBlueprintsRoute } from "@/routes/AdminBlueprints"
+import { Route as adminAuditRoute } from "@/routes/AdminAudit"
 import { Route as adminUsersRoute } from "@/routes/AdminUsers"
 import { Route as newServerRoute } from "@/routes/NewServer"
 import { Route as serverRoute } from "@/routes/Server"
@@ -28,6 +29,7 @@ const adminTree = adminRoute.addChildren([
   adminNodesRoute,
   adminBlueprintsRoute,
   adminUsersRoute,
+  adminAuditRoute,
 ])
 
 const serverTree = serverRoute.addChildren([

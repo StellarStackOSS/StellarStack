@@ -1,10 +1,10 @@
 import { createRoute } from "@tanstack/react-router"
 
-import { AdminUsersPage } from "@/components/AdminUsersPage"
+import { AdminAuditPage } from "@/components/AdminAuditPage"
 import { Route as adminRoute } from "@/routes/Admin"
 
 export const Route = createRoute({
   getParentRoute: () => adminRoute,
-  path: "/users",
-  component: AdminUsersPage,
+  path: "/audit",
+  component: AdminAuditPage,
 })

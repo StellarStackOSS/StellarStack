@@ -13,6 +13,7 @@ import {
 } from "@workspace/shared/errors"
 
 import { loadServerAccess, requireScope } from "@/access"
+import { clientIp, writeAudit } from "@/audit"
 import type { Auth } from "@/auth"
 import {
   buildRequireSession,
@@ -110,6 +111,15 @@ export const buildBackupsRoute = (params: {
         { backupId: row.id },
         { removeOnComplete: 100, removeOnFail: 100 }
       )
+      writeAudit({
+        db,
+        actorId: c.get("user").id,
+        ip: clientIp(c),
+        action: "backup.create",
+        targetType: "server",
+        targetId: id,
+        metadata: { backupId: row.id, name: row.name, storage },
+      })
       return c.json({ backup: row }, 201)
     })
     .post("/:id/backups/:bid/restore", async (c) => {
@@ -138,6 +148,15 @@ export const buildBackupsRoute = (params: {
         { backupId: backup.id },
         { removeOnComplete: 100, removeOnFail: 100 }
       )
+      writeAudit({
+        db,
+        actorId: c.get("user").id,
+        ip: clientIp(c),
+        action: "backup.restore",
+        targetType: "server",
+        targetId: id,
+        metadata: { backupId: backup.id, name: backup.name },
+      })
       return c.json({ ok: true })
     })
     .delete("/:id/backups/:bid", async (c) => {
