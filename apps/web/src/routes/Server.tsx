@@ -1,16 +1,18 @@
 import { createRoute, redirect } from "@tanstack/react-router"
 
+import { ServerLayout } from "@/components/ServerLayout"
 import { authClient } from "@/lib/AuthClient"
-import { ServerDetailPage } from "@/components/ServerDetailPage"
 import { Route as rootRoute } from "@/routes/Root"
 
 /**
- * `/servers/:id` — per-server detail page. Bounces unauthenticated
- * visitors to /login. The page resolves the server row via TanStack Query
- * and overlays panel-event WS updates for live status.
+ * `/servers/$id` layout route. Hosts the sidebar + outlet. Each tab
+ * (Overview/Files/Backups/...) is a child route that mounts inside
+ * `ServerLayout`'s outlet, so navigation between tabs only re-renders
+ * the inner content.
  */
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
+  id: "server",
   path: "/servers/$id",
   beforeLoad: async () => {
     const session = await authClient.getSession()
@@ -18,10 +20,5 @@ export const Route = createRoute({
       throw redirect({ to: "/login" })
     }
   },
-  component: ServerDetailRouteComponent,
+  component: ServerLayout,
 })
-
-const ServerDetailRouteComponent = () => {
-  const { id } = Route.useParams()
-  return <ServerDetailPage id={id} />
-}

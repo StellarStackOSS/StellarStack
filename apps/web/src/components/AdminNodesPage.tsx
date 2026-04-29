@@ -1,12 +1,10 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@workspace/ui/components/button"
 
 import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
-import { authClient, useSession } from "@/lib/AuthClient"
 import {
   useCreateNode,
   useMintPairingToken,
@@ -16,6 +14,15 @@ import type {
   CreateNodeRequest,
   NodeListRow,
 } from "@/hooks/useNodes.types"
+import {
+  useAllocations,
+  useCreateAllocations,
+  useDeleteAllocations,
+} from "@/hooks/useAllocations"
+import type {
+  AllocationRow,
+  CreateAllocationsRequest,
+} from "@/hooks/useAllocations.types"
 
 const initialForm: CreateNodeRequest = {
   name: "",
@@ -35,8 +42,6 @@ const initialForm: CreateNodeRequest = {
  */
 export const AdminNodesPage = () => {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { data: session, isPending } = useSession()
   const nodesQuery = useNodes()
   const createMutation = useCreateNode()
   const mintMutation = useMintPairingToken()
@@ -48,27 +53,6 @@ export const AdminNodesPage = () => {
     token: string
     expiresAt: string
   } | null>(null)
-
-  if (isPending) {
-    return (
-      <div className="bg-background text-foreground flex min-h-svh items-center justify-center text-sm">
-        Loading session…
-      </div>
-    )
-  }
-
-  if (session === null || session.user.isAdmin !== true) {
-    return (
-      <div className="bg-background text-foreground flex min-h-svh items-center justify-center text-sm">
-        <div className="text-center">
-          <p>You don&apos;t have access to this page.</p>
-          <Link to="/dashboard" className="text-primary mt-2 inline-block underline">
-            Back to dashboard
-          </Link>
-        </div>
-      </div>
-    )
-  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -100,58 +84,34 @@ export const AdminNodesPage = () => {
     }
   }
 
-  const handleSignOut = async () => {
-    await authClient.signOut()
-    await navigate({ to: "/login" })
-  }
-
   return (
-    <div className="bg-background text-foreground flex min-h-svh flex-col">
-      <header className="border-border flex items-center justify-between border-b px-6 py-4">
-        <div>
-          <h1 className="text-base font-semibold">StellarStack — Nodes</h1>
-          <p className="text-muted-foreground text-xs">
-            Signed in as {session.user.email}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link to="/dashboard">
-            <Button variant="outline" size="sm">
-              Dashboard
-            </Button>
-          </Link>
-          <Link to="/admin/blueprints">
-            <Button variant="outline" size="sm">
-              Blueprints
-            </Button>
-          </Link>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            Sign out
-          </Button>
-        </div>
+    <div className="flex flex-col gap-6">
+      <header>
+        <h1 className="text-base font-semibold">Nodes</h1>
+        <p className="text-muted-foreground text-xs">
+          Manage host machines, pairing tokens, and per-node allocation pools.
+        </p>
       </header>
-      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
-        <NodeList
-          rows={nodesQuery.data?.nodes ?? []}
-          loading={nodesQuery.isLoading}
-          onMint={handleMint}
-          minting={mintMutation.isPending ? mintMutation.variables : null}
+      <NodeList
+        rows={nodesQuery.data?.nodes ?? []}
+        loading={nodesQuery.isLoading}
+        onMint={handleMint}
+        minting={mintMutation.isPending ? mintMutation.variables : null}
+      />
+      <CreateNodeForm
+        value={form}
+        onChange={setForm}
+        onSubmit={handleSubmit}
+        pending={createMutation.isPending}
+        error={createError}
+      />
+      {revealedToken !== null ? (
+        <PairingTokenDialog
+          token={revealedToken.token}
+          expiresAt={revealedToken.expiresAt}
+          onClose={() => setRevealedToken(null)}
         />
-        <CreateNodeForm
-          value={form}
-          onChange={setForm}
-          onSubmit={handleSubmit}
-          pending={createMutation.isPending}
-          error={createError}
-        />
-        {revealedToken !== null ? (
-          <PairingTokenDialog
-            token={revealedToken.token}
-            expiresAt={revealedToken.expiresAt}
-            onClose={() => setRevealedToken(null)}
-          />
-        ) : null}
-      </main>
+      ) : null}
     </div>
   )
 }
@@ -167,6 +127,8 @@ const NodeList = ({
   onMint: (nodeId: string) => void
   minting: string | null | undefined
 }) => {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
   return (
     <section className="border-border bg-card text-card-foreground rounded-md border p-4">
       <header className="mb-3 flex items-center justify-between">
@@ -185,43 +147,225 @@ const NodeList = ({
         <ul className="flex flex-col gap-2">
           {rows.map((node) => {
             const connected = node.connectedAt !== null
+            const isExpanded = expanded === node.id
             return (
               <li
                 key={node.id}
-                className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between"
+                className="border-border flex flex-col gap-2 rounded border px-3 py-2 text-xs"
               >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`size-1.5 rounded-full ${
-                        connected ? "bg-chart-1" : "bg-muted-foreground"
-                      }`}
-                    />
-                    <span className="font-medium">{node.name}</span>
-                    <span className="text-muted-foreground">
-                      {node.scheme}://{node.fqdn}:{node.daemonPort}
-                    </span>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`size-1.5 rounded-full ${
+                          connected ? "bg-chart-1" : "bg-muted-foreground"
+                        }`}
+                      />
+                      <span className="font-medium">{node.name}</span>
+                      <span className="text-muted-foreground">
+                        {node.scheme}://{node.fqdn}:{node.daemonPort}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-1">
+                      {connected ? `connected at ${node.connectedAt}` : "offline"}
+                    </div>
                   </div>
-                  <div className="text-muted-foreground mt-1">
-                    {connected ? `connected at ${node.connectedAt}` : "offline"}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setExpanded(isExpanded ? null : node.id)
+                      }
+                    >
+                      {isExpanded ? "Hide allocations" : "Allocations"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={minting === node.id}
+                      onClick={() => onMint(node.id)}
+                    >
+                      {minting === node.id
+                        ? "Generating…"
+                        : "Generate pairing token"}
+                    </Button>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={minting === node.id}
-                  onClick={() => onMint(node.id)}
-                >
-                  {minting === node.id
-                    ? "Generating…"
-                    : "Generate pairing token"}
-                </Button>
+                {isExpanded ? <AllocationsPanel nodeId={node.id} /> : null}
               </li>
             )
           })}
         </ul>
       )}
     </section>
+  )
+}
+
+const initialAllocationForm = {
+  ip: "127.0.0.1",
+  startPort: 25565,
+  endPort: 25569,
+  alias: "",
+}
+
+const AllocationsPanel = ({ nodeId }: { nodeId: string }) => {
+  const allocations = useAllocations(nodeId)
+  const create = useCreateAllocations(nodeId)
+  const remove = useDeleteAllocations(nodeId)
+
+  const [form, setForm] = useState(initialAllocationForm)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [busyDelete, setBusyDelete] = useState<string | null>(null)
+
+  const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setErrorMessage(null)
+    if (form.endPort < form.startPort) {
+      setErrorMessage("End port must be ≥ start port.")
+      return
+    }
+    const body: CreateAllocationsRequest = {
+      ip: form.ip.trim(),
+      portRange: { start: form.startPort, end: form.endPort },
+      ...(form.alias.trim().length > 0 ? { alias: form.alias.trim() } : {}),
+    }
+    try {
+      await create.mutateAsync(body)
+      setForm({ ...form, alias: "" })
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const handleDelete = async (row: AllocationRow) => {
+    if (row.serverId !== null) {
+      return
+    }
+    if (!window.confirm(`Delete allocation ${row.ip}:${row.port}?`)) {
+      return
+    }
+    setBusyDelete(row.id)
+    try {
+      await remove.mutateAsync([row.id])
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusyDelete(null)
+    }
+  }
+
+  const rows = allocations.data?.allocations ?? []
+  const free = rows.filter((r) => r.serverId === null).length
+
+  return (
+    <div className="border-border bg-muted/40 rounded-md border p-3">
+      <header className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-medium">
+          Allocations · {rows.length} total · {free} free
+        </h3>
+      </header>
+      {allocations.isLoading ? (
+        <p className="text-muted-foreground text-xs">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-muted-foreground text-xs">
+          No allocations. Add a port range below to make this node provisionable.
+        </p>
+      ) : (
+        <ul className="mb-3 flex flex-wrap gap-1">
+          {rows.map((row) => {
+            const inUse = row.serverId !== null
+            return (
+              <li
+                key={row.id}
+                className={`border-border flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-[0.65rem] ${
+                  inUse ? "opacity-70" : ""
+                }`}
+                title={inUse ? `bound to server ${row.serverId}` : "free"}
+              >
+                <span
+                  className={`size-1 rounded-full ${
+                    inUse ? "bg-chart-2" : "bg-chart-1"
+                  }`}
+                />
+                <span>
+                  {row.ip}:{row.port}
+                </span>
+                {!inUse ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(row)}
+                    disabled={busyDelete === row.id}
+                    className="text-destructive ml-1"
+                    title="Delete"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <form className="grid grid-cols-2 gap-2 sm:grid-cols-5" onSubmit={handleAdd}>
+        <Field label="IP">
+          <input
+            value={form.ip}
+            onChange={(e) => setForm({ ...form, ip: e.target.value })}
+            required
+            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          />
+        </Field>
+        <Field label="Start port">
+          <input
+            type="number"
+            min={1}
+            max={65535}
+            value={form.startPort}
+            onChange={(e) =>
+              setForm({ ...form, startPort: Number(e.target.value) })
+            }
+            required
+            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          />
+        </Field>
+        <Field label="End port">
+          <input
+            type="number"
+            min={1}
+            max={65535}
+            value={form.endPort}
+            onChange={(e) =>
+              setForm({ ...form, endPort: Number(e.target.value) })
+            }
+            required
+            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          />
+        </Field>
+        <Field label="Alias (optional)">
+          <input
+            value={form.alias}
+            onChange={(e) => setForm({ ...form, alias: e.target.value })}
+            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          />
+        </Field>
+        <div className="flex items-end">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={create.isPending}
+            className="w-full"
+          >
+            {create.isPending ? "Adding…" : "Add range"}
+          </Button>
+        </div>
+      </form>
+      {errorMessage !== null ? (
+        <p className="text-destructive mt-2 text-xs" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

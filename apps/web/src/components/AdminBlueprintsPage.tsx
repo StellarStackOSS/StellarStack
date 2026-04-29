@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
@@ -8,7 +7,6 @@ import type { Blueprint } from "@workspace/shared/blueprint.types"
 
 import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
-import { authClient, useSession } from "@/lib/AuthClient"
 import {
   useBlueprints,
   useCreateBlueprint,
@@ -79,8 +77,6 @@ const stringifyName = (name: BlueprintListRow["name"]): string =>
  */
 export const AdminBlueprintsPage = () => {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { data: session, isPending } = useSession()
   const blueprintsQuery = useBlueprints()
   const createMutation = useCreateBlueprint()
   const updateMutation = useUpdateBlueprint()
@@ -92,30 +88,6 @@ export const AdminBlueprintsPage = () => {
   )
   const [errors, setErrors] = useState<string[]>([])
   const [saveError, setSaveError] = useState<string | null>(null)
-
-  if (isPending) {
-    return (
-      <div className="bg-background text-foreground flex min-h-svh items-center justify-center text-sm">
-        Loading session…
-      </div>
-    )
-  }
-
-  if (session === null || session.user.isAdmin !== true) {
-    return (
-      <div className="bg-background text-foreground flex min-h-svh items-center justify-center text-sm">
-        <div className="text-center">
-          <p>You don&apos;t have access to this page.</p>
-          <Link
-            to="/dashboard"
-            className="text-primary mt-2 inline-block underline"
-          >
-            Back to dashboard
-          </Link>
-        </div>
-      </div>
-    )
-  }
 
   const handleSelect = (row: BlueprintListRow) => {
     setSelectedId(row.id)
@@ -204,39 +176,17 @@ export const AdminBlueprintsPage = () => {
     handleNew()
   }
 
-  const handleSignOut = async () => {
-    await authClient.signOut()
-    await navigate({ to: "/login" })
-  }
-
   const rows = blueprintsQuery.data?.blueprints ?? []
 
   return (
-    <div className="bg-background text-foreground flex min-h-svh flex-col">
-      <header className="border-border flex items-center justify-between border-b px-6 py-4">
-        <div>
-          <h1 className="text-base font-semibold">StellarStack — Blueprints</h1>
-          <p className="text-muted-foreground text-xs">
-            Signed in as {session.user.email}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link to="/dashboard">
-            <Button variant="outline" size="sm">
-              Dashboard
-            </Button>
-          </Link>
-          <Link to="/admin/nodes">
-            <Button variant="outline" size="sm">
-              Nodes
-            </Button>
-          </Link>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            Sign out
-          </Button>
-        </div>
+    <div className="flex flex-col gap-4">
+      <header>
+        <h1 className="text-base font-semibold">Blueprints</h1>
+        <p className="text-muted-foreground text-xs">
+          JSON-validated definitions for new server templates.
+        </p>
       </header>
-      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-6 p-6 md:grid-cols-[18rem_1fr]">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
         <aside className="border-border bg-card text-card-foreground flex flex-col gap-2 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">Blueprints</h2>
@@ -328,7 +278,7 @@ export const AdminBlueprintsPage = () => {
             </p>
           ) : null}
         </section>
-      </main>
+      </div>
     </div>
   )
 }
