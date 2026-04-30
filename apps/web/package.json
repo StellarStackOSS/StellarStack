@@ -17,6 +17,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.95.0",
+    "@tanstack/react-table": "^8.21.3",
     "@workspace/sdk": "workspace:*",
     "@workspace/shared": "workspace:*",
     "@workspace/ui": "workspace:*",

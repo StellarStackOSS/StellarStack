@@ -1,7 +1,48 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  type ColumnDef,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
 import Editor from "@monaco-editor/react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Delete02Icon,
+  DownloadIcon,
+  File01Icon,
+  FileUploadIcon,
+  FolderIcon,
+  FolderAddIcon,
+  FolderUploadIcon,
+  MoreHorizontalIcon,
+  PackageIcon,
+  PencilEdit01Icon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
+import { Checkbox } from "@workspace/ui/components/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
 
 import {
   useCompressFiles,
@@ -23,8 +64,8 @@ const monacoLanguageFor = (path: string): string => {
   const lower = path.toLowerCase()
   if (lower.endsWith(".json")) return "json"
   if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "yaml"
-  if (lower.endsWith(".toml")) return "ini"
-  if (lower.endsWith(".properties") || lower.endsWith(".ini")) return "ini"
+  if (lower.endsWith(".toml") || lower.endsWith(".ini")) return "ini"
+  if (lower.endsWith(".properties")) return "ini"
   if (lower.endsWith(".md")) return "markdown"
   if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "shell"
   if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "javascript"
@@ -33,14 +74,28 @@ const monacoLanguageFor = (path: string): string => {
   if (lower.endsWith(".lua")) return "lua"
   if (lower.endsWith(".go")) return "go"
   if (lower.endsWith(".rs")) return "rust"
+  if (lower.endsWith(".xml")) return "xml"
   return "plaintext"
 }
 
 const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return "—"
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+}
+
+const formatDate = (iso: string): string => {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return "—"
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 const parentOf = (path: string): string => {
@@ -54,9 +109,26 @@ const parentOf = (path: string): string => {
 const isArchive = (name: string): boolean =>
   name.endsWith(".zip") || name.endsWith(".tar.gz") || name.endsWith(".tgz")
 
+const pathSegments = (path: string): { label: string; path: string }[] => {
+  if (path === "/") return [{ label: "home", path: "/" }]
+  const parts = path.split("/").filter(Boolean)
+  const segments: { label: string; path: string }[] = [
+    { label: "home", path: "/" },
+  ]
+  parts.forEach((part, i) => {
+    segments.push({
+      label: part,
+      path: "/" + parts.slice(0, i + 1).join("/"),
+    })
+  })
+  return segments
+}
+
 type RowActionsProps = {
   entry: FileEntry
   currentDir: string
+  onNavigate: (entry: FileEntry) => void
+  onEdit: (entry: FileEntry) => void
   onDelete: (path: string) => Promise<void>
   onDownload: (path: string) => Promise<void>
   onRename: (entry: FileEntry) => Promise<void>
@@ -66,93 +138,64 @@ type RowActionsProps = {
 
 const RowActions = ({
   entry,
-  currentDir,
   onDelete,
   onDownload,
   onRename,
   onCompress,
   onDecompress,
-}: RowActionsProps) => {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return undefined
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [open])
-
-  const handle = (fn: () => Promise<void>) => async () => {
-    setOpen(false)
-    await fn()
-  }
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="opacity-0 group-hover:opacity-100 px-1 text-xs text-muted-foreground hover:text-foreground"
-        title="Actions"
+}: RowActionsProps) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100"
       >
-        ⋯
-      </button>
-      {open ? (
-        <div className="absolute right-0 top-5 z-10 bg-popover border border-border rounded shadow-md text-xs w-32 py-1">
-          <button
-            type="button"
-            className="w-full text-left px-3 py-1 hover:bg-muted"
-            onClick={handle(() => onRename(entry))}
-          >
-            Rename
-          </button>
-          <button
-            type="button"
-            className="w-full text-left px-3 py-1 hover:bg-muted"
-            onClick={handle(() => onDownload(entry.path))}
-          >
-            Download
-          </button>
-          {entry.isDir ? (
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1 hover:bg-muted"
-              onClick={handle(() => onCompress(entry))}
-            >
-              Compress
-            </button>
-          ) : null}
-          {!entry.isDir && isArchive(entry.name) ? (
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1 hover:bg-muted"
-              onClick={handle(() => onDecompress(entry))}
-            >
-              Decompress
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="w-full text-left px-3 py-1 hover:bg-muted text-destructive"
-            onClick={handle(() => onDelete(entry.path))}
-          >
-            Delete
-          </button>
-        </div>
+        <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuItem onClick={() => void onRename(entry)}>
+        <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 size-3.5" />
+        Rename
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => void onDownload(entry.path)}>
+        <HugeiconsIcon icon={DownloadIcon} className="mr-2 size-3.5" />
+        Download
+      </DropdownMenuItem>
+      {entry.isDir ? (
+        <DropdownMenuItem onClick={() => void onCompress(entry)}>
+          <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
+          Compress
+        </DropdownMenuItem>
       ) : null}
-    </div>
-  )
-}
+      {!entry.isDir && isArchive(entry.name) ? (
+        <DropdownMenuItem onClick={() => void onDecompress(entry)}>
+          <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
+          Decompress
+        </DropdownMenuItem>
+      ) : null}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        className="text-destructive focus:text-destructive"
+        onClick={() => void onDelete(entry.path)}
+      >
+        <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-3.5" />
+        Delete
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+)
 
 export const FileManager = ({ serverId }: FileManagerProps) => {
   const [path, setPath] = useState("/")
   const [selected, setSelected] = useState<string | null>(null)
   const [draft, setDraft] = useState<string | null>(null)
+  const [filter, setFilter] = useState("")
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "name", desc: false },
+  ])
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -176,15 +219,32 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }, [])
 
-  const entries: FileEntry[] = list.data?.entries ?? []
-  const editorValue = draft ?? (typeof content.data === "string" ? content.data : "")
+  useEffect(() => {
+    setRowSelection({})
+    setFilter("")
+  }, [path])
 
-  const handleSelect = (entry: FileEntry) => {
-    setErrorMessage(null)
+  const entries: FileEntry[] = useMemo(
+    () =>
+      (list.data?.entries ?? []).sort((a, b) =>
+        a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
+      ),
+    [list.data]
+  )
+
+  const editorValue =
+    draft ?? (typeof content.data === "string" ? content.data : "")
+
+  const handleNavigate = (entry: FileEntry) => {
+    if (!entry.isDir) return
+    setSelected(null)
+    setDraft(null)
+    setPath(entry.path)
+  }
+
+  const handleEdit = (entry: FileEntry) => {
     if (entry.isDir) {
-      setPath(entry.path)
-      setSelected(null)
-      setDraft(null)
+      handleNavigate(entry)
       return
     }
     setSelected(entry.path)
@@ -192,9 +252,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   }
 
   const handleSave = async () => {
-    if (selected === null || draft === null) {
-      return
-    }
+    if (selected === null || draft === null) return
     setErrorMessage(null)
     try {
       await writeFile.mutateAsync({ path: selected, content: draft })
@@ -205,9 +263,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   }
 
   const handleDelete = async (target: string) => {
-    if (!window.confirm(`Delete ${target}?`)) {
-      return
-    }
+    if (!window.confirm(`Delete ${target}?`)) return
     try {
       await deleteFile.mutateAsync(target)
       if (selected === target) {
@@ -219,13 +275,41 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
+  const handleDeleteSelected = async () => {
+    const paths = Object.keys(rowSelection).filter((k) => rowSelection[k])
+    if (paths.length === 0) return
+    if (!window.confirm(`Delete ${paths.length} item(s)?`)) return
+    setErrorMessage(null)
+    for (const p of paths) {
+      try {
+        await deleteFile.mutateAsync(p)
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : String(err))
+      }
+    }
+    setRowSelection({})
+  }
+
+  const handleCompressSelected = async () => {
+    const paths = Object.keys(rowSelection).filter((k) => rowSelection[k])
+    if (paths.length === 0) return
+    const dest =
+      path === "/" ? "/archive.zip" : `${path.replace(/\/+$/, "")}/archive.zip`
+    try {
+      await compressFiles.mutateAsync({ paths, destination: dest })
+      setRowSelection({})
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   const handleMkdir = async () => {
     const name = window.prompt("New folder name")
-    if (name === null || name.trim().length === 0) {
-      return
-    }
+    if (name === null || name.trim().length === 0) return
     const target =
-      path === "/" ? `/${name.trim()}` : `${path.replace(/\/+$/, "")}/${name.trim()}`
+      path === "/"
+        ? `/${name.trim()}`
+        : `${path.replace(/\/+$/, "")}/${name.trim()}`
     try {
       await mkdir.mutateAsync(target)
     } catch (err) {
@@ -241,7 +325,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
-  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const fileList = e.target.files
     if (!fileList || fileList.length === 0) return
     const uploads: UploadFileEntry[] = Array.from(fileList).map((f) => ({
@@ -256,7 +342,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
-  const handleFolderInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFolderInputChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const fileList = e.target.files
     if (!fileList || fileList.length === 0) return
     const uploads: UploadFileEntry[] = Array.from(fileList).map((f) => ({
@@ -313,23 +401,221 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
-  return (
-    <section className="border-border bg-card text-card-foreground rounded-md border">
-      <header className="border-border flex items-center justify-between border-b px-3 py-2">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground">path:</span>
-          <code className="bg-muted rounded px-1.5 py-0.5">{path}</code>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => setPath(parentOf(path))}
-            disabled={path === "/"}
+  const columns: ColumnDef<FileEntry>[] = useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() ? "indeterminate" : false)
+            }
+            onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(v) => row.toggleSelected(!!v)}
+            aria-label="Select row"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        size: 36,
+      },
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs font-medium"
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc")
+            }
           >
-            Up
-          </Button>
+            Name
+            {column.getIsSorted() === "asc" ? (
+              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+            ) : null}
+          </button>
+        ),
+        cell: ({ row }) => {
+          const entry = row.original
+          return (
+            <button
+              type="button"
+              className="flex items-center gap-2 text-left hover:underline"
+              onClick={() => handleEdit(entry)}
+            >
+              <HugeiconsIcon
+                icon={entry.isDir ? FolderIcon : File01Icon}
+                className={`size-4 shrink-0 ${
+                  entry.isDir
+                    ? "text-chart-2"
+                    : "text-muted-foreground"
+                }`}
+              />
+              <span className={entry.isDir ? "font-medium" : ""}>
+                {entry.name}
+              </span>
+            </button>
+          )
+        },
+      },
+      {
+        accessorKey: "size",
+        header: ({ column }) => (
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs font-medium"
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc")
+            }
+          >
+            Size
+            {column.getIsSorted() === "asc" ? (
+              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+            ) : null}
+          </button>
+        ),
+        cell: ({ row }) =>
+          row.original.isDir ? (
+            <span className="text-muted-foreground">—</span>
+          ) : (
+            formatBytes(row.original.size)
+          ),
+        size: 100,
+      },
+      {
+        accessorKey: "mode",
+        header: "Permissions",
+        cell: ({ row }) => (
+          <code className="text-muted-foreground font-mono text-[0.7rem]">
+            {row.original.mode}
+          </code>
+        ),
+        size: 120,
+        enableSorting: false,
+      },
+      {
+        accessorKey: "modTime",
+        header: ({ column }) => (
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs font-medium"
+            onClick={() =>
+              column.toggleSorting(column.getIsSorted() === "asc")
+            }
+          >
+            Modified
+            {column.getIsSorted() === "asc" ? (
+              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+            ) : column.getIsSorted() === "desc" ? (
+              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+            ) : null}
+          </button>
+        ),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDate(row.original.modTime)}
+          </span>
+        ),
+        size: 160,
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <RowActions
+              entry={row.original}
+              currentDir={path}
+              onNavigate={handleNavigate}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              onRename={handleRename}
+              onCompress={handleCompress}
+              onDecompress={handleDecompress}
+            />
+          </div>
+        ),
+        size: 48,
+        enableSorting: false,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [path]
+  )
+
+  const table = useReactTable({
+    data: entries,
+    columns,
+    state: { sorting, globalFilter: filter, rowSelection },
+    getRowId: (row) => row.path,
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setFilter,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: true,
+  })
+
+  const selectedCount = Object.values(rowSelection).filter(Boolean).length
+  const segments = pathSegments(path)
+
+  return (
+    <div className="flex flex-col gap-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1 text-xs min-w-0">
+          {segments.map((seg, i) => (
+            <span key={seg.path} className="flex items-center gap-1">
+              {i > 0 && (
+                <span className="text-muted-foreground">/</span>
+              )}
+              {i < segments.length - 1 ? (
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground truncate max-w-24"
+                  onClick={() => setPath(seg.path)}
+                >
+                  {seg.label}
+                </button>
+              ) : (
+                <span className="font-medium truncate max-w-32">
+                  {seg.label}
+                </span>
+              )}
+            </span>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Search */}
+          <div className="relative">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none"
+            />
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter files…"
+              className="h-7 pl-6 pr-2 text-xs bg-muted rounded-md border-0 w-36 focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
           <Button size="xs" variant="outline" onClick={handleMkdir}>
+            <HugeiconsIcon icon={FolderAddIcon} className="mr-1 size-3" />
             New folder
           </Button>
           <Button
@@ -338,6 +624,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadFiles.isPending}
           >
+            <HugeiconsIcon icon={FileUploadIcon} className="mr-1 size-3" />
             {uploadFiles.isPending ? "Uploading…" : "Upload files"}
           </Button>
           <Button
@@ -346,13 +633,48 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => folderInputRef.current?.click()}
             disabled={uploadFiles.isPending}
           >
+            <HugeiconsIcon icon={FolderUploadIcon} className="mr-1 size-3" />
             {uploadFiles.isPending ? "Uploading…" : "Upload folder"}
           </Button>
           <Button size="xs" variant="outline" onClick={handleSftp}>
-            SFTP credentials
+            SFTP
           </Button>
         </div>
-      </header>
+      </div>
+
+      {/* Bulk action bar */}
+      {selectedCount > 0 ? (
+        <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-3 py-1.5 text-xs">
+          <span className="text-muted-foreground">
+            {selectedCount} selected
+          </span>
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => void handleCompressSelected()}
+          >
+            <HugeiconsIcon icon={PackageIcon} className="mr-1 size-3" />
+            Compress
+          </Button>
+          <Button
+            size="xs"
+            variant="destructive"
+            onClick={() => void handleDeleteSelected()}
+          >
+            <HugeiconsIcon icon={Delete02Icon} className="mr-1 size-3" />
+            Delete
+          </Button>
+          <button
+            type="button"
+            className="ml-auto text-muted-foreground hover:text-foreground"
+            onClick={() => setRowSelection({})}
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
+
+      {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
@@ -367,104 +689,130 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
         className="hidden"
         onChange={handleFolderInputChange}
       />
-      <div className="grid grid-cols-1 md:grid-cols-[16rem_1fr]">
-        <aside className="border-border max-h-96 overflow-y-auto border-r p-2">
-          {list.isLoading ? (
-            <p className="text-muted-foreground text-xs">Loading…</p>
-          ) : entries.length === 0 ? (
-            <p className="text-muted-foreground text-xs">Empty.</p>
-          ) : (
-            <ul className="flex flex-col">
-              {entries
-                .sort((a, b) =>
-                  a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
-                )
-                .map((entry) => (
-                  <li
-                    key={entry.path}
-                    className="group flex items-center justify-between gap-2"
+
+      {/* Table */}
+      <div className="overflow-auto">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id} className="hover:bg-transparent">
+                {hg.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    style={{ width: header.getSize() }}
+                    className="text-xs h-9"
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(entry)}
-                      className={`flex-1 truncate rounded px-2 py-1 text-left text-xs ${
-                        selected === entry.path
-                          ? "bg-muted text-foreground"
-                          : "hover:bg-muted/50"
-                      }`}
-                    >
-                      <span className={entry.isDir ? "font-medium" : ""}>
-                        {entry.isDir ? "📁" : "📄"} {entry.name}
-                      </span>
-                      {!entry.isDir ? (
-                        <span className="text-muted-foreground ml-1">
-                          {formatBytes(entry.size)}
-                        </span>
-                      ) : null}
-                    </button>
-                    <RowActions
-                      entry={entry}
-                      currentDir={path}
-                      onDelete={handleDelete}
-                      onDownload={handleDownload}
-                      onRename={handleRename}
-                      onCompress={handleCompress}
-                      onDecompress={handleDecompress}
-                    />
-                  </li>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
                 ))}
-            </ul>
-          )}
-        </aside>
-        <div className="flex flex-col">
-          {selected === null ? (
-            <p className="text-muted-foreground p-3 text-xs">
-              Select a file to edit it. Folders open in the listing.
-            </p>
-          ) : content.isLoading ? (
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {list.isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-xs text-muted-foreground h-24"
+                >
+                  Loading…
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-xs text-muted-foreground h-24"
+                >
+                  {filter.length > 0 ? "No files match." : "This folder is empty."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() ? "selected" : undefined}
+                  className="group/row text-xs"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="py-1.5">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Monaco editor panel */}
+      {selected !== null ? (
+        <div className="border-t border-border flex flex-col">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <code className="text-xs">{selected}</code>
+            <div className="flex items-center gap-2">
+              <Button
+                size="xs"
+                onClick={() => void handleSave()}
+                disabled={draft === null || writeFile.isPending}
+              >
+                {writeFile.isPending ? "Saving…" : "Save"}
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => {
+                  setSelected(null)
+                  setDraft(null)
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+          {content.isLoading ? (
             <p className="text-muted-foreground p-3 text-xs">Loading…</p>
           ) : (
-            <>
-              <div className="border-border flex items-center justify-between border-b px-3 py-2 text-xs">
-                <code>{selected}</code>
-                <Button
-                  size="xs"
-                  onClick={handleSave}
-                  disabled={draft === null || writeFile.isPending}
-                >
-                  {writeFile.isPending ? "Saving…" : "Save"}
-                </Button>
-              </div>
-              <div className="h-72">
-                <Editor
-                  value={editorValue}
-                  language={monacoLanguageFor(selected)}
-                  onChange={(value) => setDraft(value ?? "")}
-                  theme="vs-dark"
-                  options={{ minimap: { enabled: false }, fontSize: 12 }}
-                />
-              </div>
-            </>
+            <div className="h-80">
+              <Editor
+                value={editorValue}
+                language={monacoLanguageFor(selected)}
+                onChange={(value) => setDraft(value ?? "")}
+                theme="vs-dark"
+                options={{ minimap: { enabled: false }, fontSize: 12 }}
+              />
+            </div>
           )}
         </div>
-      </div>
+      ) : null}
+
+      {/* SFTP credentials */}
       {sftp.data !== undefined ? (
-        <div className="border-border bg-muted/40 border-t p-3 text-xs">
+        <div className="border-t border-border bg-muted/40 p-3 text-xs">
           <h3 className="mb-1 font-medium">SFTP credentials (visible once)</h3>
-          <pre className="bg-background overflow-x-auto rounded p-2 font-mono">
-{`Host:     ${sftp.data.host}
+          <pre className="bg-background overflow-x-auto rounded p-2 font-mono">{`Host:     ${sftp.data.host}
 Port:     ${sftp.data.port}
 Username: ${sftp.data.username}
 Password: ${sftp.data.password}
-Expires:  ${sftp.data.expiresAt}`}
-          </pre>
+Expires:  ${sftp.data.expiresAt}`}</pre>
         </div>
       ) : null}
+
+      {/* Error banner */}
       {errorMessage !== null ? (
-        <p className="text-destructive p-2 text-xs" role="alert">
+        <p className="text-destructive border-t border-border p-2 text-xs" role="alert">
           {errorMessage}
         </p>
       ) : null}
-    </section>
+    </div>
   )
 }
