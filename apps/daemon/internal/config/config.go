@@ -102,6 +102,14 @@ func Save(cfg *Config) error {
 }
 
 func defaultDevConfig() *Config {
+	dataDir := "/var/lib/stellar"
+	if os.Getuid() != 0 {
+		if env := os.Getenv("STELLAR_DATA_DIR"); env != "" {
+			dataDir = env
+		} else if home, err := os.UserHomeDir(); err == nil {
+			dataDir = filepath.Join(home, ".stellar", "data")
+		}
+	}
 	return &Config{
 		NodeID:        "",
 		APIURL:        "http://localhost:3000",
@@ -109,6 +117,6 @@ func defaultDevConfig() *Config {
 		SigningKeyHex: "",
 		Listen:        ListenConfig{Host: "0.0.0.0", Port: 8080},
 		SFTPListen:    ListenConfig{Host: "0.0.0.0", Port: 2022},
-		DataDir:       "/var/lib/stellar",
+		DataDir:       dataDir,
 	}
 }
