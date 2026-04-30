@@ -20,6 +20,7 @@ import {
   FolderIcon,
   FolderAddIcon,
   FolderUploadIcon,
+  Drag01Icon,
   MoreHorizontalIcon,
   PackageIcon,
   PencilEdit01Icon,
@@ -57,6 +58,7 @@ import {
   useUploadFiles,
   useWriteFile,
 } from "@/hooks/useFiles"
+import { FileMoveDialog } from "@/components/FileMoveDialog"
 import type { FileEntry, UploadFileEntry } from "@/hooks/useFiles.types"
 import type { FileManagerProps } from "@/components/FileManager.types"
 
@@ -132,6 +134,7 @@ type RowActionsProps = {
   onDelete: (path: string) => Promise<void>
   onDownload: (path: string) => Promise<void>
   onRename: (entry: FileEntry) => Promise<void>
+  onMove: (entry: FileEntry) => void
   onCompress: (entry: FileEntry) => Promise<void>
   onDecompress: (entry: FileEntry) => Promise<void>
 }
@@ -141,6 +144,7 @@ const RowActions = ({
   onDelete,
   onDownload,
   onRename,
+  onMove,
   onCompress,
   onDecompress,
 }: RowActionsProps) => (
@@ -158,6 +162,10 @@ const RowActions = ({
       <DropdownMenuItem onClick={() => void onRename(entry)}>
         <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 size-3.5" />
         Rename
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onMove(entry)}>
+        <HugeiconsIcon icon={Drag01Icon} className="mr-2 size-3.5" />
+        Move to…
       </DropdownMenuItem>
       <DropdownMenuItem onClick={() => void onDownload(entry.path)}>
         <HugeiconsIcon icon={DownloadIcon} className="mr-2 size-3.5" />
@@ -196,6 +204,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     { id: "name", desc: false },
   ])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -393,6 +402,12 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
+  const handleMoveConfirm = async (entry: FileEntry, destDir: string) => {
+    const dir = destDir.replace(/\/+$/, "") || ""
+    const dest = dir ? `${dir}/${entry.name}` : `/${entry.name}`
+    await renameFile.mutateAsync({ from: entry.path, to: dest })
+  }
+
   const handleDecompress = async (entry: FileEntry) => {
     try {
       await decompressFile.mutateAsync({ path: entry.path, destination: path })
@@ -541,6 +556,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               onDelete={handleDelete}
               onDownload={handleDownload}
               onRename={handleRename}
+              onMove={setMoveTarget}
               onCompress={handleCompress}
               onDecompress={handleDecompress}
             />
@@ -813,6 +829,16 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
           {errorMessage}
         </p>
       ) : null}
+
+      <FileMoveDialog
+        serverId={serverId}
+        entry={moveTarget}
+        open={moveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setMoveTarget(null)
+        }}
+        onMove={handleMoveConfirm}
+      />
     </div>
   )
 }
