@@ -9,6 +9,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -82,7 +83,7 @@ export const FileMoveDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="text-sm">
             Move{" "}
@@ -180,14 +181,11 @@ export const FileMoveDialog = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={busy}
-          >
-            Cancel
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline" size="sm" disabled={busy}>
+              Cancel
+            </Button>
+          </DialogClose>
           <Button size="sm" onClick={() => void handleConfirm()} disabled={busy}>
             {busy ? "Moving…" : "Move here"}
           </Button>

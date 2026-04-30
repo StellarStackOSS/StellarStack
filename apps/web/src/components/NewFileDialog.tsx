@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -72,7 +73,7 @@ export const NewFileDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!busy) onOpenChange(v) }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="text-sm">New file</DialogTitle>
           <DialogDescription className="text-xs">
@@ -100,14 +101,11 @@ export const NewFileDialog = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline" size="sm" disabled={busy}>
+              Cancel
+            </Button>
+          </DialogClose>
           <Button size="sm" disabled={busy} onClick={() => void handleCreate()}>
             {busy ? "Creating…" : "Create"}
           </Button>

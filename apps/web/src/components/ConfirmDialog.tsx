@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -50,22 +51,19 @@ export const ConfirmDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!busy) onOpenChange(v) }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle className="text-sm">{title}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           {description !== undefined ? (
-            <DialogDescription className="text-xs">{description}</DialogDescription>
+            <DialogDescription>{description}</DialogDescription>
           ) : null}
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => onOpenChange(false)}
-          >
-            {cancelLabel}
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline" size="sm" disabled={busy}>
+              {cancelLabel}
+            </Button>
+          </DialogClose>
           <Button
             variant={variant}
             size="sm"
