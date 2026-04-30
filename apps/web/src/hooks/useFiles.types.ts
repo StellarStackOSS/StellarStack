@@ -30,3 +30,8 @@ export type SftpCredentials = {
   password: string
   expiresAt: string
 }
+
+export type UploadFileEntry = {
+  file: File
+  relativePath: string
+}

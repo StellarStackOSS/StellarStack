@@ -10,10 +10,12 @@
 package files
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -218,6 +220,14 @@ func (m *Manager) HandleFiles(w http.ResponseWriter, r *http.Request, gate AuthG
 		m.handleDelete(w, r, serverID, gate)
 	case sub == "/files/rename" && r.Method == http.MethodPost:
 		m.handleRename(w, r, serverID, gate)
+	case sub == "/files/upload" && r.Method == http.MethodPost:
+		m.handleUpload(w, r, serverID, gate)
+	case sub == "/files/download" && r.Method == http.MethodGet:
+		m.handleDownload(w, r, serverID, gate)
+	case sub == "/files/compress" && r.Method == http.MethodPost:
+		m.handleCompress(w, r, serverID, gate)
+	case sub == "/files/decompress" && r.Method == http.MethodPost:
+		m.handleDecompress(w, r, serverID, gate)
 	default:
 		return false
 	}
@@ -340,6 +350,261 @@ func (m *Manager) handleRename(w http.ResponseWriter, r *http.Request, serverID 
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
+func (m *Manager) handleUpload(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	targetDir := r.URL.Query().Get("path")
+	if targetDir == "" {
+		targetDir = "/"
+	}
+	count := 0
+	for _, fh := range r.MultipartForm.File["file"] {
+		name := filepath.ToSlash(fh.Filename)
+		for strings.HasPrefix(name, "../") {
+			name = name[3:]
+		}
+		if name == "" {
+			continue
+		}
+		rel := filepath.Join(targetDir, name)
+		abs, err := m.SafePath(serverID, rel)
+		if err != nil {
+			writeError(w, http.StatusForbidden, "files.path_outside_jail")
+			return
+		}
+		if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+			writeFsError(w, err)
+			return
+		}
+		src, err := fh.Open()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "files.invalid_body")
+			return
+		}
+		data, err := io.ReadAll(src)
+		src.Close()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "files.invalid_body")
+			return
+		}
+		if err := os.WriteFile(abs, data, 0o644); err != nil {
+			writeFsError(w, err)
+			return
+		}
+		count++
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "count": count})
+}
+
+func (m *Manager) handleDownload(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.read"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	reqPath := r.URL.Query().Get("path")
+	abs, err := m.SafePath(serverID, reqPath)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	if !info.IsDir() {
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, info.Name()))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		f, err := os.Open(abs)
+		if err != nil {
+			writeFsError(w, err)
+			return
+		}
+		defer f.Close()
+		_, _ = io.Copy(w, f)
+		return
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.zip"`, info.Name()))
+	w.Header().Set("Content-Type", "application/zip")
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+	_ = filepath.Walk(abs, func(p string, fi os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return nil
+		}
+		if fi.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(abs, p)
+		if err != nil {
+			return nil
+		}
+		entry, err := zw.Create(filepath.ToSlash(rel))
+		if err != nil {
+			return nil
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		_, _ = io.Copy(entry, f)
+		return nil
+	})
+}
+
+func (m *Manager) handleCompress(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	var body struct {
+		Paths       []string `json:"paths"`
+		Destination string   `json:"destination"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	dstAbs, err := m.SafePath(serverID, body.Destination)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(dstAbs), 0o755); err != nil {
+		writeFsError(w, err)
+		return
+	}
+	out, err := os.Create(dstAbs)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	defer out.Close()
+	zw := zip.NewWriter(out)
+	defer zw.Close()
+	for _, p := range body.Paths {
+		abs, err := m.SafePath(serverID, p)
+		if err != nil {
+			continue
+		}
+		info, err := os.Stat(abs)
+		if err != nil {
+			continue
+		}
+		base := filepath.Base(abs)
+		if info.IsDir() {
+			_ = filepath.Walk(abs, func(walkPath string, fi os.FileInfo, walkErr error) error {
+				if walkErr != nil || fi.IsDir() {
+					return nil
+				}
+				rel, err := filepath.Rel(filepath.Dir(abs), walkPath)
+				if err != nil {
+					return nil
+				}
+				entry, err := zw.Create(filepath.ToSlash(filepath.Join(base, strings.TrimPrefix(rel, base+"/"))))
+				if err != nil {
+					return nil
+				}
+				f, err := os.Open(walkPath)
+				if err != nil {
+					return nil
+				}
+				defer f.Close()
+				_, _ = io.Copy(entry, f)
+				return nil
+			})
+		} else {
+			entry, err := zw.Create(base)
+			if err != nil {
+				continue
+			}
+			f, err := os.Open(abs)
+			if err != nil {
+				continue
+			}
+			_, _ = io.Copy(entry, f)
+			f.Close()
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (m *Manager) handleDecompress(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.write"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	var body struct {
+		Path        string `json:"path"`
+		Destination string `json:"destination"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	srcAbs, err := m.SafePath(serverID, body.Path)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	dstAbs, err := m.SafePath(serverID, body.Destination)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	zr, err := zip.OpenReader(srcAbs)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	defer zr.Close()
+	count := 0
+	for _, f := range zr.File {
+		name := filepath.ToSlash(f.Name)
+		target, err := m.SafePath(serverID, filepath.Join(body.Destination, name))
+		if err != nil {
+			writeError(w, http.StatusForbidden, "files.path_outside_jail")
+			return
+		}
+		_ = dstAbs
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				writeFsError(w, err)
+				return
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			writeFsError(w, err)
+			return
+		}
+		rc, err := f.Open()
+		if err != nil {
+			writeFsError(w, err)
+			return
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			writeFsError(w, err)
+			return
+		}
+		if err := os.WriteFile(target, data, 0o644); err != nil {
+			writeFsError(w, err)
+			return
+		}
+		count++
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "count": count})
+}
+
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -357,6 +622,7 @@ func writeFsError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusInternalServerError, "internal.unexpected")
 		return
 	}
+	log.Printf("daemon: file op: %v", err)
 	if strings.Contains(err.Error(), "escapes server root") {
 		writeError(w, http.StatusForbidden, "files.path_outside_jail")
 		return
@@ -370,5 +636,4 @@ func writeFsError(w http.ResponseWriter, err error) {
 		return
 	}
 	writeError(w, http.StatusInternalServerError, "internal.unexpected")
-	_ = fmt.Sprint(err)
 }

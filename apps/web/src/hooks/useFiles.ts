@@ -6,6 +6,7 @@ import type {
   FileCredentials,
   FileEntry,
   SftpCredentials,
+  UploadFileEntry,
 } from "@/hooks/useFiles.types"
 
 const REFRESH_BEFORE_EXPIRY_MS = 30_000
@@ -213,3 +214,113 @@ export const useSftpCredentials = (serverId: string) =>
         { method: "POST", body: JSON.stringify({}) }
       ),
   })
+
+export const useUploadFiles = (serverId: string) => {
+  const credentials = useFileCredentials(serverId)
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: { targetDir: string; files: UploadFileEntry[] }) => {
+      const cred = await credentials.get()
+      const url = new URL(cred.baseUrl + "/files/upload")
+      url.searchParams.set("token", cred.token)
+      url.searchParams.set("path", params.targetDir)
+      const formData = new FormData()
+      for (const entry of params.files) {
+        formData.append("file", entry.file, entry.relativePath)
+      }
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: `Bearer ${cred.token}` },
+      })
+      const text = await response.text()
+      if (!response.ok) {
+        throw new Error(text || `daemon error ${response.status}`)
+      }
+      return JSON.parse(text) as { ok: boolean; count: number }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
+    },
+  })
+}
+
+export const useDownloadFile = (serverId: string) => {
+  const credentials = useFileCredentials(serverId)
+  return useCallback(
+    async (path: string) => {
+      const cred = await credentials.get()
+      const url = new URL(cred.baseUrl + "/files/download")
+      url.searchParams.set("token", cred.token)
+      url.searchParams.set("path", path)
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${cred.token}` },
+      })
+      if (!response.ok) {
+        throw new Error(`daemon error ${response.status}`)
+      }
+      const blob = await response.blob()
+      const disposition = response.headers.get("Content-Disposition") ?? ""
+      const match = /filename="([^"]+)"/.exec(disposition)
+      const filename = match ? match[1] : path.split("/").pop() ?? "download"
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = objectUrl
+      anchor.download = filename
+      anchor.click()
+      URL.revokeObjectURL(objectUrl)
+    },
+    [credentials]
+  )
+}
+
+export const useRenameFile = (serverId: string) => {
+  const daemonFetch = useDaemonFetch(serverId)
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { from: string; to: string }) =>
+      daemonFetch<{ ok: boolean }>(
+        "POST",
+        "/files/rename",
+        {},
+        JSON.stringify({ from: params.from, to: params.to })
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
+    },
+  })
+}
+
+export const useCompressFiles = (serverId: string) => {
+  const daemonFetch = useDaemonFetch(serverId)
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { paths: string[]; destination: string }) =>
+      daemonFetch<{ ok: boolean }>(
+        "POST",
+        "/files/compress",
+        {},
+        JSON.stringify({ paths: params.paths, destination: params.destination })
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
+    },
+  })
+}
+
+export const useDecompressFile = (serverId: string) => {
+  const daemonFetch = useDaemonFetch(serverId)
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { path: string; destination: string }) =>
+      daemonFetch<{ ok: boolean; count: number }>(
+        "POST",
+        "/files/decompress",
+        {},
+        JSON.stringify({ path: params.path, destination: params.destination })
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
+    },
+  })
+}

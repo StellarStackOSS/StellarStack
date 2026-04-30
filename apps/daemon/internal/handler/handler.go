@@ -229,7 +229,7 @@ func (h *Handler) handleCreateContainer(
 	}
 
 	bindMount := filepath.Join(h.cfg.DataDir, "servers", msg.ServerID)
-	if err := os.MkdirAll(bindMount, 0o755); err != nil {
+	if err := os.MkdirAll(bindMount, 0o777); err != nil {
 		log.Printf("daemon: bind-mount mkdir failed: %v", err)
 		return writeError(ctx, send, id, "internal.unexpected", nil)
 	}
