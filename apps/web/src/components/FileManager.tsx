@@ -938,7 +938,7 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         serverId={serverId}
         entry={moveTarget}
         open={moveTarget !== null}
-        onOpenChange={(open) => { if (!open) setMoveTarget(null }}
+        onOpenChange={(open) => { if (!open) setMoveTarget(null) }}
         onMove={handleMoveConfirm}
       />
     </div>
