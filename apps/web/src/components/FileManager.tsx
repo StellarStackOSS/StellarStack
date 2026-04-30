@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import type { editor } from "monaco-editor"
 import {
   type ColumnDef,
   type SortingState,
@@ -15,16 +16,19 @@ import {
   ArrowUp01Icon,
   Delete02Icon,
   DownloadIcon,
+  Drag01Icon,
   File01Icon,
+  FileAddIcon,
   FileUploadIcon,
   FolderIcon,
   FolderAddIcon,
   FolderUploadIcon,
-  Drag01Icon,
+  HashtagIcon,
   MoreHorizontalIcon,
   PackageIcon,
   PencilEdit01Icon,
   Search01Icon,
+  TextWrapIcon,
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
@@ -58,7 +62,9 @@ import {
   useUploadFiles,
   useWriteFile,
 } from "@/hooks/useFiles"
+import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { FileMoveDialog } from "@/components/FileMoveDialog"
+import { NewFileDialog } from "@/components/NewFileDialog"
 import type { FileEntry, UploadFileEntry } from "@/hooks/useFiles.types"
 import type { FileManagerProps } from "@/components/FileManager.types"
 
@@ -131,7 +137,7 @@ type RowActionsProps = {
   currentDir: string
   onNavigate: (entry: FileEntry) => void
   onEdit: (entry: FileEntry) => void
-  onDelete: (path: string) => Promise<void>
+  onDelete: (path: string) => void
   onDownload: (path: string) => Promise<void>
   onRename: (entry: FileEntry) => Promise<void>
   onMove: (entry: FileEntry) => void
@@ -205,6 +211,15 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   ])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null)
+  const [newFileOpen, setNewFileOpen] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string
+    description: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
+  const [wordWrap, setWordWrap] = useState<"on" | "off">("off")
+  const [lineNumbers, setLineNumbers] = useState<"on" | "off">("on")
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -271,32 +286,34 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     }
   }
 
-  const handleDelete = async (target: string) => {
-    if (!window.confirm(`Delete ${target}?`)) return
-    try {
-      await deleteFile.mutateAsync(target)
-      if (selected === target) {
-        setSelected(null)
-        setDraft(null)
-      }
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
-    }
+  const handleDelete = (target: string) => {
+    setConfirmDialog({
+      title: `Delete ${target.split("/").pop() ?? target}?`,
+      description: "This will permanently remove the file or folder and cannot be undone.",
+      onConfirm: async () => {
+        await deleteFile.mutateAsync(target)
+        if (selected === target) {
+          setSelected(null)
+          setDraft(null)
+        }
+      },
+    })
   }
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     const paths = Object.keys(rowSelection).filter((k) => rowSelection[k])
     if (paths.length === 0) return
-    if (!window.confirm(`Delete ${paths.length} item(s)?`)) return
-    setErrorMessage(null)
-    for (const p of paths) {
-      try {
-        await deleteFile.mutateAsync(p)
-      } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : String(err))
-      }
-    }
-    setRowSelection({})
+    setConfirmDialog({
+      title: `Delete ${paths.length} item${paths.length === 1 ? "" : "s"}?`,
+      description: "This will permanently remove the selected files and folders and cannot be undone.",
+      onConfirm: async () => {
+        setErrorMessage(null)
+        for (const p of paths) {
+          await deleteFile.mutateAsync(p)
+        }
+        setRowSelection({})
+      },
+    })
   }
 
   const handleCompressSelected = async () => {
@@ -324,6 +341,16 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : String(err))
     }
+  }
+
+  const handleNewFile = async (filePath: string) => {
+    await writeFile.mutateAsync({ path: filePath, content: "" })
+    setSelected(filePath)
+    setDraft("")
+  }
+
+  const handleFormatDocument = () => {
+    editorRef.current?.getAction("editor.action.formatDocument")?.run()
   }
 
   const handleSftp = async () => {
@@ -637,6 +664,14 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
           <Button
             size="xs"
             variant="outline"
+            onClick={() => setNewFileOpen(true)}
+          >
+            <HugeiconsIcon icon={FileAddIcon} className="mr-1 size-3" />
+            New file
+          </Button>
+          <Button
+            size="xs"
+            variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadFiles.isPending}
           >
@@ -773,8 +808,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       {/* Monaco editor panel */}
       {selected !== null ? (
         <div className="border-t border-border flex flex-col">
+          {/* Editor header: path + save/close */}
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <code className="text-xs">{selected}</code>
+            <code className="text-xs truncate max-w-xs">{selected}</code>
             <div className="flex items-center gap-2">
               <Button
                 size="xs"
@@ -786,25 +822,76 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               <Button
                 size="xs"
                 variant="ghost"
-                onClick={() => {
-                  setSelected(null)
-                  setDraft(null)
-                }}
+                onClick={() => { setSelected(null); setDraft(null) }}
               >
                 ✕
               </Button>
             </div>
           </div>
+          {/* Editor toolbar: language + toggles + format */}
+          <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1">
+            <span className="text-[0.65rem] text-muted-foreground font-mono bg-muted rounded px-1.5 py-0.5">
+              {monacoLanguageFor(selected)}
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                title={`Line numbers: ${lineNumbers}`}
+                onClick={() => setLineNumbers((v) => v === "on" ? "off" : "on")}
+                className={[
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
+                  lineNumbers === "on"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                <HugeiconsIcon icon={HashtagIcon} className="size-3" />
+                Lines
+              </button>
+              <button
+                type="button"
+                title={`Word wrap: ${wordWrap}`}
+                onClick={() => setWordWrap((v) => v === "on" ? "off" : "on")}
+                className={[
+                  "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
+                  wordWrap === "on"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                <HugeiconsIcon icon={TextWrapIcon} className="size-3" />
+                Wrap
+              </button>
+              <button
+                type="button"
+                title="Format document"
+                onClick={handleFormatDocument}
+                className="flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem] text-muted-foreground hover:text-foreground"
+              >
+                Format
+              </button>
+            </div>
+          </div>
           {content.isLoading ? (
             <p className="text-muted-foreground p-3 text-xs">Loading…</p>
           ) : (
-            <div className="h-80">
+            <div className="h-96">
               <Editor
                 value={editorValue}
                 language={monacoLanguageFor(selected)}
                 onChange={(value) => setDraft(value ?? "")}
+                onMount={(ed) => { editorRef.current = ed }}
                 theme="vs-dark"
-                options={{ minimap: { enabled: false }, fontSize: 12 }}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 12,
+                  lineNumbers,
+                  wordWrap,
+                  scrollBeyondLastLine: false,
+                  tabSize: 2,
+                  renderLineHighlight: "line",
+                  smoothScrolling: true,
+                }}
               />
             </div>
           )}
@@ -830,13 +917,28 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         </p>
       ) : null}
 
+      <ConfirmDialog
+        open={confirmDialog !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDialog(null) }}
+        title={confirmDialog?.title ?? ""}
+        description={confirmDialog?.description}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDialog?.onConfirm ?? (async () => {})}
+      />
+
+      <NewFileDialog
+        open={newFileOpen}
+        currentDir={path}
+        onOpenChange={setNewFileOpen}
+        onCreate={handleNewFile}
+      />
+
       <FileMoveDialog
         serverId={serverId}
         entry={moveTarget}
         open={moveTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setMoveTarget(null)
-        }}
+        onOpenChange={(open) => { if (!open) setMoveTarget(null }}
         onMove={handleMoveConfirm}
       />
     </div>
