@@ -116,6 +116,34 @@ func stopStats(state *serverState) {
 	}
 }
 
+// Resume scans Docker for already-running stellar-* containers and resumes
+// stats streaming for each. Called once after the daemon WS connects so the
+// panel receives stats for servers that were running before the daemon (re)started.
+func (h *Handler) Resume(ctx context.Context, send Sender) {
+	containers, err := h.docker.ListRunningContainers(ctx, "stellar-")
+	if err != nil {
+		log.Printf("daemon: resume scan: %v", err)
+		return
+	}
+	h.mu.Lock()
+	for _, c := range containers {
+		if _, exists := h.watchers[strings.TrimPrefix(c.Name, "stellar-")]; exists {
+			continue // already tracked from a create-container in this session
+		}
+		serverID := strings.TrimPrefix(c.Name, "stellar-")
+		w := lifecycle.New(serverID, c.Name, h.docker, send)
+		state := &serverState{
+			containerName: c.Name,
+			watcher:       w,
+			lifecycle:     lifecycle.Lifecycle{},
+		}
+		h.watchers[serverID] = state
+		log.Printf("daemon: resume server=%s container=%s", serverID, c.Name)
+		go h.startStats(ctx, state, send)
+	}
+	h.mu.Unlock()
+}
+
 // HandleEnvelope inspects the message type and dispatches.
 func (h *Handler) HandleEnvelope(
 	ctx context.Context,

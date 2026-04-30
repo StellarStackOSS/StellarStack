@@ -81,11 +81,15 @@ export const ConsoleTerminal = ({
           lines.map((entry) => (
             <div
               key={entry.id}
-              className={
-                entry.stream === "stderr"
-                  ? "text-destructive whitespace-pre-wrap"
-                  : "whitespace-pre-wrap"
-              }
+              className={[
+                "whitespace-pre-wrap",
+                entry.historical ? "text-muted-foreground/60" : "",
+                !entry.historical && entry.stream === "stderr"
+                  ? "text-destructive"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               {entry.line}
             </div>

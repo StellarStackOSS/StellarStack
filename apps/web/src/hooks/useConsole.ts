@@ -21,6 +21,7 @@ const inboundFrameSchema = z.object({
   type: z.literal("console.line"),
   stream: z.enum(["stdout", "stderr"]),
   line: z.string(),
+  historical: z.boolean().optional(),
 })
 
 /**
@@ -100,6 +101,7 @@ export const useConsole = (
               id: counterRef.current,
               stream: payload.data.stream,
               line: payload.data.line,
+              historical: payload.data.historical ?? false,
             },
           ].slice(-MAX_LINES)
         )

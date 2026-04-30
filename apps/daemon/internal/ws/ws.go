@@ -129,6 +129,10 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 		return fmt.Errorf("send hello: %w", err)
 	}
 
+	// Resume stats for any containers that were already running before this
+	// WS session started (e.g. after a daemon restart).
+	go c.handler.Resume(ctx, sender)
+
 	heartbeat := time.NewTicker(30 * time.Second)
 	defer heartbeat.Stop()
 

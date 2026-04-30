@@ -7,6 +7,7 @@ export type ConsoleLine = {
   id: number
   stream: "stdout" | "stderr"
   line: string
+  historical: boolean
 }
 
 /**

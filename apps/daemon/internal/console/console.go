@@ -115,6 +115,14 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
+	// Replay the last 150 lines from Docker's log buffer before going live.
+	// This mirrors what Wings does: the browser sees recent history immediately
+	// on connect without the daemon needing its own ring buffer.
+	if logReader, err := dockerClient.TailLogs(ctx, containerName, 150); err == nil {
+		replayDockerLogs(ctx, conn, logReader)
+		logReader.Close()
+	}
+
 	attachConn, attachReader, err := dockerClient.AttachConn(ctx, containerName)
 	if err != nil {
 		_ = conn.Write(ctx, websocket.MessageText, mustJSON(map[string]any{
@@ -130,6 +138,45 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		pumpWSToDocker(ctx, conn, attachConn)
 	} else {
 		pumpWSToVoid(ctx, conn)
+	}
+}
+
+// replayDockerLogs sends historical log lines from Docker's log buffer as
+// console.line frames with "historical": true so the frontend can style them
+// differently or simply insert them before the live stream.
+func replayDockerLogs(ctx context.Context, ws *websocket.Conn, r io.Reader) {
+	header := make([]byte, 8)
+	for {
+		if _, err := io.ReadFull(r, header); err != nil {
+			return
+		}
+		streamID := header[0]
+		size := int(header[4])<<24 | int(header[5])<<16 | int(header[6])<<8 | int(header[7])
+		if size <= 0 {
+			continue
+		}
+		payload := make([]byte, size)
+		if _, err := io.ReadFull(r, payload); err != nil {
+			return
+		}
+		stream := "stdout"
+		if streamID == 2 {
+			stream = "stderr"
+		}
+		for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+			if line == "" {
+				continue
+			}
+			frame := mustJSON(map[string]any{
+				"type":       "console.line",
+				"stream":     stream,
+				"line":       line,
+				"historical": true,
+			})
+			if err := ws.Write(ctx, websocket.MessageText, frame); err != nil {
+				return
+			}
+		}
 	}
 }
 

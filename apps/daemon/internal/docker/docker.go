@@ -445,6 +445,71 @@ func (c *Client) AttachConn(
 	return conn, reader, nil
 }
 
+// RunningContainer is one entry returned by ListRunningContainers.
+type RunningContainer struct {
+	Name string // without leading "/"
+	ID   string
+}
+
+// ListRunningContainers returns all containers that are currently running
+// and whose name matches the given prefix. The prefix comparison is against
+// the first name Docker reports (Docker names always start with "/").
+func (c *Client) ListRunningContainers(
+	ctx context.Context,
+	namePrefix string,
+) ([]RunningContainer, error) {
+	q := url.Values{}
+	q.Set("filters", `{"status":["running"]}`)
+	resp, err := c.do(ctx, http.MethodGet, "/containers/json?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return nil, c.errorFromResponse(resp, "list containers")
+	}
+	var items []struct {
+		ID    string   `json:"Id"`
+		Names []string `json:"Names"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return nil, fmt.Errorf("decode container list: %w", err)
+	}
+	var out []RunningContainer
+	for _, item := range items {
+		if len(item.Names) == 0 {
+			continue
+		}
+		name := strings.TrimPrefix(item.Names[0], "/")
+		if strings.HasPrefix(name, namePrefix) {
+			out = append(out, RunningContainer{Name: name, ID: item.ID})
+		}
+	}
+	return out, nil
+}
+
+// TailLogs returns the last `lines` lines from the container's log output.
+// Frames use the standard Docker 8-byte multiplexed header format.
+func (c *Client) TailLogs(
+	ctx context.Context,
+	idOrName string,
+	lines int,
+) (io.ReadCloser, error) {
+	q := url.Values{}
+	q.Set("stdout", "1")
+	q.Set("stderr", "1")
+	q.Set("tail", fmt.Sprintf("%d", lines))
+	resp, err := c.do(ctx, http.MethodGet, "/containers/"+idOrName+"/logs?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		defer resp.Body.Close()
+		return nil, c.errorFromResponse(resp, "tail logs")
+	}
+	return resp.Body, nil
+}
+
 // RemoveContainer deletes the container by name or id, with optional force.
 func (c *Client) RemoveContainer(ctx context.Context, idOrName string, force bool) error {
 	q := url.Values{}
