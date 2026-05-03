@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { panelEventSchema } from "@workspace/shared/events"
 import type { PanelEvent } from "@workspace/shared/events.types"
@@ -40,8 +39,6 @@ export const usePanelEvents = (
   const reconnectRef = useRef<number | null>(null)
   const backoffRef = useRef(BACKOFF_INITIAL_MS)
   const aliveRef = useRef(true)
-  const hasOpenedRef = useRef(false)
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!enabled) {
@@ -59,16 +56,6 @@ export const usePanelEvents = (
       socket.addEventListener("open", () => {
         backoffRef.current = BACKOFF_INITIAL_MS
         setState("open")
-        // After a reconnect, the backend's snapshot will replay the
-        // current state for every accessible server, but we also drop
-        // any cached server queries so anything that wasn't snapshotted
-        // (e.g. running stats, REST-only fields) refetches with fresh
-        // data instead of trusting whatever was in the cache from
-        // before the disconnect.
-        if (hasOpenedRef.current) {
-          void queryClient.invalidateQueries({ queryKey: ["servers"] })
-        }
-        hasOpenedRef.current = true
       })
 
       socket.addEventListener("message", (event) => {

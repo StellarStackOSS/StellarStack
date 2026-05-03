@@ -48,7 +48,10 @@ export const useLiveServerStatus = (
         return { ...existing, server: { ...existing.server, status: liveStatus } }
       }
     )
-    void queryClient.invalidateQueries({ queryKey: ["servers"] })
+    // Intentionally no invalidateQueries here — invalidating ["servers"]
+    // on every state.changed event triggered a refetch storm during a
+    // power action that could blank the page mid-render. The
+    // setQueryData write above is enough; the cache is now correct.
   }, [liveStatus, serverId, queryClient])
 
   return liveStatus
