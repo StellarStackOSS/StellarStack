@@ -1,11 +1,14 @@
-import { eq, or } from "drizzle-orm"
+import { and, eq, isNull, or, sum } from "drizzle-orm"
 import { Hono } from "hono"
 import { z } from "zod"
 
 import type { Db } from "@workspace/db/client.types"
-import { nodesTable } from "@workspace/db/schema/nodes"
+import { blueprintsTable } from "@workspace/db/schema/blueprints"
+import { nodeAllocationsTable, nodesTable } from "@workspace/db/schema/nodes"
 import {
+  serverAllocationsTable,
   serverSubusersTable,
+  serverVariablesTable,
   serversTable,
 } from "@workspace/db/schema/servers"
 import { ApiException, apiValidationError } from "@workspace/shared/errors"
@@ -13,6 +16,7 @@ import type { DaemonJwtScope } from "@workspace/shared/jwt.types"
 
 import type { Auth } from "@/auth"
 import type { Env } from "@/env"
+import type { InstallRunner } from "@/lib/InstallRunner"
 import type { StatusCache } from "@/lib/StatusCache"
 import { mintDaemonToken } from "@/lib/Tokens"
 import { buildRequireSession, type AuthVariables } from "@/middleware/RequireSession"
@@ -46,6 +50,20 @@ const purposeScopes: Record<
   },
 }
 
+const createServerSchema = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(500).optional(),
+  nodeId: z.string().uuid(),
+  blueprintId: z.string().uuid(),
+  dockerImage: z.string().min(1),
+  primaryAllocationId: z.string().uuid(),
+  memoryLimitMb: z.number().int().positive(),
+  cpuLimitPercent: z.number().int().positive(),
+  diskLimitMb: z.number().int().positive(),
+  startupExtra: z.string().optional(),
+  variables: z.record(z.string(), z.string()).default({}),
+})
+
 /**
  * Server CRUD + the credentials endpoint that mints the per-node JWT
  * the browser uses to dial the daemon directly.
@@ -54,9 +72,10 @@ export const buildServersRoute = (params: {
   auth: Auth
   db: Db
   env: Env
+  installRunner: InstallRunner
   statusCache: StatusCache
 }) => {
-  const { auth, db, env, statusCache } = params
+  const { auth, db, env, installRunner, statusCache } = params
   const requireSession = buildRequireSession(auth)
 
   return new Hono<{ Variables: AuthVariables }>()
@@ -118,6 +137,164 @@ export const buildServersRoute = (params: {
         },
         access: { role: access.role, permissions: access.permissions },
       })
+    })
+    .post("/", async (c) => {
+      const user = c.get("user")
+      const parsed = createServerSchema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const input = parsed.data
+
+      const [blueprint, node, allocation] = await Promise.all([
+        db
+          .select()
+          .from(blueprintsTable)
+          .where(eq(blueprintsTable.id, input.blueprintId))
+          .limit(1)
+          .then((rows) => rows[0]),
+        db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, input.nodeId))
+          .limit(1)
+          .then((rows) => rows[0]),
+        db
+          .select()
+          .from(nodeAllocationsTable)
+          .where(
+            and(
+              eq(nodeAllocationsTable.id, input.primaryAllocationId),
+              eq(nodeAllocationsTable.nodeId, input.nodeId),
+              isNull(nodeAllocationsTable.serverId)
+            )
+          )
+          .limit(1)
+          .then((rows) => rows[0]),
+      ])
+      if (blueprint === undefined) {
+        throw new ApiException("blueprints.not_found", { status: 404 })
+      }
+      if (node === undefined) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      if (allocation === undefined) {
+        throw new ApiException("servers.create.allocation_unavailable", {
+          status: 409,
+        })
+      }
+      if (!Object.values(blueprint.dockerImages).includes(input.dockerImage)) {
+        throw new ApiException("servers.startup.invalid_docker_image", {
+          status: 422,
+        })
+      }
+      const usage = (
+        await db
+          .select({
+            memoryUsed: sum(serversTable.memoryLimitMb),
+            diskUsed: sum(serversTable.diskLimitMb),
+          })
+          .from(serversTable)
+          .where(eq(serversTable.nodeId, input.nodeId))
+      )[0]
+      const memoryUsed = Number(usage?.memoryUsed ?? 0)
+      const diskUsed = Number(usage?.diskUsed ?? 0)
+      if (memoryUsed + input.memoryLimitMb > node.memoryTotalMb) {
+        throw new ApiException("servers.create.node_at_capacity", {
+          status: 409,
+          params: { node: node.name },
+        })
+      }
+      if (diskUsed + input.diskLimitMb > node.diskTotalMb) {
+        throw new ApiException("servers.create.node_at_capacity", {
+          status: 409,
+          params: { node: node.name },
+        })
+      }
+
+      const inserted = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(serversTable)
+          .values({
+            ownerId: user.id,
+            nodeId: input.nodeId,
+            blueprintId: input.blueprintId,
+            primaryAllocationId: input.primaryAllocationId,
+            name: input.name,
+            description: input.description ?? null,
+            memoryLimitMb: input.memoryLimitMb,
+            cpuLimitPercent: input.cpuLimitPercent,
+            diskLimitMb: input.diskLimitMb,
+            dockerImage: input.dockerImage,
+            startupExtra: input.startupExtra ?? null,
+            status: "offline",
+            installState: "pending",
+          })
+          .returning()
+        if (row === undefined) throw new Error("insert failed")
+
+        await tx
+          .update(nodeAllocationsTable)
+          .set({ serverId: row.id })
+          .where(eq(nodeAllocationsTable.id, input.primaryAllocationId))
+        await tx.insert(serverAllocationsTable).values({
+          serverId: row.id,
+          allocationId: input.primaryAllocationId,
+        })
+
+        const variableRows = Object.entries(input.variables).map(
+          ([key, value]) => ({ serverId: row.id, variableKey: key, value })
+        )
+        if (variableRows.length > 0) {
+          await tx.insert(serverVariablesTable).values(variableRows)
+        }
+        return row
+      })
+
+      // Fire the install in the background; client polls /servers/:id/install.
+      void installRunner.enqueue(inserted.id)
+      return c.json({ server: inserted })
+    })
+    .get("/:id/install", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      await loadServerAccess(db, user, id)
+      const job = installRunner.get(id)
+      if (job === undefined) {
+        return c.json({ state: "unknown", log: [] })
+      }
+      return c.json({
+        state: job.state,
+        startedAt: job.startedAt.toISOString(),
+        finishedAt: job.finishedAt?.toISOString() ?? null,
+        exitCode: job.exitCode,
+        log: job.log,
+      })
+    })
+    .post("/:id/install/retry", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      await installRunner.enqueue(id)
+      return c.json({ ok: true })
+    })
+    .delete("/:id", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      await db.transaction(async (tx) => {
+        await tx
+          .update(nodeAllocationsTable)
+          .set({ serverId: null })
+          .where(eq(nodeAllocationsTable.serverId, id))
+        await tx.delete(serversTable).where(eq(serversTable.id, id))
+      })
+      await statusCache.set(id, "offline")
+      return c.json({ ok: true })
     })
     .post("/:id/credentials", async (c) => {
       const id = c.req.param("id")

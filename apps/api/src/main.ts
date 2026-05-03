@@ -13,7 +13,12 @@ import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
+import { buildBlueprintsRoute } from "@/routes/Blueprints"
 import { buildMeRoute } from "@/routes/Me"
+import {
+  buildNodesRoute,
+  buildPairingExchangeRoute,
+} from "@/routes/Nodes"
 import { buildRemoteRoute } from "@/routes/Remote"
 import { buildServersRoute } from "@/routes/Servers"
 
@@ -31,7 +36,6 @@ const redis = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null })
 const auth = buildAuth({ db, env })
 const statusCache = new StatusCache(redis)
 const installRunner = new InstallRunner(db)
-void installRunner // surfaced via routes in a later phase
 
 const app = new Hono<{ Variables: ApiVariables }>()
 
@@ -55,8 +59,14 @@ app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
 )
 
 app.route("/me", buildMeRoute(auth))
-app.route("/servers", buildServersRoute({ auth, db, env, statusCache }))
+app.route(
+  "/servers",
+  buildServersRoute({ auth, db, env, installRunner, statusCache })
+)
+app.route("/admin/nodes", buildNodesRoute({ auth, db }))
+app.route("/blueprints", buildBlueprintsRoute({ auth, db }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
+app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 
 serve({ fetch: app.fetch, port: env.PORT })
 logger.info({ port: env.PORT }, "api listening")
