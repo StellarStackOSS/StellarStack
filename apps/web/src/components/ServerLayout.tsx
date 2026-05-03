@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 import { useEffect, useState } from "react"
-import { Link, Outlet, useLocation, useParams } from "@tanstack/react-router"
+import { Outlet, useLocation, useParams } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { HugeiconsIcon } from "@hugeicons/react"
 import type { HugeiconsIconElement } from "@hugeicons/react"
@@ -30,25 +30,16 @@ import type { ServerLifecycleState } from "@workspace/shared/events.types"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { ServerSidebar } from "@/components/ServerSidebar"
 import { ServerLayoutContext } from "@/components/ServerLayoutContext"
-import { ApiFetchError } from "@/lib/ApiFetch"
-import { translateApiError } from "@/lib/TranslateError"
-import { useLiveServerStatus } from "@/hooks/useLiveServerStatus"
-import { usePanelEvents } from "@/hooks/usePanelEvents"
+import { useConsole } from "@/hooks/useConsole"
+import type { ConsolePowerAction } from "@/hooks/useConsole.types"
 import { useServer } from "@/hooks/useServers"
-import { useServerPower } from "@/hooks/useServerPower"
 import { useSession } from "@/lib/AuthClient"
 
-type PowerAction = "start" | "stop" | "restart" | "kill"
-
 const statusTextColor: Record<ServerLifecycleState, string> = {
-  installing: "text-blue-400",
-  installed_stopped: "text-zinc-500",
+  offline: "text-zinc-500",
   starting: "text-amber-400",
   running: "text-emerald-400",
   stopping: "text-amber-400",
-  stopped: "text-zinc-500",
-  crashed: "text-destructive",
-  restoring_backup: "text-amber-400",
 }
 
 type RouteEntry = { title: string; icon: HugeiconsIconElement }
@@ -67,10 +58,11 @@ const routeMap: Record<string, RouteEntry> = {
 }
 
 /**
- * Shell rendered for every `/servers/$id/*` route. Owns the sidebar, the
- * panel-event subscription, live status, and the power action controls in the
- * header so they persist across every tab. Children receive the resolved
- * server + filtered events + live status via React context.
+ * Shell rendered for every `/servers/$id/*` route. Owns the daemon
+ * WebSocket subscription via `useConsole` and exposes it (status,
+ * lines, stats, power dispatch) to child pages through context. Power
+ * buttons send `{event:"set state",…}` over that same socket — no REST
+ * roundtrip, mirroring Pelican's panel UX.
  */
 export const ServerLayout = () => {
   const { id } = useParams({ from: "/servers/$id" })
@@ -78,35 +70,22 @@ export const ServerLayout = () => {
   const location = useLocation()
   const { data: session, isPending } = useSession()
   const enabled = !isPending && session !== null
-  const { state: wsState, events } = usePanelEvents(enabled)
-  const liveStatus = useLiveServerStatus(id, events)
+  const consoleHook = useConsole(id, enabled)
   const serverQuery = useServer(id)
-  const power = useServerPower(id)
 
-  const [powerError, setPowerError] = useState<string | null>(null)
+  const [optimistic, setOptimistic] = useState<ServerLifecycleState | null>(null)
   const [killConfirmOpen, setKillConfirmOpen] = useState(false)
-  const [pendingStatus, setPendingStatus] = useState<ServerLifecycleState | null>(null)
 
-  // Clear the optimistic status once the daemon confirms the transition via WS.
+  // The daemon's first `status` frame supersedes our optimistic guess.
   useEffect(() => {
-    if (liveStatus !== null) setPendingStatus(null)
-  }, [liveStatus])
+    if (consoleHook.status !== null) setOptimistic(null)
+  }, [consoleHook.status])
 
-  const handlePower = async (action: PowerAction) => {
-    setPowerError(null)
-    if (action === "stop" || action === "restart") setPendingStatus("stopping")
-    else if (action === "start") setPendingStatus("starting")
-    else if (action === "kill") setPendingStatus("stopping")
-    try {
-      await power.mutateAsync(action)
-    } catch (err) {
-      setPendingStatus(null)
-      if (err instanceof ApiFetchError) {
-        setPowerError(translateApiError(t, err.body.error))
-      } else {
-        setPowerError(t("internal.unexpected", { ns: "errors" }))
-      }
-    }
+  const handlePower = (action: ConsolePowerAction) => {
+    if (action === "stop" || action === "kill") setOptimistic("stopping")
+    else if (action === "restart") setOptimistic("stopping")
+    else if (action === "start") setOptimistic("starting")
+    consoleHook.setState(action)
   }
 
   if (serverQuery.isLoading) {
@@ -126,7 +105,8 @@ export const ServerLayout = () => {
   }
 
   const server = serverQuery.data.server
-  const status = pendingStatus ?? liveStatus ?? server.status
+  const status: ServerLifecycleState =
+    optimistic ?? consoleHook.status ?? server.status
 
   const basePath = `/servers/${id}`
   const sub = location.pathname.startsWith(basePath)
@@ -134,24 +114,12 @@ export const ServerLayout = () => {
     : ""
   const currentRoute = routeMap[sub] ?? routeMap[""]
 
-  const filteredEvents = events.filter(
-    (event) =>
-      ("serverId" in event && event.serverId === id) ||
-      (event.type === "job.progress" && event.serverId === id)
-  )
-
-  const daemonConnected = (() => {
-    const match = events.findLast(
-      (e) => e.type === "node.daemon.status" && e.nodeId === server.nodeId
-    )
-    return match?.type === "node.daemon.status" ? match.connected : true
-  })()
-
-  const canStart =
-    status === "stopped" || status === "crashed" || status === "installed_stopped"
+  const wsConnected = consoleHook.state === "open"
+  const canStart = status === "offline"
   const canStop = status === "running" || status === "starting"
   const canKill = status === "running" || status === "starting" || status === "stopping"
   const canRestart = status === "running"
+  const powerBusy = optimistic !== null
 
   return (
     <SidebarProvider
@@ -163,7 +131,7 @@ export const ServerLayout = () => {
       }
       className="h-svh"
     >
-      <ServerSidebar server={server} liveStatus={liveStatus} />
+      <ServerSidebar server={server} liveStatus={consoleHook.status} />
       <SidebarInset className="overflow-hidden border border-white/10">
         <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-white/5 px-4">
           <SidebarTrigger className="-ml-1 text-zinc-500 hover:text-zinc-200" />
@@ -185,10 +153,7 @@ export const ServerLayout = () => {
 
             <Separator orientation="vertical" className="mx-1 h-4" />
 
-            {powerError !== null && (
-              <span className="text-destructive text-xs">{powerError}</span>
-            )}
-            {!daemonConnected && (
+            {!wsConnected && (
               <span className="text-destructive text-xs">
                 {t("server_layout.daemon_offline")}
               </span>
@@ -198,31 +163,31 @@ export const ServerLayout = () => {
               <Button
                 size="sm"
                 variant="default"
-                disabled={!daemonConnected || power.isPending || !canStart}
-                onClick={() => void handlePower("start")}
+                disabled={!wsConnected || powerBusy || !canStart}
+                onClick={() => handlePower("start")}
               >
                 {t("actions.start")}
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={!daemonConnected || power.isPending || !canRestart}
-                onClick={() => void handlePower("restart")}
+                disabled={!wsConnected || powerBusy || !canRestart}
+                onClick={() => handlePower("restart")}
               >
                 {t("actions.restart")}
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={!daemonConnected || power.isPending || !canStop}
-                onClick={() => void handlePower("stop")}
+                disabled={!wsConnected || powerBusy || !canStop}
+                onClick={() => handlePower("stop")}
               >
                 {t("actions.stop")}
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
-                disabled={!daemonConnected || power.isPending || !canKill}
+                disabled={!wsConnected || powerBusy || !canKill}
                 onClick={() => setKillConfirmOpen(true)}
               >
                 {t("actions.kill")}
@@ -234,7 +199,12 @@ export const ServerLayout = () => {
         <div className="flex min-h-0 flex-1 flex-col">
           <main className="@container/main flex min-h-0 w-full flex-1 flex-col p-6">
             <ServerLayoutContext.Provider
-              value={{ server, status, events: filteredEvents, wsState, daemonConnected }}
+              value={{
+                server,
+                status,
+                wsState: consoleHook.state,
+                console: consoleHook,
+              }}
             >
               <Outlet />
             </ServerLayoutContext.Provider>

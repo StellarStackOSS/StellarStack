@@ -2,19 +2,10 @@
   "server_layout.servers_breadcrumb": "Servers",
   "server_layout.daemon_offline": "Node offline",
 
-  "lifecycle.installing": "Installing",
+  "lifecycle.offline": "Offline",
   "lifecycle.starting": "Starting",
   "lifecycle.running": "Running",
   "lifecycle.stopping": "Stopping",
-  "lifecycle.stopped": "Offline",
-  "lifecycle.crashed": "Crashed",
-  "lifecycle.installed_stopped": "Offline",
-  "lifecycle.restoring_backup": "Restoring",
-
-  "lifecycle.crash_reason.servers.lifecycle.crashed.oom_killed": "The server ran out of memory and was killed by the system. Increase the memory limit or reduce the server's memory usage.",
-  "lifecycle.crash_reason.servers.lifecycle.crashed.container_exit": "The server process exited unexpectedly. Check the console for details.",
-  "lifecycle.crash_reason.servers.lifecycle.start_timeout": "The server took too long to start and was marked as crashed.",
-  "lifecycle.crash_reason.servers.lifecycle.console_match": "A crash pattern was detected in the server output.",
 
   "dashboard.title": "Your servers",
   "dashboard.description": "Manage and monitor your provisioned servers.",

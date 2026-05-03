@@ -11,9 +11,7 @@ const statusVariant = (
   s: ServerLifecycleState
 ): "success" | "warning" | "destructive" | "secondary" => {
   if (s === "running") return "success"
-  if (s === "starting" || s === "stopping" || s === "installing" || s === "restoring_backup")
-    return "warning"
-  if (s === "crashed") return "destructive"
+  if (s === "starting" || s === "stopping") return "warning"
   return "secondary"
 }
 

@@ -166,7 +166,7 @@ export const BackupsTab = () => {
               disabled={
                 row.original.state !== "ready" ||
                 restoreBackup.isPending ||
-                server.status === "restoring_backup"
+                false
               }
               onClick={() => setConfirmRestore(row.original)}
             >

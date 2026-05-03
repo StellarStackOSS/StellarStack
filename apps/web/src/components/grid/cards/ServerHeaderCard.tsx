@@ -14,23 +14,17 @@ import type { ServerListRow } from "@/hooks/useServers.types"
 type PowerAction = "start" | "stop" | "restart" | "kill"
 
 const STATUS_DOT: Record<ServerLifecycleState, string> = {
-  installing: "bg-amber-400 animate-pulse",
+  offline: "bg-zinc-600",
   starting: "bg-emerald-400 animate-pulse",
   running: "bg-emerald-500",
   stopping: "bg-amber-400 animate-pulse",
-  stopped: "bg-zinc-600",
-  crashed: "bg-red-500",
-  restoring_backup: "bg-amber-400 animate-pulse",
 }
 
 const STATUS_LABEL: Record<ServerLifecycleState, string> = {
-  installing: "Installing",
+  offline: "Offline",
   starting: "Starting",
   running: "Running",
   stopping: "Stopping",
-  stopped: "Stopped",
-  crashed: "Crashed",
-  restoring_backup: "Restoring",
 }
 
 export const ServerHeaderCard = ({
@@ -44,13 +38,11 @@ export const ServerHeaderCard = ({
   isPending: boolean
   onPower: (action: PowerAction) => void
 }) => {
-  const canStart =
-    status === "stopped" ||
-    status === "crashed"
+  const canStart = status === "offline"
   const canStop = status === "running" || status === "starting"
   const canKill = status === "running" || status === "starting" || status === "stopping"
   const canRestart = status === "running"
-  const locked = status === "restoring_backup" || status === "installing"
+  const locked = false
 
   return (
     <div className="flex h-full items-center justify-between rounded-xl border border-white/[0.07] bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d] px-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">

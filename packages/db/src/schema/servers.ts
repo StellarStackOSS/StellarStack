@@ -52,7 +52,16 @@ export const serversTable = pgTable(
     dockerImage: text("docker_image").notNull(),
     startupExtra: text("startup_extra"),
     allocationLimit: integer("allocation_limit").notNull().default(3),
-    status: text("status").$type<ServerLifecycleState>().notNull(),
+    status: text("status").$type<ServerLifecycleState>().notNull().default("offline"),
+    /**
+     * Install lifecycle is tracked separately from the live container
+     * status: a server can be `installing` while its container is offline.
+     * Pelican-shape — no probe-driven mid-state on the lifecycle enum.
+     */
+    installState: text("install_state")
+      .$type<"pending" | "running" | "succeeded" | "failed">()
+      .notNull()
+      .default("pending"),
     suspended: boolean("suspended").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
