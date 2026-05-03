@@ -8,39 +8,44 @@
   "auth.session.expired": "Your session has expired. Please sign in again.",
   "auth.session.invalid": "Your session is no longer valid.",
 
-  "permissions.denied": "You don't have permission to perform this action ({{statement}}).",
+  "permissions.denied": "You don't have permission to perform this action ({statement}).",
 
+  "users.not_found": "User not found.",
   "nodes.not_found": "Node not found.",
   "nodes.pair.token_invalid": "The pairing token is invalid.",
   "nodes.pair.token_expired": "The pairing token has expired.",
   "nodes.pair.token_already_claimed": "This pairing token has already been used.",
   "nodes.unreachable": "Could not reach the node's daemon.",
+  "nodes.has_servers": "Cannot delete a node that still has servers assigned to it.",
 
   "blueprints.not_found": "Blueprint not found.",
-  "blueprints.parse.unknown_field": "Unknown field in blueprint: {{field}}.",
-  "blueprints.parse.schema_version_unsupported": "Unsupported blueprint schema version: {{version}}.",
+  "blueprints.parse.unknown_field": "Unknown field in blueprint: {field}.",
+  "blueprints.parse.schema_version_unsupported": "Unsupported blueprint schema version: {version}.",
+  "blueprints.parse.invalid_json": "JSON parse error: the editor content is not valid JSON.",
 
   "servers.not_found": "Server not found.",
-  "servers.create.allocation_unavailable": "Allocation {{allocation}} is no longer available.",
-  "servers.create.node_at_capacity": "Node {{node}} doesn't have enough resources (needs {{requested}}, has {{available}}).",
+  "servers.create.allocation_unavailable": "Allocation {allocation} is no longer available.",
+  "servers.create.node_at_capacity": "Node {node} doesn't have enough resources (needs {requested}, has {available}).",
   "servers.create.no_free_allocation": "No free allocations are available on the selected node.",
-  "servers.action.invalid_state": "This action isn't allowed in the current server state ({{state}}).",
+  "servers.startup.invalid_docker_image": "That image is not available for this blueprint. Valid values: {values}.",
+  "servers.action.invalid_state": "This action isn't allowed in the current server state ({state}).",
   "servers.action.suspended": "This server is suspended.",
+  "servers.action.already_running": "Server is already starting or running.",
   "servers.lifecycle.crashed.console_match": "Server crashed: log pattern matched.",
   "servers.lifecycle.crashed.container_exit": "Container exited unexpectedly.",
-  "servers.lifecycle.start_timeout": "Server didn't report ready within {{timeoutMs}}ms.",
+  "servers.lifecycle.start_timeout": "Server didn't report ready within {timeoutMs}ms.",
   "servers.install.creating_container": "Creating container…",
   "servers.install.running_script": "Running install script…",
   "servers.install.completed": "Install complete.",
-  "servers.install.failed": "Install failed: {{reason}}.",
+  "servers.install.failed": "Install failed: {reason}.",
 
   "files.not_found": "File or directory not found.",
   "files.path_outside_jail": "Path is outside the server's directory.",
-  "files.too_large": "File exceeds the maximum allowed size ({{maxBytes}} bytes).",
+  "files.too_large": "File exceeds the maximum allowed size ({maxBytes} bytes).",
   "files.read_only": "This path is read-only.",
 
   "schedules.not_found": "Schedule not found.",
-  "schedules.cron_invalid": "Cron expression is invalid: {{cron}}.",
+  "schedules.cron_invalid": "Cron expression is invalid: {cron}.",
 
   "backups.not_found": "Backup not found.",
   "backups.locked": "This backup is locked and can't be deleted.",
@@ -55,5 +60,8 @@
   "transfers.token_invalid": "Transfer token is invalid or expired.",
 
   "rate_limit.exceeded": "Too many requests. Please slow down.",
-  "internal.unexpected": "An unexpected error occurred."
+  "internal.unexpected": "An unexpected error occurred.",
+  "blueprints.invalid_image": "The selected Docker image is not valid for this blueprint.",
+  "servers.cannot_remove_primary_allocation": "Cannot remove the primary allocation. Set a different allocation as primary first.",
+  "servers.allocations.limit_reached": "Allocation limit of {limit} reached. Remove an existing allocation first."
 }

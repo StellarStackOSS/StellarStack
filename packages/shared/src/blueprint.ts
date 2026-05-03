@@ -138,5 +138,6 @@ export const blueprintSchema = z.object({
   variables: z.array(variableSchema),
   install: installSchema,
   lifecycle: blueprintLifecycleSchema,
-  features: z.array(z.string()).optional(),
+  /** feature-name → console patterns the daemon watches for (empty array = UI-only flag) */
+  features: z.record(z.string(), z.array(z.string())).optional(),
 })

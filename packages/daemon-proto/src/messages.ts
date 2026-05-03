@@ -18,6 +18,7 @@ const stateSchema = z.enum([
   "stopping",
   "stopped",
   "crashed",
+  "restoring_backup",
 ])
 
 const helloSchema = z.object({
@@ -40,12 +41,19 @@ const errorSchema = z.object({
     .optional(),
 })
 
+const configFilePatchSchema = z.object({
+  path: z.string(),
+  parser: z.enum(["properties", "json", "yaml", "ini", "toml", "xml"]),
+  patches: z.record(z.string(), z.string()),
+})
+
 const createContainerSchema = z.object({
   type: z.literal("server.create_container"),
   serverId: z.string(),
   dockerImage: z.string(),
   memoryLimitMb: z.number().int().nonnegative(),
   cpuLimitPercent: z.number().int().nonnegative(),
+  processLimit: z.number().int().nonnegative().default(256),
   diskLimitMb: z.number().int().nonnegative(),
   environment: z.record(z.string(), z.string()),
   portMappings: z.array(
@@ -58,6 +66,9 @@ const createContainerSchema = z.object({
   startupCommand: z.string(),
   stopSignal: z.string(),
   lifecycle: blueprintLifecycleSchema,
+  /** feature-name → console patterns to watch for (empty array = UI-only flag) */
+  features: z.record(z.string(), z.array(z.string())).default({}),
+  configFiles: z.array(configFilePatchSchema).default([]),
 })
 
 const runInstallSchema = z.object({
@@ -71,8 +82,42 @@ const runInstallSchema = z.object({
   environment: z.record(z.string(), z.string()),
 })
 
+const containerConfigSchema = z.object({
+  dockerImage: z.string(),
+  memoryLimitMb: z.number().int().nonnegative(),
+  cpuLimitPercent: z.number().int().nonnegative(),
+  processLimit: z.number().int().nonnegative().default(256),
+  diskLimitMb: z.number().int().nonnegative(),
+  environment: z.record(z.string(), z.string()),
+  portMappings: z.array(
+    z.object({
+      ip: z.string(),
+      port: z.number().int().min(1).max(65535),
+      containerPort: z.number().int().min(1).max(65535),
+    })
+  ),
+  startupCommand: z.string(),
+  stopSignal: z.string(),
+  lifecycle: blueprintLifecycleSchema,
+  /** feature-name → console patterns to watch for (empty array = UI-only flag) */
+  features: z.record(z.string(), z.array(z.string())).default({}),
+  configFiles: z.array(configFilePatchSchema).default([]),
+})
+
+const startServerSchema = z.object({
+  type: z.literal("server.start"),
+  serverId: z.string(),
+  container: containerConfigSchema,
+})
+
+const stopServerSchema = z.object({
+  type: z.literal("server.stop"),
+  serverId: z.string(),
+  stopSignal: z.string(),
+})
+
 const simpleServerActionSchema = z.object({
-  type: z.enum(["server.start", "server.stop", "server.kill"]),
+  type: z.literal("server.kill"),
   serverId: z.string(),
 })
 
@@ -83,7 +128,7 @@ const deleteServerSchema = z.object({
 })
 
 const stateChangedSchema = z.object({
-  type: z.literal("server.state_changed"),
+  type: z.literal("server.state.changed"),
   serverId: z.string(),
   from: stateSchema,
   to: stateSchema,
@@ -100,6 +145,8 @@ const statsSchema = z.object({
   diskBytes: z.number().nonnegative(),
   networkRxBytes: z.number().nonnegative(),
   networkTxBytes: z.number().nonnegative(),
+  diskReadBytes: z.number().nonnegative().optional(),
+  diskWriteBytes: z.number().nonnegative().optional(),
   at: z.string(),
 })
 
@@ -190,6 +237,8 @@ export const daemonMessageSchema = z.union([
   errorSchema,
   createContainerSchema,
   runInstallSchema,
+  startServerSchema,
+  stopServerSchema,
   simpleServerActionSchema,
   deleteServerSchema,
   stateChangedSchema,

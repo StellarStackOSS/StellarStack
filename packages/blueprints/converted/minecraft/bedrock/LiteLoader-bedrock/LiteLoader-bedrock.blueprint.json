@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "name": "Liteloader Bedrock Dedicated Server",
+  "author": "frizth_tatierra@informatics.edu.ph",
+  "description": "LiteLoaderBDS - Epoch-making & Cross-language Bedrock Dedicated Servers Plugin Loader\r\n\r\nLiteLoaderBDS is an unofficial plugin loader that provides basic API support for Bedrock Dedicated Server, with a massive API, lots of packed utility interfaces, a rich event system and powerful basic interface support.",
+  "dockerImages": {
+    "ghcr.io/ptero-eggs/yolks:wine_latest": "ghcr.io/ptero-eggs/yolks:wine_latest"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "./lae-ll-launcher bedrock_server_mod.exe",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-port": "{{SERVER_PORT}}",
+        "server-name": "{{server.build.env.SERVERNAME}}",
+        "gamemode": "{{server.build.env.GAMEMODE}}",
+        "difficulty": "{{server.build.env.DIFFICULTY}}",
+        "max-players": "{{server.build.env.MAXPLAYERS}}",
+        "level-name": "{{server.build.env.WORLDNAME}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "BDS_VERSION",
+      "name": "Bedrock Dedicated Server Version",
+      "description": "Insert BDS Version",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    },
+    {
+      "key": "LL_VERSION",
+      "name": "Liteloader Version",
+      "description": "Insert Liteloader Version from Github Releases",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    },
+    {
+      "key": "WINEDEBUG",
+      "name": "Wine",
+      "default": "-all",
+      "userViewable": false,
+      "userEditable": false,
+      "rules": "required|string|max:20"
+    },
+    {
+      "key": "SERVERNAME",
+      "name": "Server Name",
+      "description": "The name for the server",
+      "default": "Bedrock Dedicated Server",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    },
+    {
+      "key": "GAMEMODE",
+      "name": "Gamemode",
+      "description": "Allowed values: \"survival\", \"creative\", or \"adventure\"",
+      "default": "survival",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    },
+    {
+      "key": "DIFFICULTY",
+      "name": "Difficulty",
+      "description": "Allowed values: \"peaceful\", \"easy\", \"normal\", or \"hard\"",
+      "default": "easy",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    },
+    {
+      "key": "MAXPLAYERS",
+      "name": "Maximum Players",
+      "description": "Maximum players to join on the server",
+      "default": "10",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|integer"
+    },
+    {
+      "key": "WORLDNAME",
+      "name": "World Name",
+      "description": "World/Level name to use for the server",
+      "default": "Bedrock level",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/bash\n# Liteloader First-time Install Script\n\napk update\napk add gzip jq curl wine\ncd /mnt/server\n\nfor file in *; do\n    if [ \"$file\" != \"allowlist.json\" ] && [ \"$file\" != \"permissions.json\" ] && [ \"$file\" != \"server.properties\" ] && [ \"$file\" != \"plugins\" ] && [ \"$file\" != \"world\" ]; then\n        if [ -d \"$file\" ]; then\n            rm -rf \"$file\"  # Remove directories recursively\n        else\n            rm \"$file\"  # Remove files\n        fi\n    fi\ndone\n\n# Download Minecraft BDS\nRANDVERSION=$(echo $((1 + $RANDOM % 4000)))\n\nif [ -z \"${BDS_VERSION}\" ] || [ \"${BDS_VERSION}\" == \"latest\" ]; then\n    echo -e \"\\n Downloading latest Bedrock server\"\n    curl -L -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.$RANDVERSION.212 Safari/537.36\" -H \"Accept-Language: en\" -H \"Accept-Encoding: gzip, deflate\" -o versions.html.gz https://www.minecraft.net/en-us/download/server/bedrock\n    DOWNLOAD_URL=$(zgrep -o 'https://minecraft.azureedge.net/bin-win/[^\"]*' versions.html.gz)\nelse \n    echo -e \"\\n Downloading ${BDS_VERSION} Bedrock server\"\n    DOWNLOAD_URL=https://minecraft.azureedge.net/bin-win/bedrock-server-$BDS_VERSION.zip\nfi\n\nDOWNLOAD_FILE=$(echo ${DOWNLOAD_URL} | cut -d\"/\" -f5) # Retrieve archive name\n\necho -e \"Downloading files from: $DOWNLOAD_URL\"\n\ncurl -L -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.$RANDVERSION.212 Safari/537.36\" -H \"Accept-Language: en\" -o $DOWNLOAD_FILE $DOWNLOAD_URL\n\necho -e \"Unpacking server files\"\nunzip -o $DOWNLOAD_FILE\n\necho -e \"Cleaning up after installing\"\nrm $DOWNLOAD_FILE\nrm versions.html.gz\n\n\nLATEST_JSON=$(curl --silent \"https://api.github.com/repos/LiteLDev/LiteLoaderBDS/releases/latest\")\nRELEASES=$(curl --silent \"https://api.github.com/repos/LiteLDev/LiteLoaderBDS/releases\")\n\nif [ -z \"${LL_VERSION}\" ] || [ \"${LL_VERSION}\" == \"latest\" ]; then\n    echo -e \"\\n Downloading latest LiteLoaderBDS from GitHub\"\n    DOWNLOAD_GIT_URL=$(echo ${LATEST_JSON} | jq .assets | jq -r .[].browser_download_url | head -1)\nelse\n    VERSION_CHECK=$(echo ${RELEASES} | jq -r --arg VERSION \"${VERSION}\" '.[] | select(.tag_name==$VERSION) | .tag_name')\n    if [ \"${LL_VERSION}\" == \"${VERSION_CHECK}\" ]; then\n        echo -e \"\\n Downloading ${LL_VERSION} LiteLoaderBDS from GitHub\"\n        DOWNLOAD_GIT_URL=$(echo ${RELEASES} | jq -r --arg VERSION \"${LL_VERSION}\" '.[] | select(.tag_name==$LL_VERSION) | .assets[].browser_download_url' | head -1)\n    else\n        echo -e \"defaulting to latest release\"\n        DOWNLOAD_GIT_URL=$(echo ${LATEST_JSON} | jq .assets | jq -r .[].browser_download_url | head -1)\n    fi\nfi\n\ncurl -sSL -o LiteLoader.zip ${DOWNLOAD_GIT_URL}\nunzip -o LiteLoader.zip\nmv -f LiteLoaderBDS/* /mnt/server\nrm LiteLoader.zip\ntimeout 30s wine PeEditor.exe\nrm -rf '/root/.wine' /mnt/server/LiteLoaderBDS/\n\n# Downloading Launcher and finishing touches\nwget https://io.ivampiresp.com/d/Software/MCServer/BDS/LiteLoader/lae-ll-launcher\nchmod +x lae-ll-launcher\necho \"Finished Downloading Liteloader...\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "IPv4 supported"
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  }
+}

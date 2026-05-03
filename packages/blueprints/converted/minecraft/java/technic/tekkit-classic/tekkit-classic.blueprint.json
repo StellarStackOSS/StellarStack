@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "name": "Tekkit Classic",
+  "author": "geoffrey@remedygaming.net",
+  "description": "Created by the Technic team, Tekkit Classic is a modpack for the record breaking sandbox construction game Minecraft. \r\nIt brings together some of the best mods from the Minecraft community for automating, industrializing and powering your worlds and bundles them into one easy download!",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar Tekkit.jar",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MODPACK_VERSION",
+      "name": "Modpack Version",
+      "default": "3.1.2",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/tekkit/Tekkit_Server_$MODPACK_VERSION.zip -o Tekkit_Server_$MODPACK_VERSION.zip\n\nunzip Tekkit_Server_$MODPACK_VERSION.zip\n\nrm -rf Tekkit_Server_$MODPACK_VERSION.zip\n\nrm launch.bat\n\nrm launch.sh\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

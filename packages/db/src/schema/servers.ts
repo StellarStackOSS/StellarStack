@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -49,6 +50,8 @@ export const serversTable = pgTable(
     cpuLimitPercent: bigint("cpu_limit_percent", { mode: "number" }).notNull(),
     diskLimitMb: bigint("disk_limit_mb", { mode: "number" }).notNull(),
     dockerImage: text("docker_image").notNull(),
+    startupExtra: text("startup_extra"),
+    allocationLimit: integer("allocation_limit").notNull().default(3),
     status: text("status").$type<ServerLifecycleState>().notNull(),
     suspended: boolean("suspended").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })

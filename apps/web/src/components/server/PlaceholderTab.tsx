@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+import { Card, CardInner } from "@workspace/ui/components/card"
+
 /**
  * Shared empty-state card used by tabs whose features land in later
  * milestones (Backups / Schedules / Users / Settings). Keeps the visual
@@ -25,12 +27,14 @@ export const PlaceholderTab = ({
           description
         )}
       </header>
-      <section className="border-border bg-card text-card-foreground flex min-h-48 items-center justify-center rounded-md border p-6">
-        <div className="text-muted-foreground text-center text-xs">
-          <p className="mb-1">Coming soon{milestone ? ` (${milestone})` : ""}.</p>
-          <p>This tab is wired into the layout already; the feature lands shortly.</p>
-        </div>
-      </section>
+      <Card>
+        <CardInner className="p-3 flex min-h-48 items-center justify-center">
+          <div className="text-muted-foreground text-center text-xs">
+            <p className="mb-1">Coming soon{milestone ? ` (${milestone})` : ""}.</p>
+            <p>This tab is wired into the layout already; the feature lands shortly.</p>
+          </div>
+        </CardInner>
+      </Card>
     </div>
   )
 }

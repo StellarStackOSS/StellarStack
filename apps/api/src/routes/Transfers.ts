@@ -67,10 +67,10 @@ export const buildTransfersRoute = (params: {
     const { serverId } = c.req.param()
     const access = await loadServerAccess(db, user, serverId)
 
-    if (access.role === "subuser") {
+    if (user.isAdmin !== true) {
       throw new ApiException("permissions.denied", {
         status: 403,
-        params: { statement: "transfers.write" },
+        params: { statement: "admin" },
       })
     }
 

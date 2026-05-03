@@ -1,7 +1,51 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
+import {
+  type ColumnDef,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Search01Icon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import { Input } from "@workspace/ui/components/input"
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@workspace/ui/components/sheet"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
 import { blueprintSchema } from "@workspace/shared/blueprint"
 import type { Blueprint } from "@workspace/shared/blueprint.types"
 
@@ -9,11 +53,13 @@ import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
 import {
   useBlueprints,
-  useCreateBlueprint,
-  useDeleteBlueprint,
   useUpdateBlueprint,
+  useDeleteBlueprint,
 } from "@/hooks/useBlueprints"
 import type { BlueprintListRow } from "@/hooks/useBlueprints.types"
+
+const stringifyName = (name: BlueprintListRow["name"]): string =>
+  typeof name === "string" ? name : `[${(name as { key: string }).key}]`
 
 const blueprintRowToBlueprint = (row: BlueprintListRow): Blueprint => ({
   schemaVersion: 1,
@@ -59,68 +105,40 @@ const blankBlueprint: Blueprint = {
       onTimeout: "force_kill",
     },
     crashDetection: {
-      probes: [
-        { strategy: "container_exit", ifNotInState: ["stopping", "stopped"] },
-      ],
+      probes: [{ strategy: "container_exit", ifNotInState: ["stopping", "stopped"] }],
     },
   },
 }
 
-const stringifyName = (name: BlueprintListRow["name"]): string =>
-  typeof name === "string" ? name : `[${name.key}]`
-
-/**
- * Admin-only blueprint browser + JSON editor. Validation runs client-side
- * via the same Zod schema the API enforces, so an invalid edit short-circuits
- * before the round-trip; any server-side rejection still surfaces through
- * the canonical translation-key envelope.
- */
-export const AdminBlueprintsPage = () => {
+const BlueprintEditorSheet = ({
+  row,
+  onClose,
+}: {
+  row: BlueprintListRow
+  onClose: () => void
+}) => {
   const { t } = useTranslation()
-  const blueprintsQuery = useBlueprints()
-  const createMutation = useCreateBlueprint()
   const updateMutation = useUpdateBlueprint()
-  const deleteMutation = useDeleteBlueprint()
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [draftJson, setDraftJson] = useState<string>(() =>
-    JSON.stringify(blankBlueprint, null, 2)
+  const [draftJson, setDraftJson] = useState(() =>
+    JSON.stringify(blueprintRowToBlueprint(row), null, 2)
   )
   const [errors, setErrors] = useState<string[]>([])
   const [saveError, setSaveError] = useState<string | null>(null)
-
-  const handleSelect = (row: BlueprintListRow) => {
-    setSelectedId(row.id)
-    setDraftJson(JSON.stringify(blueprintRowToBlueprint(row), null, 2))
-    setErrors([])
-    setSaveError(null)
-  }
-
-  const handleNew = () => {
-    setSelectedId(null)
-    setDraftJson(JSON.stringify(blankBlueprint, null, 2))
-    setErrors([])
-    setSaveError(null)
-  }
 
   const parseDraft = (): Blueprint | null => {
     let raw: unknown
     try {
       raw = JSON.parse(draftJson)
-    } catch (err) {
-      setErrors([
-        `JSON parse error: ${err instanceof Error ? err.message : "unknown"}`,
-      ])
+    } catch {
+      setErrors([t("blueprints.parse.invalid_json", { ns: "errors" })])
       return null
     }
     const result = blueprintSchema.safeParse(raw)
     if (!result.success) {
-      setErrors(
-        result.error.issues.map(
-          (issue) =>
-            `${issue.path.length === 0 ? "(root)" : issue.path.join(".")}: ${issue.message}`
-        )
-      )
+      setErrors(result.error.issues.map((issue) =>
+        `${issue.path.length === 0 ? "(root)" : issue.path.join(".")}: ${issue.message}`
+      ))
       return null
     }
     setErrors([])
@@ -130,155 +148,276 @@ export const AdminBlueprintsPage = () => {
   const handleSave = async () => {
     setSaveError(null)
     const parsed = parseDraft()
-    if (parsed === null) {
-      return
-    }
+    if (parsed === null) return
     try {
-      if (selectedId !== null) {
-        await updateMutation.mutateAsync({ id: selectedId, body: parsed })
-      } else {
-        const created = await createMutation.mutateAsync(parsed)
-        setSelectedId(created.blueprint.id)
-      }
+      await updateMutation.mutateAsync({ id: row.id, body: parsed })
+      onClose()
     } catch (err) {
       if (err instanceof ApiFetchError) {
         const fields = err.body.error.fields
         if (fields !== undefined && fields.length > 0) {
-          setErrors(
-            fields.map(
-              (field) =>
-                `${field.path}: ${t(field.code, {
-                  ns: "validation",
-                  defaultValue: field.code,
-                  ...(field.params ?? {}),
-                })}`
-            )
-          )
+          setErrors(fields.map((field) =>
+            `${field.path}: ${t(field.code, { ns: "validation", defaultValue: field.code, ...(field.params ?? {}) })}`
+          ))
           return
         }
         setSaveError(translateApiError(t, err.body.error))
         return
       }
-      if (err instanceof Error) {
-        setSaveError(err.message)
-      }
+      setSaveError(t("internal.unexpected", { ns: "errors" }))
     }
   }
 
-  const handleDelete = async () => {
-    if (selectedId === null) {
-      return
-    }
-    if (!window.confirm("Delete this blueprint? This cannot be undone.")) {
-      return
-    }
-    await deleteMutation.mutateAsync(selectedId)
-    handleNew()
-  }
-
-  const rows = blueprintsQuery.data?.blueprints ?? []
+  const isPending = updateMutation.isPending
 
   return (
-    <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-base font-semibold">Blueprints</h1>
-        <p className="text-muted-foreground text-xs">
-          JSON-validated definitions for new server templates.
-        </p>
-      </header>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
-        <aside className="border-border bg-card text-card-foreground flex flex-col gap-2 rounded-md border p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Blueprints</h2>
-            <Button size="xs" variant="outline" onClick={handleNew}>
-              + New
-            </Button>
-          </div>
-          {blueprintsQuery.isLoading ? (
-            <p className="text-muted-foreground text-xs">Loading…</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
-              No blueprints yet. Use “+ New” to create one.
-            </p>
-          ) : (
-            <ul className="flex flex-col">
-              {rows.map((row) => (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(row)}
-                    className={`w-full rounded px-2 py-1 text-left text-xs ${
-                      selectedId === row.id
-                        ? "bg-muted text-foreground"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="font-medium">{stringifyName(row.name)}</div>
-                    <div className="text-muted-foreground">
-                      {Object.keys(row.dockerImages).length} image
-                      {Object.keys(row.dockerImages).length === 1 ? "" : "s"} ·{" "}
-                      {row.variables.length} variable
-                      {row.variables.length === 1 ? "" : "s"}
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
-        <section className="border-border bg-card text-card-foreground flex flex-col gap-3 rounded-md border p-4">
-          <header className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">
-              {selectedId !== null ? "Edit blueprint" : "New blueprint"}
-            </h2>
-            <div className="flex gap-2">
-              {selectedId !== null ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                >
-                  Delete
-                </Button>
-              ) : null}
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={
-                  createMutation.isPending || updateMutation.isPending
-                }
-              >
-                {selectedId !== null ? "Save changes" : "Create"}
-              </Button>
-            </div>
-          </header>
+    <Sheet open onOpenChange={(v) => { if (!v) onClose() }}>
+      <SheetContent side="right" className="w-full max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{t("blueprints.edit_title")}</SheetTitle>
+          <SheetDescription>{stringifyName(row.name)}</SheetDescription>
+        </SheetHeader>
+        <SheetBody>
           <textarea
             value={draftJson}
             onChange={(e) => setDraftJson(e.target.value)}
             spellCheck={false}
-            className="border-border bg-background min-h-[24rem] rounded-md border p-3 font-mono text-xs"
+            className="border-border bg-background min-h-[32rem] w-full rounded-md border p-3 font-mono text-xs"
           />
-          {errors.length > 0 ? (
-            <div
-              className="border-destructive bg-destructive/10 text-destructive rounded border px-3 py-2 text-xs"
-              role="alert"
-            >
-              <p className="mb-1 font-medium">Schema errors</p>
+          {errors.length > 0 && (
+            <div className="border-destructive bg-destructive/10 text-destructive rounded border px-3 py-2 text-xs" role="alert">
+              <p className="mb-1 font-medium">{t("blueprints.schema_errors_heading")}</p>
               <ul className="list-disc space-y-0.5 pl-4">
-                {errors.map((message, index) => (
-                  <li key={index}>{message}</li>
-                ))}
+                {errors.map((message, index) => <li key={index}>{message}</li>)}
               </ul>
             </div>
-          ) : null}
-          {saveError !== null ? (
-            <p className="text-destructive text-xs" role="alert">
-              {saveError}
-            </p>
-          ) : null}
-        </section>
+          )}
+          {saveError !== null && (
+            <p className="text-destructive text-xs" role="alert">{saveError}</p>
+          )}
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => void handleSave()} disabled={isPending}>
+              {isPending ? t("settings.saving") : t("blueprints.save_changes")}
+            </Button>
+          </div>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+const DeleteBlueprintDialog = ({
+  row,
+  onClose,
+}: {
+  row: BlueprintListRow
+  onClose: () => void
+}) => {
+  const { t } = useTranslation()
+  const deleteMutation = useDeleteBlueprint()
+  const [error, setError] = useState<string | null>(null)
+
+  const handleDelete = async () => {
+    setError(null)
+    try {
+      await deleteMutation.mutateAsync(row.id)
+      onClose()
+    } catch (err) {
+      setError(
+        err instanceof ApiFetchError
+          ? translateApiError(t, err.body.error)
+          : t("internal.unexpected", { ns: "errors" })
+      )
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose() }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("blueprints.delete_button")}</DialogTitle>
+          <DialogDescription>{t("blueprints.confirm_delete")}</DialogDescription>
+        </DialogHeader>
+        {error !== null && <p className="text-destructive text-xs" role="alert">{error}</p>}
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>{t("actions.cancel")}</Button>
+          <Button variant="destructive" size="sm" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
+            {deleteMutation.isPending ? "Deleting…" : t("actions.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export const AdminBlueprintsPage = () => {
+  const { t } = useTranslation()
+  const { data, isLoading } = useBlueprints()
+
+  const [globalFilter, setGlobalFilter] = useState("")
+  const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }])
+  const [editorRow, setEditorRow] = useState<BlueprintListRow | null>(null)
+  const [deleteRow, setDeleteRow] = useState<BlueprintListRow | null>(null)
+
+  const blueprints = data?.blueprints ?? []
+
+  const columns = useMemo<ColumnDef<BlueprintListRow>[]>(
+    () => [
+      {
+        id: "name",
+        accessorFn: (r) => stringifyName(r.name),
+        header: t("nodes.col.name"),
+        cell: ({ row }) => (
+          <div>
+            <p className="font-medium">{stringifyName(row.original.name)}</p>
+            {row.original.description !== undefined && row.original.description !== null && (
+              <p className="text-muted-foreground text-xs">{String(row.original.description)}</p>
+            )}
+          </div>
+        ),
+        filterFn: "includesString",
+      },
+      {
+        id: "images",
+        header: "Docker images",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">
+            {Object.keys(row.original.dockerImages as Record<string, string>).join(", ")}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "variables",
+        header: "Variables",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">
+            {(row.original.variables as unknown[]).length}
+          </span>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                ···
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setEditorRow(row.original)}>
+                {t("blueprints.edit_title")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => { e.stopPropagation(); setDeleteRow(row.original) }}
+              >
+                {t("blueprints.delete_button")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+        enableSorting: false,
+        enableGlobalFilter: false,
+      },
+    ],
+    [t]
+  )
+
+  const table = useReactTable({
+    data: blueprints,
+    columns,
+    state: { globalFilter, sorting },
+    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    globalFilterFn: "includesString",
+    getRowId: (row) => row.id,
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <header className="flex items-start justify-between">
+        <div>
+          <h1 className="text-base font-semibold">{t("blueprints.title")}</h1>
+          <p className="text-muted-foreground text-xs">{t("blueprints.description")}</p>
+        </div>
+        <Button size="sm" asChild>
+          <Link to="/admin/create-blueprint">{t("blueprints.new_button")}</Link>
+        </Button>
+      </header>
+
+      <div className="relative max-w-sm">
+        <HugeiconsIcon icon={Search01Icon} size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={t("audit.search_placeholder")}
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="pl-8 text-sm h-8"
+        />
       </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id}>
+                {hg.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground text-sm">
+                  {t("blueprints.loading")}
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="py-6 text-center text-muted-foreground text-sm">
+                  {t("blueprints.empty")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} className="cursor-pointer" onClick={() => setEditorRow(row.original)}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {editorRow !== null && (
+        <BlueprintEditorSheet
+          row={editorRow}
+          onClose={() => setEditorRow(null)}
+        />
+      )}
+      {deleteRow !== null && (
+        <DeleteBlueprintDialog row={deleteRow} onClose={() => setDeleteRow(null)} />
+      )}
     </div>
   )
 }

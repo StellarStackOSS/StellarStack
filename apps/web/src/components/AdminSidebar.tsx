@@ -4,6 +4,7 @@ import {
   ArrowLeft01Icon,
   AuditIcon,
   CubeIcon,
+  ServerStack02Icon,
   ServerStackIcon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
@@ -39,6 +40,12 @@ export const AdminSidebar = ({
       isActive: location.pathname.startsWith("/admin/nodes"),
     },
     {
+      title: "Servers",
+      icon: ServerStack02Icon,
+      to: "/admin/servers",
+      isActive: location.pathname.startsWith("/admin/servers"),
+    },
+    {
       title: "Blueprints",
       icon: CubeIcon,
       to: "/admin/blueprints",
@@ -59,7 +66,7 @@ export const AdminSidebar = ({
   ]
 
   return (
-    <Sidebar collapsible="icon" variant="floating" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -87,7 +94,7 @@ export const AdminSidebar = ({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain label="Manage" items={items} />
+        <NavMain label="Manage" items={items} layoutId="admin-nav-pill" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

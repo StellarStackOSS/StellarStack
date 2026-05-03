@@ -20,6 +20,7 @@ import { healthRoute } from "@/routes/Health"
 import { buildMeRoute } from "@/routes/Me"
 import { buildReadyRoute } from "@/routes/Ready"
 import { buildSchedulesRoute } from "@/routes/Schedules"
+import { buildServerAllocationsRoute } from "@/routes/ServerAllocations"
 import { buildServersRoute } from "@/routes/Servers"
 import { buildSubusersRoute } from "@/routes/Subusers"
 import { buildTransfersRoute } from "@/routes/Transfers"
@@ -59,6 +60,7 @@ export const createApp = (params: {
     .route("/me", buildMeRoute({ auth, db }))
     .route("/admin", buildAdminRoute({ auth, db, env, queues }))
     .route("/servers", buildServersRoute({ auth, db, queues }))
+    .route("/servers", buildServerAllocationsRoute({ auth, db }))
     .route("/servers", buildBackupsRoute({ auth, db, queues }))
     .route("/servers", buildSubusersRoute({ auth, db }))
     .route("/servers", buildSchedulesRoute({ auth, db }))

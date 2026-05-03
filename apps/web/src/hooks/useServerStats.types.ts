@@ -7,8 +7,13 @@ export type StatsSample = {
   memoryBytes: number
   memoryLimitBytes: number
   cpuFraction: number
+  diskBytes: number
   networkRxBytes: number
   networkTxBytes: number
+  diskReadBytes: number
+  diskWriteBytes: number
+  /** ISO string of when the container started (from Docker inspect via daemon). */
+  startedAt?: string
 }
 
 /**

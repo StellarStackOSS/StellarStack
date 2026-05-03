@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "name": "Nukkit",
+  "author": "parker@parkervcp.com",
+  "description": "Nukkit is a nuclear-powered server software for Minecraft Bedrock Edition\r\n\r\nhttps://cloudburstmc.org",
+  "dockerImages": {
+    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}} --language eng",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the Nukkit jar file to run the server with.",
+      "default": "server.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "NUKKIT_VERSION",
+      "name": "Nukkit Version",
+      "description": "The snapshot version of Nukkit to download (e.g. 1.0-20250805.172443-1219). Use \"latest\" for latest or leave empty and download manually.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string|max:50"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Nukkit Installation Script\n#\n# Server Files: /mnt/server\napk add --no-cache openssl\n\ncd /mnt/server\n\n## Only download if a path is provided, otherwise continue.\nif [ \"${NUKKIT_VERSION}\" == \"latest\" ]; then\n    wget https://repo.opencollab.dev/api/maven/latest/file/maven-snapshots/cn/nukkit/nukkit/1.0-SNAPSHOT?extension=jar -O ${SERVER_JARFILE}\nelif [ -n \"${NUKKIT_VERSION}\" ]; then\n    wget https://repo.opencollab.dev/maven-snapshots/cn/nukkit/nukkit/1.0-SNAPSHOT/nukkit-${NUKKIT_VERSION}.jar -O ${SERVER_JARFILE}\nfi\n\necho -s \"Install completed!\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  }
+}

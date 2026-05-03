@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stellarstack/daemon/internal/config"
+	"github.com/stellarstack/daemon/internal/configpatch"
 	"github.com/stellarstack/daemon/internal/docker"
 	"github.com/stellarstack/daemon/internal/files"
 	"github.com/stellarstack/daemon/internal/lifecycle"
@@ -29,6 +30,30 @@ type Sender interface {
 	Send(ctx context.Context, payload []byte) error
 }
 
+// indirectSender wraps a replaceable Sender so background goroutines
+// (lifecycle probes, stats streams) always write to the current WS
+// connection rather than the one that was live when they were launched.
+type indirectSender struct {
+	mu     sync.RWMutex
+	sender Sender
+}
+
+func (s *indirectSender) Send(ctx context.Context, payload []byte) error {
+	s.mu.RLock()
+	cur := s.sender
+	s.mu.RUnlock()
+	if cur == nil {
+		return nil
+	}
+	return cur.Send(ctx, payload)
+}
+
+func (s *indirectSender) set(sender Sender) {
+	s.mu.Lock()
+	s.sender = sender
+	s.mu.Unlock()
+}
+
 // Handler routes inbound messages to docker calls. Per-server state (the
 // lifecycle.Watcher and its blueprint lifecycle config) is held in
 // `watchers` so power-action and lifecycle-transition handling can find
@@ -38,6 +63,8 @@ type Handler struct {
 	docker   *docker.Client
 	files    *files.Manager
 	Transfer *transfer.Registry
+
+	bgSend *indirectSender // shared by all watchers/stats goroutines; updated on reconnect
 
 	mu       sync.Mutex
 	watchers map[string]*serverState
@@ -50,6 +77,7 @@ type serverState struct {
 	containerName string
 	watcher       *lifecycle.Watcher
 	lifecycle     lifecycle.Lifecycle
+	stopSignal    string // raw stop signal from blueprint; "^cmd" means write cmd to stdin
 	statsCancel   context.CancelFunc
 }
 
@@ -57,11 +85,78 @@ type serverState struct {
 func New(cfg *config.Config) *Handler {
 	return &Handler{
 		cfg:      cfg,
-		docker:   docker.New(""),
+		docker:   docker.New(cfg.ResolvedDockerSocket()),
 		files:    files.New(cfg.DataDir),
 		Transfer: transfer.NewRegistry(),
+		bgSend:   &indirectSender{},
 		watchers: map[string]*serverState{},
 	}
+}
+
+// SetSender replaces the shared background sender used by all lifecycle
+// watchers and stats goroutines. Called by the ws package on every new
+// connection so in-flight goroutines write to the live socket.
+func (h *Handler) SetSender(s Sender) {
+	h.bgSend.set(s)
+}
+
+// runSyncStop performs the configured stop sequence and blocks until the
+// container has exited (or has been force-killed after the grace timeout).
+// `signal` may be empty (defer to Docker's container-level stop signal),
+// "^cmd" (write `cmd` to the container's stdin), or a signal name like
+// "SIGTERM". Mirrors Wings' Environment.WaitForStop.
+func (h *Handler) runSyncStop(containerName, signal string, graceSeconds int) error {
+	if graceSeconds <= 0 {
+		graceSeconds = 30
+	}
+
+	if strings.HasPrefix(signal, "^") {
+		cmd := strings.TrimPrefix(signal, "^")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		conn, _, connErr := h.docker.AttachConn(ctx, containerName)
+		cancel()
+		if connErr == nil {
+			_, _ = io.WriteString(conn, cmd+"\n")
+			conn.Close()
+		} else {
+			log.Printf("daemon: stop attach: %v", connErr)
+		}
+
+		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Duration(graceSeconds)*time.Second)
+		defer waitCancel()
+		exited := h.docker.WaitForExit(waitCtx, containerName, 0)
+		if !exited {
+			killCtx, killCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer killCancel()
+			if err := h.docker.KillContainer(killCtx, containerName); err != nil {
+				return fmt.Errorf("force kill after grace: %w", err)
+			}
+			finalCtx, finalCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer finalCancel()
+			h.docker.WaitForExit(finalCtx, containerName, 0)
+		}
+		return nil
+	}
+
+	// Signal-based stop (or empty signal — Docker uses the container's
+	// configured StopSignal in that case). StopContainer issues the signal
+	// and waits up to graceSeconds before SIGKILL'ing.
+	stopCtx, cancel := context.WithTimeout(context.Background(), time.Duration(graceSeconds+10)*time.Second)
+	defer cancel()
+	if err := h.docker.StopContainer(stopCtx, containerName, graceSeconds); err != nil {
+		// Docker's stop call itself failed — fall through to a kill so we
+		// still converge on a stopped container.
+		log.Printf("daemon: stop container: %v", err)
+		killCtx, killCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer killCancel()
+		if killErr := h.docker.KillContainer(killCtx, containerName); killErr != nil {
+			return fmt.Errorf("kill after stop failure: %w", killErr)
+		}
+	}
+	finalCtx, finalCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer finalCancel()
+	h.docker.WaitForExit(finalCtx, containerName, 0)
+	return nil
 }
 
 func (h *Handler) powerLock(serverID string) *sync.Mutex {
@@ -76,34 +171,87 @@ func (h *Handler) powerLock(serverID string) *sync.Mutex {
 	return h.powerLocks[serverID]
 }
 
+// dirSize returns the total byte size of all regular files under root.
+// Symlinks are not followed. Returns 0 on any error.
+func dirSize(root string) int64 {
+	var total int64
+	_ = filepath.Walk(root, func(_ string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		total += info.Size()
+		return nil
+	})
+	return total
+}
+
 // startStats launches a goroutine that streams Docker container stats and
-// emits server.stats frames via send. Any previously running stats goroutine
-// for the same server is cancelled first. The goroutine stops automatically
-// when the container exits or ctx is cancelled.
-func (h *Handler) startStats(ctx context.Context, state *serverState, send Sender) {
+// emits server.stats frames via the shared bgSend. Any previously running
+// stats goroutine for the same server is cancelled first. This is the
+// single producer of server.stats frames; lifecycle.Watcher does not run
+// its own stream so we don't double-emit.
+func (h *Handler) startStats(ctx context.Context, state *serverState) {
 	if state.statsCancel != nil {
 		state.statsCancel()
 	}
 	sctx, cancel := context.WithCancel(ctx)
 	state.statsCancel = cancel
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("daemon: stats stream panic: %v", r)
+			}
+		}()
+		serverID := strings.TrimPrefix(state.containerName, "stellar-")
+		serverDir := filepath.Join(h.cfg.DataDir, "servers", serverID)
+
+		// Capture container start time once so the frontend can compute uptime.
+		var startedAt string
+		if inspect, err := h.docker.InspectState(sctx, state.containerName); err == nil && inspect != nil {
+			startedAt = inspect.StartedAt
+		}
+
+		// Calculate disk usage once upfront, then refresh every 60 seconds.
+		// Walking the directory on every Docker stats frame (every ~1 s) would
+		// be too expensive for large server directories.
+		var diskBytes int64
+		diskBytes = dirSize(serverDir)
+		diskTicker := time.NewTicker(60 * time.Second)
+		defer diskTicker.Stop()
+
 		ch, err := h.docker.StatsStream(sctx, state.containerName)
 		if err != nil {
 			log.Printf("daemon: stats stream: %v", err)
 			return
 		}
-		for snap := range ch {
-			_ = writeEnvelope(sctx, send, "", map[string]any{
-				"type":             "server.stats",
-				"serverId":         strings.TrimPrefix(state.containerName, "stellar-"),
-				"memoryBytes":      snap.MemoryBytes,
-				"memoryLimitBytes": snap.MemoryLimitBytes,
-				"cpuFraction":      snap.CPUFraction,
-				"diskBytes":        int64(0),
-				"networkRxBytes":   snap.NetworkRxBytes,
-				"networkTxBytes":   snap.NetworkTxBytes,
-				"at":               time.Now().UTC().Format(time.RFC3339Nano),
-			})
+		for {
+			select {
+			case <-sctx.Done():
+				return
+			case snap, ok := <-ch:
+				if !ok {
+					return
+				}
+				frame := map[string]any{
+					"type":             "server.stats",
+					"serverId":         serverID,
+					"memoryBytes":      snap.MemoryBytes,
+					"memoryLimitBytes": snap.MemoryLimitBytes,
+					"cpuFraction":      snap.CPUFraction,
+					"diskBytes":        diskBytes,
+					"networkRxBytes":   snap.NetworkRxBytes,
+					"networkTxBytes":   snap.NetworkTxBytes,
+					"diskReadBytes":    snap.DiskReadBytes,
+					"diskWriteBytes":   snap.DiskWriteBytes,
+					"at":               time.Now().UTC().Format(time.RFC3339Nano),
+				}
+				if startedAt != "" {
+					frame["startedAt"] = startedAt
+				}
+				_ = writeEnvelope(sctx, h.bgSend, "", frame)
+			case <-diskTicker.C:
+				diskBytes = dirSize(serverDir)
+			}
 		}
 	}()
 }
@@ -116,32 +264,65 @@ func stopStats(state *serverState) {
 	}
 }
 
-// Resume scans Docker for already-running stellar-* containers and resumes
-// stats streaming for each. Called once after the daemon WS connects so the
-// panel receives stats for servers that were running before the daemon (re)started.
-func (h *Handler) Resume(ctx context.Context, send Sender) {
-	containers, err := h.docker.ListRunningContainers(ctx, "stellar-")
+// Resume is kept for callers that were already using it; it delegates to Reconcile.
+func (h *Handler) Resume(ctx context.Context) {
+	h.Reconcile(ctx)
+}
+
+// Reconcile scans all stellar-* Docker containers on connect/reconnect and
+// emits server.state.changed frames so the DB and panel reflect the actual
+// container state. Running containers also get stats streaming re-armed.
+// This corrects drift that accumulates when the daemon crashes while
+// containers keep running (or stop unexpectedly).
+func (h *Handler) Reconcile(ctx context.Context) {
+	containers, err := h.docker.ListContainers(ctx, "stellar-")
 	if err != nil {
-		log.Printf("daemon: resume scan: %v", err)
+		log.Printf("daemon: reconcile scan: %v", err)
 		return
 	}
+
+	type work struct {
+		state   *serverState
+		running bool
+	}
+	var jobs []work
+
 	h.mu.Lock()
 	for _, c := range containers {
-		if _, exists := h.watchers[strings.TrimPrefix(c.Name, "stellar-")]; exists {
-			continue // already tracked from a create-container in this session
+		if strings.HasPrefix(c.Name, "stellar-install-") {
+			continue
 		}
 		serverID := strings.TrimPrefix(c.Name, "stellar-")
-		w := lifecycle.New(serverID, c.Name, h.docker, send)
-		state := &serverState{
-			containerName: c.Name,
-			watcher:       w,
-			lifecycle:     lifecycle.Lifecycle{},
+		existing := h.watchers[serverID]
+		if existing == nil {
+			w := lifecycle.New(serverID, c.Name, h.docker, h.bgSend)
+			existing = &serverState{
+				containerName: c.Name,
+				watcher:       w,
+				lifecycle:     lifecycle.Lifecycle{},
+			}
+			h.watchers[serverID] = existing
 		}
-		h.watchers[serverID] = state
-		log.Printf("daemon: resume server=%s container=%s", serverID, c.Name)
-		go h.startStats(ctx, state, send)
+		jobs = append(jobs, work{state: existing, running: c.Running})
 	}
 	h.mu.Unlock()
+
+	for _, j := range jobs {
+		serverID := strings.TrimPrefix(j.state.containerName, "stellar-")
+		if j.running {
+			current := j.state.watcher.State()
+			if current == lifecycle.StateStopping || current == lifecycle.StateStarting {
+				// Already in a managed transition; reconcile must not clobber it.
+				continue
+			}
+			log.Printf("daemon: reconcile running server=%s", serverID)
+			j.state.watcher.SetState(ctx, lifecycle.StateRunning, "servers.lifecycle.reconcile.running")
+			go h.startStats(ctx, j.state)
+		} else {
+			log.Printf("daemon: reconcile stopped server=%s", serverID)
+			j.state.watcher.SetState(ctx, lifecycle.StateInstalledStopped, "servers.lifecycle.reconcile.stopped")
+		}
+	}
 }
 
 // HandleEnvelope inspects the message type and dispatches.
@@ -214,15 +395,18 @@ func (h *Handler) handleCreateContainer(
 		DockerImage     string            `json:"dockerImage"`
 		MemoryLimitMb   int64             `json:"memoryLimitMb"`
 		CPULimitPercent int64             `json:"cpuLimitPercent"`
+		ProcessLimit    int64             `json:"processLimit"`
 		Environment     map[string]string `json:"environment"`
 		PortMappings    []struct {
 			IP            string `json:"ip"`
 			Port          int    `json:"port"`
 			ContainerPort int    `json:"containerPort"`
 		} `json:"portMappings"`
-		StartupCommand string              `json:"startupCommand"`
-		StopSignal     string              `json:"stopSignal"`
-		Lifecycle      lifecycle.Lifecycle `json:"lifecycle"`
+		StartupCommand string                 `json:"startupCommand"`
+		StopSignal     string                 `json:"stopSignal"`
+		Lifecycle      lifecycle.Lifecycle    `json:"lifecycle"`
+		Features       map[string][]string    `json:"features"`
+		ConfigFiles    []configpatch.Spec     `json:"configFiles"`
 	}
 	if err := json.Unmarshal(raw, &msg); err != nil {
 		return writeError(ctx, send, id, "internal.unexpected", nil)
@@ -247,19 +431,28 @@ func (h *Handler) handleCreateContainer(
 	containerName := "stellar-" + msg.ServerID
 	_ = h.docker.RemoveContainer(ctx, containerName, true)
 
+	// Inject the resolved startup command as STARTUP so the image's entrypoint
+	// script (e.g. yolks entrypoint.sh) picks it up — mirrors Pelican Wings'
+	// GetEnvironmentVariables() which puts the invocation in $STARTUP rather
+	// than overriding Docker's Cmd slot.
+	env := make(map[string]string, len(msg.Environment)+1)
+	for k, v := range msg.Environment {
+		env[k] = v
+	}
+	env["STARTUP"] = configpatch.SubstituteVars(msg.StartupCommand, msg.Environment)
+
 	createCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	_, err := h.docker.CreateContainer(createCtx, docker.CreateContainerOptions{
 		Name:             containerName,
 		Image:            msg.DockerImage,
-		Env:              msg.Environment,
-		Cmd:              []string{"/bin/sh", "-lc", msg.StartupCommand},
-		StopSignal:       msg.StopSignal,
+		Env:              env,
+		StopSignal:       dockerStopSignal(msg.StopSignal),
 		BindMount:        bindMount,
 		MemoryLimitBytes: msg.MemoryLimitMb * 1024 * 1024,
 		CPULimitPercent:  msg.CPULimitPercent,
+		PidsLimit:        msg.ProcessLimit,
 		Ports:            ports,
-		ReadonlyRootfs:   true,
 	})
 	if err != nil {
 		log.Printf("daemon: create container: %v", err)
@@ -269,8 +462,9 @@ func (h *Handler) handleCreateContainer(
 	h.mu.Lock()
 	h.watchers[msg.ServerID] = &serverState{
 		containerName: containerName,
-		watcher:       lifecycle.New(msg.ServerID, containerName, h.docker, send),
+		watcher:       lifecycle.New(msg.ServerID, containerName, h.docker, h.bgSend),
 		lifecycle:     msg.Lifecycle,
+		stopSignal:    msg.StopSignal,
 	}
 	h.mu.Unlock()
 
@@ -313,7 +507,8 @@ func (h *Handler) handleRunInstall(
 		Entrypoint: msg.Install.Entrypoint,
 		Script:     msg.Install.Script,
 		Env:        msg.Environment,
-		BindMount:  bindMount,
+		ServerDir:  bindMount,
+		TmpDir:     filepath.Join(h.cfg.DataDir, "tmp"),
 	})
 
 	for {
@@ -356,7 +551,25 @@ func (h *Handler) handlePower(
 	action string,
 ) error {
 	var msg struct {
-		ServerID string `json:"serverId"`
+		ServerID   string `json:"serverId"`
+		StopSignal string `json:"stopSignal"`
+		Container  *struct {
+			DockerImage     string            `json:"dockerImage"`
+			MemoryLimitMb   int64             `json:"memoryLimitMb"`
+			CPULimitPercent int64             `json:"cpuLimitPercent"`
+			ProcessLimit    int64             `json:"processLimit"`
+			Environment     map[string]string `json:"environment"`
+			PortMappings    []struct {
+				IP            string `json:"ip"`
+				Port          int    `json:"port"`
+				ContainerPort int    `json:"containerPort"`
+			} `json:"portMappings"`
+			StartupCommand string                 `json:"startupCommand"`
+			StopSignal     string                 `json:"stopSignal"`
+			Lifecycle      lifecycle.Lifecycle    `json:"lifecycle"`
+			Features       map[string][]string    `json:"features"`
+			ConfigFiles    []configpatch.Spec     `json:"configFiles"`
+		} `json:"container"`
 	}
 	if err := json.Unmarshal(raw, &msg); err != nil {
 		return writeError(ctx, send, id, "internal.unexpected", nil)
@@ -367,6 +580,7 @@ func (h *Handler) handlePower(
 	lock := h.powerLock(msg.ServerID)
 	lock.Lock()
 	defer lock.Unlock()
+	log.Printf("daemon: power lock acquired action=%s server=%s", action, msg.ServerID)
 
 	h.mu.Lock()
 	state := h.watchers[msg.ServerID]
@@ -380,7 +594,7 @@ func (h *Handler) handlePower(
 	// daemon session (e.g. after a daemon restart). Without one, no
 	// state-change events are emitted to the panel.
 	if state == nil {
-		w := lifecycle.New(msg.ServerID, containerName, h.docker, send)
+		w := lifecycle.New(msg.ServerID, containerName, h.docker, h.bgSend)
 		state = &serverState{
 			containerName: containerName,
 			watcher:       w,
@@ -393,12 +607,88 @@ func (h *Handler) handlePower(
 
 	switch action {
 	case "start":
-		if err := h.docker.StartContainer(ctx, containerName); err != nil {
-			log.Printf("daemon: start container: %v", err)
+		if msg.Container == nil {
 			return writeError(ctx, send, id, "internal.unexpected", nil)
 		}
-		h.startStats(context.Background(), state, send)
+		c := msg.Container
+		bindMount := filepath.Join(h.cfg.DataDir, "servers", msg.ServerID)
+
+		// Persist lifecycle + stop signal before any async work so the watcher
+		// is up to date if a stop arrives while we're still setting up.
+		state.lifecycle = c.Lifecycle
+		state.stopSignal = c.StopSignal
+		h.mu.Lock()
+		h.watchers[msg.ServerID] = state
+		h.mu.Unlock()
+
+		// Emit starting immediately so the panel responds without waiting for
+		// EnsureImage + CreateContainer (which can take several seconds).
+		state.watcher.SetState(ctx, lifecycle.StateStarting, "servers.lifecycle.starting.requested")
+
+		if mkErr := os.MkdirAll(bindMount, 0o755); mkErr != nil {
+			log.Printf("daemon: start mkdir: %v", mkErr)
+			state.watcher.SetState(ctx, lifecycle.StateCrashed, "servers.lifecycle.start_failed")
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+
+		if len(c.ConfigFiles) > 0 {
+			configpatch.Apply(bindMount, c.ConfigFiles, c.Environment)
+		}
+
+		// Wait up to 15 seconds for the old container to exit gracefully before
+		// force-removing it. This lets shutdown logs stream to the console during
+		// restart and ensures ^stop completes before the new container starts.
+		h.docker.WaitForExit(ctx, containerName, 15*time.Second)
+		log.Printf("daemon: removing old container %s", containerName)
+		_ = h.docker.RemoveContainer(ctx, containerName, true)
+
+		log.Printf("daemon: ensuring image %s", c.DockerImage)
+		if imgErr := h.docker.EnsureImage(ctx, c.DockerImage); imgErr != nil {
+			log.Printf("daemon: ensure image on start: %v", imgErr)
+			state.watcher.SetState(ctx, lifecycle.StateCrashed, "servers.lifecycle.start_failed")
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		log.Printf("daemon: image ready")
+
+		ports := map[string]string{}
+		for _, pm := range c.PortMappings {
+			ports[fmt.Sprintf("%d/tcp", pm.ContainerPort)] = fmt.Sprintf("%d", pm.Port)
+		}
+
+		env := make(map[string]string, len(c.Environment)+1)
+		for k, v := range c.Environment {
+			env[k] = v
+		}
+		resolvedCmd := configpatch.SubstituteVars(c.StartupCommand, c.Environment)
+		env["STARTUP"] = resolvedCmd
+		log.Printf("daemon: creating container startup=%q", resolvedCmd)
+		if _, createErr := h.docker.CreateContainer(ctx, docker.CreateContainerOptions{
+			Name:             containerName,
+			Image:            c.DockerImage,
+			Env:              env,
+			StopSignal:       dockerStopSignal(c.StopSignal),
+			BindMount:        bindMount,
+			MemoryLimitBytes: c.MemoryLimitMb * 1024 * 1024,
+			CPULimitPercent:  c.CPULimitPercent,
+			PidsLimit:        c.ProcessLimit,
+			Ports:            ports,
+		}); createErr != nil {
+			log.Printf("daemon: create container on start: %v", createErr)
+			state.watcher.SetState(ctx, lifecycle.StateCrashed, "servers.lifecycle.start_failed")
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		log.Printf("daemon: container created, starting")
+
+		if err := h.docker.StartContainer(ctx, containerName); err != nil {
+			log.Printf("daemon: start container: %v", err)
+			state.watcher.SetState(ctx, lifecycle.StateCrashed, "servers.lifecycle.start_failed")
+			return writeError(ctx, send, id, "internal.unexpected", nil)
+		}
+		log.Printf("daemon: container started")
+
+		h.startStats(context.Background(), state)
 		if len(state.lifecycle.Starting.Probes) > 0 {
+			// beginPhase won't re-emit since we're already in starting state.
 			state.watcher.OnStarting(context.Background(), state.lifecycle)
 		} else {
 			state.watcher.SetState(context.Background(), lifecycle.StateRunning, "servers.lifecycle.started")
@@ -409,19 +699,36 @@ func (h *Handler) handlePower(
 			grace = state.lifecycle.Stopping.GraceTimeoutMs / 1000
 		}
 		stopStats(state)
-		if len(state.lifecycle.Stopping.Probes) > 0 {
-			state.watcher.OnStopping(context.Background(), state.lifecycle)
-		} else {
-			state.watcher.Stop()
-			state.watcher.SetState(context.Background(), lifecycle.StateStopping, "servers.lifecycle.stopping.requested")
+
+		// Cancel any in-flight stopping probe so the synchronous wait is the
+		// single source of the StateStopped emission. Probes can race with the
+		// wait below and emit a transition we then ignore — but stopping the
+		// probe loop avoids duplicate emits and stranded goroutines.
+		state.watcher.Stop()
+		state.watcher.SetState(context.Background(), lifecycle.StateStopping, "servers.lifecycle.stopping.requested")
+
+		// Resolve the stop signal: prefer what was stored at start time, then
+		// the value carried in this message (works after a daemon restart), then
+		// fall back to inspecting the container config.
+		sig := state.stopSignal
+		if sig == "" {
+			sig = msg.StopSignal
 		}
-		if err := h.docker.StopContainer(ctx, containerName, grace); err != nil {
-			log.Printf("daemon: stop container: %v", err)
-			return writeError(ctx, send, id, "internal.unexpected", nil)
+		if sig == "" {
+			sig = h.docker.InspectStopSignal(ctx, containerName)
 		}
-		if len(state.lifecycle.Stopping.Probes) == 0 {
-			state.watcher.SetState(context.Background(), lifecycle.StateStopped, "servers.lifecycle.stopped")
+		state.stopSignal = sig
+
+		// Synchronous stop — block until the container is gone, then emit
+		// StateStopped. Mirrors Pelican's WaitForStop. The handler returns its
+		// ack only after the transition completes so the worker (and through
+		// it, the UI) sees a definitive result rather than hoping a goroutine
+		// fires SetState later.
+		stopErr := h.runSyncStop(containerName, sig, grace)
+		if stopErr != nil {
+			log.Printf("daemon: stop sequence: %v", stopErr)
 		}
+		state.watcher.SetState(context.Background(), lifecycle.StateStopped, "servers.lifecycle.stopped")
 	case "kill":
 		stopStats(state)
 		if err := h.docker.KillContainer(ctx, containerName); err != nil {
@@ -733,4 +1040,15 @@ func (h *Handler) handleSendConsole(
 		return writeError(ctx, send, id, "internal.unexpected", nil)
 	}
 	return writeEnvelope(ctx, send, id, map[string]any{"type": "ack"})
+}
+
+// dockerStopSignal returns a valid Docker stop signal for the container config.
+// Signals prefixed with "^" are stdin commands (e.g. "^stop"), not Unix signals;
+// passing them to Docker would be silently ignored. Return empty string so Docker
+// defaults to SIGTERM, which triggers the grace period before force-kill.
+func dockerStopSignal(sig string) string {
+	if strings.HasPrefix(sig, "^") {
+		return ""
+	}
+	return sig
 }

@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/blueprints",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "convert": "tsx packages/blueprints/convert.ts",
+    "convert:all": "tsx packages/blueprints/convert.ts packages/blueprints/game-eggs/ --validate",
+    "convert:minecraft": "tsx packages/blueprints/convert.ts packages/blueprints/game-eggs/minecraft/ --validate"
+  },
+  "dependencies": {
+    "@workspace/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.0"
+  }
+}

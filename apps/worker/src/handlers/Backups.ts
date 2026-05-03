@@ -151,9 +151,16 @@ export const buildBackupCreateHandler = (params: {
 }
 
 /**
- * Build the `backup.restore` handler. Stops the server, asks the daemon
- * to unpack the archive over the bind-mount, then leaves the server in
- * `installed_stopped` for the operator to start.
+ * Build the `backup.restore` handler.
+ *
+ * Flow:
+ *   1. Set server status → `restoring_backup` (blocks power/file actions).
+ *   2. If `snapshotBeforeRestore`, create a timestamped backup of the current
+ *      bind-mount first so the operator can roll back the restore itself.
+ *   3. Kill the container (best-effort; it may already be stopped).
+ *   4. Ask the daemon to wipe + unpack the archive.
+ *   5. Set server status → `stopped` on success, re-throw on failure
+ *      so BullMQ retries the job and the server stays in `restoring_backup`.
  */
 export const buildBackupRestoreHandler = (params: {
   daemonClient: DaemonClient
@@ -166,34 +173,89 @@ export const buildBackupRestoreHandler = (params: {
     const backup = await requireBackup(db, job.data.backupId)
     const server = await requireServer(db, backup.serverId)
 
-    log.info("Stopping server before restore")
-    await daemonClient
-      .request({
-        nodeId: server.nodeId,
-        message: { type: "server.kill", serverId: server.id },
-        timeoutMs: 60_000,
-      })
-      .catch((err) => log.warn({ err }, "Stop on restore failed (continuing)"))
-
-    log.info("Restoring archive")
-    const result = await daemonClient.request({
-      nodeId: server.nodeId,
-      message: {
-        type: "server.restore_backup",
-        serverId: server.id,
-        name: backup.name,
-      } as never,
-      timeoutMs: 60 * 60_000,
-    })
-    if (result.envelope.message.type === "error") {
-      throw new Error(`daemon error: ${result.envelope.message.code}`)
-    }
-
     await db
       .update(serversTable)
-      .set({ status: "installed_stopped", updatedAt: new Date() })
+      .set({ status: "restoring_backup", updatedAt: new Date() })
       .where(eq(serversTable.id, server.id))
-    log.info("Restore complete")
+
+    try {
+      if (job.data.snapshotBeforeRestore === true) {
+        const snapshotName = `pre-restore-${backup.name}-${Date.now()}`
+        log.info({ snapshotName }, "Creating pre-restore snapshot")
+        const inserted = await db
+          .insert(backupsTable)
+          .values({
+            serverId: server.id,
+            name: snapshotName,
+            storage: "local",
+            state: "pending",
+          })
+          .returning()
+        const snapshotRow = inserted[0]
+        if (snapshotRow !== undefined) {
+          const archive = await daemonClient.request({
+            nodeId: server.nodeId,
+            message: {
+              type: "server.create_backup",
+              serverId: server.id,
+              name: snapshotName,
+            } as never,
+            timeoutMs: 30 * 60_000,
+          })
+          const archiveMsg = archive.envelope.message as unknown
+          if (isAck(archiveMsg)) {
+            await db
+              .update(backupsTable)
+              .set({
+                state: "ready",
+                sha256: archiveMsg.sha256 ?? null,
+                bytes: archiveMsg.bytes ?? 0,
+                completedAt: new Date(),
+              })
+              .where(eq(backupsTable.id, snapshotRow.id))
+            log.info({ bytes: archiveMsg.bytes }, "Pre-restore snapshot ready")
+          } else {
+            await db
+              .update(backupsTable)
+              .set({ state: "failed", failureCode: "backups.upload_failed" })
+              .where(eq(backupsTable.id, snapshotRow.id))
+            throw new Error("Pre-restore snapshot failed")
+          }
+        }
+      }
+
+      log.info("Killing server before restore")
+      await daemonClient
+        .request({
+          nodeId: server.nodeId,
+          message: { type: "server.kill", serverId: server.id },
+          timeoutMs: 60_000,
+        })
+        .catch((err) => log.warn({ err }, "Kill on restore failed (continuing)"))
+
+      log.info("Restoring archive")
+      const result = await daemonClient.request({
+        nodeId: server.nodeId,
+        message: {
+          type: "server.restore_backup",
+          serverId: server.id,
+          name: backup.name,
+        } as never,
+        timeoutMs: 60 * 60_000,
+      })
+      if (result.envelope.message.type === "error") {
+        throw new Error(`daemon error: ${result.envelope.message.code}`)
+      }
+
+      await db
+        .update(serversTable)
+        .set({ status: "stopped", updatedAt: new Date() })
+        .where(eq(serversTable.id, server.id))
+      log.info("Restore complete")
+    } catch (err) {
+      log.error({ err }, "Restore failed")
+      throw err
+    }
   }
 }
 

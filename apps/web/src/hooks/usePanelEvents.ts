@@ -66,7 +66,7 @@ export const usePanelEvents = (
         if (!parsed.success) {
           return
         }
-        setEvents((prev) => [parsed.data, ...prev].slice(0, MAX_BUFFERED))
+        setEvents((prev) => [...prev, parsed.data].slice(-MAX_BUFFERED))
       })
 
       const scheduleReconnect = () => {

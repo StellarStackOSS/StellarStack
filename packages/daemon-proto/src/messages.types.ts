@@ -72,6 +72,13 @@ export type DaemonErrorMessage = {
   params?: Record<string, string | number | boolean>
 }
 
+/** One config file the daemon patches before each server start. */
+export type ConfigFilePatch = {
+  path: string
+  parser: "properties" | "json" | "yaml" | "ini" | "toml" | "xml"
+  patches: Record<string, string>
+}
+
 /**
  * Worker → daemon: create the container for a server using the given image
  * and resource limits.
@@ -82,12 +89,17 @@ export type CreateContainerMessage = {
   dockerImage: string
   memoryLimitMb: number
   cpuLimitPercent: number
+  /** Max OS-level processes (PidsLimit). 0 = unlimited. Default 256. */
+  processLimit: number
   diskLimitMb: number
   environment: Record<string, string>
   portMappings: Array<{ ip: string; port: number; containerPort: number }>
   startupCommand: string
   stopSignal: string
   lifecycle: BlueprintLifecycle
+  /** feature-name → console patterns (empty array = UI-only flag) */
+  features: Record<string, string[]>
+  configFiles: ConfigFilePatch[]
 }
 
 /**
@@ -98,14 +110,33 @@ export type RunInstallScriptMessage = {
   serverId: string
   install: Blueprint["install"]
   environment: Record<string, string>
+  keepFiles?: boolean
 }
 
 /**
- * Worker → daemon: start a previously-installed server.
+ * Worker → daemon: start a previously-installed server. The container config
+ * is included so the daemon can create the container if it no longer exists
+ * (e.g. after a daemon restart against a fresh Docker context).
  */
 export type StartServerMessage = {
   type: "server.start"
   serverId: string
+  container: {
+    dockerImage: string
+    memoryLimitMb: number
+    cpuLimitPercent: number
+    /** Max OS-level processes (PidsLimit). 0 = unlimited. Default 256. */
+    processLimit: number
+    diskLimitMb: number
+    environment: Record<string, string>
+    portMappings: Array<{ ip: string; port: number; containerPort: number }>
+    startupCommand: string
+    stopSignal: string
+    lifecycle: BlueprintLifecycle
+    /** feature-name → console patterns (empty array = UI-only flag) */
+    features: Record<string, string[]>
+    configFiles: ConfigFilePatch[]
+  }
 }
 
 /**
@@ -115,6 +146,9 @@ export type StartServerMessage = {
 export type StopServerMessage = {
   type: "server.stop"
   serverId: string
+  /** Blueprint stop signal — required so the daemon can send a console command
+   *  even after a restart where in-memory state has been lost. */
+  stopSignal: string
 }
 
 /**
@@ -138,7 +172,7 @@ export type DeleteServerMessage = {
  * Daemon → worker: lifecycle state transition occurred.
  */
 export type ServerStateChangedMessage = {
-  type: "server.state_changed"
+  type: "server.state.changed"
   serverId: string
   from: ServerLifecycleState
   to: ServerLifecycleState
@@ -158,6 +192,8 @@ export type ServerStatsMessage = {
   diskBytes: number
   networkRxBytes: number
   networkTxBytes: number
+  diskReadBytes?: number
+  diskWriteBytes?: number
   at: string
 }
 

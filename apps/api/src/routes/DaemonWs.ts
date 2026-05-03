@@ -9,6 +9,7 @@ import type { WSContext } from "hono/ws"
 
 import type { Db } from "@workspace/db/client.types"
 import { nodesTable } from "@workspace/db/schema/nodes"
+import { serversTable } from "@workspace/db/schema/servers"
 import {
   daemonBridgeEnvelopeSchema,
   daemonEnvelopeSchema,
@@ -150,6 +151,15 @@ export const buildDaemonWsRoute = (params: {
             .set({ connectedAt: new Date() })
             .where(eq(nodesTable.id, nodeId))
           logger.info({ nodeId }, "Daemon connected")
+          await redis.publish(
+            env.PANEL_EVENTS_CHANNEL,
+            JSON.stringify({
+              type: "node.daemon.status",
+              nodeId,
+              connected: true,
+              at: new Date().toISOString(),
+            })
+          )
         },
         onMessage: async (event) => {
           if (typeof event.data !== "string") {
@@ -170,34 +180,40 @@ export const buildDaemonWsRoute = (params: {
           )
 
           const message = parsed.data.message
-          if (
-            message.type === "server.state_changed" ||
-            message.type === "server.stats"
-          ) {
-            const fanout =
-              message.type === "server.state_changed"
-                ? {
-                    type: "server.state.changed" as const,
-                    serverId: message.serverId,
-                    from: message.from,
-                    to: message.to,
-                    reason: message.reason,
-                    at: message.at,
-                  }
-                : {
-                    type: "server.stats" as const,
-                    serverId: message.serverId,
-                    memoryBytes: message.memoryBytes,
-                    memoryLimitBytes: message.memoryLimitBytes,
-                    cpuFraction: message.cpuFraction,
-                    diskBytes: message.diskBytes,
-                    networkRxBytes: message.networkRxBytes,
-                    networkTxBytes: message.networkTxBytes,
-                    at: message.at,
-                  }
+          if (message.type === "server.state.changed") {
+            const panelPayload = JSON.stringify({
+              type: "server.state.changed" as const,
+              serverId: message.serverId,
+              from: message.from,
+              to: message.to,
+              reason: message.reason,
+              at: message.at,
+            })
+            // Publish to browsers and persist to DB concurrently so the UI
+            // update is not gated on the Postgres round-trip.
+            await Promise.all([
+              redis.publish(env.PANEL_EVENTS_CHANNEL, panelPayload),
+              db
+                .update(serversTable)
+                .set({ status: message.to, updatedAt: new Date() })
+                .where(eq(serversTable.id, message.serverId)),
+            ])
+          } else if (message.type === "server.stats") {
             await redis.publish(
               env.PANEL_EVENTS_CHANNEL,
-              JSON.stringify(fanout)
+              JSON.stringify({
+                type: "server.stats" as const,
+                serverId: message.serverId,
+                memoryBytes: message.memoryBytes,
+                memoryLimitBytes: message.memoryLimitBytes,
+                cpuFraction: message.cpuFraction,
+                diskBytes: message.diskBytes,
+                networkRxBytes: message.networkRxBytes,
+                networkTxBytes: message.networkTxBytes,
+                diskReadBytes: message.diskReadBytes ?? 0,
+                diskWriteBytes: message.diskWriteBytes ?? 0,
+                at: message.at,
+              })
             )
           }
         },
@@ -208,6 +224,15 @@ export const buildDaemonWsRoute = (params: {
             .set({ connectedAt: null })
             .where(eq(nodesTable.id, nodeId))
           logger.info({ nodeId }, "Daemon disconnected")
+          await redis.publish(
+            env.PANEL_EVENTS_CHANNEL,
+            JSON.stringify({
+              type: "node.daemon.status",
+              nodeId,
+              connected: false,
+              at: new Date().toISOString(),
+            })
+          )
         },
         onError: (_event, ws) => {
           sockets.delete(nodeId)

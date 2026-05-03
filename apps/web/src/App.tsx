@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router"
 
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 
+import { NotifyStack } from "@/components/NotifyStack"
 import { createAppRouter } from "@/router"
 import { createQueryClient } from "@/lib/QueryClient"
 
@@ -25,6 +26,7 @@ export const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={150}>
         <RouterProvider router={router} />
+        <NotifyStack />
       </TooltipProvider>
     </QueryClientProvider>
   )

@@ -13,6 +13,7 @@ import type {
 
 import type { Env } from "@/env"
 import type {
+  DaemonPushCallback,
   DaemonRequestResult,
   DaemonStreamCallback,
 } from "@/lib/DaemonClient.types"
@@ -47,6 +48,7 @@ export class DaemonClient {
   private readonly env: Env
   private readonly logger: Logger
   private readonly pending = new Map<string, Pending>()
+  private readonly pushListeners = new Set<DaemonPushCallback>()
   private started = false
 
   public constructor(params: {
@@ -79,9 +81,12 @@ export class DaemonClient {
         )
         return
       }
-      const { envelope } = parsed.data
+      const { nodeId, envelope } = parsed.data
       const id = envelope.id
-      if (id === null) {
+      if (id === null || id === "") {
+        for (const cb of this.pushListeners) {
+          cb(nodeId, envelope.message)
+        }
         return
       }
       const pending = this.pending.get(id)
@@ -139,6 +144,15 @@ export class DaemonClient {
     )
 
     return promise
+  }
+
+  /**
+   * Register a listener for unsolicited daemon push frames (id === null),
+   * e.g. server.state.changed and server.stats. Returns a cleanup function.
+   */
+  public onPush(cb: DaemonPushCallback): () => void {
+    this.pushListeners.add(cb)
+    return () => this.pushListeners.delete(cb)
   }
 
   /**

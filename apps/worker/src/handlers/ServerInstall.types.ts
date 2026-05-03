@@ -4,4 +4,7 @@
  */
 export type ServerInstallJobData = {
   serverId: string
+  reinstall?: boolean
+  keepFiles?: boolean
+  snapshotFirst?: boolean
 }

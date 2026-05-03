@@ -29,6 +29,9 @@ export type CreateNodeRequest = {
   diskTotalMb: number
 }
 
+/** Body of `PUT /admin/nodes/:id`. All fields optional. */
+export type UpdateNodeRequest = Partial<CreateNodeRequest>
+
 /**
  * Response of `POST /admin/nodes/:id/pairing-tokens`.
  */

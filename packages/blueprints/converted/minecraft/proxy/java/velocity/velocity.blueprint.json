@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "name": "Velocity",
+  "author": "parker@parkervcp.com",
+  "description": "Velocity is a Minecraft server proxy with unparalleled server support, scalability, and flexibility.",
+  "dockerImages": {
+    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^end",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxInlineLevel=15 -jar {{SERVER_JARFILE}}",
+  "variables": [
+    {
+      "key": "VELOCITY_VERSION",
+      "name": "Velocity Version",
+      "description": "The Velocity Proxy version to download.\n\nSet to 'latest ' the download the last stable build.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": false,
+      "rules": "required|string|max:20"
+    },
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "Server Jarfile, by default this is set to 'velocity.jar'.\nSet it to otherwise if you wish to have a different jarfile name.",
+      "default": "velocity.jar",
+      "userViewable": true,
+      "userEditable": false,
+      "rules": "required|string|max:32|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "DL_PATH",
+      "name": "Download Path",
+      "description": "A URL to use to download a server.jar rather than the ones in the install script. This is not user viewable.",
+      "default": "",
+      "userViewable": false,
+      "userEditable": false,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "BUILD_NUMBER",
+      "name": "Build Number",
+      "description": "The build number for the velocity release.\n\nLeave at latest to always get the latest version. Invalid versions will default to latest.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Velocity Proxy Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=velocity\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://fill.papermc.io/v3/projects/${PROJECT} | jq -r --arg VERSION $VELOCITY_VERSION '.versions | any(.[]; index($VERSION))' | grep -m1 true`\n\tLATEST_VERSION=`curl -s https://fill.papermc.io/v3/projects/${PROJECT} | jq -r '.versions | to_entries | .[0].value[0]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${VELOCITY_VERSION}\"\n\telse\n\t\techo -e \"Specified version not found. Defaulting to the latest ${PROJECT} version\"\n\t\tVELOCITY_VERSION=${LATEST_VERSION}\n\tfi\n\n\tBUILD_EXISTS=`curl -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${VELOCITY_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep -m1 true`\n\tLATEST_BUILD=`curl -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${VELOCITY_VERSION} | jq -r '.builds' | jq -r '.[0]'`\n\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${VELOCITY_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${VELOCITY_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\n\techo \"Version being downloaded\"\n\techo -e \"Project: ${PROJECT}\"\n\techo -e \"Velocity Version: ${VELOCITY_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\tDOWNLOAD_URL=`curl -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${VELOCITY_VERSION}/builds/${BUILD_NUMBER} | jq -r '.downloads.\"server:default\".url'`\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [[ -f velocity.toml ]]; then\n\techo -e \"velocity config file exists\"\nelse\n\techo -e \"downloading velocity config file.\"\n\tcurl https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/proxy/java/velocity/velocity.toml -o velocity.toml\nfi\n\nif [[ -f forwarding.secret ]]; then\n\techo -e \"velocity forwarding secret file already exists\"\nelse\n\techo -e \"creating forwarding secret file\"\n\ttouch forwarding.secret\n\tdate +%s | sha256sum | base64 | head -c 12 > forwarding.secret\nfi\n\necho -e \"install complete\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Done ("
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

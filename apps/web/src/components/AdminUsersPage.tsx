@@ -1,5 +1,8 @@
+import { useTranslation } from "react-i18next"
+
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { Card, CardHeader, CardInner, CardTitle } from "@workspace/ui/components/card"
 
 import { useAdminUsers, useUpdateAdminUser } from "@/hooks/useAdminUsers"
 import type { AdminUserRow } from "@/hooks/useAdminUsers.types"
@@ -9,6 +12,7 @@ type UserRowProps = {
 }
 
 const UserRow = ({ user }: UserRowProps) => {
+  const { t } = useTranslation()
   const update = useUpdateAdminUser()
 
   return (
@@ -21,16 +25,16 @@ const UserRow = ({ user }: UserRowProps) => {
         <div className="flex flex-wrap gap-1">
           {user.isAdmin && (
             <Badge variant="default" className="text-xs">
-              Admin
+              {t("admin_users.badge.admin")}
             </Badge>
           )}
           {user.emailVerified ? (
             <Badge variant="secondary" className="text-xs">
-              Verified
+              {t("admin_users.badge.verified")}
             </Badge>
           ) : (
             <Badge variant="outline" className="text-xs text-muted-foreground">
-              Unverified
+              {t("admin_users.badge.unverified")}
             </Badge>
           )}
         </div>
@@ -48,7 +52,7 @@ const UserRow = ({ user }: UserRowProps) => {
               update.mutate({ userId: user.id, isAdmin: !user.isAdmin })
             }
           >
-            {user.isAdmin ? "Revoke Admin" : "Grant Admin"}
+            {user.isAdmin ? t("admin_users.revoke_admin") : t("admin_users.grant_admin")}
           </Button>
           {!user.emailVerified && (
             <Button
@@ -59,7 +63,7 @@ const UserRow = ({ user }: UserRowProps) => {
                 update.mutate({ userId: user.id, emailVerified: true })
               }
             >
-              Verify Email
+              {t("admin_users.verify_email")}
             </Button>
           )}
         </div>
@@ -69,57 +73,65 @@ const UserRow = ({ user }: UserRowProps) => {
 }
 
 export const AdminUsersPage = () => {
+  const { t } = useTranslation()
   const { data, isLoading } = useAdminUsers()
   const users = data?.users ?? []
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage panel accounts, admin roles, and email verification.
+    <div className="flex flex-col gap-4">
+      <header>
+        <h1 className="text-base font-semibold">{t("admin_users.title")}</h1>
+        <p className="text-muted-foreground text-xs">
+          {t("admin_users.description")}
         </p>
-      </div>
+      </header>
 
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      )}
-
-      <div className="rounded-lg border overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/50">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium text-muted-foreground">
-                User
-              </th>
-              <th className="px-4 py-2 text-left font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="px-4 py-2 text-left font-medium text-muted-foreground">
-                Joined
-              </th>
-              <th className="px-4 py-2 text-left font-medium text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.length === 0 && !isLoading && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-6 text-center text-muted-foreground"
-                >
-                  No users found.
-                </td>
-              </tr>
-            )}
-            {users.map((u) => (
-              <UserRow key={u.id} user={u} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin_users.all_heading")}</CardTitle>
+        </CardHeader>
+        <CardInner className="p-3">
+          {isLoading ? (
+            <p className="text-muted-foreground text-xs">{t("admin_users.loading")}</p>
+          ) : (
+            <div className="overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">
+                      {t("admin_users.col.user")}
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">
+                      {t("admin_users.col.status")}
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">
+                      {t("admin_users.col.joined")}
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">
+                      {t("admin_users.col.actions")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-muted-foreground"
+                      >
+                        {t("admin_users.empty")}
+                      </td>
+                    </tr>
+                  ) : null}
+                  {users.map((u) => (
+                    <UserRow key={u.id} user={u} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          </CardInner>
+      </Card>
     </div>
   )
 }

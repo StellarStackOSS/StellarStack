@@ -13,12 +13,14 @@ import type { Auth } from "@/auth"
 import { buildRequireSession, type AuthVariables } from "@/middleware/RequireSession"
 
 const updateProfileSchema = z.object({
-  name: z.string().min(1).max(64),
+  name: z.string().min(1).max(64).optional(),
   preferredLocale: z
     .string()
     .min(2)
     .max(10)
-    .regex(/^[a-zA-Z-]+$/),
+    .regex(/^[a-zA-Z-]+$/)
+    .optional(),
+  image: z.string().url().max(2048).nullable().optional(),
 })
 
 /**
@@ -52,8 +54,9 @@ export const buildMeRoute = (params: { auth: Auth; db: Db }) => {
       const updated = await db
         .update(usersTable)
         .set({
-          name: parsed.data.name,
-          preferredLocale: parsed.data.preferredLocale,
+          ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+          ...(parsed.data.preferredLocale !== undefined ? { preferredLocale: parsed.data.preferredLocale } : {}),
+          ...(parsed.data.image !== undefined ? { image: parsed.data.image } : {}),
           updatedAt: new Date(),
         })
         .where(eq(usersTable.id, user.id))

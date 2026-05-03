@@ -1,14 +1,14 @@
-import { useLocation, Link } from "@tanstack/react-router"
+import { useLocation } from "@tanstack/react-router"
+import type { ServerLifecycleState } from "@workspace/shared/events.types"
 import { useTranslation } from "react-i18next"
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ArrowDataTransferHorizontalIcon,
-  ArrowLeft01Icon,
   Calendar03Icon,
   DashboardSquare02Icon,
   EthernetPortIcon,
   FolderLibraryIcon,
   HardDriveIcon,
+  ComputerTerminal02Icon,
+  ListViewIcon,
   Settings02Icon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
@@ -28,16 +28,6 @@ import { NavUser } from "@/components/NavUser"
 import type { NavItem } from "@/components/NavMain.types"
 import type { ServerListRow } from "@/hooks/useServers.types"
 
-const stateColor: Record<string, string> = {
-  installing: "bg-chart-2",
-  installed_stopped: "bg-muted-foreground",
-  starting: "bg-chart-2 animate-pulse",
-  running: "bg-chart-1",
-  stopping: "bg-chart-2 animate-pulse",
-  stopped: "bg-muted-foreground",
-  crashed: "bg-destructive",
-}
-
 /**
  * Per-server sidebar shell. Sidebar itself is mounted in the layout route
  * — only the content rendered through `<Outlet />` swaps when the user
@@ -54,64 +44,74 @@ export const ServerSidebar = ({
 }) => {
   const { t } = useTranslation()
   const location = useLocation()
-  const status = liveStatus ?? server.status
+  const status = (liveStatus ?? server.status) as ServerLifecycleState
   const basePath = `/servers/${server.id}`
   const sub = location.pathname.startsWith(basePath)
     ? location.pathname.slice(basePath.length)
     : ""
 
+  // status is read but only needed for potential future use; suppress lint
+  void status
+
   const items: NavItem[] = [
     {
-      title: "Overview",
+      title: t("sidebar.overview"),
       icon: DashboardSquare02Icon,
       to: "/servers/$id",
       params: { id: server.id },
       isActive: sub === "" || sub === "/",
     },
     {
-      title: "Files",
+      title: t("sidebar.files"),
       icon: FolderLibraryIcon,
       to: "/servers/$id/files",
       params: { id: server.id },
       isActive: sub === "/files",
     },
     {
-      title: "Backups",
+      title: t("sidebar.backups"),
       icon: HardDriveIcon,
       to: "/servers/$id/backups",
       params: { id: server.id },
       isActive: sub === "/backups",
     },
     {
-      title: "Schedules",
+      title: t("sidebar.schedules"),
       icon: Calendar03Icon,
       to: "/servers/$id/schedules",
       params: { id: server.id },
       isActive: sub === "/schedules",
     },
     {
-      title: "Users",
+      title: t("sidebar.users"),
       icon: UserMultipleIcon,
       to: "/servers/$id/users",
       params: { id: server.id },
       isActive: sub === "/users",
     },
     {
-      title: "Network",
+      title: t("sidebar.network"),
       icon: EthernetPortIcon,
       to: "/servers/$id/network",
       params: { id: server.id },
       isActive: sub === "/network",
     },
     {
-      title: "Transfer",
-      icon: ArrowDataTransferHorizontalIcon,
-      to: "/servers/$id/transfer",
+      title: t("sidebar.startup"),
+      icon: ComputerTerminal02Icon,
+      to: "/servers/$id/startup",
       params: { id: server.id },
-      isActive: sub === "/transfer",
+      isActive: sub === "/startup",
     },
     {
-      title: "Settings",
+      title: t("sidebar.activity"),
+      icon: ListViewIcon,
+      to: "/servers/$id/activity",
+      params: { id: server.id },
+      isActive: sub === "/activity",
+    },
+    {
+      title: t("sidebar.settings"),
       icon: Settings02Icon,
       to: "/servers/$id/settings",
       params: { id: server.id },
@@ -120,41 +120,28 @@ export const ServerSidebar = ({
   ]
 
   return (
-    <Sidebar collapsible="icon" variant="floating" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
               size="lg"
-              tooltip={server.name}
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              tooltip="StellarStack"
             >
-              <Link to="/dashboard">
-                <span className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
-                </span>
-                <div className="grid flex-1 text-left text-xs leading-tight">
-                  <span className="truncate text-sm font-semibold">
-                    {server.name}
-                  </span>
-                  <span className="text-muted-foreground flex items-center gap-1.5 truncate text-[0.65rem]">
-                    <span
-                      className={`size-1.5 rounded-full ${
-                        stateColor[status] ?? "bg-muted-foreground"
-                      }`}
-                    />
-                    {t(`lifecycle.${status}`, { ns: "common" })}
-                  </span>
-                </div>
-              </Link>
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-100">
+                <span className="text-[10px] font-bold tracking-tight">SS</span>
+              </div>
+              <span className="truncate font-semibold text-zinc-100">StellarStack</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <NavMain label="Server" items={items} />
+        <NavMain items={items} layoutId="server-nav-pill" />
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>

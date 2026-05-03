@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "name": "Travertine",
+  "author": "parker@parkervcp.com",
+  "description": "Travertine is a fork of Waterfall with 1.7 protocol support. Waterfall is a fork of the well-known BungeeCord server teleportation suite.",
+  "dockerImages": {
+    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^end",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+  "configFiles": [
+    {
+      "path": "config.yml",
+      "parser": "yaml",
+      "patches": {
+        "listeners[0].host": "0.0.0.0:{{SERVER_PORT}}",
+        "servers.*.address": "{\"127.0.0.1\":\"{{config.docker.interface}}\",\"localhost\":\"{{config.docker.interface}}\"}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MINECRAFT_VERSION",
+      "name": "Minecraft Version",
+      "description": "The version of Minecraft that water was built to support.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|alpha_num|between:1,6"
+    },
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Travertine Jar File",
+      "description": "The name of the jar file to use when running Travertine.",
+      "default": "travertine.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "DL_LINK",
+      "name": "Download Link",
+      "description": "A link to the server jar to download the Travertine jar.",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "BUILD_NUMBER",
+      "name": "Travertine build number",
+      "description": "Default is latest.\n\nif set to latest or an invalid version will grab the latest build number.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# Travertine Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=travertine\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep true`\n\tLATEST_VERSION=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\t\n\tBUILD_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep true`\n\tLATEST_BUILD=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[-1]'`\n\t\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\t\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\t\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER}/downloads/${JAR_NAME}\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Listening on "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

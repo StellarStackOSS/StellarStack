@@ -32,7 +32,7 @@ export const blueprintsTable = pgTable("blueprints", {
   installEntrypoint: text("install_entrypoint").notNull(),
   installScript: text("install_script").notNull(),
   lifecycle: jsonb("lifecycle").$type<BlueprintLifecycle>().notNull(),
-  features: jsonb("features").$type<string[]>(),
+  features: jsonb("features").$type<Record<string, string[]>>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

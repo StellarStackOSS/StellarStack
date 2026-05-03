@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "name": "Quilt",
+  "author": "diedyesterdaywashere@gmail.com",
+  "description": "The Quilt project is an open-source, community-driven modding toolchain designed primarily for Minecraft. By focusing on speed, ease of use and modularity, Quilt aims to provide a sleek and modern modding toolchain with an open ecosystem.",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -XX:MaxRAMPercentage=95.0 -jar {{SERVER_JARFILE}} nogui",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MC_VERSION",
+      "name": "Minecraft Version",
+      "description": "Version of Minecraft that will be installed. You can only choose the exact version number, for example \"1.20.2\", \"latest\" won't work!",
+      "default": "1.20.2",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|between:3,15"
+    },
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the jarfile that will be ran on server launch.",
+      "default": "server.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    }
+  ],
+  "install": {
+    "image": "eclipse-temurin:18-jdk-jammy",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# Quilt Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y wget\nmkdir -p /mnt/server\ncd /mnt/server\n\nwget -O quilt.jar https://quiltmc.org/api/v1/download-latest-installer/java-universal\njava -jar quilt.jar \\\n  install server $MC_VERSION \\\n  --download-server\ncd /mnt/server/server\nmv * /mnt/server\ncd ..\nrm quilt.jar\nrmdir /mnt/server/server\nmv server.jar minecraft.jar\nmv quilt-server-launch.jar server.jar\necho \"serverJar=minecraft.jar\" > quilt-server-launcher.properties\necho -e \"Server is Ready!\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  }
+}

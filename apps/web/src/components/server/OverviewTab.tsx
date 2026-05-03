@@ -1,134 +1,186 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 
-import { ApiFetchError } from "@/lib/ApiFetch"
 import { ConsoleTerminal } from "@/components/ConsoleTerminal"
-import { EventLog } from "@/components/EventLog"
-import { LiveStatsCard } from "@/components/LiveStatsCard"
-import { translateApiError } from "@/lib/TranslateError"
+import { CpuStatCard } from "@/components/server/CpuStatCard"
+import { DiskStatCard } from "@/components/server/DiskStatCard"
+import { MemoryStatCard } from "@/components/server/MemoryStatCard"
+import { NetworkStatCard } from "@/components/server/NetworkStatCard"
 import { useConsole } from "@/hooks/useConsole"
+import { useServerAllocations } from "@/hooks/useServerAllocations"
 import { useServerLayout } from "@/components/ServerLayoutContext"
-import { useServerPower } from "@/hooks/useServerPower"
 import { useServerStats } from "@/hooks/useServerStats"
 
-type PowerAction = "start" | "stop" | "restart" | "kill"
+const formatUptime = (ms: number): string => {
+  const s = Math.floor(ms / 1000)
+  const m = Math.floor(s / 60)
+  const h = Math.floor(m / 60)
+  const d = Math.floor(h / 24)
+  if (d > 0) return `${d}d ${h % 24}h ${m % 60}m`
+  if (h > 0) return `${h}h ${m % 60}m ${s % 60}s`
+  if (m > 0) return `${m}m ${s % 60}s`
+  return `${s}s`
+}
 
-/**
- * Default tab on `/servers/$id`. Hosts the power controls, live stats,
- * console terminal, and event log. Reads from `ServerLayoutContext` so it
- * shares the panel-event subscription with sibling tabs.
- */
 export const OverviewTab = () => {
   const { t } = useTranslation()
-  const { server, status, events, wsState } = useServerLayout()
-  const power = useServerPower(server.id)
-  const stats = useServerStats(server.id, events)
+  const { server, status, events, daemonConnected } = useServerLayout()
+  const allocations = useServerAllocations(server.id)
 
-  const consoleEnabled =
+  const isActive =
     status === "starting" || status === "running" || status === "stopping"
-  const consoleStream = useConsole(server.id, consoleEnabled)
 
-  const [powerError, setPowerError] = useState<string | null>(null)
+  const stats = useServerStats(server.id, isActive ? events : [])
+  const consoleStream = useConsole(server.id, isActive)
 
-  const handlePower = async (action: PowerAction) => {
-    setPowerError(null)
-    try {
-      await power.mutateAsync(action)
-    } catch (err) {
-      if (err instanceof ApiFetchError) {
-        setPowerError(translateApiError(t, err.body.error))
-      } else if (err instanceof Error) {
-        setPowerError(err.message)
-      }
+  const primaryAlloc = allocations.data?.allocations.find(
+    (a) => a.id === allocations.data?.primaryAllocationId
+  )
+  const address =
+    primaryAlloc !== undefined ? `${primaryAlloc.ip}:${primaryAlloc.port}` : "—"
+
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    if (status !== "running") return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [status])
+
+  // Derive uptime from the container's StartedAt (reported by the daemon via
+  // Docker inspect). Falls back to the last "running" state-change event time.
+  const uptime = useMemo(() => {
+    if (status !== "running") return null
+    if (stats.latest?.startedAt !== undefined) {
+      const t = Date.parse(stats.latest.startedAt)
+      if (!isNaN(t)) return now - t
     }
-  }
+    const event = events.findLast(
+      (e) => e.type === "server.state.changed" && e.to === "running"
+    )
+    if (event?.type === "server.state.changed") return now - new Date(event.at).getTime()
+    return null
+  // now ticks every second so the memo re-runs and the counter updates
+  }, [status, stats.latest?.startedAt, events, now])
+
+  const installLines = useMemo(() => {
+    if (status !== "installing") return []
+    const installStartEvent = events.findLast(
+      (e) => e.type === "server.state.changed" && e.to === "installing"
+    )
+    const filterFrom =
+      installStartEvent?.type === "server.state.changed"
+        ? new Date(installStartEvent.at).getTime()
+        : 0
+    return events
+      .filter(
+        (e) =>
+          e.type === "server.install_log" &&
+          new Date(e.at).getTime() >= filterFrom
+      )
+      .map((e, i) => ({
+        id: -(i + 1),
+        stream: e.stream,
+        line: e.line,
+        logTimestamp: null,
+        logLevel: "default" as const,
+        historical: false,
+        receivedAt: new Date(e.at).getTime(),
+      }))
+  }, [events, status])
+
+  const consoleLines = useMemo(
+    () =>
+      installLines.length > 0
+        ? [...installLines, ...consoleStream.lines]
+        : consoleStream.lines,
+    [installLines, consoleStream.lines]
+  )
+
+  const crashReasonCode = useMemo(() => {
+    if (status !== "crashed") return null
+    const event = events.findLast(
+      (e) => e.type === "server.state.changed" && e.to === "crashed"
+    )
+    return event?.type === "server.state.changed" ? event.reason.code : null
+  }, [events, status])
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="border-border bg-card text-card-foreground rounded-md border p-4">
-        <header className="mb-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-semibold">{server.name}</h1>
-            <p className="text-muted-foreground text-xs">
-              {t(`lifecycle.${status}`, { ns: "common" })} · {server.dockerImage}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              onClick={() => handlePower("start")}
-              disabled={
-                power.isPending ||
-                status === "running" ||
-                status === "starting"
-              }
-            >
-              Start
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handlePower("restart")}
-              disabled={power.isPending || status !== "running"}
-            >
-              Restart
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handlePower("stop")}
-              disabled={
-                power.isPending ||
-                status === "stopped" ||
-                status === "installed_stopped" ||
-                status === "crashed"
-              }
-            >
-              Stop
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handlePower("kill")}
-              disabled={
-                power.isPending ||
-                status === "stopped" ||
-                status === "installed_stopped" ||
-                status === "crashed"
-              }
-            >
-              Kill
-            </Button>
-          </div>
-        </header>
-        {powerError !== null ? (
-          <p className="text-destructive text-xs" role="alert">
-            {powerError}
-          </p>
-        ) : null}
-      </section>
-      <LiveStatsCard stats={stats} />
-      {consoleEnabled ? (
-        <ConsoleTerminal
-          state={consoleStream.state}
-          lines={consoleStream.lines}
-          onSend={consoleStream.send}
-        />
-      ) : (
-        <section className="border-border bg-card text-card-foreground rounded-md border p-4">
-          <header className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Console</h2>
-            <span className="text-muted-foreground text-xs">offline</span>
-          </header>
-          <p className="text-muted-foreground text-xs">
-            The server is {t(`lifecycle.${status}`, { ns: "common" })}. Press{" "}
-            <strong>Start</strong> to attach to the live console.
-          </p>
-        </section>
-      )}
-      <EventLog state={wsState} events={events} />
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {!daemonConnected ? (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {t("overview.node_unreachable")}
+        </p>
+      ) : null}
+
+      {crashReasonCode !== null ? (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <span className="font-semibold">
+            {t("lifecycle.crashed", { ns: "common" })}:{" "}
+          </span>
+          {t(`lifecycle.crash_reason.${crashReasonCode}`, {
+            ns: "common",
+            defaultValue: t(
+              "lifecycle.crash_reason.servers.lifecycle.crashed.container_exit",
+              { ns: "common" }
+            ),
+          })}
+        </div>
+      ) : null}
+
+      {/* Row 1: name · address · uptime */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Server Name</CardTitle>
+          </CardHeader>
+          <CardInner className="flex min-h-16 items-center px-4 py-4">
+            <span className="text-lg font-medium text-zinc-100">{server.name}</span>
+          </CardInner>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Address</CardTitle>
+          </CardHeader>
+          <CardInner className="flex min-h-16 items-center px-4 py-4">
+            <span className="font-mono text-lg font-medium text-zinc-100">
+              {address}
+            </span>
+          </CardInner>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Uptime</CardTitle>
+          </CardHeader>
+          <CardInner className="flex min-h-16 items-center px-4 py-4">
+            <span className="font-mono text-lg font-medium tabular-nums text-zinc-100">
+              {uptime !== null ? formatUptime(uptime) : "—"}
+            </span>
+          </CardInner>
+        </Card>
+      </div>
+
+      {/* Row 2: resource usage */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <CpuStatCard latest={stats.latest} history={stats.history} />
+        <MemoryStatCard latest={stats.latest} history={stats.history} />
+        <DiskStatCard latest={stats.latest} history={stats.history} />
+        <NetworkStatCard latest={stats.latest} history={stats.history} />
+      </div>
+
+      <ConsoleTerminal
+        state={consoleStream.state}
+        lines={consoleLines}
+        onSend={consoleStream.send}
+      />
     </div>
   )
 }

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "name": "Cuberite",
+  "author": "parker@parkervcp.com",
+  "description": "A lightweight, fast and extensible game server for Minecraft",
+  "dockerImages": {
+    "ghcr.io/ptero-eggs/yolks:debian": "ghcr.io/ptero-eggs/yolks:debian"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "./Cuberite",
+  "configFiles": [
+    {
+      "path": "settings.ini",
+      "parser": "ini",
+      "patches": {
+        "Server.Ports": "{{SERVER_PORT}}",
+        "Server.Description": "{{server.build.env.SERV_DESC}}"
+      }
+    },
+    {
+      "path": "webadmin.ini",
+      "parser": "ini",
+      "patches": {
+        "User:admin.Password": "{{server.build.env.ADMIN_PASS}}",
+        "WebAdmin.Ports": "{{server.build.env.WEB_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERV_DESC",
+      "name": "Server Description",
+      "description": "Server Description",
+      "default": "Cuberite on Pterodactyl!",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "ADMIN_PASS",
+      "name": "Admin Password",
+      "description": "The password for the webadmin panel 'admin' user",
+      "default": "ChangeMe",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "WEB_PORT",
+      "name": "WebAdmin Port",
+      "description": "Port for the cuberite webadmin panel.",
+      "default": "8080",
+      "userViewable": true,
+      "userEditable": false,
+      "rules": "required|integer|between:1,65535"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "entrypoint": "bash",
+    "script": "#!/bin/ash\n# Cuberite\n#\n# Server Files: /mnt/server\n\ncd /mnt/server\n\nARCH=$([[ \"$(uname -m)\" == \"x86_64\" ]] && echo \"x86_64\" || echo \"aarch64\")\n\nwget https://download.cuberite.org/linux-${ARCH}/Cuberite.tar.gz\n\ntar -xzf Cuberite.tar.gz\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Startup complete"
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

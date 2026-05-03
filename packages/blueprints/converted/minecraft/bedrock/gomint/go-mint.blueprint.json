@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "name": "GoMint",
+  "author": "parker@parkervcp.com",
+  "description": "A performant and stable Minecraft server software for the Bedrock Edition that comes with a modern API and support for Java 11 LTS.",
+  "dockerImages": {
+    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java --add-opens java.base/java.nio=io.netty.common --add-exports java.base/jdk.internal.misc=io.netty.common -p modules -m gomint.server/io.gomint.server.Bootstrap",
+  "variables": [],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "entrypoint": "bash",
+    "script": "#! /bin/bash\n\nGITHUB_PACKAGE=gomint/gomint\n\napt update\napt install -y curl jq file unzip\n\nif [ ! -d /mnt/server/ ]; then\n    mkdir -p /mnt/server/\nfi\n\ncd /mnt/server/\n\nif [ -z \"${GITHUB_USER}\" ] && [ -z \"${GITHUB_OAUTH_TOKEN}\" ] ; then\n    echo -e \"using anon api call\"\nelse\n    echo -e \"user and oauth token set\"\n    alias curl='curl -u ${GITHUB_USER}:${GITHUB_OAUTH_TOKEN} '\nfi\n\n# retrieve latest tag to be used as version match, because gomint doesn't use normal releases\nLATEST_VERSION=$(curl -sL https://api.github.com/repos/gomint/gomint/tags | jq -r '.[-1].name')\n\nDOWNLOAD_URL=https://github.com/gomint/gomint/releases/download/${LATEST_VERSION}/${LATEST_VERSION}.zip\n\nif [ ! -z \"${DOWNLOAD_URL}\" ]; then \n    if curl --output /dev/null --silent --head --fail ${DOWNLOAD_URL}; then\n        echo -e \"download link is valid. setting download link to ${DOWNLOAD_URL}\"\n        VALIDATED_URL=${DOWNLOAD_URL}\n    else        \n        echo -e \"download link is invalid, something went wrong. Closing out\"\n        exit 2\n    fi\nfi\n\ncurl -sSL -o ${VALIDATED_URL##*/} ${VALIDATED_URL}\n\nFILETYPE=$(file -F ',' ${VALIDATED_URL##*/} | cut -d',' -f2 | cut -d' ' -f2)\nif [ \"$FILETYPE\" == \"gzip\" ]; then\n    tar xzvf ${VALIDATED_URL##*/}\nelif [ \"$FILETYPE\" == \"Zip\" ]; then\n    unzip ${VALIDATED_URL##*/} -d modules/\nelif [ \"$FILETYPE\" == \"XZ\" ]; then\n    tar xvf ${VALIDATED_URL##*/}\nelse\n    echo -e \"unknown filetype. Exiting\"\n    # exit 2 \nfi\n\n# Move files into correct folders and remove unnecessary stuff\nrm ${VALIDATED_URL##*/}\nmv modules/modules/* modules\nrm -rf modules/modules\nrm modules/start.*\n\n# Fetch server config\nif [ ! -f server.yml ]; then\n    curl -sSL -o server.yml https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/bedrock/gomint/server.yml\nfi\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Done in "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

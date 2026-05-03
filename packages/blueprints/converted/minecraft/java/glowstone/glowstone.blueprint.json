@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "name": "Glowstone",
+  "author": "support@pterodactyl.io",
+  "description": "Glowstone is an open-source server implementation for Minecraft: Java Edition 1.12.2 and up.",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms768M -Xmx{{SERVER_MEMORY}}M -XX:+UseG1GC -jar {{SERVER_JARFILE}}",
+  "configFiles": [
+    {
+      "path": "config/glowstone.yml",
+      "parser": "yaml",
+      "patches": {
+        "server.port": "{{SERVER_PORT}}",
+        "console.prompt": ""
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the server jarfile to run the server with.",
+      "default": "glowstone.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "VERSION",
+      "name": "Glowstone Version",
+      "description": "The version of Glowstone to download. If it ends in SNAPSHOT, it will attempt to download from the maven repository.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    },
+    {
+      "key": "GITHUB_USER",
+      "name": "GitHub User",
+      "description": "GitHub user to use for api calls.\n\nThis only needs to be set if you hit the GitHub API too often across multiple servers.",
+      "default": "",
+      "userViewable": false,
+      "userEditable": false,
+      "rules": "string|nullable"
+    },
+    {
+      "key": "GITHUB_OAUTH_TOKEN",
+      "name": "GitHub OAuth Token",
+      "description": "This can be either an OAuth or a Personal Access Token.\n\nThis is required for the install is you set a user.",
+      "default": "",
+      "userViewable": false,
+      "userEditable": false,
+      "rules": "string|nullable"
+    },
+    {
+      "key": "GITHUB_PACKAGE",
+      "name": "GitHub Package",
+      "description": "The repository to download from.",
+      "default": "GlowstoneMC/Glowstone",
+      "userViewable": true,
+      "userEditable": false,
+      "rules": "required|string"
+    },
+    {
+      "key": "MATCH",
+      "name": "Match",
+      "default": "glowstone.jar",
+      "userViewable": false,
+      "userEditable": false,
+      "rules": "required|string"
+    }
+  ],
+  "install": {
+    "image": "eclipse-temurin:8-jdk",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# Server Files: /mnt/server\napt update\napt install -y jq curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ $VERSION == *SNAPSHOT ]; then\n  echo -e \"Using Maven\"\n  \n  DOWNLOAD_URL=\"https://repo.glowstone.net/service/rest/v1/search/assets/download?group=net.glowstone&name=glowstone&sort=version&repository=snapshots&maven.baseVersion=${VERSION}&direction=desc&maven.classifier=\"\nelse \n    echo -e \"Using GitHub.\"\n\n    if [ -z \"${GITHUB_USER}\" ] && [ -z \"${GITHUB_OAUTH_TOKEN}\" ] ; then\n        echo -e \"using anon api call\"\n    else\n        echo -e \"user and oauth token set\"\n        alias curl='curl -u ${GITHUB_USER}:${GITHUB_OAUTH_TOKEN} '\n    fi\n    \n    ## get release info and download links\n    LATEST_JSON=$(curl --silent \"https://api.github.com/repos/${GITHUB_PACKAGE}/releases/latest\")\n    RELEASES=$(curl --silent \"https://api.github.com/repos/${GITHUB_PACKAGE}/releases\")\n\n    if [ -z \"${VERSION}\" ] || [ \"${VERSION}\" == \"latest\" ]; then\n        DOWNLOAD_URL=$(echo ${LATEST_JSON} | jq .assets | jq -r .[].browser_download_url | grep -i ${MATCH})\n    else\n        VERSION_CHECK=$(echo ${RELEASES} | jq -r --arg VERSION \"${VERSION}\" '.[] | select(.tag_name==$VERSION) | .tag_name')\n        if [ \"${VERSION}\" == \"${VERSION_CHECK}\" ]; then\n            DOWNLOAD_URL=$(echo ${RELEASES} | jq -r --arg VERSION \"${VERSION}\" '.[] | select(.tag_name==$VERSION) | .assets[].browser_download_url' | grep -i ${MATCH})\n        else\n            echo -e \"defaulting to latest release\"\n            DOWNLOAD_URL=$(echo ${LATEST_JSON} | jq .assets | jq -r .[].browser_download_url)\n        fi\n    fi\nfi\n\necho -e \"Downloading...\"\ncurl --silent -L -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\necho -e \"Generating configuration...\"\njava -jar ${SERVER_JARFILE} --generate-config\n\necho -e \"Install Complete\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Ready for connections."
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  }
+}

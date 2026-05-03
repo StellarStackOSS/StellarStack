@@ -7,6 +7,7 @@ export type BackupCreateJobData = {
 
 export type BackupRestoreJobData = {
   backupId: string
+  snapshotBeforeRestore?: boolean
 }
 
 export type BackupDeleteJobData = {

@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "name": "SpongeForge",
+  "author": "ptero@redbananaofficial.com",
+  "description": "A community-driven open source Minecraft: Java Edition modding platform.",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true $( [[  ! -f unix_args.txt ]] && printf %s \"-jar {{SERVER_JARFILE}}\" || printf %s \"@unix_args.txt\" )",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the Jarfile to use when running Forge Mod.",
+      "default": "server.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "SF_MC_VERSION",
+      "name": "Spongeforge Minecraft Version",
+      "description": "Either use a full version such as: 1.20.6-50.0.22-11.0.0-RC1633 to fetch an exact version\nOr just use the Minecraft version such as: 1.20.6, 1.19.4, etc. to get the recommended version\nSupported versions can be found here: https://spongepowered.org/downloads/spongeforge",
+      "default": "1.20.6",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:30"
+    }
+  ],
+  "install": {
+    "image": "eclipse-temurin:8-jdk-jammy",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# SpongeForge Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y jq curl\n\nmkdir -p /mnt/server\nmkdir -p /mnt/server/mods\ncd /mnt/server\n\n# Create spongeForge download URL using SF_MC_VERSION variable\nif [[ \"${SF_MC_VERSION}\" == *-* ]]; then\n    echo -e \"Using specific SpongeForge version: ${SF_MC_VERSION}\"\n    SF_VERSION=${SF_MC_VERSION}\nelse\n    echo -e \"Fetching recommended SpongeForge version for Minecraft ${SF_MC_VERSION}\"\n    API_URL=\"https://dl-api-new.spongepowered.org/api/v2/groups/org.spongepowered/artifacts/spongeforge/latest?tags=minecraft:${SF_MC_VERSION}&recommended=true\"\n    SF_VERSION=$(curl -s ${API_URL} | jq -r '.coordinates.version // empty') || true\n    if [[ -z \"${SF_VERSION}\" ]]; then\n        echo -e \"Attempting to fetch latest SpongeForge version for Minecraft ${SF_MC_VERSION}\"\n        API_URL=\"https://dl-api-new.spongepowered.org/api/v2/groups/org.spongepowered/artifacts/spongeforge/latest?tags=minecraft:${SF_MC_VERSION}&recommended=false\"\n        SF_VERSION=$(curl -s ${API_URL} | jq -r '.coordinates.version // empty') || true\n    fi\n    if [[ -z \"${SF_VERSION}\" ]]; then\n        echo -e \"Error: Failed to retrieve SpongeForge version for Minecraft ${SF_MC_VERSION}\"\n        exit 1\n    fi\n    echo -e \"Found SpongeForge version: ${SF_VERSION}\"\nfi\n\n# Handle older versions legacy-transfer\nMC_VERSION=${SF_VERSION%%-*}\nSF_BASE_URL=\"https://repo.spongepowered.org/repository/maven-releases\"\nif [[ \"${MC_VERSION}\" == \"1.12.2\" || $(printf '%s\\n' \"$MC_VERSION\" \"1.12\" | sort -V | head -n1) == \"$MC_VERSION\" ]]; then\n    SF_BASE_URL=\"https://repo.spongepowered.org/repository/legacy-transfer\"\nfi\n\n# Download SpongeForge\nif [[ $(printf '%s\\n' \"$MC_VERSION\" \"1.16.5\" | sort -V | tail -n1) == \"$MC_VERSION\" || \"${MC_VERSION}\" == \"1.21.4\" ]]; then\n    SF_DL_LINK=\"${SF_BASE_URL}/org/spongepowered/spongeforge/${SF_VERSION}/spongeforge-${SF_VERSION}-universal.jar\"\nelse\n    SF_DL_LINK=\"${SF_BASE_URL}/org/spongepowered/spongeforge/${SF_VERSION}/spongeforge-${SF_VERSION}.jar\"\nfi\n\necho -e \"Downloading SpongeForge: ${SF_DL_LINK}\"\ncurl -L --retry 5 --retry-delay 5 -o /mnt/server/mods/spongeforge-${SF_VERSION}.jar ${SF_DL_LINK} || {\n    echo -e \"Error: SpongeForge download failed. Attempted URL: ${SF_DL_LINK}\"\n    exit 1\n}\n\n# Forge version mappings for older versions\ndeclare -A FORGE_VERSIONS=(\n    [\"1.12.2\"]=\"14.23.5.2838\"\n    [\"1.12.1\"]=\"14.22.1.2480\"\n    [\"1.11.2\"]=\"13.20.1.2476\"\n    [\"1.10.2\"]=\"12.18.3.2477\"\n    [\"1.9.4\"]=\"12.17.0.1968\"\n    [\"1.8.9\"]=\"11.15.1.1890-1.8.9\"\n)\n\n# Determine Forge version\nif [[ -n \"${FORGE_VERSIONS[${MC_VERSION}]}\" ]]; then\n    FORGE_VERSION=${FORGE_VERSIONS[${MC_VERSION}]}\nelse\n    IFS='-' read -ra VERSION_PARTS <<< \"$SF_VERSION\"\n    FORGE_VERSION=${VERSION_PARTS[1]:-${VERSION_PARTS[2]}}\nfi\n\n# Use unix_args.txt for versions 1.17 and above\nif printf '%s\\n' \"$MC_VERSION\" \"1.17\" | sort -V | tail -n1 | grep -q \"$MC_VERSION\"; then\n    echo -e \"Using unix_args.txt for versions 1.17 and above.\"\n    ln -sf libraries/net/minecraftforge/forge/${MC_VERSION}-${FORGE_VERSION}/unix_args.txt unix_args.txt\nfi\n\n# Download Forge\necho -e \"Downloading Forge for Minecraft ${MC_VERSION}\"\nFORGE_DL_LINK=\"https://maven.minecraftforge.net/net/minecraftforge/forge/${MC_VERSION}-${FORGE_VERSION}/forge-${MC_VERSION}-${FORGE_VERSION}-installer.jar\"\n\necho -e \"Forge download URL: ${FORGE_DL_LINK}\"\ncurl -L --retry 5 --retry-delay 5 -o installer.jar ${FORGE_DL_LINK} || {\n    echo -e \"Error: Failed to download Forge installer. URL attempted: ${FORGE_DL_LINK}\"\n    exit 1\n}\n\n# Run installer\nif ! java -jar installer.jar --installServer; then\n    echo -e \"Error: Invalid or corrupt Forge installer. URL: ${FORGE_DL_LINK}\"\n    exit 1\nfi\nrm installer.jar\n\n# Locate universal jar\nSERVER_JAR_PATH=$(find . -type f -name \"forge-*-universal.jar\" | head -n 1)\nif [[ -f \"$SERVER_JAR_PATH\" ]]; then\n    echo -e \"Found Forge universal JAR: $SERVER_JAR_PATH\"\n    cp \"$SERVER_JAR_PATH\" server.jar\n    cp \"$SERVER_JAR_PATH\" \"${SERVER_JAR_PATH}.backup\"\nelse\n    echo -e \"Error: Universal Forge JAR not found. Installation failed.\"\n    exit 1\nfi\n\necho -e \"SpongeForge installation complete.\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

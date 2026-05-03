@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
+import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
 import { parseApiErrorBody } from "@workspace/shared/errors"
 
 import { AuthCard } from "@/components/AuthCard"
@@ -44,16 +46,16 @@ export const RegisterPage = () => {
   if (completed) {
     return (
       <AuthCard
-        title="Check your inbox"
-        subtitle="We sent a verification email to confirm your address."
+        title={t("auth.register.verify_title")}
+        subtitle={t("auth.register.verify_subtitle")}
         footer={
           <Link to="/login" className="text-primary underline">
-            Back to sign in
+            {t("auth.register.verify_back")}
           </Link>
         }
       >
         <p className="text-sm">
-          Click the link in the email to activate your account, then sign in.
+          {t("auth.register.verify_body")}
         </p>
       </AuthCard>
     )
@@ -61,57 +63,54 @@ export const RegisterPage = () => {
 
   return (
     <AuthCard
-      title="Create your account"
+      title={t("auth.register.title")}
       footer={
         <span>
-          Already have one?{" "}
+          {t("auth.register.footer_existing")}{" "}
           <Link to="/login" className="text-primary underline">
-            Sign in
+            {t("auth.register.footer_link")}
           </Link>
         </span>
       }
     >
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-xs">
-          <span>Name</span>
-          <input
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">{t("auth.register.name_label")}</Label>
+          <Input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="border-border bg-background h-8 rounded-md border px-2 text-sm"
             autoComplete="name"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs">
-          <span>Email</span>
-          <input
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">{t("auth.register.email_label")}</Label>
+          <Input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border-border bg-background h-8 rounded-md border px-2 text-sm"
             autoComplete="email"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs">
-          <span>Password (8+ characters)</span>
-          <input
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">{t("auth.register.password_label")}</Label>
+          <Input
             type="password"
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border-border bg-background h-8 rounded-md border px-2 text-sm"
             autoComplete="new-password"
           />
-        </label>
+        </div>
         {errorMessage !== null ? (
           <p className="text-destructive text-xs" role="alert">
             {errorMessage}
           </p>
         ) : null}
         <Button type="submit" disabled={pending} className="mt-1 w-full">
-          {pending ? "Creating account…" : "Create account"}
+          {pending ? t("auth.register.submitting") : t("auth.register.submit")}
         </Button>
       </form>
     </AuthCard>

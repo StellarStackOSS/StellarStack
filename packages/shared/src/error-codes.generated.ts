@@ -12,7 +12,9 @@ export type ErrorCode =
   | "backups.not_found"
   | "backups.s3_credentials_missing"
   | "backups.upload_failed"
+  | "blueprints.invalid_image"
   | "blueprints.not_found"
+  | "blueprints.parse.invalid_json"
   | "blueprints.parse.schema_version_unsupported"
   | "blueprints.parse.unknown_field"
   | "files.not_found"
@@ -20,6 +22,7 @@ export type ErrorCode =
   | "files.read_only"
   | "files.too_large"
   | "internal.unexpected"
+  | "nodes.has_servers"
   | "nodes.not_found"
   | "nodes.pair.token_already_claimed"
   | "nodes.pair.token_expired"
@@ -29,8 +32,11 @@ export type ErrorCode =
   | "rate_limit.exceeded"
   | "schedules.cron_invalid"
   | "schedules.not_found"
+  | "servers.action.already_running"
   | "servers.action.invalid_state"
   | "servers.action.suspended"
+  | "servers.allocations.limit_reached"
+  | "servers.cannot_remove_primary_allocation"
   | "servers.create.allocation_unavailable"
   | "servers.create.no_free_allocation"
   | "servers.create.node_at_capacity"
@@ -42,12 +48,14 @@ export type ErrorCode =
   | "servers.lifecycle.crashed.container_exit"
   | "servers.lifecycle.start_timeout"
   | "servers.not_found"
+  | "servers.startup.invalid_docker_image"
   | "transfers.allocation_unavailable"
   | "transfers.not_found"
   | "transfers.push_failed"
   | "transfers.same_node"
   | "transfers.target_unreachable"
   | "transfers.token_invalid"
+  | "users.not_found"
   | "validation.enum"
   | "validation.failed"
   | "validation.invalid"
@@ -73,7 +81,9 @@ export const errorCodes = [
   "backups.not_found",
   "backups.s3_credentials_missing",
   "backups.upload_failed",
+  "blueprints.invalid_image",
   "blueprints.not_found",
+  "blueprints.parse.invalid_json",
   "blueprints.parse.schema_version_unsupported",
   "blueprints.parse.unknown_field",
   "files.not_found",
@@ -81,6 +91,7 @@ export const errorCodes = [
   "files.read_only",
   "files.too_large",
   "internal.unexpected",
+  "nodes.has_servers",
   "nodes.not_found",
   "nodes.pair.token_already_claimed",
   "nodes.pair.token_expired",
@@ -90,8 +101,11 @@ export const errorCodes = [
   "rate_limit.exceeded",
   "schedules.cron_invalid",
   "schedules.not_found",
+  "servers.action.already_running",
   "servers.action.invalid_state",
   "servers.action.suspended",
+  "servers.allocations.limit_reached",
+  "servers.cannot_remove_primary_allocation",
   "servers.create.allocation_unavailable",
   "servers.create.no_free_allocation",
   "servers.create.node_at_capacity",
@@ -103,12 +117,14 @@ export const errorCodes = [
   "servers.lifecycle.crashed.container_exit",
   "servers.lifecycle.start_timeout",
   "servers.not_found",
+  "servers.startup.invalid_docker_image",
   "transfers.allocation_unavailable",
   "transfers.not_found",
   "transfers.push_failed",
   "transfers.same_node",
   "transfers.target_unreachable",
   "transfers.token_invalid",
+  "users.not_found",
   "validation.enum",
   "validation.failed",
   "validation.invalid",

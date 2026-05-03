@@ -14,6 +14,7 @@ import type { Queues } from "@/queues"
 import { buildAdminAuditRoute } from "@/routes/AdminAudit"
 import { buildAdminBlueprintsRoute } from "@/routes/AdminBlueprints"
 import { buildAdminNodesRoute } from "@/routes/AdminNodes"
+import { buildAdminServersRoute } from "@/routes/AdminServers"
 import { buildAdminUsersRoute } from "@/routes/AdminUsers"
 
 const pingPayloadSchema = z.object({
@@ -60,5 +61,6 @@ export const buildAdminRoute = (params: {
     .route("/nodes", buildAdminNodesRoute({ db, env }))
     .route("/blueprints", buildAdminBlueprintsRoute({ db }))
     .route("/users", buildAdminUsersRoute({ db }))
+    .route("/servers", buildAdminServersRoute({ db, queues }))
     .route("/audit", buildAdminAuditRoute({ db }))
 }

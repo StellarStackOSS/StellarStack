@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm"
 import { createDb } from "@workspace/db/client"
 import { serversTable } from "@workspace/db/schema/servers"
 import { panelEventSchema } from "@workspace/shared/events"
+import type { PanelEvent } from "@workspace/shared/events.types"
+import type { DaemonMessage } from "@workspace/daemon-proto/messages.types"
 
 import { buildPingHandler } from "@/handlers/Ping"
 import type { PingJobData } from "@/handlers/Ping"
@@ -11,6 +13,8 @@ import { buildServerInstallHandler } from "@/handlers/ServerInstall"
 import type { ServerInstallJobData } from "@/handlers/ServerInstall.types"
 import { buildServerPowerHandler } from "@/handlers/ServerPower"
 import type { ServerPowerJobData } from "@/handlers/ServerPower.types"
+import { buildServerDeleteHandler } from "@/handlers/ServerDelete"
+import type { ServerDeleteJobData } from "@/handlers/ServerDelete.types"
 import {
   buildBackupCreateHandler,
   buildBackupDeleteHandler,
@@ -56,6 +60,27 @@ const main = async (): Promise<void> => {
   })
   await daemonClient.start()
 
+  // Forward daemon push events (state changes, stats, install logs) to the
+  // panel-events pub/sub channel so the API can fan them out to browser sessions.
+  const toPanelEvent = (_nodeId: string, msg: DaemonMessage): PanelEvent | null => {
+    if (
+      msg.type === "server.state.changed" ||
+      msg.type === "server.stats" ||
+      msg.type === "server.install_log"
+    ) {
+      return msg as PanelEvent
+    }
+    return null
+  }
+
+  daemonClient.onPush((_nodeId, msg) => {
+    const event = toPanelEvent(_nodeId, msg)
+    if (event === null) return
+    pubsub
+      .publish(env.PANEL_EVENTS_CHANNEL, JSON.stringify(event))
+      .catch((err) => logger.error({ err }, "Failed to publish daemon push event"))
+  })
+
   await stateSubscriber.subscribe(env.PANEL_EVENTS_CHANNEL)
   stateSubscriber.on("message", (_channel, payload) => {
     const parsed = panelEventSchema.safeParse(safeJsonParse(payload))
@@ -87,6 +112,11 @@ const main = async (): Promise<void> => {
     pubsub,
   })
   const handleServerPower = buildServerPowerHandler({
+    daemonClient,
+    db,
+    logger,
+  })
+  const handleServerDelete = buildServerDeleteHandler({
     daemonClient,
     db,
     logger,
@@ -144,6 +174,15 @@ const main = async (): Promise<void> => {
     logger.error({ jobId: job?.id, err }, "Server power job failed")
   })
 
+  const deleteWorker = new Worker<ServerDeleteJobData>(
+    "server.delete",
+    async (job) => handleServerDelete(job),
+    { connection, concurrency: 4 }
+  )
+  deleteWorker.on("failed", (job, err) => {
+    logger.error({ jobId: job?.id, err }, "Server delete job failed")
+  })
+
   const backupCreateWorker = new Worker<BackupCreateJobData>(
     "backup.create",
     async (job) => handleBackupCreate(job),
@@ -199,6 +238,7 @@ const main = async (): Promise<void> => {
       pingWorker.close(),
       installWorker.close(),
       powerWorker.close(),
+      deleteWorker.close(),
       backupCreateWorker.close(),
       backupRestoreWorker.close(),
       backupDeleteWorker.close(),

@@ -228,6 +228,8 @@ func (m *Manager) HandleFiles(w http.ResponseWriter, r *http.Request, gate AuthG
 		m.handleCompress(w, r, serverID, gate)
 	case sub == "/files/decompress" && r.Method == http.MethodPost:
 		m.handleDecompress(w, r, serverID, gate)
+	case sub == "/backups/download" && r.Method == http.MethodGet:
+		m.handleBackupDownload(w, r, serverID, gate)
 	default:
 		return false
 	}
@@ -603,6 +605,28 @@ func (m *Manager) handleDecompress(w http.ResponseWriter, r *http.Request, serve
 		count++
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "count": count})
+}
+
+func (m *Manager) handleBackupDownload(w http.ResponseWriter, r *http.Request, serverID string, gate AuthGate) {
+	if ok, status := gate(r, "files.read"); !ok {
+		writeError(w, status, "permissions.denied")
+		return
+	}
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "files.invalid_body")
+		return
+	}
+	f, err := m.BackupReader(serverID, name)
+	if err != nil {
+		writeFsError(w, err)
+		return
+	}
+	defer f.Close()
+	filename := sanitizeName(name) + ".tar.gz"
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.Header().Set("Content-Type", "application/gzip")
+	_, _ = io.Copy(w, f)
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

@@ -1,9 +1,22 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { Checkbox } from "@workspace/ui/components/checkbox"
+import { Input } from "@workspace/ui/components/input"
 import { daemonJwtScopes } from "@workspace/shared/jwt"
 import type { DaemonJwtScope } from "@workspace/shared/jwt.types"
 
+import { ApiFetchError } from "@/lib/ApiFetch"
+import { translateApiError } from "@/lib/TranslateError"
 import { useServerLayout } from "@/components/ServerLayoutContext"
 import {
   useDeleteSubuser,
@@ -45,6 +58,7 @@ const togglePermission = (
  * 403 from the API and see an inline message.
  */
 export const SubusersTab = () => {
+  const { t } = useTranslation()
   const { server } = useServerLayout()
   const subusers = useSubusers(server.id)
   const inviteSubuser = useInviteSubuser(server.id)
@@ -64,7 +78,7 @@ export const SubusersTab = () => {
     event.preventDefault()
     setErrorMessage(null)
     if (invitePermissions.length === 0) {
-      setErrorMessage("Pick at least one permission.")
+      setErrorMessage(t("subusers.error.no_permission"))
       return
     }
     try {
@@ -75,7 +89,11 @@ export const SubusersTab = () => {
       setInviteEmail("")
       setInvitePermissions(defaultPermissions)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -96,7 +114,7 @@ export const SubusersTab = () => {
   const handleSave = async (subuserId: string) => {
     setErrorMessage(null)
     if (editPermissions.length === 0) {
-      setErrorMessage("Pick at least one permission.")
+      setErrorMessage(t("subusers.error.no_permission"))
       return
     }
     try {
@@ -106,19 +124,27 @@ export const SubusersTab = () => {
       })
       cancelEdit()
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
   const handleDelete = async (row: SubuserRow) => {
-    if (!window.confirm(`Revoke ${row.email}'s access to this server?`)) {
+    if (!window.confirm(t("subusers.confirm.revoke", { email: row.email }))) {
       return
     }
     setErrorMessage(null)
     try {
       await deleteSubuser.mutateAsync(row.id)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -126,79 +152,90 @@ export const SubusersTab = () => {
     return (
       <div className="flex flex-col gap-4">
         <header>
-          <h1 className="text-base font-semibold">Users</h1>
+          <h1 className="text-base font-semibold">{t("subusers.title")}</h1>
           <p className="text-muted-foreground text-xs">
-            Subusers + per-server permission scopes.
+            {t("subusers.description")}
           </p>
         </header>
-        <section className="border-border bg-card text-card-foreground rounded-md border p-4">
-          <p className="text-muted-foreground text-xs">
-            Only the server owner (or an admin) can manage subusers.
-          </p>
-        </section>
+        <Card>
+          <CardInner className="p-3">
+            <p className="text-muted-foreground text-xs">
+              {t("subusers.owner_only")}
+            </p>
+          </CardInner>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-base font-semibold">Users</h1>
-        <p className="text-muted-foreground text-xs">
-          Grant other accounts narrow access — console, files, SFTP, backups
-          — without handing over ownership.
-        </p>
-      </header>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>{t("subusers.title")}</CardTitle>
+        </CardHeader>
+        <CardInner className="p-3">
+          <p className="text-sm text-muted-foreground">{t("subusers.description")}</p>
+        </CardInner>
+      </Card>
 
-      <section className="border-border bg-card text-card-foreground flex flex-col gap-3 rounded-md border p-4">
-        <header>
-          <h2 className="text-sm font-medium">Invite</h2>
-          <p className="text-muted-foreground text-xs">
-            The email must already have a panel account.
-          </p>
-        </header>
-        <form onSubmit={handleInvite} className="flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="user@example.com"
-            className="border-border bg-background h-8 max-w-sm rounded-md border px-2 text-xs"
-          />
-          <PermissionGrid
-            value={invitePermissions}
-            onChange={setInvitePermissions}
-          />
-          <div>
-            <Button
-              size="sm"
-              type="submit"
-              disabled={inviteSubuser.isPending || inviteEmail.trim() === ""}
-            >
-              Invite
-            </Button>
-          </div>
-        </form>
-        {errorMessage !== null ? (
-          <p className="text-destructive text-xs" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("subusers.invite_heading")}</CardTitle>
+          <CardDescription>{t("subusers.invite_description")}</CardDescription>
+        </CardHeader>
+        <CardInner className="p-3 flex flex-col gap-3">
+          <form onSubmit={handleInvite} className="flex flex-col gap-3">
+            <Input
+              type="email"
+              required
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder={t("subusers.invite_placeholder")}
+              className="max-w-sm text-xs"
+            />
+            <PermissionGrid
+              value={invitePermissions}
+              onChange={setInvitePermissions}
+            />
+            <div>
+              <Button
+                size="sm"
+                type="submit"
+                disabled={inviteSubuser.isPending || inviteEmail.trim() === ""}
+              >
+                {t("subusers.invite_button")}
+              </Button>
+            </div>
+          </form>
+          {errorMessage !== null ? (
+            <p className="text-destructive text-xs" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+          </CardInner>
+      </Card>
 
-      <section className="border-border bg-card text-card-foreground rounded-md border p-4">
-        <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium">Subusers</h2>
-          <span className="text-muted-foreground text-xs">
-            {rows.length} subuser{rows.length === 1 ? "" : "s"}
-          </span>
-        </header>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("subusers.list_heading")}</CardTitle>
+          <CardAction>
+            <span className="text-muted-foreground text-xs">
+              {t(
+                rows.length === 1
+                  ? "subusers.count_one"
+                  : "subusers.count_other",
+                { count: rows.length }
+              )}
+            </span>
+          </CardAction>
+        </CardHeader>
+        <CardInner className="p-3">
         {subusers.isLoading ? (
-          <p className="text-muted-foreground text-xs">Loading…</p>
+          <p className="text-muted-foreground text-xs">{t("subusers.loading")}</p>
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-xs">
-            No subusers yet. Invite someone above.
+            {t("subusers.empty")}
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
@@ -223,14 +260,14 @@ export const SubusersTab = () => {
                           onClick={() => void handleSave(row.id)}
                           disabled={updateSubuser.isPending}
                         >
-                          Save
+                          {t("subusers.save")}
                         </Button>
                         <Button
                           size="xs"
                           variant="outline"
                           onClick={cancelEdit}
                         >
-                          Cancel
+                          {t("subusers.cancel")}
                         </Button>
                       </>
                     ) : (
@@ -240,7 +277,7 @@ export const SubusersTab = () => {
                           variant="outline"
                           onClick={() => startEdit(row)}
                         >
-                          Edit
+                          {t("subusers.edit")}
                         </Button>
                         <Button
                           size="xs"
@@ -248,7 +285,7 @@ export const SubusersTab = () => {
                           disabled={deleteSubuser.isPending}
                           onClick={() => void handleDelete(row)}
                         >
-                          Revoke
+                          {t("subusers.revoke")}
                         </Button>
                       </>
                     )}
@@ -275,7 +312,8 @@ export const SubusersTab = () => {
             ))}
           </ul>
         )}
-      </section>
+        </CardInner>
+      </Card>
     </div>
   )
 }
@@ -300,10 +338,9 @@ const PermissionGrid = (props: {
               key={scope}
               className="flex items-center gap-2 font-mono text-[0.7rem]"
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={value.includes(scope)}
-                onChange={() => onChange(togglePermission(value, scope))}
+                onCheckedChange={() => onChange(togglePermission(value, scope))}
               />
               <span>{scope}</span>
             </label>

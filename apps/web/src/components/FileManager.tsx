@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 import type { editor } from "monaco-editor"
+import { useMonaco } from "@monaco-editor/react"
 import {
   type ColumnDef,
   type SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
@@ -32,7 +37,9 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
+import { Card } from "@workspace/ui/components/card"
 import { Checkbox } from "@workspace/ui/components/checkbox"
+import { Input } from "@workspace/ui/components/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +56,8 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
+import { ApiFetchError } from "@/lib/ApiFetch"
+import { translateApiError } from "@/lib/TranslateError"
 import {
   useCompressFiles,
   useDecompressFile,
@@ -56,6 +65,7 @@ import {
   useDownloadFile,
   useFileContent,
   useFileList,
+  useMediaBlobUrl,
   useMkdir,
   useRenameFile,
   useSftpCredentials,
@@ -67,24 +77,8 @@ import { FileMoveDialog } from "@/components/FileMoveDialog"
 import { NewFileDialog } from "@/components/NewFileDialog"
 import type { FileEntry, UploadFileEntry } from "@/hooks/useFiles.types"
 import type { FileManagerProps } from "@/components/FileManager.types"
+import { notify } from "@/lib/notify"
 
-const monacoLanguageFor = (path: string): string => {
-  const lower = path.toLowerCase()
-  if (lower.endsWith(".json")) return "json"
-  if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "yaml"
-  if (lower.endsWith(".toml") || lower.endsWith(".ini")) return "ini"
-  if (lower.endsWith(".properties")) return "ini"
-  if (lower.endsWith(".md")) return "markdown"
-  if (lower.endsWith(".sh") || lower.endsWith(".bash")) return "shell"
-  if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "javascript"
-  if (lower.endsWith(".ts")) return "typescript"
-  if (lower.endsWith(".py")) return "python"
-  if (lower.endsWith(".lua")) return "lua"
-  if (lower.endsWith(".go")) return "go"
-  if (lower.endsWith(".rs")) return "rust"
-  if (lower.endsWith(".xml")) return "xml"
-  return "plaintext"
-}
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "—"
@@ -92,6 +86,12 @@ const formatBytes = (bytes: number): string => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+}
+
+const formatSpeed = (bytesPerSec: number): string => {
+  if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)} B/s`
+  if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`
+  return `${(bytesPerSec / 1024 / 1024).toFixed(1)} MB/s`
 }
 
 const formatDate = (iso: string): string => {
@@ -106,16 +106,55 @@ const formatDate = (iso: string): string => {
   })
 }
 
-const parentOf = (path: string): string => {
-  if (path === "" || path === "/") return "/"
-  const trimmed = path.replace(/\/+$/, "")
-  const idx = trimmed.lastIndexOf("/")
-  if (idx <= 0) return "/"
-  return trimmed.slice(0, idx)
-}
-
 const isArchive = (name: string): boolean =>
   name.endsWith(".zip") || name.endsWith(".tar.gz") || name.endsWith(".tgz")
+
+const mediaKind = (path: string): "image" | "video" | null => {
+  const lower = path.toLowerCase()
+  if (
+    lower.endsWith(".png") ||
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".gif") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".svg") ||
+    lower.endsWith(".bmp") ||
+    lower.endsWith(".ico")
+  ) {
+    return "image"
+  }
+  if (
+    lower.endsWith(".mp4") ||
+    lower.endsWith(".webm") ||
+    lower.endsWith(".ogg") ||
+    lower.endsWith(".mov") ||
+    lower.endsWith(".mkv")
+  ) {
+    return "video"
+  }
+  return null
+}
+
+const TEXT_EXTENSIONS = new Set([
+  ".txt", ".md", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+  ".properties", ".env", ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
+  ".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".vue", ".svelte",
+  ".py", ".rb", ".php", ".java", ".kt", ".go", ".rs", ".cs", ".cpp", ".c", ".h",
+  ".html", ".htm", ".xml", ".css", ".scss", ".sass", ".less",
+  ".sql", ".graphql", ".gql", ".lua", ".r", ".m", ".swift",
+  ".log", ".lock", ".gitignore", ".dockerignore", ".editorconfig",
+  ".nginx", ".htaccess",
+])
+
+const isViewable = (path: string): boolean => {
+  if (mediaKind(path) !== null) return true
+  const lower = path.toLowerCase()
+  const dot = lower.lastIndexOf(".")
+  const ext = dot >= 0 ? lower.slice(dot) : ""
+  if (TEXT_EXTENSIONS.has(ext)) return true
+  if (ext === "") return true
+  return false
+}
 
 const pathSegments = (path: string): { label: string; path: string }[] => {
   if (path === "/") return [{ label: "home", path: "/" }]
@@ -153,56 +192,65 @@ const RowActions = ({
   onMove,
   onCompress,
   onDecompress,
-}: RowActionsProps) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100"
-      >
-        <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-40">
-      <DropdownMenuItem onClick={() => void onRename(entry)}>
-        <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 size-3.5" />
-        Rename
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => onMove(entry)}>
-        <HugeiconsIcon icon={Drag01Icon} className="mr-2 size-3.5" />
-        Move to…
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => void onDownload(entry.path)}>
-        <HugeiconsIcon icon={DownloadIcon} className="mr-2 size-3.5" />
-        Download
-      </DropdownMenuItem>
-      {entry.isDir ? (
-        <DropdownMenuItem onClick={() => void onCompress(entry)}>
-          <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
-          Compress
+}: RowActionsProps) => {
+  const { t } = useTranslation()
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100"
+        >
+          <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuItem onClick={() => void onRename(entry)}>
+          <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 size-3.5" />
+          {t("files.action.rename")}
         </DropdownMenuItem>
-      ) : null}
-      {!entry.isDir && isArchive(entry.name) ? (
-        <DropdownMenuItem onClick={() => void onDecompress(entry)}>
-          <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
-          Decompress
+        <DropdownMenuItem onClick={() => onMove(entry)}>
+          <HugeiconsIcon icon={Drag01Icon} className="mr-2 size-3.5" />
+          {t("files.action.move")}
         </DropdownMenuItem>
-      ) : null}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem
-        className="text-destructive focus:text-destructive"
-        onClick={() => void onDelete(entry.path)}
-      >
-        <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-3.5" />
-        Delete
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-)
+        <DropdownMenuItem onClick={() => void onDownload(entry.path)}>
+          <HugeiconsIcon icon={DownloadIcon} className="mr-2 size-3.5" />
+          {t("files.action.download")}
+        </DropdownMenuItem>
+        {entry.isDir ? (
+          <DropdownMenuItem onClick={() => void onCompress(entry)}>
+            <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
+            {t("files.action.compress")}
+          </DropdownMenuItem>
+        ) : null}
+        {!entry.isDir && isArchive(entry.name) ? (
+          <DropdownMenuItem onClick={() => void onDecompress(entry)}>
+            <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
+            {t("files.action.decompress")}
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => void onDelete(entry.path)}
+        >
+          <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-3.5" />
+          {t("files.action.delete")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export const FileManager = ({ serverId }: FileManagerProps) => {
-  const [path, setPath] = useState("/")
+  const { t } = useTranslation()
+  const monaco = useMonaco()
+  const { dir: path } = useSearch({ from: "/servers/$id/files" })
+  const navigate = useNavigate({ from: "/servers/$id/files" })
+  const setPath = (next: string) => {
+    void navigate({ search: (prev) => ({ ...prev, dir: next }) })
+  }
   const [selected, setSelected] = useState<string | null>(null)
   const [draft, setDraft] = useState<string | null>(null)
   const [filter, setFilter] = useState("")
@@ -220,13 +268,19 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   const [wordWrap, setWordWrap] = useState<"on" | "off">("off")
   const [lineNumbers, setLineNumbers] = useState<"on" | "off">("on")
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const editorPanelRef = useRef<HTMLDivElement | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
+  const selectedMedia = selected !== null ? mediaKind(selected) : null
+  const selectedViewable = selected !== null ? isViewable(selected) : false
+  const textPath = selectedMedia === null && selectedViewable ? selected : null
+  const mediaPath = selectedMedia !== null ? selected : null
+
   const list = useFileList(serverId, path)
-  const content = useFileContent(serverId, selected)
+  const content = useFileContent(serverId, textPath)
+  const mediaBlobUrl = useMediaBlobUrl(serverId, mediaPath)
   const writeFile = useWriteFile(serverId)
   const deleteFile = useDeleteFile(serverId)
   const mkdir = useMkdir(serverId)
@@ -247,6 +301,13 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     setRowSelection({})
     setFilter("")
   }, [path])
+
+  useEffect(() => {
+    if (!content.isLoading && editorRef.current !== null) {
+      editorRef.current.setPosition({ lineNumber: 1, column: 1 })
+      editorRef.current.revealLine(1)
+    }
+  }, [selected, content.isLoading])
 
   const entries: FileEntry[] = useMemo(
     () =>
@@ -271,25 +332,34 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       handleNavigate(entry)
       return
     }
+    if (selected === entry.path && draft === null) {
+      setSelected(null)
+      return
+    }
     setSelected(entry.path)
     setDraft(null)
   }
 
   const handleSave = async () => {
     if (selected === null || draft === null) return
-    setErrorMessage(null)
     try {
       await writeFile.mutateAsync({ path: selected, content: draft })
       setDraft(null)
+      notify.success(t("files.notify.saved"))
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
   const handleDelete = (target: string) => {
+    const name = target.split("/").pop() ?? target
     setConfirmDialog({
-      title: `Delete ${target.split("/").pop() ?? target}?`,
-      description: "This will permanently remove the file or folder and cannot be undone.",
+      title: t("files.confirm.delete_title", { name }),
+      description: t("files.confirm.delete_description"),
       onConfirm: async () => {
         await deleteFile.mutateAsync(target)
         if (selected === target) {
@@ -304,10 +374,14 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     const paths = Object.keys(rowSelection).filter((k) => rowSelection[k])
     if (paths.length === 0) return
     setConfirmDialog({
-      title: `Delete ${paths.length} item${paths.length === 1 ? "" : "s"}?`,
-      description: "This will permanently remove the selected files and folders and cannot be undone.",
+      title: t(
+        paths.length === 1
+          ? "files.confirm.delete_many_title"
+          : "files.confirm.delete_many_title_plural",
+        { count: paths.length }
+      ),
+      description: t("files.confirm.delete_many_description"),
       onConfirm: async () => {
-        setErrorMessage(null)
         for (const p of paths) {
           await deleteFile.mutateAsync(p)
         }
@@ -324,8 +398,13 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     try {
       await compressFiles.mutateAsync({ paths, destination: dest })
       setRowSelection({})
+      notify.success(t("files.notify.compressed_selection"))
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -339,7 +418,11 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     try {
       await mkdir.mutateAsync(target)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -357,7 +440,38 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     try {
       await sftp.mutateAsync()
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
+    }
+  }
+
+  const runUpload = async (uploads: UploadFileEntry[]) => {
+    const label = `Uploading ${uploads.length} file${uploads.length === 1 ? "" : "s"}…`
+    const total = uploads.reduce((sum, u) => sum + u.file.size, 0)
+    const id = notify.loading(label, { description: `0% · ${formatBytes(total)} total` })
+    try {
+      const result = await uploadFiles.mutateAsync({
+        targetDir: path,
+        files: uploads,
+        onProgress: (loaded, _total, bytesPerSec) => {
+          const pct = Math.round((loaded / _total) * 100)
+          notify.update(id, { description: `${pct}% · ${formatSpeed(bytesPerSec)}` })
+        },
+      })
+      notify.update(id, {
+        kind: "success",
+        title: `Uploaded ${result.count} file${result.count === 1 ? "" : "s"}`,
+        description: undefined,
+      })
+    } catch (err) {
+      notify.update(id, {
+        kind: "error",
+        title: err instanceof Error ? err.message : "Upload failed",
+        description: undefined,
+      })
     }
   }
 
@@ -371,11 +485,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       relativePath: f.name,
     }))
     e.target.value = ""
-    try {
-      await uploadFiles.mutateAsync({ targetDir: path, files: uploads })
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
-    }
+    await runUpload(uploads)
   }
 
   const handleFolderInputChange = async (
@@ -388,18 +498,18 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       relativePath: f.webkitRelativePath || f.name,
     }))
     e.target.value = ""
-    try {
-      await uploadFiles.mutateAsync({ targetDir: path, files: uploads })
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
-    }
+    await runUpload(uploads)
   }
 
   const handleDownload = async (entryPath: string) => {
     try {
       await downloadFile(entryPath)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -413,7 +523,11 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     try {
       await renameFile.mutateAsync({ from: entry.path, to: newPath })
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -424,8 +538,13 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
         : `${path.replace(/\/+$/, "")}/${entry.name}.zip`
     try {
       await compressFiles.mutateAsync({ paths: [entry.path], destination })
+      notify.success(t("files.notify.compressed", { name: `${entry.name}.zip` }))
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -438,8 +557,13 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   const handleDecompress = async (entry: FileEntry) => {
     try {
       await decompressFile.mutateAsync({ path: entry.path, destination: path })
+      notify.success(t("files.notify.decompressed"))
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        notify.error(translateApiError(t, err.body.error))
+      } else {
+        notify.error(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -470,6 +594,12 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       },
       {
         accessorKey: "name",
+        sortingFn: (rowA, rowB) => {
+          if (rowA.original.isDir !== rowB.original.isDir) {
+            return rowA.original.isDir ? -1 : 1
+          }
+          return rowA.original.name.localeCompare(rowB.original.name)
+        },
         header: ({ column }) => (
           <button
             type="button"
@@ -478,7 +608,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               column.toggleSorting(column.getIsSorted() === "asc")
             }
           >
-            Name
+            {t("files.col.name")}
             {column.getIsSorted() === "asc" ? (
               <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
@@ -519,7 +649,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               column.toggleSorting(column.getIsSorted() === "asc")
             }
           >
-            Size
+            {t("files.col.size")}
             {column.getIsSorted() === "asc" ? (
               <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
@@ -537,7 +667,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       },
       {
         accessorKey: "mode",
-        header: "Permissions",
+        header: () => t("files.col.permissions"),
         cell: ({ row }) => (
           <code className="text-muted-foreground font-mono text-[0.7rem]">
             {row.original.mode}
@@ -556,7 +686,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               column.toggleSorting(column.getIsSorted() === "asc")
             }
           >
-            Modified
+            {t("files.col.modified")}
             {column.getIsSorted() === "asc" ? (
               <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
@@ -608,14 +738,17 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 50 } },
     enableRowSelection: true,
+    autoResetPageIndex: true,
   })
 
   const selectedCount = Object.values(rowSelection).filter(Boolean).length
   const segments = pathSegments(path)
 
   return (
-    <div className="flex flex-col gap-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden">
+    <Card className="gap-0 p-0 rounded-xl">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         {/* Breadcrumb */}
@@ -649,17 +782,17 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               icon={Search01Icon}
               className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none"
             />
-            <input
+            <Input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter files…"
-              className="h-7 pl-6 pr-2 text-xs bg-muted rounded-md border-0 w-36 focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder={t("files.filter_placeholder")}
+              className="h-7 pl-6 pr-2 text-xs bg-muted border-0 w-36"
             />
           </div>
 
           <Button size="xs" variant="outline" onClick={handleMkdir}>
             <HugeiconsIcon icon={FolderAddIcon} className="mr-1 size-3" />
-            New folder
+            {t("files.new_folder")}
           </Button>
           <Button
             size="xs"
@@ -667,7 +800,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => setNewFileOpen(true)}
           >
             <HugeiconsIcon icon={FileAddIcon} className="mr-1 size-3" />
-            New file
+            {t("files.new_file")}
           </Button>
           <Button
             size="xs"
@@ -676,7 +809,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             disabled={uploadFiles.isPending}
           >
             <HugeiconsIcon icon={FileUploadIcon} className="mr-1 size-3" />
-            {uploadFiles.isPending ? "Uploading…" : "Upload files"}
+            {uploadFiles.isPending ? t("files.uploading") : t("files.upload_files")}
           </Button>
           <Button
             size="xs"
@@ -685,10 +818,10 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             disabled={uploadFiles.isPending}
           >
             <HugeiconsIcon icon={FolderUploadIcon} className="mr-1 size-3" />
-            {uploadFiles.isPending ? "Uploading…" : "Upload folder"}
+            {uploadFiles.isPending ? t("files.uploading") : t("files.upload_folder")}
           </Button>
           <Button size="xs" variant="outline" onClick={handleSftp}>
-            SFTP
+            {t("files.sftp_button")}
           </Button>
         </div>
       </div>
@@ -697,7 +830,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       {selectedCount > 0 ? (
         <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-3 py-1.5 text-xs">
           <span className="text-muted-foreground">
-            {selectedCount} selected
+            {t("files.bulk.selected", { count: selectedCount })}
           </span>
           <Button
             size="xs"
@@ -705,7 +838,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => void handleCompressSelected()}
           >
             <HugeiconsIcon icon={PackageIcon} className="mr-1 size-3" />
-            Compress
+            {t("files.bulk.compress")}
           </Button>
           <Button
             size="xs"
@@ -713,14 +846,14 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => void handleDeleteSelected()}
           >
             <HugeiconsIcon icon={Delete02Icon} className="mr-1 size-3" />
-            Delete
+            {t("files.bulk.delete")}
           </Button>
           <button
             type="button"
             className="ml-auto text-muted-foreground hover:text-foreground"
             onClick={() => setRowSelection({})}
           >
-            Clear
+            {t("files.bulk.clear")}
           </button>
         </div>
       ) : null}
@@ -742,7 +875,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       />
 
       {/* Table */}
-      <div className="overflow-auto">
+      <div className="overflow-auto min-h-64 max-h-[calc(100vh-var(--header-height)-16rem)]">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -771,7 +904,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
                   colSpan={columns.length}
                   className="text-center text-xs text-muted-foreground h-24"
                 >
-                  Loading…
+                  {t("files.loading")}
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
@@ -780,128 +913,210 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
                   colSpan={columns.length}
                   className="text-center text-xs text-muted-foreground h-24"
                 >
-                  {filter.length > 0 ? "No files match." : "This folder is empty."}
+                  {filter.length > 0 ? t("files.no_match") : t("files.empty_folder")}
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() ? "selected" : undefined}
-                  className="group/row text-xs"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-1.5">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
+              table.getPaginationRowModel().rows.map((row) => (
+                <Fragment key={row.id}>
+                  <TableRow
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    className="group/row text-xs"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-1.5">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  <AnimatePresence initial={false}>
+                    {selected === row.original.path ? (
+                      <TableRow key="editor-row">
+                        <TableCell colSpan={columns.length} className="p-0 border-b border-border">
+                          <motion.div
+                            ref={editorPanelRef}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            style={{ overflow: "hidden" }}
+                          >
+                            {/* Header: path + save/close */}
+                            <div className="flex items-center justify-between border-b border-border px-3 py-2">
+                              <code className="text-xs truncate max-w-xs">{selected}</code>
+                              <div className="flex items-center gap-2">
+                                {selectedMedia === null && selectedViewable ? (
+                                  <Button
+                                    size="xs"
+                                    onClick={() => void handleSave()}
+                                    disabled={draft === null || writeFile.isPending}
+                                  >
+                                    {writeFile.isPending ? t("files.editor.saving") : t("files.editor.save")}
+                                  </Button>
+                                ) : null}
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={() => { setSelected(null); setDraft(null) }}
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            </div>
+                            {!selectedViewable ? (
+                              <div className="flex items-center justify-center bg-muted/20 p-8 min-h-24">
+                                <p className="text-muted-foreground text-xs">
+                                  {t("files.editor.unsupported_format")}
+                                </p>
+                              </div>
+                            ) : selectedMedia !== null ? (
+                              <div className="flex items-center justify-center bg-muted/20 p-4 min-h-48">
+                                {mediaBlobUrl === null ? (
+                                  <p className="text-muted-foreground text-xs">Loading…</p>
+                                ) : selectedMedia === "image" ? (
+                                  <img
+                                    src={mediaBlobUrl}
+                                    alt={selected.split("/").pop()}
+                                    className="max-w-full max-h-[32rem] object-contain rounded"
+                                  />
+                                ) : (
+                                  <video
+                                    src={mediaBlobUrl}
+                                    controls
+                                    className="max-w-full max-h-[32rem] rounded"
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1">
+                                  <span className="text-[0.65rem] text-muted-foreground font-mono bg-muted rounded px-1.5 py-0.5">
+                                    {monaco?.languages
+                                      .getLanguages()
+                                      .find((l) =>
+                                        l.extensions?.some((ext) =>
+                                          selected.toLowerCase().endsWith(ext)
+                                        )
+                                      )?.id ?? "plaintext"}
+                                  </span>
+                                  <div className="ml-auto flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      title={`Line numbers: ${lineNumbers}`}
+                                      onClick={() => setLineNumbers((v) => v === "on" ? "off" : "on")}
+                                      className={[
+                                        "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
+                                        lineNumbers === "on"
+                                          ? "bg-primary/10 text-primary"
+                                          : "text-muted-foreground hover:text-foreground",
+                                      ].join(" ")}
+                                    >
+                                      <HugeiconsIcon icon={HashtagIcon} className="size-3" />
+                                      {t("files.editor.toggle_lines")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title={`Word wrap: ${wordWrap}`}
+                                      onClick={() => setWordWrap((v) => v === "on" ? "off" : "on")}
+                                      className={[
+                                        "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
+                                        wordWrap === "on"
+                                          ? "bg-primary/10 text-primary"
+                                          : "text-muted-foreground hover:text-foreground",
+                                      ].join(" ")}
+                                    >
+                                      <HugeiconsIcon icon={TextWrapIcon} className="size-3" />
+                                      {t("files.editor.toggle_wrap")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title={t("files.editor.format")}
+                                      onClick={handleFormatDocument}
+                                      className="flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem] text-muted-foreground hover:text-foreground"
+                                    >
+                                      {t("files.editor.format")}
+                                    </button>
+                                  </div>
+                                </div>
+                                {content.isLoading ? (
+                                  <p className="text-muted-foreground p-3 text-xs">{t("files.editor.loading")}</p>
+                                ) : (
+                                  <div className="h-96">
+                                    <Editor
+                                      path={selected}
+                                      value={editorValue}
+                                      onChange={(value) => setDraft(value ?? "")}
+                                      onMount={(ed) => { editorRef.current = ed }}
+                                      theme="vs-dark"
+                                      options={{
+                                        minimap: { enabled: false },
+                                        fontSize: 12,
+                                        lineNumbers,
+                                        wordWrap,
+                                        scrollBeyondLastLine: false,
+                                        tabSize: 2,
+                                        renderLineHighlight: "line",
+                                        smoothScrolling: true,
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </motion.div>
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </AnimatePresence>
+                </Fragment>
               ))
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Monaco editor panel */}
-      {selected !== null ? (
-        <div className="border-t border-border flex flex-col">
-          {/* Editor header: path + save/close */}
-          <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <code className="text-xs truncate max-w-xs">{selected}</code>
-            <div className="flex items-center gap-2">
-              <Button
-                size="xs"
-                onClick={() => void handleSave()}
-                disabled={draft === null || writeFile.isPending}
-              >
-                {writeFile.isPending ? "Saving…" : "Save"}
-              </Button>
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => { setSelected(null); setDraft(null) }}
-              >
-                ✕
-              </Button>
-            </div>
-          </div>
-          {/* Editor toolbar: language + toggles + format */}
-          <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1">
-            <span className="text-[0.65rem] text-muted-foreground font-mono bg-muted rounded px-1.5 py-0.5">
-              {monacoLanguageFor(selected)}
+      {/* Pagination */}
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span>
+            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}–
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+              table.getFilteredRowModel().rows.length
+            )}{" "}
+            of {table.getFilteredRowModel().rows.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+            >
+              ‹ Prev
+            </Button>
+            <span className="px-1">
+              {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
             </span>
-            <div className="ml-auto flex items-center gap-1">
-              <button
-                type="button"
-                title={`Line numbers: ${lineNumbers}`}
-                onClick={() => setLineNumbers((v) => v === "on" ? "off" : "on")}
-                className={[
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
-                  lineNumbers === "on"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                ].join(" ")}
-              >
-                <HugeiconsIcon icon={HashtagIcon} className="size-3" />
-                Lines
-              </button>
-              <button
-                type="button"
-                title={`Word wrap: ${wordWrap}`}
-                onClick={() => setWordWrap((v) => v === "on" ? "off" : "on")}
-                className={[
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem]",
-                  wordWrap === "on"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                ].join(" ")}
-              >
-                <HugeiconsIcon icon={TextWrapIcon} className="size-3" />
-                Wrap
-              </button>
-              <button
-                type="button"
-                title="Format document"
-                onClick={handleFormatDocument}
-                className="flex items-center gap-1 rounded px-2 py-0.5 text-[0.65rem] text-muted-foreground hover:text-foreground"
-              >
-                Format
-              </button>
-            </div>
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+            >
+              Next ›
+            </Button>
           </div>
-          {content.isLoading ? (
-            <p className="text-muted-foreground p-3 text-xs">Loading…</p>
-          ) : (
-            <div className="h-96">
-              <Editor
-                value={editorValue}
-                language={monacoLanguageFor(selected)}
-                onChange={(value) => setDraft(value ?? "")}
-                onMount={(ed) => { editorRef.current = ed }}
-                theme="vs-dark"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 12,
-                  lineNumbers,
-                  wordWrap,
-                  scrollBeyondLastLine: false,
-                  tabSize: 2,
-                  renderLineHighlight: "line",
-                  smoothScrolling: true,
-                }}
-              />
-            </div>
-          )}
         </div>
-      ) : null}
+      )}
 
       {/* SFTP credentials */}
       {sftp.data !== undefined ? (
         <div className="border-t border-border bg-muted/40 p-3 text-xs">
-          <h3 className="mb-1 font-medium">SFTP credentials (visible once)</h3>
+          <h3 className="mb-1 font-medium">{t("files.sftp_heading")}</h3>
           <pre className="bg-background overflow-x-auto rounded p-2 font-mono">{`Host:     ${sftp.data.host}
 Port:     ${sftp.data.port}
 Username: ${sftp.data.username}
@@ -910,19 +1125,12 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         </div>
       ) : null}
 
-      {/* Error banner */}
-      {errorMessage !== null ? (
-        <p className="text-destructive border-t border-border p-2 text-xs" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-
       <ConfirmDialog
         open={confirmDialog !== null}
         onOpenChange={(open) => { if (!open) setConfirmDialog(null) }}
         title={confirmDialog?.title ?? ""}
         description={confirmDialog?.description}
-        confirmLabel="Delete"
+        confirmLabel={t("actions.delete")}
         variant="destructive"
         onConfirm={confirmDialog?.onConfirm ?? (async () => {})}
       />
@@ -941,6 +1149,6 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         onOpenChange={(open) => { if (!open) setMoveTarget(null) }}
         onMove={handleMoveConfirm}
       />
-    </div>
+    </Card>
   )
 }

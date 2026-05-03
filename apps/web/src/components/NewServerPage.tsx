@@ -3,9 +3,20 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
+import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import { ResourceStepper } from "@/components/ResourceStepper"
 
 import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
+import { useAllocations } from "@/hooks/useAllocations"
 import { useBlueprints } from "@/hooks/useBlueprints"
 import { useNodes } from "@/hooks/useNodes"
 import { useCreateServer } from "@/hooks/useServers"
@@ -26,6 +37,7 @@ export const NewServerPage = () => {
 
   const [blueprintId, setBlueprintId] = useState("")
   const [nodeId, setNodeId] = useState("")
+  const [allocationId, setAllocationId] = useState("")
   const [name, setName] = useState("")
   const [memoryLimitMb, setMemoryLimitMb] = useState(1024)
   const [cpuLimitPercent, setCpuLimitPercent] = useState(100)
@@ -33,6 +45,17 @@ export const NewServerPage = () => {
   const [variables, setVariables] = useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
+
+  const selectedNode = useMemo(
+    () => nodesQuery.data?.nodes.find((n) => n.id === nodeId) ?? null,
+    [nodesQuery.data, nodeId]
+  )
+
+  const allocationsQuery = useAllocations(nodeId !== "" ? nodeId : null)
+  const freeAllocations = useMemo(
+    () => (allocationsQuery.data?.allocations ?? []).filter((a) => a.serverId === null),
+    [allocationsQuery.data]
+  )
 
   const blueprint = useMemo(
     () =>
@@ -46,6 +69,16 @@ export const NewServerPage = () => {
     [blueprint]
   )
   const [dockerImage, setDockerImage] = useState("")
+
+  const handleNodeChange = (id: string) => {
+    setNodeId(id)
+    setAllocationId("")
+    const node = nodesQuery.data?.nodes.find((n) => n.id === id)
+    if (node !== undefined) {
+      setMemoryLimitMb(Math.min(memoryLimitMb, node.memoryTotalMb))
+      setDiskLimitMb(Math.min(diskLimitMb, node.diskTotalMb))
+    }
+  }
 
   const handleBlueprintChange = (id: string) => {
     setBlueprintId(id)
@@ -70,7 +103,7 @@ export const NewServerPage = () => {
     setFieldErrors([])
 
     if (blueprintId === "" || nodeId === "" || dockerImage === "") {
-      setErrorMessage("Pick a blueprint, node, and image first.")
+      setErrorMessage(t("new_server.error.pick_blueprint_node_image"))
       return
     }
 
@@ -78,6 +111,7 @@ export const NewServerPage = () => {
       name,
       blueprintId,
       nodeId,
+      ...(allocationId !== "" ? { allocationId } : {}),
       dockerImage,
       memoryLimitMb,
       cpuLimitPercent,
@@ -105,116 +139,146 @@ export const NewServerPage = () => {
         } else {
           setErrorMessage(translateApiError(t, err.body.error))
         }
-      } else if (err instanceof Error) {
-        setErrorMessage(err.message)
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
       }
     }
   }
 
   return (
-    <div className="bg-background text-foreground flex min-h-svh flex-col">
-      <header className="border-border flex items-center justify-between border-b px-6 py-4">
-        <h1 className="text-base font-semibold">Provision a server</h1>
+    <div className="flex flex-col gap-4">
+      <header className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-base font-semibold">{t("new_server.title")}</h1>
+        </div>
         <Link to="/dashboard">
           <Button variant="outline" size="sm">
-            Cancel
+            {t("new_server.cancel")}
           </Button>
         </Link>
       </header>
-      <main className="mx-auto w-full max-w-2xl p-6">
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-          <Field label="Name">
-            <input
+      <main>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <Field label={t("new_server.field.name")}>
+            <Input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="border-border bg-background h-8 rounded-md border px-2 text-sm"
             />
           </Field>
-          <Field label="Blueprint">
-            <select
+          <Field label={t("new_server.field.blueprint")}>
+            <Select
               value={blueprintId}
-              onChange={(e) => handleBlueprintChange(e.target.value)}
-              required
-              className="border-border bg-background h-8 rounded-md border px-2 text-sm"
+              onValueChange={(v) => handleBlueprintChange(v)}
             >
-              <option value="">Select a blueprint…</option>
-              {blueprintsQuery.data?.blueprints.map((bp) => (
-                <option key={bp.id} value={bp.id}>
-                  {typeof bp.name === "string" ? bp.name : `[${bp.name.key}]`}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder={t("new_server.field.blueprint_placeholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {blueprintsQuery.data?.blueprints.map((bp) => (
+                  <SelectItem key={bp.id} value={bp.id}>
+                    {typeof bp.name === "string" ? bp.name : `[${bp.name.key}]`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
-          <Field label="Docker image">
-            <select
+          <Field label={t("new_server.field.docker_image")}>
+            <Select
               value={dockerImage}
-              onChange={(e) => setDockerImage(e.target.value)}
-              required
+              onValueChange={(v) => setDockerImage(v)}
               disabled={dockerImageOptions.length === 0}
-              className="border-border bg-background h-8 rounded-md border px-2 text-sm"
             >
-              <option value="">Select an image…</option>
-              {dockerImageOptions.map(([label, image]) => (
-                <option key={label} value={image}>
-                  {label} ({image})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder={t("new_server.field.docker_image_placeholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {dockerImageOptions.map(([label, image]) => (
+                  <SelectItem key={label} value={image}>
+                    {label} ({image})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
-          <Field label="Node">
-            <select
+          <Field label={t("new_server.field.node")}>
+            <Select
               value={nodeId}
-              onChange={(e) => setNodeId(e.target.value)}
-              required
-              className="border-border bg-background h-8 rounded-md border px-2 text-sm"
+              onValueChange={handleNodeChange}
             >
-              <option value="">Select a node…</option>
-              {nodesQuery.data?.nodes.map((node) => (
-                <option key={node.id} value={node.id}>
-                  {node.name} ({node.fqdn})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder={t("new_server.field.node_placeholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {nodesQuery.data?.nodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id}>
+                    {node.name} ({node.fqdn})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Memory (MB)">
-              <input
-                type="number"
-                min={1}
-                value={memoryLimitMb}
-                onChange={(e) => setMemoryLimitMb(Number(e.target.value))}
-                required
-                className="border-border bg-background h-8 rounded-md border px-2 text-sm"
-              />
-            </Field>
-            <Field label="CPU (%)">
-              <input
-                type="number"
-                min={1}
-                value={cpuLimitPercent}
-                onChange={(e) => setCpuLimitPercent(Number(e.target.value))}
-                required
-                className="border-border bg-background h-8 rounded-md border px-2 text-sm"
-              />
-            </Field>
-            <Field label="Disk (MB)">
-              <input
-                type="number"
-                min={1}
-                value={diskLimitMb}
-                onChange={(e) => setDiskLimitMb(Number(e.target.value))}
-                required
-                className="border-border bg-background h-8 rounded-md border px-2 text-sm"
-              />
-            </Field>
-          </div>
+          <Field label={t("new_server.field.allocation")}>
+            <Select
+              value={allocationId}
+              onValueChange={setAllocationId}
+              disabled={nodeId === "" || allocationsQuery.isLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={
+                  nodeId === ""
+                    ? t("new_server.field.allocation_pick_node_first")
+                    : allocationsQuery.isLoading
+                      ? t("new_server.field.allocation_loading")
+                      : t("new_server.field.allocation_auto")
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{t("new_server.field.allocation_auto")}</SelectItem>
+                {freeAllocations.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.ip}:{a.port}{a.alias ? ` (${a.alias})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <ResourceStepper
+            label={t("new_server.field.memory_mb")}
+            value={memoryLimitMb}
+            min={128}
+            max={selectedNode?.memoryTotalMb ?? 65536}
+            step={128}
+            unit="MB"
+            onChange={setMemoryLimitMb}
+            disabled={selectedNode === null}
+          />
+          <ResourceStepper
+            label={t("new_server.field.cpu_percent")}
+            value={cpuLimitPercent}
+            min={1}
+            max={10000}
+            step={1}
+            unit="%"
+            onChange={setCpuLimitPercent}
+            disabled={selectedNode === null}
+          />
+          <ResourceStepper
+            label={t("new_server.field.disk_mb")}
+            value={diskLimitMb}
+            min={512}
+            max={selectedNode?.diskTotalMb ?? 1_000_000}
+            step={512}
+            unit="MB"
+            onChange={setDiskLimitMb}
+            disabled={selectedNode === null}
+          />
           {blueprint !== null && blueprint.variables.length > 0 ? (
             <section className="border-border bg-card mt-2 flex flex-col gap-2 rounded-md border p-3">
-              <h2 className="text-xs font-medium">Blueprint variables</h2>
+              <h2 className="text-xs font-medium">{t("new_server.blueprint_variables")}</h2>
               {blueprint.variables.map((variable) => (
                 <Field key={variable.key} label={variable.key}>
-                  <input
+                  <Input
                     value={variables[variable.key] ?? variable.default}
                     onChange={(e) =>
                       setVariables({
@@ -223,7 +287,6 @@ export const NewServerPage = () => {
                       })
                     }
                     disabled={!variable.userEditable}
-                    className="border-border bg-background h-8 rounded-md border px-2 text-sm"
                   />
                 </Field>
               ))}
@@ -251,12 +314,13 @@ export const NewServerPage = () => {
             disabled={createServer.isPending}
             className="mt-2"
           >
-            {createServer.isPending ? "Provisioning…" : "Provision server"}
+            {createServer.isPending ? t("new_server.submitting") : t("new_server.submit")}
           </Button>
         </form>
       </main>
     </div>
   )
+
 }
 
 const Field = ({
@@ -266,8 +330,9 @@ const Field = ({
   label: string
   children: React.ReactNode
 }) => (
-  <label className="flex flex-col gap-1 text-xs">
-    <span>{label}</span>
+  <div className="flex flex-col gap-1">
+    <Label className="text-xs">{label}</Label>
     {children}
-  </label>
+  </div>
 )
+

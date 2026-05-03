@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm"
+import { hashPassword } from "better-auth/crypto"
 
 import { createDb } from "@workspace/db/client"
+import { accountsTable, usersTable } from "@workspace/db/schema/auth"
 import { blueprintsTable } from "@workspace/db/schema/blueprints"
 import { blueprintSchema } from "@workspace/shared/blueprint"
 import type { Blueprint } from "@workspace/shared/blueprint.types"
@@ -73,7 +75,7 @@ const minecraftBlueprint: Blueprint = {
           match: {
             type: "regex",
             pattern:
-              "^\\[..:..:..\\] \\[Server thread/INFO\\]: Done \\(.+\\)!",
+              "Done \\(.+\\)! For help",
           },
         },
       ],
@@ -149,9 +151,53 @@ const upsertBlueprint = async (blueprint: Blueprint): Promise<string> => {
   return row.id
 }
 
+const upsertAdmin = async (email: string, password: string, name: string) => {
+  const existing = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1)
+
+  const existingRow = existing[0]
+  if (existingRow !== undefined) {
+    await db
+      .update(usersTable)
+      .set({ isAdmin: true, emailVerified: true, name })
+      .where(eq(usersTable.id, existingRow.id))
+    console.log(`Admin already exists, updated: ${email}`)
+    return existingRow.id
+  }
+
+  const hash = await hashPassword(password)
+  const inserted = await db
+    .insert(usersTable)
+    .values({ email, name, isAdmin: true, emailVerified: true })
+    .returning({ id: usersTable.id })
+  const row = inserted[0]
+  if (row === undefined) throw new Error("User insert returned no row")
+
+  await db.insert(accountsTable).values({
+    userId: row.id,
+    providerId: "credential",
+    accountId: row.id,
+    password: hash,
+  })
+
+  console.log(`Created admin: ${email}`)
+  return row.id
+}
+
 const main = async () => {
+  await upsertAdmin("admin@stellarstack.local", "admin123", "Admin")
   const id = await upsertBlueprint(minecraftBlueprint)
-  console.log(`Seeded Minecraft blueprint: ${id}`)
+  console.log(`Seeded Minecraft (placeholder) blueprint: ${id}`)
+
+  const paperJson = await import(
+    "../../packages/blueprints/converted/minecraft/java/paper/paper.blueprint.json",
+    { with: { type: "json" } }
+  )
+  const paperId = await upsertBlueprint(paperJson.default as Blueprint)
+  console.log(`Seeded Paper blueprint: ${paperId}`)
 }
 
 main()

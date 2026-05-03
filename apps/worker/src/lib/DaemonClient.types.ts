@@ -17,3 +17,9 @@ export type DaemonRequestResult = {
  * request is in flight, before the terminal ack/error.
  */
 export type DaemonStreamCallback = (message: DaemonMessage) => void
+
+/**
+ * Callback invoked for unsolicited frames from the daemon (id === null),
+ * e.g. server.state.changed and server.stats pushed by lifecycle probes.
+ */
+export type DaemonPushCallback = (nodeId: string, message: DaemonMessage) => void

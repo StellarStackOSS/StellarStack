@@ -1,7 +1,41 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
 
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardAction,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { Checkbox } from "@workspace/ui/components/checkbox"
+import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
 
+import { ApiFetchError } from "@/lib/ApiFetch"
+import { translateApiError } from "@/lib/TranslateError"
 import { useServerLayout } from "@/components/ServerLayoutContext"
 import {
   useCreateSchedule,
@@ -61,50 +95,6 @@ const draftFromRow = (row: ScheduleRow): Draft => ({
     })),
 })
 
-const buildPayload = (draft: Draft): ScheduleInput | { error: string } => {
-  if (draft.name.trim().length === 0) {
-    return { error: "Name is required." }
-  }
-  if (draft.cron.trim().length === 0) {
-    return { error: "Cron expression is required." }
-  }
-  const tasks: ScheduleInput["tasks"] = []
-  for (const t of draft.tasks) {
-    let payload: Record<string, string | number | boolean> | null = null
-    const trimmed = t.payloadJson.trim()
-    if (trimmed.length > 0 && trimmed !== "{}") {
-      try {
-        const parsed = JSON.parse(trimmed) as unknown
-        if (
-          typeof parsed !== "object" ||
-          parsed === null ||
-          Array.isArray(parsed)
-        ) {
-          return { error: `Task ${t.sortOrder + 1} payload must be an object.` }
-        }
-        payload = parsed as Record<string, string | number | boolean>
-      } catch {
-        return { error: `Task ${t.sortOrder + 1} payload is not valid JSON.` }
-      }
-    } else if (trimmed === "{}") {
-      payload = {}
-    }
-    tasks.push({
-      sortOrder: t.sortOrder,
-      action: t.action,
-      delaySeconds: t.delaySeconds,
-      payload,
-    })
-  }
-  return {
-    name: draft.name.trim(),
-    cron: draft.cron.trim(),
-    enabled: draft.enabled,
-    onlyWhenOnline: draft.onlyWhenOnline,
-    tasks,
-  }
-}
-
 const formatTimestamp = (iso: string | null): string => {
   if (iso === null) return "—"
   const date = new Date(iso)
@@ -112,13 +102,8 @@ const formatTimestamp = (iso: string | null): string => {
   return date.toLocaleString()
 }
 
-/**
- * `/servers/$id/schedules` — owner-facing cron editor. Lists existing
- * schedules with their task chain and last/next-run timestamps; lets the
- * user create, edit, and revoke. Tasks are stored as a raw JSON payload
- * to keep this tab small while still covering power/command/backup.
- */
 export const SchedulesTab = () => {
+  const { t } = useTranslation()
   const { server } = useServerLayout()
   const schedules = useSchedules(server.id)
   const createSchedule = useCreateSchedule(server.id)
@@ -149,6 +134,50 @@ export const SchedulesTab = () => {
     setErrorMessage(null)
   }
 
+  const buildPayload = (d: Draft): ScheduleInput | { error: string } => {
+    if (d.name.trim().length === 0) {
+      return { error: t("schedules.error.name_required") }
+    }
+    if (d.cron.trim().length === 0) {
+      return { error: t("schedules.error.cron_required") }
+    }
+    const tasks: ScheduleInput["tasks"] = []
+    for (const task of d.tasks) {
+      let payload: Record<string, string | number | boolean> | null = null
+      const trimmed = task.payloadJson.trim()
+      if (trimmed.length > 0 && trimmed !== "{}") {
+        try {
+          const parsed = JSON.parse(trimmed) as unknown
+          if (
+            typeof parsed !== "object" ||
+            parsed === null ||
+            Array.isArray(parsed)
+          ) {
+            return { error: t("schedules.error.payload_not_object", { num: task.sortOrder + 1 }) }
+          }
+          payload = parsed as Record<string, string | number | boolean>
+        } catch {
+          return { error: t("schedules.error.payload_invalid_json", { num: task.sortOrder + 1 }) }
+        }
+      } else if (trimmed === "{}") {
+        payload = {}
+      }
+      tasks.push({
+        sortOrder: task.sortOrder,
+        action: task.action,
+        delaySeconds: task.delaySeconds,
+        payload,
+      })
+    }
+    return {
+      name: d.name.trim(),
+      cron: d.cron.trim(),
+      enabled: d.enabled,
+      onlyWhenOnline: d.onlyWhenOnline,
+      tasks,
+    }
+  }
+
   const save = async () => {
     const result = buildPayload(draft)
     if ("error" in result) {
@@ -163,16 +192,23 @@ export const SchedulesTab = () => {
       }
       cancel()
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
   const remove = async (row: ScheduleRow) => {
-    if (!window.confirm(`Delete schedule "${row.name}"?`)) return
     try {
       await deleteSchedule.mutateAsync(row.id)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
@@ -183,26 +219,134 @@ export const SchedulesTab = () => {
         enabled: !row.enabled,
       })
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setErrorMessage(translateApiError(t, err.body.error))
+      } else {
+        setErrorMessage(t("internal.unexpected", { ns: "errors" }))
+      }
     }
   }
 
+  const columns = useMemo<ColumnDef<ScheduleRow>[]>(
+    () => [
+      {
+        id: "name",
+        header: t("schedules.col.name"),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span
+              className={`size-1.5 shrink-0 rounded-full ${
+                row.original.enabled ? "bg-chart-1" : "bg-muted-foreground"
+              }`}
+            />
+            <span className="text-xs font-medium">{row.original.name}</span>
+            {row.original.onlyWhenOnline ? (
+              <span className="bg-muted rounded px-1 py-0.5 text-[0.6rem] uppercase">
+                {t("schedules.online_only_badge")}
+              </span>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "cron",
+        header: t("schedules.col.cron"),
+        cell: ({ row }) => (
+          <code className="text-muted-foreground font-mono text-xs">
+            {row.original.cron}
+          </code>
+        ),
+      },
+      {
+        id: "tasks",
+        header: t("schedules.col.tasks"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">
+            {t(
+              row.original.tasks.length === 1
+                ? "schedules.task_count"
+                : "schedules.task_count_plural",
+              { count: row.original.tasks.length }
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "last_run",
+        header: t("schedules.col.last_run"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">
+            {formatTimestamp(row.original.lastRunAt)}
+          </span>
+        ),
+      },
+      {
+        id: "next_run",
+        header: t("schedules.col.next_run"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">
+            {formatTimestamp(row.original.nextRunAt)}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={updateSchedule.isPending}
+              onClick={() => void toggleEnabled(row.original)}
+            >
+              {row.original.enabled ? t("schedules.pause") : t("schedules.resume")}
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => startEdit(row.original)}
+            >
+              {t("schedules.edit")}
+            </Button>
+            <Button
+              size="xs"
+              variant="destructive"
+              disabled={deleteSchedule.isPending}
+              onClick={() => void remove(row.original)}
+            >
+              {t("schedules.delete")}
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [t, updateSchedule.isPending, deleteSchedule.isPending]
+  )
+
+  const table = useReactTable({
+    data: rows,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-base font-semibold">Schedules</h1>
-          <p className="text-muted-foreground text-xs">
-            Cron-driven power actions, console commands, and backups. Times
-            are evaluated in UTC.
-          </p>
-        </div>
-        {editingId === null ? (
-          <Button size="sm" onClick={startNew}>
-            New schedule
-          </Button>
-        ) : null}
-      </header>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>{t("schedules.title")}</CardTitle>
+          {editingId === null ? (
+            <CardAction>
+              <Button size="sm" onClick={startNew}>
+                {t("schedules.new_button")}
+              </Button>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardInner className="p-3">
+          <p className="text-sm text-muted-foreground">{t("schedules.description")}</p>
+        </CardInner>
+      </Card>
 
       {errorMessage !== null ? (
         <p className="text-destructive text-xs" role="alert">
@@ -221,80 +365,51 @@ export const SchedulesTab = () => {
         />
       ) : null}
 
-      <section className="border-border bg-card text-card-foreground rounded-md border p-4">
-        <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium">Configured</h2>
-          <span className="text-muted-foreground text-xs">
-            {rows.length} schedule{rows.length === 1 ? "" : "s"}
-          </span>
-        </header>
-        {schedules.isLoading ? (
-          <p className="text-muted-foreground text-xs">Loading…</p>
-        ) : rows.length === 0 ? (
-          <p className="text-muted-foreground text-xs">
-            No schedules yet. Create one to run on a cron.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {rows.map((row) => (
-              <li
-                key={row.id}
-                className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`size-1.5 rounded-full ${row.enabled ? "bg-chart-1" : "bg-muted-foreground"}`}
-                      />
-                      <span className="truncate font-medium">{row.name}</span>
-                      <span className="text-muted-foreground font-mono">
-                        {row.cron}
-                      </span>
-                      {row.onlyWhenOnline ? (
-                        <span className="bg-muted rounded px-1 py-0.5 text-[0.6rem] uppercase">
-                          online-only
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="text-muted-foreground mt-1 truncate">
-                      {row.tasks.length} task
-                      {row.tasks.length === 1 ? "" : "s"} · last{" "}
-                      {formatTimestamp(row.lastRunAt)} · next{" "}
-                      {formatTimestamp(row.nextRunAt)}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => void toggleEnabled(row)}
-                      disabled={updateSchedule.isPending}
-                    >
-                      {row.enabled ? "Pause" : "Resume"}
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => startEdit(row)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="destructive"
-                      disabled={deleteSchedule.isPending}
-                      onClick={() => void remove(row)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("schedules.configured_heading")}</CardTitle>
+          <CardAction>
+            <span className="text-muted-foreground text-xs">
+              {t(
+                rows.length === 1 ? "schedules.count_one" : "schedules.count_other",
+                { count: rows.length }
+              )}
+            </span>
+          </CardAction>
+        </CardHeader>
+        <CardInner className="p-3">
+          {schedules.isLoading ? (
+            <p className="text-muted-foreground text-xs">{t("schedules.loading")}</p>
+          ) : rows.length === 0 ? (
+            <p className="text-muted-foreground text-xs">{t("schedules.empty")}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          </CardInner>
+      </Card>
     </div>
   )
 }
@@ -307,12 +422,13 @@ const ScheduleEditor = (props: {
   saving: boolean
   isNew: boolean
 }) => {
+  const { t } = useTranslation()
   const { draft, onChange, onCancel, onSave, saving, isNew } = props
 
   const updateTask = (index: number, patch: Partial<DraftTask>) => {
     onChange({
       ...draft,
-      tasks: draft.tasks.map((t, i) => (i === index ? { ...t, ...patch } : t)),
+      tasks: draft.tasks.map((task, i) => (i === index ? { ...task, ...patch } : task)),
     })
   }
 
@@ -336,137 +452,133 @@ const ScheduleEditor = (props: {
       ...draft,
       tasks: draft.tasks
         .filter((_, i) => i !== index)
-        .map((t, i) => ({ ...t, sortOrder: i })),
+        .map((task, i) => ({ ...task, sortOrder: i })),
     })
   }
 
   return (
-    <section className="border-border bg-card text-card-foreground flex flex-col gap-3 rounded-md border p-4">
-      <header>
-        <h2 className="text-sm font-medium">
-          {isNew ? "New schedule" : "Edit schedule"}
-        </h2>
-      </header>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs">
-          <span>Name</span>
-          <input
-            value={draft.name}
-            onChange={(e) => onChange({ ...draft, name: e.target.value })}
-            className="border-border bg-background h-8 rounded-md border px-2"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs">
-          <span>Cron (UTC)</span>
-          <input
-            value={draft.cron}
-            onChange={(e) => onChange({ ...draft, cron: e.target.value })}
-            placeholder="0 4 * * *"
-            className="border-border bg-background h-8 rounded-md border px-2 font-mono"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            checked={draft.enabled}
-            onChange={(e) => onChange({ ...draft, enabled: e.target.checked })}
-          />
-          <span>Enabled</span>
-        </label>
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            checked={draft.onlyWhenOnline}
-            onChange={(e) =>
-              onChange({ ...draft, onlyWhenOnline: e.target.checked })
-            }
-          />
-          <span>Only run when server is online</span>
-        </label>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {isNew ? t("schedules.editor.new_title") : t("schedules.editor.edit_title")}
+        </CardTitle>
+      </CardHeader>
+      <CardInner className="p-3 flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">{t("schedules.editor.name_label")}</Label>
+            <Input
+              value={draft.name}
+              onChange={(e) => onChange({ ...draft, name: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">{t("schedules.editor.cron_label")}</Label>
+            <Input
+              value={draft.cron}
+              onChange={(e) => onChange({ ...draft, cron: e.target.value })}
+              placeholder="0 4 * * *"
+              className="font-mono"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Checkbox
+              checked={draft.enabled}
+              onCheckedChange={(checked) =>
+                onChange({ ...draft, enabled: checked === true })
+              }
+            />
+            <span>{t("schedules.editor.enabled_label")}</span>
+          </label>
+          <label className="flex items-center gap-2 text-xs">
+            <Checkbox
+              checked={draft.onlyWhenOnline}
+              onCheckedChange={(checked) =>
+                onChange({ ...draft, onlyWhenOnline: checked === true })
+              }
+            />
+            <span>{t("schedules.editor.online_only_label")}</span>
+          </label>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <header className="flex items-center justify-between">
-          <h3 className="text-xs font-medium uppercase">Tasks</h3>
-          <Button size="xs" variant="outline" onClick={addTask}>
-            Add task
+        <div className="flex flex-col gap-2">
+          <header className="flex items-center justify-between">
+            <h3 className="text-xs font-medium uppercase">
+              {t("schedules.editor.tasks_heading")}
+            </h3>
+            <Button size="xs" variant="outline" onClick={addTask}>
+              {t("schedules.editor.add_task")}
+            </Button>
+          </header>
+          <ul className="flex flex-col gap-2">
+            {draft.tasks.map((task, index) => (
+              <li
+                key={index}
+                className="border-border grid grid-cols-1 gap-2 rounded border p-2 text-xs sm:grid-cols-12"
+              >
+                <div className="flex flex-col gap-1 sm:col-span-3">
+                  <Label className="text-xs">{t("schedules.editor.action_label")}</Label>
+                  <Select
+                    value={task.action}
+                    onValueChange={(v) =>
+                      updateTask(index, { action: v as ScheduleTaskRow["action"] })
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="power">{t("schedules.editor.action_power")}</SelectItem>
+                      <SelectItem value="command">{t("schedules.editor.action_command")}</SelectItem>
+                      <SelectItem value="backup">{t("schedules.editor.action_backup")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <Label className="text-xs">{t("schedules.editor.delay_label")}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={task.delaySeconds}
+                    onChange={(e) =>
+                      updateTask(index, { delaySeconds: Number(e.target.value || 0) })
+                    }
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:col-span-6">
+                  <Label className="text-xs">{t("schedules.editor.payload_label")}</Label>
+                  <Input
+                    value={task.payloadJson}
+                    onChange={(e) => updateTask(index, { payloadJson: e.target.value })}
+                    placeholder={
+                      task.action === "power"
+                        ? '{"action":"restart"}'
+                        : task.action === "command"
+                          ? '{"line":"say hello"}'
+                          : '{"name":"daily"}'
+                    }
+                    className="font-mono"
+                  />
+                </div>
+                <div className="flex items-end sm:col-span-1">
+                  <Button size="xs" variant="destructive" onClick={() => removeTask(index)}>
+                    ×
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="outline" onClick={onCancel}>
+            {t("schedules.editor.cancel")}
           </Button>
-        </header>
-        <ul className="flex flex-col gap-2">
-          {draft.tasks.map((task, index) => (
-            <li
-              key={index}
-              className="border-border grid grid-cols-1 gap-2 rounded border p-2 text-xs sm:grid-cols-12"
-            >
-              <label className="flex flex-col gap-1 sm:col-span-3">
-                <span>Action</span>
-                <select
-                  value={task.action}
-                  onChange={(e) =>
-                    updateTask(index, {
-                      action: e.target.value as ScheduleTaskRow["action"],
-                    })
-                  }
-                  className="border-border bg-background h-8 rounded-md border px-2"
-                >
-                  <option value="power">Power</option>
-                  <option value="command">Command</option>
-                  <option value="backup">Backup</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 sm:col-span-2">
-                <span>Delay (s)</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={task.delaySeconds}
-                  onChange={(e) =>
-                    updateTask(index, {
-                      delaySeconds: Number(e.target.value || 0),
-                    })
-                  }
-                  className="border-border bg-background h-8 rounded-md border px-2"
-                />
-              </label>
-              <label className="flex flex-col gap-1 sm:col-span-6">
-                <span>Payload (JSON)</span>
-                <input
-                  value={task.payloadJson}
-                  onChange={(e) =>
-                    updateTask(index, { payloadJson: e.target.value })
-                  }
-                  placeholder={
-                    task.action === "power"
-                      ? '{"action":"restart"}'
-                      : task.action === "command"
-                        ? '{"line":"say hello"}'
-                        : '{"name":"daily"}'
-                  }
-                  className="border-border bg-background h-8 rounded-md border px-2 font-mono"
-                />
-              </label>
-              <div className="flex items-end sm:col-span-1">
-                <Button
-                  size="xs"
-                  variant="destructive"
-                  onClick={() => removeTask(index)}
-                >
-                  ×
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={onSave} disabled={saving}>
-          {isNew ? "Create" : "Save"}
-        </Button>
-      </div>
-    </section>
+          <Button size="sm" onClick={onSave} disabled={saving}>
+            {isNew ? t("schedules.editor.create") : t("schedules.editor.save")}
+          </Button>
+        </div>
+        </CardInner>
+    </Card>
   )
 }

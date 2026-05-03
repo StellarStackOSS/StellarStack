@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "name": "Limbo",
+  "author": "xEfinax@protonmail.com",
+  "description": "Standalone server program Limbo.",
+  "dockerImages": {
+    "Java 17": "ghcr.io/pterodactyl/yolks:java_17",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -XX:MaxRAMPercentage=95.0 -jar {{SERVER_JARFILE}}",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the server jarfile to run the Limbo server with.",
+      "default": "Limbo.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Limbo Installation Script\n#\n# Server Files: /mnt/server\nmkdir -p /mnt/server\n\nLATEST_LIMBO_NAME=$(curl -s https://ci.loohpjames.com/job/Limbo/lastSuccessfulBuild/api/json | jq -r .artifacts[1].displayPath)\n\ncd /mnt/server || exit\n\nif [ -f \"${SERVER_JARFILE}\" ]; then\n\tmv \"${SERVER_JARFILE}\" \"${SERVER_JARFILE}\".old\nfi\n\necho \"Downloading Limbo server jar...\"\ncurl -o \"${SERVER_JARFILE}\" https://ci.loohpjames.com/job/Limbo/lastSuccessfulBuild/artifact/target/$LATEST_LIMBO_NAME\n\nif [ ! -f server.properties ]; then\n    echo \"Downloading Limbo server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/LOOHP/Limbo/master/src/main/resources/server.properties\nfi"
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Limbo server listening on "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "name": "CanvasMC",
+  "author": "ptero@redbananaofficial.com",
+  "description": "Supercharge your Minecraft server with multithreaded dimension ticking, improved chunk generation, optimized entity handling and many more powerful optimizations.",
+  "dockerImages": {
+    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -XX:MaxRAMPercentage=95.0 --add-modules=jdk.incubator.vector -jar server.jar --nogui",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MC_VERSION",
+      "name": "Canvas MC Version",
+      "description": "CanvasMC-Minecraft version (example: 1.21.4). Set to 'latest' to use latest version",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:15"
+    },
+    {
+      "key": "CANVAS_BUILD",
+      "name": "CanvasMC Build Number",
+      "description": "Build number from https://jenkins.canvasmc.io/job/Canvas/. Set to 'latest' to get the newest build",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:10"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\ncd /mnt/server\n\napt-get update\napt-get install -y curl jq openjdk-17-jdk\n\n# Clean old install\nrm -f server.jar\n\nMC_VERSION=\"$(echo \"$MC_VERSION\" | tr -d ' ')\"\nCANVAS_BUILD=\"$(echo \"$CANVAS_BUILD\" | tr -d ' ')\"\n\n# Get version\nif [[ \"$MC_VERSION\" == \"latest\" ]]; then\n    echo \"[CanvasMC] Fetching latest Minecraft version...\"\n    MC_VERSION=$(curl -sSL \"https://canvasmc.io/api/v2/builds\" | jq -r '.[].minecraftVersion' | sort -Vr | head -n1)\nfi\n\nif [[ -z \"$MC_VERSION\" ]]; then\n    echo \"[CanvasMC] Failed to resolve a valid Minecraft version.\"\n    exit 1\nfi\n\necho \"[CanvasMC] Using Minecraft version: $MC_VERSION\"\n\n# Get build\nif [[ \"$CANVAS_BUILD\" == \"latest\" ]]; then\n    echo \"[CanvasMC] Fetching latest build for Minecraft $MC_VERSION...\"\n    BUILD_NUMBER=$(curl -sSL \"https://canvasmc.io/api/v2/builds?minecraft_version=$MC_VERSION\" | jq -r '.[].buildNumber' | sort -n | tail -n1)\nelse\n    BUILD_NUMBER=\"$CANVAS_BUILD\"\nfi\n\nif [[ -z \"$BUILD_NUMBER\" ]]; then\n    echo \"[CanvasMC] Could not determine build number.\"\n    exit 1\nfi\n\necho \"[CanvasMC] Using build number: $BUILD_NUMBER\"\n\n# Build URL\nJAR_URL=\"https://jenkins.canvasmc.io/job/Canvas/${BUILD_NUMBER}/artifact/canvas-server/build/libs/canvas-build.${BUILD_NUMBER}.jar\"\n\necho \"[CanvasMC] Downloading server.jar from:\"\necho \"$JAR_URL\"\ncurl -sSL -o server.jar \"$JAR_URL\"\n\nif [[ ! -f server.jar ]]; then\n    echo \"[CanvasMC] Download failed or file not found.\"\n    exit 1\nfi\n\necho \"Installation complete.\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

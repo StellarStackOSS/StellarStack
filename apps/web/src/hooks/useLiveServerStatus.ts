@@ -25,12 +25,10 @@ export const useLiveServerStatus = (
 ): ServerLifecycleState | null => {
   const queryClient = useQueryClient()
   const liveStatus = useMemo<ServerLifecycleState | null>(() => {
-    for (const event of events) {
-      if (event.type === "server.state.changed" && event.serverId === serverId) {
-        return event.to
-      }
-    }
-    return null
+    const match = events.findLast(
+      (e) => e.type === "server.state.changed" && e.serverId === serverId
+    )
+    return match?.type === "server.state.changed" ? match.to : null
   }, [events, serverId])
 
   useEffect(() => {

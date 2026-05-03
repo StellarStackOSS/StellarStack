@@ -5,6 +5,7 @@ import type {
   CreateNodeRequest,
   NodeListRow,
   PairingTokenResponse,
+  UpdateNodeRequest,
 } from "@/hooks/useNodes.types"
 
 const QUERY_KEY = ["admin", "nodes"] as const
@@ -32,6 +33,33 @@ export const useCreateNode = () => {
       apiFetch<{ node: NodeListRow }>("/admin/nodes", {
         method: "POST",
         body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
+  })
+}
+
+export const useUpdateNode = (nodeId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateNodeRequest) =>
+      apiFetch<{ node: NodeListRow }>(`/admin/nodes/${nodeId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
+  })
+}
+
+export const useDeleteNode = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (nodeId: string) =>
+      apiFetch<{ deleted: string }>(`/admin/nodes/${nodeId}`, {
+        method: "DELETE",
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEY })

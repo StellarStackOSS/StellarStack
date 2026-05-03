@@ -15,13 +15,33 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 )
 
-const apiVersion = "v1.43"
+const apiVersion = "v1.47"
+
+// ansiRE matches ANSI/VT100 escape sequences for stripping before display.
+var ansiRE = regexp.MustCompile(`\x1b(?:\[[0-9;?]*[A-Za-z]|[^[\x1b])`)
+
+// cleanLogLine strips ANSI escape sequences and handles bare carriage returns
+// so progress-bar output ("100%\r") collapses to just the final value.
+func cleanLogLine(raw string) string {
+	s := ansiRE.ReplaceAllString(raw, "")
+	if idx := strings.LastIndex(s, "\r"); idx >= 0 {
+		s = s[idx+1:]
+	}
+	return strings.TrimRight(s, " \t")
+}
 
 // Client talks to the Docker daemon over the unix socket.
 type Client struct {
@@ -47,15 +67,21 @@ func New(socketPath string) *Client {
 	}
 }
 
-// EnsureImage pulls `image` if it is not already present. Returns nil when
-// the image is available.
+// EnsureImage ensures the image is available locally. If the image is already
+// present it is used as-is (no registry round-trip). Pull is only attempted
+// when the image is missing locally, and a failed pull still succeeds if the
+// image was found in a previous check (registry outage fallback).
 func (c *Client) EnsureImage(ctx context.Context, image string) error {
-	if found, err := c.imageExists(ctx, image); err != nil {
-		return fmt.Errorf("inspect image %q: %w", image, err)
-	} else if found {
+	if found, err := c.imageExists(ctx, image); err == nil && found {
 		return nil
 	}
-	return c.pullImage(ctx, image)
+	if err := c.pullImage(ctx, image); err != nil {
+		if found, listErr := c.imageExists(ctx, image); listErr == nil && found {
+			return nil
+		}
+		return fmt.Errorf("pull image %q: %w", image, err)
+	}
+	return nil
 }
 
 // CreateContainerOptions describes everything the daemon supplies when
@@ -65,14 +91,31 @@ type CreateContainerOptions struct {
 	Name             string
 	Image            string
 	Env              map[string]string
-	Cmd              []string
 	StopSignal       string
 	BindMount        string
 	MemoryLimitBytes int64
 	CPULimitPercent  int64
+	PidsLimit        int64
 	Ports            map[string]string
-	ReadonlyRootfs   bool
 	DropCapabilities []string // defaults applied internally if nil
+}
+
+// memoryWithOverhead adds a headroom buffer on top of the configured limit so
+// the JVM and system processes don't get OOM-killed the instant the heap fills.
+// Mirrors Pelican Wings' behaviour: <2 GB → +15%, 2–4 GB → +10%, ≥4 GB → +5%.
+func memoryWithOverhead(limitBytes int64) int64 {
+	const (
+		gb2 = 2 * 1024 * 1024 * 1024
+		gb4 = 4 * 1024 * 1024 * 1024
+	)
+	switch {
+	case limitBytes >= gb4:
+		return limitBytes + limitBytes/20
+	case limitBytes >= gb2:
+		return limitBytes + limitBytes/10
+	default:
+		return limitBytes + limitBytes*15/100
+	}
 }
 
 // CreateContainer creates a container from the given options and returns
@@ -96,17 +139,27 @@ func (c *Client) CreateContainer(
 
 	capDrop := opts.DropCapabilities
 	if len(capDrop) == 0 {
-		capDrop = []string{"SETPCAP", "MKNOD", "NET_RAW", "SYS_CHROOT", "SYS_PTRACE", "AUDIT_WRITE", "DAC_READ_SEARCH"}
+		capDrop = []string{
+			"setpcap", "mknod", "audit_write", "net_raw", "dac_override",
+			"fowner", "fsetid", "net_bind_service", "sys_chroot", "setfcap",
+			"sys_ptrace",
+		}
 	}
+
+	mem := opts.MemoryLimitBytes
+	memLimit := memoryWithOverhead(mem)
 	hostConfig := map[string]any{
-		"Memory":         opts.MemoryLimitBytes,
-		"NanoCpus":       opts.CPULimitPercent * 10_000_000,
-		"AutoRemove":     false,
-		"NetworkMode":    "bridge",
-		"ReadonlyRootfs": opts.ReadonlyRootfs,
-		"CapDrop":        capDrop,
-		"SecurityOpt":    []string{"no-new-privileges"},
-		"Tmpfs":          map[string]string{"/tmp": "size=100m,mode=1777"},
+		"Memory":            memLimit,
+		"MemoryReservation": mem,
+		"MemorySwap":        memLimit * 2, // allow up to 1× swap headroom
+		"CpuPeriod":         int64(100_000),
+		"CpuQuota":          opts.CPULimitPercent * 1_000,
+		"PidsLimit":         opts.PidsLimit,
+		"AutoRemove":        false,
+		"NetworkMode":       "bridge",
+		"CapDrop":           capDrop,
+		"SecurityOpt":       []string{"no-new-privileges"},
+		"Tmpfs":             map[string]string{"/tmp": "rw,exec,nosuid,size=100m"},
 	}
 	if opts.BindMount != "" {
 		hostConfig["Binds"] = []string{
@@ -118,22 +171,20 @@ func (c *Client) CreateContainer(
 	}
 
 	body := map[string]any{
-		"Image":        opts.Image,
-		"Env":          envSlice,
-		"WorkingDir":   "/home/container",
-		"Tty":          false,
-		"OpenStdin":    true,
-		"StdinOnce":    false,
-		"AttachStdout": true,
-		"AttachStderr": true,
-		"AttachStdin":  true,
-		"HostConfig":   hostConfig,
+		"Image":      opts.Image,
+		"Env":        envSlice,
+		"WorkingDir": "/home/container",
+		"Tty":        false,
+		"OpenStdin":  true,
+		"StdinOnce":  false,
+		"HostConfig": hostConfig,
 	}
-	if opts.StopSignal != "" {
+	// Only pass a stop signal to Docker if it's a real Unix signal.
+	// Console-command signals ("^stop" convention) are handled by the daemon
+	// at stop time and must not be forwarded — Docker would reject or ignore
+	// them and fall back to SIGTERM, which races against the console command.
+	if opts.StopSignal != "" && !strings.HasPrefix(opts.StopSignal, "^") {
 		body["StopSignal"] = opts.StopSignal
-	}
-	if len(opts.Cmd) > 0 {
-		body["Cmd"] = opts.Cmd
 	}
 	if len(exposed) > 0 {
 		body["ExposedPorts"] = exposed
@@ -240,6 +291,8 @@ type ContainerState struct {
 	Running   bool   `json:"Running"`
 	ExitCode  int    `json:"ExitCode"`
 	OOMKilled bool   `json:"OOMKilled"`
+	Pid       int    `json:"Pid"`
+	StartedAt string `json:"StartedAt"`
 }
 
 // InspectState returns just the State portion of a container inspect.
@@ -268,6 +321,29 @@ func (c *Client) InspectState(
 	return body.State, nil
 }
 
+// InspectStopSignal returns the stop signal configured on the named container
+// (e.g. "^stop", "SIGTERM"). Returns "" when the container is not found or
+// has no explicit stop signal configured.
+func (c *Client) InspectStopSignal(ctx context.Context, idOrName string) string {
+	resp, err := c.do(ctx, http.MethodGet, "/containers/"+idOrName+"/json", nil)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return ""
+	}
+	var body struct {
+		Config struct {
+			StopSignal string `json:"StopSignal"`
+		} `json:"Config"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return ""
+	}
+	return body.Config.StopSignal
+}
+
 // StatsSnapshot is one normalised stats sample produced from a Docker
 // stats stream frame. CPUFraction is the percentage of one core consumed
 // during the sampling window (1.0 = one full core); MemoryBytes excludes
@@ -278,6 +354,8 @@ type StatsSnapshot struct {
 	CPUFraction      float64
 	NetworkRxBytes   int64
 	NetworkTxBytes   int64
+	DiskReadBytes    int64
+	DiskWriteBytes   int64
 }
 
 // StatsStream subscribes to the Docker stats stream for the named
@@ -304,6 +382,40 @@ func (c *Client) StatsStream(
 		close(out)
 		return nil, c.errorFromResponse(resp, "stats stream")
 	}
+
+	// Inspect once to get the container's init PID for the host-side cgroup fallback.
+	containerPID := 0
+	if state, err := c.InspectState(ctx, idOrName); err == nil && state != nil {
+		containerPID = state.Pid
+	}
+
+	// Shared atomics updated by the io.stat poller goroutine below.
+	var ioStatRead, ioStatWrite atomic.Int64
+
+	// Poll rchar/wchar by summing /proc/*/io inside the container every second.
+	// rchar/wchar count all VFS I/O (including virtual filesystems like 9p used
+	// by Colima), unlike cgroup io.stat which only counts real block device I/O.
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				data, err := c.execInContainer(ctx, idOrName,
+					"sh", "-c",
+					`awk '/rchar/{r+=$2}/wchar/{w+=$2}END{print "r="r" w="w}' /proc/[0-9]*/io 2>/dev/null`,
+				)
+				if err != nil || len(data) == 0 {
+					continue
+				}
+				r, w := parseProcIOOutput(data)
+				ioStatRead.Store(r)
+				ioStatWrite.Store(w)
+			}
+		}
+	}()
 
 	go func() {
 		defer resp.Body.Close()
@@ -347,6 +459,24 @@ func (c *Client) StatsStream(
 				snapshot.NetworkTxBytes += net.TxBytes
 			}
 
+			for _, entry := range frame.BlkioStats.IoServiceBytesRecursive {
+				switch strings.ToLower(entry.Op) {
+				case "read":
+					snapshot.DiskReadBytes += entry.Value
+				case "write":
+					snapshot.DiskWriteBytes += entry.Value
+				}
+			}
+			if snapshot.DiskReadBytes == 0 && snapshot.DiskWriteBytes == 0 {
+				if containerPID > 0 {
+					snapshot.DiskReadBytes, snapshot.DiskWriteBytes = cgroupV2IOStat(containerPID)
+				}
+				if snapshot.DiskReadBytes == 0 && snapshot.DiskWriteBytes == 0 {
+					snapshot.DiskReadBytes = ioStatRead.Load()
+					snapshot.DiskWriteBytes = ioStatWrite.Load()
+				}
+			}
+
 			select {
 			case <-ctx.Done():
 				return
@@ -377,6 +507,110 @@ type statsFrame struct {
 		RxBytes int64 `json:"rx_bytes"`
 		TxBytes int64 `json:"tx_bytes"`
 	} `json:"networks"`
+	BlkioStats struct {
+		IoServiceBytesRecursive []struct {
+			Op    string `json:"op"`
+			Value int64  `json:"value"`
+		} `json:"io_service_bytes_recursive"`
+	} `json:"blkio_stats"`
+}
+
+// cgroupV2IOStat reads cumulative block I/O bytes for a container using
+// cgroup v2 io.stat. This is the fallback when Docker's blkio_stats is empty
+// (cgroups v2 / Colima / recent kernels). pid is the container's init PID
+// from docker inspect.
+func cgroupV2IOStat(pid int) (readBytes, writeBytes int64) {
+	cgroupData, err := os.ReadFile(fmt.Sprintf("/proc/%d/cgroup", pid))
+	if err != nil {
+		return 0, 0
+	}
+	var cgroupPath string
+	for _, line := range strings.Split(string(cgroupData), "\n") {
+		if strings.HasPrefix(line, "0::/") {
+			cgroupPath = strings.TrimPrefix(line, "0::")
+			break
+		}
+	}
+	if cgroupPath == "" {
+		return 0, 0
+	}
+	ioStatData, err := os.ReadFile("/sys/fs/cgroup" + strings.TrimRight(cgroupPath, "\r\n") + "/io.stat")
+	if err != nil {
+		return 0, 0
+	}
+	for _, line := range strings.Split(string(ioStatData), "\n") {
+		fields := strings.Fields(line)
+		for _, field := range fields {
+			if v, ok := strings.CutPrefix(field, "rbytes="); ok {
+				n, _ := strconv.ParseInt(v, 10, 64)
+				readBytes += n
+			} else if v, ok := strings.CutPrefix(field, "wbytes="); ok {
+				n, _ := strconv.ParseInt(v, 10, 64)
+				writeBytes += n
+			}
+		}
+	}
+	return readBytes, writeBytes
+}
+
+// execInContainer runs cmd inside the named container and returns stdout.
+func (c *Client) execInContainer(ctx context.Context, idOrName string, cmd ...string) ([]byte, error) {
+	execBody, _ := json.Marshal(map[string]any{
+		"AttachStdout": true,
+		"AttachStderr": false,
+		"Cmd":          cmd,
+	})
+	createResp, err := c.do(ctx, http.MethodPost, "/containers/"+idOrName+"/exec", bytes.NewReader(execBody))
+	if err != nil {
+		return nil, err
+	}
+	defer createResp.Body.Close()
+	var execID struct {
+		Id string `json:"Id"`
+	}
+	if err := json.NewDecoder(createResp.Body).Decode(&execID); err != nil {
+		return nil, err
+	}
+
+	startBody, _ := json.Marshal(map[string]any{"Detach": false})
+	startResp, err := c.do(ctx, http.MethodPost, "/exec/"+execID.Id+"/start", bytes.NewReader(startBody))
+	if err != nil {
+		return nil, err
+	}
+	defer startResp.Body.Close()
+
+	var out bytes.Buffer
+	hdr := make([]byte, 8)
+	for {
+		if _, err := io.ReadFull(startResp.Body, hdr); err != nil {
+			break
+		}
+		size := int(hdr[4])<<24 | int(hdr[5])<<16 | int(hdr[6])<<8 | int(hdr[7])
+		if size == 0 {
+			continue
+		}
+		payload := make([]byte, size)
+		if _, err := io.ReadFull(startResp.Body, payload); err != nil {
+			break
+		}
+		if hdr[0] == 1 {
+			out.Write(payload)
+		}
+	}
+	return out.Bytes(), nil
+}
+
+// parseProcIOOutput parses the output of the awk one-liner that sums
+// rchar/wchar across /proc/*/io: "r=<N> w=<N>".
+func parseProcIOOutput(data []byte) (readBytes, writeBytes int64) {
+	for _, field := range strings.Fields(string(data)) {
+		if v, ok := strings.CutPrefix(field, "r="); ok {
+			readBytes, _ = strconv.ParseInt(v, 10, 64)
+		} else if v, ok := strings.CutPrefix(field, "w="); ok {
+			writeBytes, _ = strconv.ParseInt(v, 10, 64)
+		}
+	}
+	return readBytes, writeBytes
 }
 
 // FollowLogs returns a stream of stdout/stderr lines for the named
@@ -451,6 +685,13 @@ type RunningContainer struct {
 	ID   string
 }
 
+// ContainerSummary is one entry returned by ListContainers.
+type ContainerSummary struct {
+	Name    string // without leading "/"
+	ID      string
+	Running bool
+}
+
 // ListRunningContainers returns all containers that are currently running
 // and whose name matches the given prefix. The prefix comparison is against
 // the first name Docker reports (Docker names always start with "/").
@@ -488,6 +729,47 @@ func (c *Client) ListRunningContainers(
 	return out, nil
 }
 
+// ListContainers returns all containers (any status) whose name matches
+// namePrefix, together with whether each is currently running.
+func (c *Client) ListContainers(
+	ctx context.Context,
+	namePrefix string,
+) ([]ContainerSummary, error) {
+	q := url.Values{}
+	q.Set("all", "1")
+	resp, err := c.do(ctx, http.MethodGet, "/containers/json?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return nil, c.errorFromResponse(resp, "list all containers")
+	}
+	var items []struct {
+		ID    string   `json:"Id"`
+		Names []string `json:"Names"`
+		State string   `json:"State"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return nil, fmt.Errorf("decode container list: %w", err)
+	}
+	var out []ContainerSummary
+	for _, item := range items {
+		if len(item.Names) == 0 {
+			continue
+		}
+		name := strings.TrimPrefix(item.Names[0], "/")
+		if strings.HasPrefix(name, namePrefix) {
+			out = append(out, ContainerSummary{
+				Name:    name,
+				ID:      item.ID,
+				Running: item.State == "running",
+			})
+		}
+	}
+	return out, nil
+}
+
 // TailLogs returns the last `lines` lines from the container's log output.
 // Frames use the standard Docker 8-byte multiplexed header format.
 func (c *Client) TailLogs(
@@ -508,6 +790,26 @@ func (c *Client) TailLogs(
 		return nil, c.errorFromResponse(resp, "tail logs")
 	}
 	return resp.Body, nil
+}
+
+// WaitForExit waits up to timeout for the named container to reach a
+// not-running state. Returns true if the container exited within the timeout,
+// false if the timeout elapsed or the container was not found. Used to let a
+// graceful shutdown complete before force-removing on restart.
+func (c *Client) WaitForExit(ctx context.Context, idOrName string, timeout time.Duration) bool {
+	waitCtx := ctx
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		waitCtx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	resp, err := c.do(waitCtx, http.MethodPost,
+		"/containers/"+idOrName+"/wait?condition=not-running", nil)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode/100 == 2
 }
 
 // RemoveContainer deletes the container by name or id, with optional force.
@@ -537,7 +839,8 @@ type RunInstallOptions struct {
 	Entrypoint string
 	Script     string
 	Env        map[string]string
-	BindMount  string
+	ServerDir  string // host path mounted at /mnt/server
+	TmpDir     string // host base dir for per-install temp files (e.g. cfg.DataDir/tmp)
 }
 
 // LogLine is a single line emitted by the install script.
@@ -546,16 +849,17 @@ type LogLine struct {
 	Line   string
 }
 
-// RunInstall runs the install script in a fresh container. The container is
-// removed on completion (regardless of exit code). LogLines are pushed onto
-// the returned channel as they arrive; the channel closes when the
-// container exits and the returned exit code reflects the container's
-// status.
+// RunInstall runs the install script in a fresh container, mirroring Wings'
+// approach: the script is written to a known path under TmpDir (not
+// os.MkdirTemp) so Docker Desktop / Colima can bind-mount it without hitting
+// the macOS VM boundary. Tty is enabled so log output is plain text. Logs
+// stream live (concurrent with wait) and the channel closes when the container
+// exits.
 func (c *Client) RunInstall(
 	ctx context.Context,
 	opts RunInstallOptions,
 ) (<-chan LogLine, <-chan int, <-chan error) {
-	logs := make(chan LogLine, 64)
+	logs := make(chan LogLine, 256)
 	exit := make(chan int, 1)
 	errs := make(chan error, 1)
 
@@ -564,27 +868,49 @@ func (c *Client) RunInstall(
 		defer close(exit)
 		defer close(errs)
 
+		// Per-install temp directory under the configured tmp root — a fixed,
+		// known path that the Docker host VM can see (unlike os.MkdirTemp which
+		// produces /var/folders/... on macOS, outside Docker Desktop's mounts).
+		installDir := filepath.Join(opts.TmpDir, opts.Name)
+		if err := os.MkdirAll(installDir, 0o700); err != nil {
+			errs <- fmt.Errorf("create install dir: %w", err)
+			return
+		}
+		defer os.RemoveAll(installDir)
+
+		script := strings.ReplaceAll(opts.Script, "\r\n", "\n")
+		if err := os.WriteFile(filepath.Join(installDir, "install.sh"), []byte(script), 0o644); err != nil {
+			errs <- fmt.Errorf("write install script: %w", err)
+			return
+		}
+
 		envSlice := make([]string, 0, len(opts.Env))
 		for k, v := range opts.Env {
 			envSlice = append(envSlice, fmt.Sprintf("%s=%s", k, v))
 		}
 
-		hostConfig := map[string]any{
-			"AutoRemove": true,
+		mounts := []map[string]any{
+			{"Type": "bind", "Source": opts.ServerDir, "Target": "/mnt/server", "ReadOnly": false},
+			{"Type": "bind", "Source": installDir, "Target": "/mnt/install", "ReadOnly": true},
 		}
-		if opts.BindMount != "" {
-			hostConfig["Binds"] = []string{
-				fmt.Sprintf("%s:/mnt/server", opts.BindMount),
-			}
+
+		hostConfig := map[string]any{
+			"Mounts": mounts,
+			"Tmpfs":  map[string]string{"/tmp": "rw,exec,nosuid,size=50m"},
 		}
 
 		body := map[string]any{
-			"Image":      opts.Image,
-			"Env":        envSlice,
-			"Tty":        false,
-			"WorkingDir": "/mnt/server",
-			"Cmd":        []string{opts.Entrypoint, "-c", opts.Script},
-			"HostConfig": hostConfig,
+			"Hostname":     "installer",
+			"Image":        opts.Image,
+			"Env":          envSlice,
+			"Tty":          true,
+			"AttachStdin":  true,
+			"AttachStdout": true,
+			"AttachStderr": true,
+			"OpenStdin":    true,
+			"WorkingDir":   "/mnt/server",
+			"Cmd":          []string{opts.Entrypoint, "/mnt/install/install.sh"},
+			"HostConfig":   hostConfig,
 		}
 
 		q := url.Values{}
@@ -610,6 +936,10 @@ func (c *Client) RunInstall(
 		}
 		id := decoded.ID
 
+		defer func() {
+			_ = c.RemoveContainer(context.Background(), id, true)
+		}()
+
 		startResp, err := c.do(ctx, http.MethodPost, "/containers/"+id+"/start", nil)
 		if err != nil {
 			errs <- err
@@ -621,21 +951,19 @@ func (c *Client) RunInstall(
 			return
 		}
 
-		streamDone := make(chan struct{})
-		go func() {
-			defer close(streamDone)
-			c.streamLogs(ctx, id, logs)
-		}()
+		// Stream logs concurrently so the caller sees output in real time.
+		// With Tty:true the stream is plain text (no multiplexed 8-byte headers).
+		// The goroutine exits naturally when the container stops and Docker
+		// closes the follow stream.
+		go c.streamTTYLogs(ctx, id, logs)
 
-		waitResp, err := c.do(ctx, http.MethodPost, "/containers/"+id+"/wait", nil)
+		waitResp, err := c.do(ctx, http.MethodPost, "/containers/"+id+"/wait?condition=not-running", nil)
 		if err != nil {
-			<-streamDone
 			errs <- err
 			return
 		}
 		defer waitResp.Body.Close()
 		if waitResp.StatusCode/100 != 2 {
-			<-streamDone
 			errs <- c.errorFromResponse(waitResp, "wait install container")
 			return
 		}
@@ -643,17 +971,17 @@ func (c *Client) RunInstall(
 			StatusCode int `json:"StatusCode"`
 		}
 		if err := json.NewDecoder(waitResp.Body).Decode(&waitBody); err != nil {
-			<-streamDone
 			errs <- fmt.Errorf("decode wait response: %w", err)
 			return
 		}
-		<-streamDone
 		exit <- waitBody.StatusCode
 	}()
 
 	return logs, exit, errs
 }
 
+// streamLogs reads the log stream for a non-TTY container using the Docker
+// multiplexed 8-byte frame format and pushes lines onto out.
 func (c *Client) streamLogs(ctx context.Context, id string, out chan<- LogLine) {
 	resp, err := c.do(
 		ctx,
@@ -695,19 +1023,52 @@ func (c *Client) streamLogs(ctx context.Context, id string, out chan<- LogLine) 
 	}
 }
 
+// streamTTYLogs reads the log stream for a TTY container (plain text, no
+// multiplexed framing) and pushes each line onto out. All output from a TTY
+// container is merged into stdout. ANSI escape sequences and bare carriage
+// returns are stripped so the browser terminal renders lines correctly.
+func (c *Client) streamTTYLogs(ctx context.Context, id string, out chan<- LogLine) {
+	resp, err := c.do(
+		ctx,
+		http.MethodGet,
+		"/containers/"+id+"/logs?stdout=1&stderr=1&follow=1",
+		nil,
+	)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := cleanLogLine(scanner.Text())
+		if line != "" {
+			out <- LogLine{Stream: "stdout", Line: line}
+		}
+	}
+}
+
 func (c *Client) imageExists(ctx context.Context, image string) (bool, error) {
-	resp, err := c.do(ctx, http.MethodGet, "/images/"+url.PathEscape(image)+"/json", nil)
+	// Use the filters query parameter instead of embedding the name in the
+	// path — path-escaping slashes in registry image names (e.g.
+	// ghcr.io/foo/bar:tag) is unreliable across Docker API router versions.
+	q := url.Values{}
+	q.Set("filters", fmt.Sprintf(`{"reference":[%q]}`, image))
+	resp, err := c.do(ctx, http.MethodGet, "/images/json?"+q.Encode(), nil)
 	if err != nil {
 		return false, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
 	if resp.StatusCode/100 != 2 {
-		return false, c.errorFromResponse(resp, "inspect image")
+		return false, c.errorFromResponse(resp, "list images")
 	}
-	return true, nil
+	var items []json.RawMessage
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return false, fmt.Errorf("decode image list: %w", err)
+	}
+	return len(items) > 0, nil
 }
 
 func (c *Client) pullImage(ctx context.Context, image string) error {
@@ -721,10 +1082,19 @@ func (c *Client) pullImage(ctx context.Context, image string) error {
 	if resp.StatusCode/100 != 2 {
 		return c.errorFromResponse(resp, "pull image")
 	}
-	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-		return fmt.Errorf("drain image pull stream: %w", err)
+	// Drain the streaming pull response. Each line is a JSON status object;
+	// log status lines so slow pulls are visible in the daemon output.
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var frame struct {
+			Status string `json:"status"`
+		}
+		if err := json.Unmarshal([]byte(line), &frame); err == nil && frame.Status != "" {
+			log.Printf("daemon: pull %s: %s", image, frame.Status)
+		}
 	}
-	return nil
+	return scanner.Err()
 }
 
 func (c *Client) do(

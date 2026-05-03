@@ -136,7 +136,7 @@ export const buildServerTransferHandler = (params: {
           .set({
             nodeId: targetNode.id,
             primaryAllocationId: transfer.targetAllocationId,
-            status: "installed_stopped",
+            status: "stopped",
             updatedAt: new Date(),
           })
           .where(eq(serversTable.id, server.id))
@@ -191,7 +191,7 @@ export const buildServerTransferHandler = (params: {
         .where(eq(serverTransfersTable.id, transfer.id))
       await db
         .update(serversTable)
-        .set({ status: "installed_stopped", updatedAt: new Date() })
+        .set({ status: "stopped", updatedAt: new Date() })
         .where(eq(serversTable.id, server.id))
       throw new Error(message)
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowUp01Icon,
@@ -16,7 +17,10 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog"
 import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
 
+import { ApiFetchError } from "@/lib/ApiFetch"
+import { translateApiError } from "@/lib/TranslateError"
 import { useFileList } from "@/hooks/useFiles"
 import type { FileEntry } from "@/hooks/useFiles.types"
 
@@ -42,6 +46,7 @@ export const FileMoveDialog = ({
   onOpenChange,
   onMove,
 }: FileMoveDialogProps) => {
+  const { t } = useTranslation()
   const [browsePath, setBrowsePath] = useState("/")
   const [destInput, setDestInput] = useState("/")
   const [busy, setBusy] = useState(false)
@@ -73,7 +78,11 @@ export const FileMoveDialog = ({
       await onMove(entry, dir)
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      if (err instanceof ApiFetchError) {
+        setError(translateApiError(t, err.body.error))
+      } else {
+        setError(t("internal.unexpected", { ns: "errors" }))
+      }
     } finally {
       setBusy(false)
     }
@@ -86,17 +95,16 @@ export const FileMoveDialog = ({
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="text-sm">
-            Move{" "}
+            {t("file_move.move_verb")}{" "}
             <span className="font-mono text-muted-foreground">{entry.name}</span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-3">
-          {/* Destination path input */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">
-              Destination directory
-            </label>
+            <Label className="text-xs text-muted-foreground">
+              {t("file_move.dest_label")}
+            </Label>
             <Input
               value={destInput}
               onChange={(e) => setDestInput(e.target.value)}
@@ -105,11 +113,10 @@ export const FileMoveDialog = ({
             />
           </div>
 
-          {/* Folder browser */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                Browse:{" "}
+                {t("file_move.browse_label")}{" "}
                 <code className="bg-muted rounded px-1">{browsePath}</code>
               </span>
               {browsePath !== "/" ? (
@@ -119,17 +126,17 @@ export const FileMoveDialog = ({
                   onClick={() => handleBrowseTo(parentOf(browsePath))}
                 >
                   <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
-                  Up
+                  {t("file_move.up")}
                 </button>
               ) : null}
             </div>
 
             <div className="border border-border rounded-md max-h-48 overflow-y-auto">
               {list.isLoading ? (
-                <p className="text-xs text-muted-foreground p-2">Loading…</p>
+                <p className="text-xs text-muted-foreground p-2">{t("file_move.loading")}</p>
               ) : folders.length === 0 ? (
                 <p className="text-xs text-muted-foreground p-2 italic">
-                  No subfolders here
+                  {t("file_move.no_subfolders")}
                 </p>
               ) : (
                 <ul>
@@ -183,11 +190,11 @@ export const FileMoveDialog = ({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" size="sm" disabled={busy}>
-              Cancel
+              {t("file_move.cancel")}
             </Button>
           </DialogClose>
           <Button size="sm" onClick={() => void handleConfirm()} disabled={busy}>
-            {busy ? "Moving…" : "Move here"}
+            {busy ? t("file_move.submitting") : t("file_move.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

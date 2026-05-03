@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto"
 import { Hono } from "hono"
 import { and, asc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
+import { serversTable } from "@workspace/db/schema/servers"
 
 import type { Db } from "@workspace/db/client.types"
 import {
@@ -15,6 +16,16 @@ import { ApiException, apiValidationError } from "@workspace/shared/errors"
 import type { AuthVariables } from "@/middleware/RequireSession"
 import type { Env } from "@/env"
 import { mintPairingToken } from "@/tokens"
+
+const updateNodeSchema = z.object({
+  name: z.string().min(1).max(64).optional(),
+  fqdn: z.string().min(1).max(255).optional(),
+  scheme: z.enum(["http", "https"]).optional(),
+  daemonPort: z.number().int().min(1).max(65535).optional(),
+  sftpPort: z.number().int().min(1).max(65535).optional(),
+  memoryTotalMb: z.number().int().nonnegative().optional(),
+  diskTotalMb: z.number().int().nonnegative().optional(),
+})
 
 const createNodeSchema = z.object({
   name: z.string().min(1).max(64),
@@ -102,6 +113,42 @@ export const buildAdminNodesRoute = (params: { db: Db; env: Env }) => {
         throw new ApiException("nodes.not_found", { status: 404 })
       }
       return c.json({ node: row })
+    })
+    .put("/:id", async (c) => {
+      const id = c.req.param("id")
+      const parsed = updateNodeSchema.safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw apiValidationError(parsed.error)
+      }
+      const updated = await db
+        .update(nodesTable)
+        .set(parsed.data)
+        .where(eq(nodesTable.id, id))
+        .returning()
+      const row = updated[0]
+      if (row === undefined) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      return c.json({ node: row })
+    })
+    .delete("/:id", async (c) => {
+      const id = c.req.param("id")
+      const serverCount = await db
+        .select({ id: serversTable.id })
+        .from(serversTable)
+        .where(eq(serversTable.nodeId, id))
+        .limit(1)
+      if (serverCount.length > 0) {
+        throw new ApiException("nodes.has_servers", { status: 409 })
+      }
+      const deleted = await db
+        .delete(nodesTable)
+        .where(eq(nodesTable.id, id))
+        .returning({ id: nodesTable.id })
+      if (deleted.length === 0) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      return c.json({ deleted: deleted[0]?.id })
     })
     .get("/:id/allocations", async (c) => {
       const id = c.req.param("id")

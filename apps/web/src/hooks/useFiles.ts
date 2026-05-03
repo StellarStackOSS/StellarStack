@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiFetch } from "@/lib/ApiFetch"
@@ -15,7 +15,7 @@ const REFRESH_BEFORE_EXPIRY_MS = 30_000
  * Lazily fetch + cache file-API credentials. Refreshes shortly before the
  * minted JWT expires so a long-running edit session doesn't trip 401s.
  */
-const useFileCredentials = (serverId: string) => {
+export const useFileCredentials = (serverId: string) => {
   const [cred, setCred] = useState<FileCredentials | null>(null)
   const fetchingRef = useRef<Promise<FileCredentials> | null>(null)
 
@@ -219,7 +219,11 @@ export const useUploadFiles = (serverId: string) => {
   const credentials = useFileCredentials(serverId)
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (params: { targetDir: string; files: UploadFileEntry[] }) => {
+    mutationFn: async (params: {
+      targetDir: string
+      files: UploadFileEntry[]
+      onProgress?: (loaded: number, total: number, bytesPerSec: number) => void
+    }) => {
       const cred = await credentials.get()
       const url = new URL(cred.baseUrl + "/files/upload")
       url.searchParams.set("token", cred.token)
@@ -228,16 +232,28 @@ export const useUploadFiles = (serverId: string) => {
       for (const entry of params.files) {
         formData.append("file", entry.file, entry.relativePath)
       }
-      const response = await fetch(url, {
-        method: "POST",
-        body: formData,
-        headers: { Authorization: `Bearer ${cred.token}` },
+      return new Promise<{ ok: boolean; count: number }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        const startTime = Date.now()
+        xhr.upload.addEventListener("progress", (e) => {
+          if (!e.lengthComputable || params.onProgress === undefined) return
+          const elapsed = (Date.now() - startTime) / 1000
+          const bytesPerSec = elapsed > 0 ? e.loaded / elapsed : 0
+          params.onProgress(e.loaded, e.total, bytesPerSec)
+        })
+        xhr.addEventListener("load", () => {
+          if (xhr.status < 200 || xhr.status >= 300) {
+            reject(new Error(xhr.responseText || `daemon error ${xhr.status}`))
+            return
+          }
+          resolve(JSON.parse(xhr.responseText) as { ok: boolean; count: number })
+        })
+        xhr.addEventListener("error", () => reject(new Error("Upload failed")))
+        xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")))
+        xhr.open("POST", url)
+        xhr.setRequestHeader("Authorization", `Bearer ${cred.token}`)
+        xhr.send(formData)
       })
-      const text = await response.text()
-      if (!response.ok) {
-        throw new Error(text || `daemon error ${response.status}`)
-      }
-      return JSON.parse(text) as { ok: boolean; count: number }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
@@ -306,6 +322,56 @@ export const useCompressFiles = (serverId: string) => {
       void queryClient.invalidateQueries({ queryKey: ["servers", serverId, "files"] })
     },
   })
+}
+
+/**
+ * Fetches a file as a blob and returns an object URL suitable for use as
+ * an `<img src>` or `<video src>`. The URL is revoked when `path` changes
+ * or the component unmounts. Returns `null` while loading or when `path` is null.
+ */
+export const useMediaBlobUrl = (serverId: string, path: string | null) => {
+  const credentials = useFileCredentials(serverId)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const activeRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (path === null) {
+      setBlobUrl(null)
+      activeRef.current = null
+      return undefined
+    }
+    activeRef.current = path
+    let createdUrl: string | null = null
+
+    credentials
+      .get()
+      .then(async (cred) => {
+        if (activeRef.current !== path) return
+        const url = new URL(cred.baseUrl + "/files/content")
+        url.searchParams.set("token", cred.token)
+        url.searchParams.set("path", path)
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${cred.token}` },
+        })
+        if (!response.ok || activeRef.current !== path) return
+        const blob = await response.blob()
+        if (activeRef.current !== path) return
+        createdUrl = URL.createObjectURL(blob)
+        setBlobUrl(createdUrl)
+      })
+      .catch(() => null)
+
+    return () => {
+      activeRef.current = null
+      if (createdUrl !== null) {
+        URL.revokeObjectURL(createdUrl)
+      }
+      setBlobUrl(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path])
+
+  return useMemo(() => blobUrl, [blobUrl])
 }
 
 export const useDecompressFile = (serverId: string) => {

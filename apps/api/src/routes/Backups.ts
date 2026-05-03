@@ -127,6 +127,12 @@ export const buildBackupsRoute = (params: {
       const bid = c.req.param("bid")
       const access = await loadServerAccess(db, c.get("user"), id)
       requireScope(access, "backup.write")
+      const parsed = z
+        .object({ snapshotBeforeRestore: z.boolean().optional() })
+        .safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw apiValidationError(parsed.error)
+      }
       const backup = (
         await db
           .select()
@@ -145,7 +151,10 @@ export const buildBackupsRoute = (params: {
       }
       await queues.backupRestore.add(
         "restore",
-        { backupId: backup.id },
+        {
+          backupId: backup.id,
+          snapshotBeforeRestore: parsed.data.snapshotBeforeRestore,
+        },
         { removeOnComplete: 100, removeOnFail: 100 }
       )
       writeAudit({
@@ -155,7 +164,11 @@ export const buildBackupsRoute = (params: {
         action: "backup.restore",
         targetType: "server",
         targetId: id,
-        metadata: { backupId: backup.id, name: backup.name },
+        metadata: {
+          backupId: backup.id,
+          name: backup.name,
+          snapshotBeforeRestore: parsed.data.snapshotBeforeRestore ?? false,
+        },
       })
       return c.json({ ok: true })
     })

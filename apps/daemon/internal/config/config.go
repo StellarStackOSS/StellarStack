@@ -27,14 +27,30 @@ type ListenConfig struct {
 // Config is the top-level daemon configuration. Persisted as YAML at
 // `Path()` (see DefaultPath / STELLAR_CONFIG env override).
 type Config struct {
-	NodeID         string       `yaml:"nodeId"`
-	NodeName       string       `yaml:"nodeName,omitempty"`
-	APIURL         string       `yaml:"apiUrl"`
-	WebsocketURL   string       `yaml:"websocketUrl"`
-	SigningKeyHex  string       `yaml:"signingKeyHex"`
-	Listen         ListenConfig `yaml:"listen"`
-	SFTPListen     ListenConfig `yaml:"sftpListen"`
-	DataDir        string       `yaml:"dataDir"`
+	NodeID        string       `yaml:"nodeId"`
+	NodeName      string       `yaml:"nodeName,omitempty"`
+	APIURL        string       `yaml:"apiUrl"`
+	WebsocketURL  string       `yaml:"websocketUrl"`
+	SigningKeyHex string       `yaml:"signingKeyHex"`
+	Listen        ListenConfig `yaml:"listen"`
+	SFTPListen    ListenConfig `yaml:"sftpListen"`
+	DataDir       string       `yaml:"dataDir"`
+	DockerSocket  string       `yaml:"dockerSocket,omitempty"`
+}
+
+// ResolvedDockerSocket returns the Docker socket path to use. If DockerSocket
+// is set in config that wins; otherwise it probes Colima's socket before
+// falling back to /var/run/docker.sock.
+func (c *Config) ResolvedDockerSocket() string {
+	if c.DockerSocket != "" {
+		return c.DockerSocket
+	}
+	home, _ := os.UserHomeDir()
+	colima := filepath.Join(home, ".colima", "default", "docker.sock")
+	if _, err := os.Stat(colima); err == nil {
+		return colima
+	}
+	return "/var/run/docker.sock"
 }
 
 // DefaultPath returns the canonical config path. /etc/stellar-daemon/config.yaml

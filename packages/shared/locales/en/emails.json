@@ -1,10 +1,10 @@
 {
   "auth.verify_email.subject": "Verify your StellarStack account",
-  "auth.verify_email.body": "Hi {{name}},\n\nClick the link below to verify your StellarStack account:\n\n{{url}}\n\nThis link expires in {{expiresMinutes}} minutes.",
+  "auth.verify_email.body": "Hi {name},\n\nClick the link below to verify your StellarStack account:\n\n{url}\n\nThis link expires in {expiresMinutes} minutes.",
 
   "auth.password_reset.subject": "Reset your StellarStack password",
-  "auth.password_reset.body": "Hi {{name}},\n\nWe received a request to reset your StellarStack password. Click the link below to choose a new one:\n\n{{url}}\n\nIf you didn't request this, you can ignore this email.",
+  "auth.password_reset.body": "Hi {name},\n\nWe received a request to reset your StellarStack password. Click the link below to choose a new one:\n\n{url}\n\nIf you didn't request this, you can ignore this email.",
 
   "subuser.invited.subject": "You've been invited to manage a server on StellarStack",
-  "subuser.invited.body": "Hi,\n\n{{inviterName}} added you as a subuser on the server \"{{serverName}}\". Sign in to access it:\n\n{{url}}"
+  "subuser.invited.body": "Hi,\n\n{inviterName} added you as a subuser on the server \"{serverName}\". Sign in to access it:\n\n{url}"
 }

@@ -17,6 +17,9 @@ export const createRedis = (env: Env): IORedis => {
  */
 export type ServerInstallJobData = {
   serverId: string
+  reinstall?: boolean
+  keepFiles?: boolean
+  snapshotFirst?: boolean
 }
 
 /**
@@ -39,6 +42,7 @@ export type BackupCreateJobData = {
  */
 export type BackupRestoreJobData = {
   backupId: string
+  snapshotBeforeRestore?: boolean
 }
 
 /**
@@ -58,6 +62,14 @@ export type ServerCommandJobData = {
 }
 
 /**
+ * Payload shape for the `server.delete` queue. The worker kills the
+ * container, tells the daemon to remove files, then cleans up DB rows.
+ */
+export type ServerDeleteJobData = {
+  serverId: string
+}
+
+/**
  * Payload shape for the `server.transfer` queue.
  */
 export type ServerTransferJobData = {
@@ -71,6 +83,7 @@ export type Queues = {
   ping: Queue<{ message: string }>
   serverInstall: Queue<ServerInstallJobData>
   serverPower: Queue<ServerPowerJobData>
+  serverDelete: Queue<ServerDeleteJobData>
   serverCommand: Queue<ServerCommandJobData>
   serverTransfer: Queue<ServerTransferJobData>
   backupCreate: Queue<BackupCreateJobData>
@@ -86,6 +99,7 @@ export const createQueues = (connection: IORedis): Queues => ({
   ping: new Queue("ping", { connection }),
   serverInstall: new Queue("server.install", { connection }),
   serverPower: new Queue("server.power", { connection }),
+  serverDelete: new Queue("server.delete", { connection }),
   serverCommand: new Queue("server.command", { connection }),
   serverTransfer: new Queue("server.transfer", { connection }),
   backupCreate: new Queue("backup.create", { connection }),

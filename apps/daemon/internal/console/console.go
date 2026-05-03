@@ -5,13 +5,16 @@
 package console
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +24,22 @@ import (
 	"github.com/stellarstack/daemon/internal/handler"
 	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 )
+
+// ansiRE matches ANSI/VT100 escape sequences so they can be stripped before
+// sending log lines to the browser (which renders them as literal characters).
+var ansiRE = regexp.MustCompile(`\x1b(?:\[[0-9;?]*[A-Za-z]|[^[\x1b])`)
+
+// cleanLine strips ANSI escape sequences and handles bare carriage returns.
+// On a real terminal a \r moves the cursor to column 0 so the next write
+// overwrites the current line; we replicate that by keeping only the last
+// segment after the final \r, so the browser sees what a terminal would show.
+func cleanLine(raw string) string {
+	s := ansiRE.ReplaceAllString(raw, "")
+	if idx := strings.LastIndex(s, "\r"); idx >= 0 {
+		s = s[idx+1:]
+	}
+	return strings.TrimRight(s, " \t")
+}
 
 const (
 	throttleLines    = 500
@@ -123,21 +142,115 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		logReader.Close()
 	}
 
-	attachConn, attachReader, err := dockerClient.AttachConn(ctx, containerName)
-	if err != nil {
+	// Server-driven heartbeat: ping the browser every 30s. coder/websocket's
+	// Ping blocks until the matching pong arrives, so a missed pong returns
+	// an error and we tear the socket down. Mirrors the keepalive Pelican
+	// gets implicitly from its periodic JWT-expiry events.
+	go heartbeat(ctx, conn, cancel)
+
+	// Live attach loop: when a container restarts, the existing attach reader
+	// hits EOF. Instead of closing the browser socket, retry the attach for
+	// up to 30s so a power cycle doesn't disconnect the console.
+	attachReader, attachWriter, attachClose, attachErr := waitForAttach(ctx, dockerClient, containerName, 30*time.Second)
+	if attachErr != nil {
 		_ = conn.Write(ctx, websocket.MessageText, mustJSON(map[string]any{
 			"type": "error",
 			"code": "internal.unexpected",
 		}))
 		return
 	}
-	defer attachConn.Close()
 
-	go pumpDockerToWS(ctx, conn, attachReader)
+	pumpDone := make(chan struct{})
+	go func() {
+		defer close(pumpDone)
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("console: docker-pump panic: %v", r)
+			}
+		}()
+		current := attachReader
+		currentClose := attachClose
+		for {
+			pumpDockerToWS(ctx, conn, current)
+			currentClose()
+			if ctx.Err() != nil {
+				return
+			}
+			// Reattach to the (possibly new) container after a short pause so
+			// a restart doesn't drop the browser socket.
+			r2, _, c2, err := waitForAttach(ctx, dockerClient, containerName, 30*time.Second)
+			if err != nil {
+				return
+			}
+			current = r2
+			currentClose = c2
+		}
+	}()
+
+	_ = attachWriter
 	if allowWrite {
-		pumpWSToDocker(ctx, conn, attachConn)
+		pumpWSCommandsToContainer(ctx, conn, dockerClient, containerName)
 	} else {
 		pumpWSToVoid(ctx, conn)
+	}
+	cancel()
+	<-pumpDone
+}
+
+// waitForAttach attaches to the container, retrying every second until the
+// attach succeeds or the deadline expires. Returns the read side, write
+// side, and a close func.
+func waitForAttach(
+	ctx context.Context,
+	d dockerAttacher,
+	containerName string,
+	timeout time.Duration,
+) (*bufio.Reader, net.Conn, func(), error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		conn, reader, err := d.AttachConn(ctx, containerName)
+		if err == nil {
+			return reader, conn, func() { _ = conn.Close() }, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, nil, nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, nil, nil, ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+	}
+}
+
+type dockerAttacher interface {
+	AttachConn(ctx context.Context, containerName string) (net.Conn, *bufio.Reader, error)
+}
+
+// heartbeat pings the browser every 30s and cancels the connection on the
+// first failed pong. coder/websocket's Ping returns an error if the pong
+// doesn't arrive within the supplied context's deadline.
+func heartbeat(ctx context.Context, conn *websocket.Conn, cancel context.CancelFunc) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("console: heartbeat panic: %v", r)
+		}
+	}()
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			pingCtx, pingCancel := context.WithTimeout(ctx, 15*time.Second)
+			err := conn.Ping(pingCtx)
+			pingCancel()
+			if err != nil {
+				cancel()
+				return
+			}
+		}
 	}
 }
 
@@ -163,7 +276,8 @@ func replayDockerLogs(ctx context.Context, ws *websocket.Conn, r io.Reader) {
 		if streamID == 2 {
 			stream = "stderr"
 		}
-		for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+		for _, raw := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+			line := cleanLine(raw)
 			if line == "" {
 				continue
 			}
@@ -204,7 +318,8 @@ func pumpDockerToWS(
 		if streamID == 2 {
 			stream = "stderr"
 		}
-		for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+		for _, raw := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+			line := cleanLine(raw)
 			if line == "" {
 				continue
 			}
@@ -230,10 +345,16 @@ func pumpDockerToWS(
 	}
 }
 
-func pumpWSToDocker(
+// pumpWSCommandsToContainer reads `console.command` frames from the browser
+// and writes each to the container's stdin via a fresh AttachConn. Using a
+// new connection per command keeps the write path resilient to container
+// restarts: the previous attach is invalid after the container is
+// recreated, but the next command opens a new attach against the new one.
+func pumpWSCommandsToContainer(
 	ctx context.Context,
 	ws *websocket.Conn,
-	w io.Writer,
+	d dockerAttacher,
+	containerName string,
 ) {
 	for {
 		_, data, err := ws.Read(ctx)
@@ -250,9 +371,14 @@ func pumpWSToDocker(
 		if frame.Type != "console.command" {
 			continue
 		}
-		if _, err := io.WriteString(w, frame.Command+"\n"); err != nil {
-			return
+		writeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		conn, _, attachErr := d.AttachConn(writeCtx, containerName)
+		cancel()
+		if attachErr != nil {
+			continue
 		}
+		_, _ = io.WriteString(conn, frame.Command+"\n")
+		conn.Close()
 	}
 }
 

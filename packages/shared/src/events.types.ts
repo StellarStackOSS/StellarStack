@@ -9,6 +9,7 @@ export type ServerLifecycleState =
   | "stopping"
   | "stopped"
   | "crashed"
+  | "restoring_backup"
 
 /**
  * Reason metadata for a state transition. `code` is a translation key in the
@@ -45,6 +46,10 @@ export type ServerStatsEvent = {
   diskBytes: number
   networkRxBytes: number
   networkTxBytes: number
+  diskReadBytes: number
+  diskWriteBytes: number
+  /** Container uptime in milliseconds as reported by the daemon (Docker StartedAt). */
+  uptimeMs?: number
   at: string
 }
 
@@ -62,9 +67,33 @@ export type JobProgressEvent = {
 }
 
 /**
+ * Published when a daemon's control WebSocket connects or disconnects from
+ * the API bridge. Lets the web client show node reachability inline.
+ */
+export type NodeDaemonStatusEvent = {
+  type: "node.daemon.status"
+  nodeId: string
+  connected: boolean
+  at: string
+}
+
+/**
+ * Install script log line forwarded from daemon → worker → panel WS.
+ */
+export type ServerInstallLogEvent = {
+  type: "server.install_log"
+  serverId: string
+  stream: "stdout" | "stderr"
+  line: string
+  at: string
+}
+
+/**
  * Discriminated union of every event the panel WS may carry.
  */
 export type PanelEvent =
   | ServerStateChangedEvent
   | ServerStatsEvent
   | JobProgressEvent
+  | NodeDaemonStatusEvent
+  | ServerInstallLogEvent

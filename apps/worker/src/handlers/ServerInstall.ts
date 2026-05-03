@@ -12,6 +12,7 @@ import {
 } from "@workspace/db/schema/servers"
 import { panelEventSchema } from "@workspace/shared/events"
 import type {
+  ConfigFilePatch,
   CreateContainerMessage,
   RunInstallScriptMessage,
 } from "@workspace/daemon-proto/messages.types"
@@ -63,7 +64,7 @@ const buildEnvironment = (
  * run-install flow against the node's daemon over the API↔daemon bridge,
  * publishing job-progress events for the panel WS as each phase completes.
  *
- * On success the server row flips to `installed_stopped`; on failure it
+ * On success the server row flips to `stopped`; on failure it
  * flips to `crashed` with a translation key in the audit log so the panel
  * can display "install failed" without making up text.
  */
@@ -79,7 +80,8 @@ export const buildServerInstallHandler = (params: {
   return async (job: Job<ServerInstallJobData>) => {
     const log = logger.child({ jobId: job.id, serverId: job.data.serverId })
     const jobId = job.id ?? "unknown"
-    log.info("Starting server install")
+    const isReinstall = job.data.reinstall === true
+    log.info({ isReinstall }, "Starting server install")
 
     const server = (
       await db
@@ -130,41 +132,46 @@ export const buildServerInstallHandler = (params: {
     )
 
     try {
-      await publishProgress(pubsub, env, {
-        jobId,
-        serverId: server.id,
-        percent: 5,
-        code: "servers.install.creating_container",
-      })
+      if (!isReinstall) {
+        await publishProgress(pubsub, env, {
+          jobId,
+          serverId: server.id,
+          percent: 5,
+          code: "servers.install.creating_container",
+        })
 
-      const createMessage: CreateContainerMessage = {
-        type: "server.create_container",
-        serverId: server.id,
-        dockerImage: server.dockerImage,
-        memoryLimitMb: server.memoryLimitMb,
-        cpuLimitPercent: server.cpuLimitPercent,
-        diskLimitMb: server.diskLimitMb,
-        environment,
-        portMappings: [
-          {
-            ip: allocation.ip,
-            port: allocation.port,
-            containerPort: allocation.port,
-          },
-        ],
-        startupCommand: blueprint.startupCommand,
-        stopSignal: blueprint.stopSignal,
-        lifecycle: blueprint.lifecycle,
-      }
-      const createResult = await daemonClient.request({
-        nodeId: server.nodeId,
-        message: createMessage,
-        timeoutMs: 5 * 60_000,
-      })
-      if (createResult.envelope.message.type === "error") {
-        throw new Error(
-          `daemon error: ${createResult.envelope.message.code}`
-        )
+        const createMessage: CreateContainerMessage = {
+          type: "server.create_container",
+          serverId: server.id,
+          dockerImage: server.dockerImage,
+          memoryLimitMb: server.memoryLimitMb,
+          cpuLimitPercent: server.cpuLimitPercent,
+          processLimit: 256,
+          diskLimitMb: server.diskLimitMb,
+          environment,
+          portMappings: [
+            {
+              ip: allocation.ip,
+              port: allocation.port,
+              containerPort: allocation.port,
+            },
+          ],
+          startupCommand: blueprint.startupCommand,
+          stopSignal: blueprint.stopSignal,
+          lifecycle: blueprint.lifecycle,
+          features: (blueprint.features as unknown as Record<string, string[]>) ?? {},
+          configFiles: (blueprint.configFiles as ConfigFilePatch[]) ?? [],
+        }
+        const createResult = await daemonClient.request({
+          nodeId: server.nodeId,
+          message: createMessage,
+          timeoutMs: 5 * 60_000,
+        })
+        if (createResult.envelope.message.type === "error") {
+          throw new Error(
+            `daemon error: ${createResult.envelope.message.code}`
+          )
+        }
       }
 
       await publishProgress(pubsub, env, {
@@ -183,6 +190,7 @@ export const buildServerInstallHandler = (params: {
           script: blueprint.installScript,
         },
         environment,
+        ...(isReinstall ? { keepFiles: job.data.keepFiles ?? false } : {}),
       }
       const installResult = await daemonClient.request({
         nodeId: server.nodeId,
@@ -190,10 +198,17 @@ export const buildServerInstallHandler = (params: {
         timeoutMs: 30 * 60_000,
         onStream: (message) => {
           if (message.type === "server.install_log") {
-            log.debug(
-              { stream: message.stream, line: message.line },
-              "install log"
-            )
+            log.debug({ stream: message.stream, line: message.line }, "install log")
+            const event = panelEventSchema.safeParse({
+              type: "server.install_log",
+              serverId: server.id,
+              stream: message.stream,
+              line: message.line,
+              at: new Date().toISOString(),
+            })
+            if (event.success) {
+              void pubsub.publish(env.PANEL_EVENTS_CHANNEL, JSON.stringify(event.data))
+            }
           }
         },
       })
@@ -205,7 +220,7 @@ export const buildServerInstallHandler = (params: {
 
       await db
         .update(serversTable)
-        .set({ status: "installed_stopped", updatedAt: new Date() })
+        .set({ status: "stopped", updatedAt: new Date() })
         .where(eq(serversTable.id, server.id))
 
       await publishProgress(pubsub, env, {

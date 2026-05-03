@@ -108,6 +108,7 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 
 	writeMu := &sync.Mutex{}
 	sender := &connSender{mu: writeMu, conn: conn}
+	c.handler.SetSender(sender)
 
 	hello := Envelope{ID: ""}
 	helloBody, err := json.Marshal(HelloMessage{
@@ -129,9 +130,12 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 		return fmt.Errorf("send hello: %w", err)
 	}
 
-	// Resume stats for any containers that were already running before this
-	// WS session started (e.g. after a daemon restart).
-	go c.handler.Resume(ctx, sender)
+	// Reconcile on connect and then every 2 minutes so the DB/panel always
+	// reflect actual Docker container states even if a state-change event was
+	// missed (e.g. after a daemon crash or a dropped WS frame).
+	go c.handler.Resume(ctx)
+	reconcileTicker := time.NewTicker(2 * time.Minute)
+	defer reconcileTicker.Stop()
 
 	heartbeat := time.NewTicker(30 * time.Second)
 	defer heartbeat.Stop()
@@ -164,6 +168,8 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 					log.Printf("daemon: handle envelope: %v", err)
 				}
 			}(r.data)
+		case <-reconcileTicker.C:
+			go c.handler.Reconcile(ctx)
 		case <-heartbeat.C:
 			if err := conn.Ping(ctx); err != nil {
 				return fmt.Errorf("ping: %w", err)

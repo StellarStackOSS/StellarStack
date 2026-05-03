@@ -3,7 +3,7 @@
 // machine. Each server gets one Watcher; on each transition the Watcher
 // arms the matching probe set declared in the blueprint, evaluates probes
 // (console regex, container_exit, others stubbed), and emits
-// server.state_changed envelopes back to the API via the supplied Sender.
+// server.state.changed envelopes back to the API via the supplied Sender.
 package lifecycle
 
 import (
@@ -75,6 +75,7 @@ type Watcher struct {
 
 	mu          sync.Mutex
 	state       State
+	startedAt   string // RFC3339Nano from Docker inspect; set when stats stream starts
 	cancel      context.CancelFunc
 	statsCancel context.CancelFunc
 }
@@ -142,17 +143,11 @@ func (w *Watcher) SetState(ctx context.Context, next State, code string) {
 	w.emit(ctx, prev, next, code)
 }
 
-// startStatsStream subscribes to the docker stats endpoint for this
-// container and emits one server.stats envelope per frame. Replaces any
-// prior stream.
-func (w *Watcher) startStatsStream() {
-	w.stopStatsStream()
-	ctx, cancel := context.WithCancel(context.Background())
-	w.mu.Lock()
-	w.statsCancel = cancel
-	w.mu.Unlock()
-	go w.runStats(ctx)
-}
+// startStatsStream is intentionally a no-op. The single producer of
+// server.stats frames lives in the handler package (Handler.startStats)
+// so we avoid double-emitting once probes match. Kept as a method so
+// existing call sites in beginPhase don't need conditional plumbing.
+func (w *Watcher) startStatsStream() {}
 
 // stopStatsStream cancels any in-flight stats stream.
 func (w *Watcher) stopStatsStream() {
@@ -166,6 +161,11 @@ func (w *Watcher) stopStatsStream() {
 }
 
 func (w *Watcher) runStats(ctx context.Context) {
+	if state, err := w.docker.InspectState(ctx, w.containerName); err == nil && state != nil {
+		w.mu.Lock()
+		w.startedAt = state.StartedAt
+		w.mu.Unlock()
+	}
 	stream, err := w.docker.StatsStream(ctx, w.containerName)
 	if err != nil {
 		log.Printf("lifecycle: stats stream: %v", err)
@@ -177,6 +177,9 @@ func (w *Watcher) runStats(ctx context.Context) {
 }
 
 func (w *Watcher) emitStats(snapshot docker.StatsSnapshot) {
+	w.mu.Lock()
+	startedAt := w.startedAt
+	w.mu.Unlock()
 	frame := map[string]any{
 		"id": "",
 		"message": map[string]any{
@@ -188,6 +191,9 @@ func (w *Watcher) emitStats(snapshot docker.StatsSnapshot) {
 			"diskBytes":        0,
 			"networkRxBytes":   snapshot.NetworkRxBytes,
 			"networkTxBytes":   snapshot.NetworkTxBytes,
+			"diskReadBytes":    snapshot.DiskReadBytes,
+			"diskWriteBytes":   snapshot.DiskWriteBytes,
+			"startedAt":        startedAt,
 			"at":               time.Now().UTC().Format(time.RFC3339Nano),
 		},
 	}
@@ -216,9 +222,18 @@ func (w *Watcher) beginPhase(
 	w.cancel = cancel
 	w.mu.Unlock()
 
-	w.emit(ctx, prev, transitionTo, fmt.Sprintf("servers.lifecycle.%s.requested", transitionTo))
+	if prev != transitionTo {
+		w.emit(ctx, prev, transitionTo, fmt.Sprintf("servers.lifecycle.%s.requested", transitionTo))
+	}
 
-	go w.runPhase(phaseCtx, phase, successState, lifecycle)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("lifecycle: phase panic: %v", r)
+			}
+		}()
+		w.runPhase(phaseCtx, phase, successState, lifecycle)
+	}()
 }
 
 func (w *Watcher) runPhase(
@@ -285,6 +300,11 @@ func (w *Watcher) armCrashDetection(lifecycle Lifecycle) {
 	w.mu.Unlock()
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("lifecycle: crash detection panic: %v", r)
+			}
+		}()
 		results := make(chan probeMatch, 4)
 		for _, probe := range lifecycle.CrashDetection.Probes {
 			go w.runProbe(ctx, probe, lifecycle, results)
@@ -294,7 +314,7 @@ func (w *Watcher) armCrashDetection(lifecycle Lifecycle) {
 			return
 		case match := <-results:
 			next := StateCrashed
-			if w.State() == StateStopping {
+			if match.stopped || w.State() == StateStopping {
 				next = StateStopped
 			}
 			w.transitionTo(ctx, next, match.code)
@@ -303,7 +323,8 @@ func (w *Watcher) armCrashDetection(lifecycle Lifecycle) {
 }
 
 type probeMatch struct {
-	code string
+	code    string
+	stopped bool // true when the exit was clean and should map to stopped, not crashed
 }
 
 func (w *Watcher) runProbe(
@@ -374,43 +395,55 @@ func (w *Watcher) runContainerExitProbe(
 	probe Probe,
 	out chan<- probeMatch,
 ) {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	for {
+	// Use Docker's blocking wait API — fires the instant the container exits,
+	// no polling delay. Falls back to a one-shot inspect if the wait call fails
+	// (e.g. container already exited before we registered the wait).
+	exited := make(chan struct{}, 1)
+	go func() {
+		w.docker.WaitForExit(ctx, w.containerName, 0)
 		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			state, err := w.docker.InspectState(ctx, w.containerName)
-			if err != nil || state == nil {
-				continue
-			}
-			if state.Running {
-				continue
-			}
-			if len(probe.IfNotInState) > 0 {
-				current := w.State()
-				skip := false
-				for _, s := range probe.IfNotInState {
-					if s == current {
-						skip = true
-						break
-					}
-				}
-				if skip {
-					continue
-				}
-			}
-			code := "servers.lifecycle.crashed.container_exit"
-			if w.State() == StateStopping {
-				code = "servers.lifecycle.stopped"
-			}
-			select {
-			case out <- probeMatch{code: code}:
-			default:
-			}
-			return
+		case exited <- struct{}{}:
+		default:
 		}
+	}()
+
+	// Also check immediately in case the container already exited.
+	if state, err := w.docker.InspectState(ctx, w.containerName); err == nil && state != nil && !state.Running {
+		select {
+		case exited <- struct{}{}:
+		default:
+		}
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-exited:
+	}
+
+	if len(probe.IfNotInState) > 0 {
+		current := w.State()
+		for _, s := range probe.IfNotInState {
+			if s == current {
+				return
+			}
+		}
+	}
+
+	state, err := w.docker.InspectState(ctx, w.containerName)
+	oomKilled := err == nil && state != nil && state.OOMKilled
+	cleanExit := err == nil && state != nil && state.ExitCode == 0 && !oomKilled
+	isStopping := w.State() == StateStopping
+	code := "servers.lifecycle.crashed.container_exit"
+	stopped := isStopping || cleanExit
+	if stopped {
+		code = "servers.lifecycle.stopped"
+	} else if oomKilled {
+		code = "servers.lifecycle.crashed.oom_killed"
+	}
+	select {
+	case out <- probeMatch{code: code, stopped: stopped}:
+	default:
 	}
 }
 
@@ -438,7 +471,7 @@ func (w *Watcher) emit(ctx context.Context, from, to State, code string) {
 	frame := map[string]any{
 		"id": "",
 		"message": map[string]any{
-			"type":     "server.state_changed",
+			"type":     "server.state.changed",
 			"serverId": w.serverID,
 			"from":     string(from),
 			"to":       string(to),

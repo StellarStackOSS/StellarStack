@@ -1,14 +1,27 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/geist-mono";
 
 @custom-variant dark (&:is(.dark *));
+
+@custom-variant data-open (&[data-state=open]);
+@custom-variant data-closed (&[data-state=closed]);
+@custom-variant data-checked (&[data-state=checked]);
+@custom-variant data-active (&[data-state=active], &[data-active]);
+@custom-variant data-disabled (&[data-disabled]);
+@custom-variant data-placeholder (&[data-placeholder]);
+@custom-variant data-horizontal (&[data-orientation=horizontal]);
+@custom-variant data-vertical (&[data-orientation=vertical]);
+@custom-variant data-inset (&[data-inset]);
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../../../components/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
 @theme inline {
     --font-heading: var(--font-sans);
+    --font-sans: 'Space Grotesk Variable', sans-serif;
+    --font-mono: 'Geist Mono', monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,7 +60,6 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
-    --font-sans: 'Inter Variable', sans-serif;
 }
 
 :root {
@@ -86,47 +98,60 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
+    /* page/content background: #000000 */
+    --background: oklch(0 0 0);
+    /* primary text: zinc-100 */
+    --foreground: oklch(0.961 0.001 286);
+    /* card: same as sidebar #0c0d11 */
+    --card: oklch(0.1598 0.0086 274.3);
+    --card-foreground: oklch(0.961 0.001 286);
+    /* popover: zinc-900 */
+    --popover: oklch(0.15 0.002 286);
+    --popover-foreground: oklch(0.961 0.001 286);
+    /* primary button: near-white */
     --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --primary-foreground: oklch(0.15 0 0);
+    /* secondary: zinc-800 */
+    --secondary: oklch(0.22 0.002 286);
+    --secondary-foreground: oklch(0.961 0.001 286);
+    /* muted: zinc-800 */
+    --muted: oklch(0.22 0.002 286);
+    /* muted-foreground: zinc-400 */
+    --muted-foreground: oklch(0.672 0.003 286);
+    /* accent: zinc-800 */
+    --accent: oklch(0.22 0.002 286);
+    --accent-foreground: oklch(0.961 0.001 286);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
+    /* border: white/5 */
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 12%);
     --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
+    --chart-1: oklch(0.627 0.194 149.214);
+    --chart-2: oklch(0.784 0.15 59.234);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
+    --chart-5: oklch(0.22 0 0);
+    /* sidebar outer wrapper: #0c0d11 */
+    --sidebar: oklch(0.1598 0.0086 274.3);
+    --sidebar-foreground: oklch(0.961 0.001 286);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-accent: oklch(0.22 0.008 274.3);
+    --sidebar-accent-foreground: oklch(0.961 0.001 286);
+    --sidebar-border: oklch(1 0 0 / 5%);
     --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+    font-family: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "liga" 1, "calt" 1;
+  }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
+  }
 }

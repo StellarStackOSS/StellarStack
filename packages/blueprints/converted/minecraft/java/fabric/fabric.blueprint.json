@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "name": "Fabric",
+  "author": "accounts@bofanodes.io",
+  "description": "Fabric is a modular modding toolchain targeting Minecraft 1.14 and above, including snapshots.",
+  "dockerImages": {
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25",
+    "java 24": "ghcr.io/ptero-eggs/yolks:java_24",
+    "java 23": "ghcr.io/ptero-eggs/yolks:java_23",
+    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "SERVER_JARFILE",
+      "name": "Server Jar File",
+      "description": "The name of the server jarfile to run the server with.",
+      "default": "server.jar",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+    },
+    {
+      "key": "MC_VERSION",
+      "name": "Minecraft Version",
+      "description": "The version of Minecraft to install. Use \"latest\" to install the latest version, or use \"snapshot\" to install the latest snapshot.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|between:3,15"
+    },
+    {
+      "key": "FABRIC_VERSION",
+      "name": "Fabric Version",
+      "description": "The version of Fabric to install.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|between:3,15"
+    },
+    {
+      "key": "LOADER_VERSION",
+      "name": "Fabric Loader Version",
+      "description": "The version of Fabric Loader to install.",
+      "default": "latest",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|between:3,15"
+    }
+  ],
+  "install": {
+    "image": "eclipse-temurin:21-jdk-jammy",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# Fabric MC Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y curl jq unzip dos2unix wget\nmkdir -p /mnt/server\ncd /mnt/server\n\n# Enable snapshots\nif [ -z \"$MC_VERSION\" ] || [ \"$MC_VERSION\" == \"latest\" ]; then\n  MC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/game | jq -r '.[] | select(.stable== true )|.version' | head -n1)\nelif [ \"$MC_VERSION\" == \"snapshot\" ]; then\n  MC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/game | jq -r '.[] | select(.stable== false )|.version' | head -n1)\nfi\n\nif [ -z \"$FABRIC_VERSION\" ] || [ \"$FABRIC_VERSION\" == \"latest\" ]; then\n  FABRIC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/installer | jq -r '.[0].version')\nfi\n\nif [ -z \"$LOADER_VERSION\" ] || [ \"$LOADER_VERSION\" == \"latest\" ]; then\n  LOADER_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/loader | jq -r '.[] | select(.stable== true )|.version' | head -n1)\nelif [ \"$LOADER_VERSION\" == \"snapshot\" ]; then\n  LOADER_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/loader | jq -r '.[] | select(.stable== false )|.version' | head -n1)\nfi\n\nwget -O fabric-installer.jar https://maven.fabricmc.net/net/fabricmc/fabric-installer/$FABRIC_VERSION/fabric-installer-$FABRIC_VERSION.jar\njava -jar fabric-installer.jar server -mcversion $MC_VERSION -loader $LOADER_VERSION -downloadMinecraft\nmv server.jar minecraft-server.jar\nmv fabric-server-launch.jar server.jar\necho \"serverJar=minecraft-server.jar\" > fabric-server-launcher.properties\necho -e \"Install Complete\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

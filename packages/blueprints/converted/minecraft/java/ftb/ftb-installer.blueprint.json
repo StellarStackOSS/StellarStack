@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "FTB Server",
+  "author": "runemaster580@gmail.com",
+  "description": "FTB modpacks are now distributed through their own API. This egg was developed for support for modpacks that are distributed through this.",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+    "Java 23": "ghcr.io/ptero-eggs/yolks:java_23",
+    "Java 24": "ghcr.io/ptero-eggs/yolks:java_24",
+    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java $( [[ -f log4jfix/Log4jPatcher.jar ]] && printf %s \"-javaagent:log4jfix/Log4jPatcher.jar \" ) -Xms128M -XX:MaxRAMPercentage=95.0 -Dterminal.jline=false -Dterminal.ansi=true $( [[ ! -f unix_args.txt ]] && printf %s \"-jar start-server.jar\" || printf %s \"@unix_args.txt\" )",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "FTB_SEARCH_TERM",
+      "name": "FTB Pack search term",
+      "description": "the search term for finding the modpack. needs to be at least 4 characters long.\nFind out what term is needed by using the ftb app and searching with the term. make sure it only returns 1 result.\ncan also be searched for via: https://api.feed-the-beast.com/v1/modpacks/public/modpack/search/8?term={SEARCHTERM}\n\nonly needed if the modpack id and modpack version id is unknown.",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "FTB_MODPACK_ID",
+      "name": "FTB modpack ID",
+      "description": "The FTB Api modpack ID.\nNeeded if not using the search variable\n\nExample: FTB Interactions ID is 5.\nhttps://api.feed-the-beast.com/v1/modpacks/public/modpack/5",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|integer"
+    },
+    {
+      "key": "FTB_VERSION_STRING",
+      "name": "FTB Pack Version",
+      "description": "what version of the modpack to install. leave empty if using the modpack version id variable.",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "key": "FTB_MODPACK_VERSION_ID",
+      "name": "FTB Pack Version ID",
+      "description": "The modpack api version ID.\nLeave this and FTB Pack Version empty to install latest.\n\nExample FTB Revelations version id for version \"2.0.2\" is 86.\nwhich would come out as: https://api.feed-the-beast.com/v1/modpacks/public/modpack/5/86",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|integer"
+    }
+  ],
+  "install": {
+    "image": "eclipse-temurin:8-jdk-jammy",
+    "entrypoint": "bash",
+    "script": "#!/bin/bash\n# FTB Pack Installation Script\n#\n# Server Files: /mnt/server\nif [ ! -d /mnt/server ]; then\n    mkdir -p /mnt/server\nfi\ncd /mnt/server || { echo \"Failed to change into server directory\"; exit 1; }\n\n\n# Download needed software.\nfunction install_required {\n    apt update\n    apt install -y curl jq\n}\n\nfunction get_modpack_id {\n    urlencode() {\n        local string=\"${1// /%20}\"\n        echo \"$string\"\n    }\n    \n    # if no modpack id is set and modpack search term is set.\n    if [ -z \"${FTB_MODPACK_ID}\" ] && [ -n \"${FTB_SEARCH_TERM}\" ]; then\n        encoded_search_term=$(urlencode \"$FTB_SEARCH_TERM\")\n        JSON_DATA=$(curl -sSL https://api.feed-the-beast.com/v1/modpacks/public/modpack/search/8?term=\"${encoded_search_term}\")\n    \n        # grabs the first modpack in array.\n        FTB_MODPACK_ID=$(echo -e \"${JSON_DATA}\" | jq -r \".packs[0]\")\n    fi\n    \n    if [ -z \"${FTB_MODPACK_VERSION_ID}\" ] && [ -n \"${FTB_VERSION_STRING}\" ]; then\n        # grabs the correct version id matching the string.\n        FTB_MODPACK_VERSION_ID=$(curl -sSL https://api.feed-the-beast.com/v1/modpacks/public/modpack/\"${FTB_MODPACK_ID}\" | jq -r --arg VSTRING \"${FTB_VERSION_STRING}\" '.versions[] | select(.name == $VSTRING) | .id')\n    fi\n}\n\nfunction run_installer {\n    # get architecture for installer\n    INSTALLER_TYPE=$([ \"$(uname -m)\" == \"x86_64\" ] && echo \"linux\" || echo \"arm/linux\")\n    echo \"ModpackID: ${FTB_MODPACK_ID} VersionID: ${FTB_MODPACK_VERSION_ID:-latest} InstallerType: ${INSTALLER_TYPE}\"\n\n    # download installer\n    curl -Ls https://api.feed-the-beast.com/v1/modpacks/public/modpack/0/0/server/${INSTALLER_TYPE} --output serversetup\n    chmod +x ./serversetup\n    \n    # remove old forge files (to allow updating)\n    rm -rf libraries/net/minecraftforge/forge\n    rm -rf libraries/net/neoforged/forge\n    rm -rf libraries/net/neoforged/neoforge\n    rm -f unix_args.txt\n    \n    # Remove old log4jpatcher\n    rm -rf log4jfix/\n    \n    # run installer\n    # shellcheck disable=SC2046\n    ./serversetup -pack \"${FTB_MODPACK_ID}\" $([ -n \"$FTB_MODPACK_VERSION_ID\" ] && echo \"-version $FTB_MODPACK_VERSION_ID\") -no-colours -no-java -auto -force || { echo \"Failed to run FTB Installer\"; exit 1; }\n}\n\n# allows startup command to work\nfunction move_startup_files {\n    # create symlink for forge unix_args.txt if exists\n    if compgen -G \"libraries/net/minecraftforge/forge/*/unix_args.txt\"; then\n        ln -sf libraries/net/minecraftforge/forge/*/unix_args.txt unix_args.txt\n    fi\n    \n    # create symlink for neoforge unix_args.txt if exists\n    if compgen -G \"libraries/net/neoforged/forge/*/unix_args.txt\"; then\n        ln -sf libraries/net/neoforged/forge/*/unix_args.txt unix_args.txt\n    fi\n    if compgen -G \"libraries/net/neoforged/neoforge/*/unix_args.txt\"; then\n        ln -sf libraries/net/neoforged/neoforge/*/unix_args.txt unix_args.txt\n    fi\n    \n    # Create symlink for log4jpatcher that is sometimes included\n    if compgen -G \"log4jfix/Log4jPatcher-*.jar\"; then\n        ln -sf log4jfix/Log4jPatcher-*.jar log4jfix/Log4jPatcher.jar\n    fi\n    \n    # move forge/neoforge/fabric jar file to start-server.jar if exists\n    if compgen -G \"forge-*.jar\"; then\n        mv -f forge-*.jar start-server.jar\n    elif compgen -G \"fabric-*.jar\"; then\n        mv -f fabric-*.jar start-server.jar\n    fi\n}\n\n# installer cleanup\nfunction installer_cleanup {\n    rm serversetup\n    rm -f run.bat\n    rm -f run.sh\n}\n\n# run installation steps\ninstall_required\nget_modpack_id\nrun_installer\nmove_startup_files\ninstaller_cleanup\n\necho \"Finished installing FTB modpack\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

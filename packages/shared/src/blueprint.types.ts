@@ -34,7 +34,7 @@ export type BlueprintConfigFile = {
 
 /**
  * Install step run inside a one-shot container before the server is marked
- * `installed_stopped`.
+ * `stopped`.
  */
 export type BlueprintInstall = {
   image: string

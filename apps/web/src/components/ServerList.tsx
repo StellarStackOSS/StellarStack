@@ -1,25 +1,22 @@
 import { Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
+import { ChevronRight } from "lucide-react"
 
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
+import { TextureBadge } from "@workspace/ui/components/texture-badge"
 
 import type { ServerListProps } from "@/components/ServerList.types"
 
-const stateDot: Record<ServerLifecycleState, string> = {
-  installing: "bg-chart-2",
-  installed_stopped: "bg-muted-foreground",
-  starting: "bg-chart-2",
-  running: "bg-chart-1",
-  stopping: "bg-chart-2",
-  stopped: "bg-muted-foreground",
-  crashed: "bg-destructive",
+const statusVariant = (
+  s: ServerLifecycleState
+): "success" | "warning" | "destructive" | "secondary" => {
+  if (s === "running") return "success"
+  if (s === "starting" || s === "stopping" || s === "installing" || s === "restoring_backup")
+    return "warning"
+  if (s === "crashed") return "destructive"
+  return "secondary"
 }
 
-/**
- * Render the user's servers as a navigable list. Status indicator colour
- * derives from the lifecycle state; the label text comes from the
- * `lifecycle.<state>` translation keys so locale switching works.
- */
 export const ServerList = ({
   servers,
   loading,
@@ -28,46 +25,43 @@ export const ServerList = ({
   const { t } = useTranslation()
 
   if (loading) {
-    return (
-      <p className="text-muted-foreground text-xs">Loading…</p>
-    )
+    return <p className="text-xs text-zinc-500">{t("server_list.loading")}</p>
   }
   if (servers.length === 0) {
     return (
-      <p className="text-muted-foreground text-xs">
-        {emptyMessage ?? "No servers yet."}
+      <p className="text-xs text-zinc-500">
+        {emptyMessage ?? t("server_list.empty")}
       </p>
     )
   }
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-3">
       {servers.map((server) => (
-        <li
-          key={server.id}
-          className="border-border bg-card text-card-foreground flex items-center justify-between rounded-md border px-3 py-2"
-        >
-          <div>
-            <Link
-              to="/servers/$id"
-              params={{ id: server.id }}
-              className="text-sm font-medium hover:underline"
-            >
-              {server.name}
-            </Link>
-            <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
-              <span
-                className={`size-1.5 rounded-full ${stateDot[server.status]}`}
-              />
-              <span>
-                {t(`lifecycle.${server.status}`, { ns: "common" })}
-              </span>
-              <span>·</span>
-              <span>
-                {server.memoryLimitMb} MB · {server.cpuLimitPercent}% CPU ·{" "}
-                {server.diskLimitMb} MB disk
-              </span>
+        <li key={server.id}>
+          <Link
+            to="/servers/$id"
+            params={{ id: server.id }}
+            className="group relative flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] px-6 py-5 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-[1.005] hover:border-zinc-200/20"
+          >
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium uppercase tracking-wider text-zinc-100">
+                  {server.name}
+                </span>
+                <TextureBadge variant={statusVariant(server.status)}>
+                  {t(`lifecycle.${server.status}`, { ns: "common" })}
+                </TextureBadge>
+              </div>
+              <div className="mt-1.5 flex items-center gap-3 text-xs text-zinc-500">
+                <span>{server.memoryLimitMb} MB RAM</span>
+                <span>·</span>
+                <span>{server.cpuLimitPercent}% CPU</span>
+                <span>·</span>
+                <span>{server.diskLimitMb} MB Disk</span>
+              </div>
             </div>
-          </div>
+            <ChevronRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
+          </Link>
         </li>
       ))}
     </ul>

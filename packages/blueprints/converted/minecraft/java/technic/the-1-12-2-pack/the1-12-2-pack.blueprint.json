@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "name": "The 1.12.2 Pack",
+  "author": "contact@irequire.dev",
+  "description": "The 1.12.2 Pack",
+  "dockerImages": {
+    "ghcr.io/ptero-eggs/yolks:java_8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar forge-*.jar",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MODPACK_VERSION",
+      "name": "Modpack Version",
+      "description": "Version of the modpack to use",
+      "default": "1.6.6",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\n\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/the-1122-pack/the-1122-pack_$MODPACK_VERSION.zip -o the-1122-pack_$MODPACK_VERSION.zip\n\nunzip the-1122-pack_$MODPACK_VERSION.zip\n\nrm -rf the-1122-pack_$MODPACK_VERSION.zip\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

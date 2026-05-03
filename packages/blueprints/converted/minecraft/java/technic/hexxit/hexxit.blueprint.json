@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "name": "Hexxit",
+  "author": "aevum@decess.us",
+  "description": "Gear up and set forth on a campaign worthy of legend, for Hexxit has been unearthed! Dark dungeons, towering spires, weathered ruins and musty tomes lay before you. Lay claim to riches or create your own artifacts, tame beasts and carve out your own story in endless wonder. Alone or with friends, adventure awaits in Hexxit.\r\n\r\nHexxit is a new collection of mods for Minecraft that put adventure above all else, in the style of old Dungeons and Dragons campaigns. Exploration is interesting, the dangers are greater and the sense of satisfaction of clearing out a dungeon is intense. The modlist is full of quality content from some very talented individuals. Be sure to head over to the donate page and show your appreciation!\r\n\r\nhttps://www.technicpack.net/modpack/hexxit.552552",
+  "dockerImages": {
+    "ghcr.io/ptero-eggs/yolks:java_8": "ghcr.io/ptero-eggs/yolks:java_8"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar Hexxit.jar",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}",
+        "query.port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MODPACK_VERSION",
+      "name": "Modpack Version",
+      "description": "Version of the modpack to use",
+      "default": "1.0.11",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|max:20"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/hexxit/Hexxit_Server_v$MODPACK_VERSION.zip -o Hexxit_$MODPACK_VERSION.zip\n\nunzip Hexxit_$MODPACK_VERSION.zip\n\nrm -rf Hexxit_$MODPACK_VERSION.zip\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": ")! For help, type "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "name": "Tekkit SMP",
+  "author": "lovinoes@lovinoes.de",
+  "description": "Tekkit SMP contains the full range of mods from Tekkit 2, plus the extra mods that were originally dropped in the transition from Technic SSP (to Technic SMP) to Tekkit, in favour of multiplayer and Bukkit support: mainly Thaumcraft, Mystcraft, and Mo' Creatures. The new Tekkit SMP expands on that with various carefully selected Thaumcraft and Mystcraft addons, alongside Mo' Creatures Extended, and smaller custom additions such as Re-Crystallized Wing. Electro-Magic Tools is another starring mod, being an addon to both Industrial Craft and Thaumcraft, combining the worlds of tech and magic.",
+  "dockerImages": {
+    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11"
+  },
+  "stopSignal": "^stop",
+  "startupCommand": "java -server -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -Dfml.queryResult=confirm -jar forge.jar nogui",
+  "configFiles": [
+    {
+      "path": "server.properties",
+      "parser": "properties",
+      "patches": {
+        "server-ip": "0.0.0.0",
+        "server-port": "{{SERVER_PORT}}"
+      }
+    }
+  ],
+  "variables": [
+    {
+      "key": "MODPACK_VERSION",
+      "name": "Modpack Version",
+      "description": "The version of Tekkit SMP to download. \n\nOverrides BUILD TYPE, if set.",
+      "default": "",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "nullable|string|max:10"
+    },
+    {
+      "key": "BUILD_TYPE",
+      "name": "Build Type",
+      "description": "The type of server jar to download from Technic Solder.",
+      "default": "recommended",
+      "userViewable": true,
+      "userEditable": true,
+      "rules": "required|string|in:recommended,latest"
+    }
+  ],
+  "install": {
+    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "entrypoint": "ash",
+    "script": "#!/bin/ash\n# Tekkit SMP Installation Script\n#\n# Server Files: /mnt/server\n\napk update\napk add --no-cache curl zip unzip jq\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nBUILD_TYPE=${BUILD_TYPE:-\"recommended\"}\n\nif [ -z \"$MODPACK_VERSION\" ]; then\n  MODPACK_VERSION=v$(curl -s https://solder.technicpack.net/api/modpack/tekkit-smp | jq -r \".${BUILD_TYPE}\")\nfi\n\necho \"Downloading Tekkit SMP version ${MODPACK_VERSION} (This may take a while!)\"\ncurl -sSL \"https://servers.technicpack.net/Technic/servers/tekkit-smp/Tekkit-SMP_Server_${MODPACK_VERSION}.zip\" -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nunzip -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\n\nrm -rf \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nrm -f RestoreBackup.bat LaunchServer.bat LaunchServer.sh RestoreBackup.sh\n\nmv forge-1.12.2-*.jar forge.jar\n\nif [ ! -f server.properties ]; then\n  curl -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi\n\necho \"Done\""
+  },
+  "lifecycle": {
+    "starting": {
+      "probes": [
+        {
+          "strategy": "console",
+          "match": {
+            "type": "substring",
+            "value": "Server tick complete! "
+          }
+        }
+      ],
+      "intervalMs": 2000,
+      "timeoutMs": 120000,
+      "onTimeout": "mark_crashed"
+    },
+    "stopping": {
+      "probes": [
+        {
+          "strategy": "container_exit"
+        }
+      ],
+      "graceTimeoutMs": 60000,
+      "onTimeout": "force_kill"
+    },
+    "crashDetection": {
+      "probes": [
+        {
+          "strategy": "container_exit",
+          "ifNotInState": [
+            "stopping",
+            "stopped"
+          ]
+        }
+      ]
+    }
+  },
+  "features": [
+    "eula",
+    "java_version_picker",
+    "pid_limit"
+  ]
+}

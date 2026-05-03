@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/ApiFetch"
 import type {
   CreateServerRequest,
+  ServerDetailRow,
   ServerListRow,
 } from "@/hooks/useServers.types"
 
@@ -27,7 +28,7 @@ export const useServers = () =>
 export const useServer = (id: string | null) =>
   useQuery({
     queryKey: id !== null ? detailKey(id) : ["servers", "_none"],
-    queryFn: () => apiFetch<{ server: ServerListRow }>(`/servers/${id ?? ""}`),
+    queryFn: () => apiFetch<{ server: ServerDetailRow }>(`/servers/${id ?? ""}`),
     enabled: id !== null,
     refetchInterval: 10_000,
   })
@@ -35,7 +36,7 @@ export const useServer = (id: string | null) =>
 /**
  * Mutation: provision a new server. The server starts in `installing`;
  * the caller routes to the detail page and watches the WS for the
- * transition to `installed_stopped`.
+ * transition to `stopped`.
  */
 export const useCreateServer = () => {
   const queryClient = useQueryClient()

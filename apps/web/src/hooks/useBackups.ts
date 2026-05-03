@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiFetch } from "@/lib/ApiFetch"
@@ -6,6 +7,7 @@ import type {
   BackupRow,
   UpsertDestinationRequest,
 } from "@/hooks/useBackups.types"
+import { useFileCredentials } from "@/hooks/useFiles"
 
 const listKey = (serverId: string) =>
   ["servers", serverId, "backups"] as const
@@ -51,14 +53,20 @@ export const useCreateBackup = (serverId: string) => {
 
 /**
  * Restore a backup over the live bind-mount. Server must be in a
- * non-running state.
+ * non-running state. Pass `snapshotBeforeRestore: true` to have the worker
+ * archive the current files before overwriting them.
  */
 export const useRestoreBackup = (serverId: string) =>
   useMutation({
-    mutationFn: (backupId: string) =>
+    mutationFn: (params: { backupId: string; snapshotBeforeRestore: boolean }) =>
       apiFetch<{ ok: true }>(
-        `/servers/${serverId}/backups/${backupId}/restore`,
-        { method: "POST", body: JSON.stringify({}) }
+        `/servers/${serverId}/backups/${params.backupId}/restore`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            snapshotBeforeRestore: params.snapshotBeforeRestore,
+          }),
+        }
       ),
   })
 
@@ -138,4 +146,37 @@ export const useDeleteBackupDestination = (serverId: string) => {
       void queryClient.invalidateQueries({ queryKey: destKey(serverId) })
     },
   })
+}
+
+/**
+ * Trigger a browser download of a local backup archive directly from
+ * the daemon node. Only available for `storage === "local"` ready backups.
+ */
+export const useDownloadBackup = (serverId: string) => {
+  const credentials = useFileCredentials(serverId)
+  return useCallback(
+    async (name: string) => {
+      const cred = await credentials.get()
+      const url = new URL(cred.baseUrl + "/backups/download")
+      url.searchParams.set("token", cred.token)
+      url.searchParams.set("name", name)
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${cred.token}` },
+      })
+      if (!response.ok) {
+        throw new Error(`daemon error ${response.status}`)
+      }
+      const blob = await response.blob()
+      const disposition = response.headers.get("Content-Disposition") ?? ""
+      const match = /filename="([^"]+)"/.exec(disposition)
+      const filename = match ? match[1] : `${name}.tar.gz`
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = objectUrl
+      anchor.download = filename
+      anchor.click()
+      URL.revokeObjectURL(objectUrl)
+    },
+    [credentials]
+  )
 }
