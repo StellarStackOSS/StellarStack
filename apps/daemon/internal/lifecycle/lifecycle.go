@@ -150,6 +150,24 @@ func (w *Watcher) SetState(ctx context.Context, next State, code string) {
 	w.emit(ctx, prev, next, code)
 }
 
+// ForceEmit publishes a state-change frame regardless of the watcher's
+// current cached state. Used by Reconcile so the panel/DB always learn
+// the real Docker state after a daemon restart, even when the watcher's
+// default initial state happens to coincide with Docker reality (e.g.
+// fresh watcher = installed_stopped + Docker = stopped → without this
+// no event would be emitted and the DB stays on whatever stale value it
+// had from before the daemon went down).
+func (w *Watcher) ForceEmit(next State, code string) {
+	w.mu.Lock()
+	prev := w.state
+	w.state = next
+	w.mu.Unlock()
+	if next != StateRunning {
+		w.stopStatsStream()
+	}
+	w.emit(context.Background(), prev, next, code)
+}
+
 // startStatsStream is intentionally a no-op. The single producer of
 // server.stats frames lives in the handler package (Handler.startStats)
 // so we avoid double-emitting once probes match. Kept as a method so
