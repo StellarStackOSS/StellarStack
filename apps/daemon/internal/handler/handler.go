@@ -700,11 +700,14 @@ func (h *Handler) handlePower(
 		log.Printf("daemon: container started")
 
 		h.startStats(context.Background(), state)
-		if len(state.lifecycle.Starting.Probes) > 0 {
-			// beginPhase won't re-emit since we're already in starting state.
-			state.watcher.OnStarting(context.Background(), state.lifecycle)
-		} else {
-			state.watcher.SetState(context.Background(), lifecycle.StateRunning, "servers.lifecycle.started")
+		// V1 parity: flip to running the moment Docker reports the container
+		// is up. The previous probe-driven "wait for Done!" path could leave
+		// the state stranded at 'starting' if the regex never matched, while
+		// the container was clearly running. Crash detection still arms via
+		// armCrashDetection if the blueprint declares it.
+		state.watcher.SetState(context.Background(), lifecycle.StateRunning, "servers.lifecycle.started")
+		if len(state.lifecycle.CrashDetection.Probes) > 0 {
+			state.watcher.ArmCrashDetection(state.lifecycle)
 		}
 	case "stop":
 		grace := 30

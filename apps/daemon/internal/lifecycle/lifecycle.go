@@ -293,6 +293,14 @@ func (w *Watcher) runPhase(
 	}
 }
 
+// ArmCrashDetection is the exported entry point for the crash-detection
+// probe set. The handler calls it directly after flipping to running so
+// the watcher catches an unexpected exit even though we no longer wait
+// for a startup probe to match.
+func (w *Watcher) ArmCrashDetection(lifecycle Lifecycle) {
+	w.armCrashDetection(lifecycle)
+}
+
 // armCrashDetection runs the crash-detection probe set in the background
 // once the server enters `running`. Any matching probe transitions the
 // server to `crashed` (or `stopped` when triggered while we're already in
