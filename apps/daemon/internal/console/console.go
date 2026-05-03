@@ -142,24 +142,16 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		logReader.Close()
 	}
 
-	// Server-driven heartbeat: ping the browser every 30s. coder/websocket's
-	// Ping blocks until the matching pong arrives, so a missed pong returns
-	// an error and we tear the socket down. Mirrors the keepalive Pelican
-	// gets implicitly from its periodic JWT-expiry events.
-	go heartbeat(ctx, conn, cancel)
+	// V1 parity: no server-driven ping. coder/websocket's Ping is unreliable
+	// across reverse proxies (Cloudflare/nginx) that don't forward WS control
+	// frames. The console socket stays alive on console output and the
+	// browser-side token-refresh cycle. If a proxy idles us out, the browser
+	// reconnects — same as V1.
 
-	// Live attach loop: when a container restarts, the existing attach reader
-	// hits EOF. Instead of closing the browser socket, retry the attach for
-	// up to 30s so a power cycle doesn't disconnect the console.
-	attachReader, attachWriter, attachClose, attachErr := waitForAttach(ctx, dockerClient, containerName, 30*time.Second)
-	if attachErr != nil {
-		_ = conn.Write(ctx, websocket.MessageText, mustJSON(map[string]any{
-			"type": "error",
-			"code": "internal.unexpected",
-		}))
-		return
-	}
-
+	// Live attach loop: keep retrying for the lifetime of the WS so a stopped
+	// container (or a restart-in-progress) doesn't drop the browser socket.
+	// The browser sees state-change events over /events; the console just
+	// resumes when the container is back up.
 	pumpDone := make(chan struct{})
 	go func() {
 		defer close(pumpDone)
@@ -168,26 +160,27 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 				log.Printf("console: docker-pump panic: %v", r)
 			}
 		}()
-		current := attachReader
-		currentClose := attachClose
 		for {
-			pumpDockerToWS(ctx, conn, current)
-			currentClose()
 			if ctx.Err() != nil {
 				return
 			}
-			// Reattach to the (possibly new) container after a short pause so
-			// a restart doesn't drop the browser socket.
-			r2, _, c2, err := waitForAttach(ctx, dockerClient, containerName, 30*time.Second)
+			// Try to attach. If the container isn't running, this returns
+			// quickly with an error and we back off and try again. The loop
+			// only ends when the WS context is canceled.
+			attachConn, reader, err := dockerClient.AttachConn(ctx, containerName)
 			if err != nil {
-				return
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(2 * time.Second):
+					continue
+				}
 			}
-			current = r2
-			currentClose = c2
+			pumpDockerToWS(ctx, conn, reader)
+			_ = attachConn.Close()
 		}
 	}()
 
-	_ = attachWriter
 	if allowWrite {
 		pumpWSCommandsToContainer(ctx, conn, dockerClient, containerName)
 	} else {
@@ -197,61 +190,8 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	<-pumpDone
 }
 
-// waitForAttach attaches to the container, retrying every second until the
-// attach succeeds or the deadline expires. Returns the read side, write
-// side, and a close func.
-func waitForAttach(
-	ctx context.Context,
-	d dockerAttacher,
-	containerName string,
-	timeout time.Duration,
-) (*bufio.Reader, net.Conn, func(), error) {
-	deadline := time.Now().Add(timeout)
-	for {
-		conn, reader, err := d.AttachConn(ctx, containerName)
-		if err == nil {
-			return reader, conn, func() { _ = conn.Close() }, nil
-		}
-		if time.Now().After(deadline) {
-			return nil, nil, nil, err
-		}
-		select {
-		case <-ctx.Done():
-			return nil, nil, nil, ctx.Err()
-		case <-time.After(1 * time.Second):
-		}
-	}
-}
-
 type dockerAttacher interface {
 	AttachConn(ctx context.Context, containerName string) (net.Conn, *bufio.Reader, error)
-}
-
-// heartbeat pings the browser every 30s and cancels the connection on the
-// first failed pong. coder/websocket's Ping returns an error if the pong
-// doesn't arrive within the supplied context's deadline.
-func heartbeat(ctx context.Context, conn *websocket.Conn, cancel context.CancelFunc) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("console: heartbeat panic: %v", r)
-		}
-	}()
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			pingCtx, pingCancel := context.WithTimeout(ctx, 15*time.Second)
-			err := conn.Ping(pingCtx)
-			pingCancel()
-			if err != nil {
-				cancel()
-				return
-			}
-		}
-	}
 }
 
 // replayDockerLogs sends historical log lines from Docker's log buffer as

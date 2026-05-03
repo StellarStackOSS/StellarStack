@@ -140,6 +140,13 @@ func (w *Watcher) SetState(ctx context.Context, next State, code string) {
 	if next != StateRunning {
 		w.stopStatsStream()
 	}
+	// Skip the emit when the state hasn't actually changed. Reconcile-on-
+	// reconnect would otherwise re-publish "running -> running" or
+	// "stopped -> stopped" frames that the panel treats as fresh
+	// transitions, causing a brief offline → online flicker in the UI.
+	if prev == next {
+		return
+	}
 	w.emit(ctx, prev, next, code)
 }
 

@@ -309,18 +309,31 @@ func (h *Handler) Reconcile(ctx context.Context) {
 
 	for _, j := range jobs {
 		serverID := strings.TrimPrefix(j.state.containerName, "stellar-")
+		current := j.state.watcher.State()
 		if j.running {
-			current := j.state.watcher.State()
 			if current == lifecycle.StateStopping || current == lifecycle.StateStarting {
 				// Already in a managed transition; reconcile must not clobber it.
+				continue
+			}
+			if current == lifecycle.StateRunning {
+				// Already running — don't re-emit, just make sure stats are
+				// flowing (the WS may have just reconnected and the panel
+				// might need fresh frames).
+				go h.startStats(ctx, j.state)
 				continue
 			}
 			log.Printf("daemon: reconcile running server=%s", serverID)
 			j.state.watcher.SetState(ctx, lifecycle.StateRunning, "servers.lifecycle.reconcile.running")
 			go h.startStats(ctx, j.state)
 		} else {
+			// Container is not running. Don't touch the state if we already
+			// believe the server is stopped/installed — re-emitting the same
+			// state causes UI flicker.
+			if current == lifecycle.StateInstalledStopped || current == lifecycle.StateStopped {
+				continue
+			}
 			log.Printf("daemon: reconcile stopped server=%s", serverID)
-			j.state.watcher.SetState(ctx, lifecycle.StateInstalledStopped, "servers.lifecycle.reconcile.stopped")
+			j.state.watcher.SetState(ctx, lifecycle.StateStopped, "servers.lifecycle.reconcile.stopped")
 		}
 	}
 }
