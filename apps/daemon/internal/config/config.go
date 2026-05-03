@@ -1,138 +1,65 @@
-// Package config loads and persists the daemon's runtime configuration.
-//
-// `Load` reads /etc/stellar-daemon/config.yaml (or whatever STELLAR_CONFIG
-// points to) and returns the parsed shape. `Save` is the inverse — used by
-// `stellar-daemon configure` to persist the values returned by the API's
-// pairing-claim endpoint.
+// Package config loads daemon configuration from disk. The daemon needs
+// only a handful of fields to operate: its own node id, the per-node HMAC
+// signing key (shared with the API at pair time), the API base URL it
+// posts status callbacks to, the listen ports, and the data directory.
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"gopkg.in/yaml.v3"
+	"github.com/pelletier/go-toml/v2"
 )
 
-// Version is the build version embedded into release binaries via -ldflags.
-// During development it stays at the dev sentinel below.
-var Version = "0.0.0-dev"
+// Version is the daemon build version reported in the hello frame and
+// status callbacks. Overridden at link time in production builds.
+var Version = "dev"
 
-// ListenConfig describes how the daemon's HTTP/WS endpoint is exposed.
-type ListenConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-}
-
-// Config is the top-level daemon configuration. Persisted as YAML at
-// `Path()` (see DefaultPath / STELLAR_CONFIG env override).
+// Config is the parsed runtime configuration. Field names are TOML-cased.
 type Config struct {
-	NodeID        string       `yaml:"nodeId"`
-	NodeName      string       `yaml:"nodeName,omitempty"`
-	APIURL        string       `yaml:"apiUrl"`
-	WebsocketURL  string       `yaml:"websocketUrl"`
-	SigningKeyHex string       `yaml:"signingKeyHex"`
-	Listen        ListenConfig `yaml:"listen"`
-	SFTPListen    ListenConfig `yaml:"sftpListen"`
-	DataDir       string       `yaml:"dataDir"`
-	DockerSocket  string       `yaml:"dockerSocket,omitempty"`
+	NodeID        string `toml:"node_id"`
+	SigningKeyHex string `toml:"signing_key"`
+	APIBaseURL    string `toml:"api_base_url"`
+	HTTPListen    string `toml:"http_listen"`
+	DataDir       string `toml:"data_dir"`
+	DockerSocket  string `toml:"docker_socket"`
+	HistoryLines  int    `toml:"history_lines"`
 }
 
-// ResolvedDockerSocket returns the Docker socket path to use. If DockerSocket
-// is set in config that wins; otherwise it probes Colima's socket before
-// falling back to /var/run/docker.sock.
-func (c *Config) ResolvedDockerSocket() string {
-	if c.DockerSocket != "" {
-		return c.DockerSocket
-	}
-	home, _ := os.UserHomeDir()
-	colima := filepath.Join(home, ".colima", "default", "docker.sock")
-	if _, err := os.Stat(colima); err == nil {
-		return colima
-	}
-	return "/var/run/docker.sock"
-}
-
-// DefaultPath returns the canonical config path. /etc/stellar-daemon/config.yaml
-// in production; ~/.stellar/daemon.yaml when running unprivileged for dev.
-func DefaultPath() string {
-	if env := os.Getenv("STELLAR_CONFIG"); env != "" {
-		return env
-	}
-	if os.Getuid() == 0 {
-		return "/etc/stellar-daemon/config.yaml"
-	}
-	home, err := os.UserHomeDir()
+// Load reads the TOML at `path` and validates the required fields. The
+// config has no defaults file because the daemon cannot run useful work
+// without a node id + signing key — operators must run
+// `stellar-daemon configure <token>` first.
+func Load(path string) (*Config, error) {
+	raw, err := os.ReadFile(path)
 	if err != nil {
-		return "config.yaml"
-	}
-	return filepath.Join(home, ".stellar", "daemon.yaml")
-}
-
-// Load reads and parses the daemon configuration. Returns a sensible
-// development default if the config file is absent so `runServe` can boot
-// even before a node has been paired (mostly useful for `version` and the
-// "you forgot to configure" error path).
-func Load() (*Config, error) {
-	path := DefaultPath()
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			cfg := defaultDevConfig()
-			cfg.SigningKeyHex = ""
-			return cfg, nil
-		}
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	var c Config
+	if err := toml.Unmarshal(raw, &c); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	if cfg.Listen.Port == 0 {
-		cfg.Listen = defaultDevConfig().Listen
+	if c.NodeID == "" {
+		return nil, errors.New("config: node_id is required (run `stellar-daemon configure <token>`)")
 	}
-	if cfg.SFTPListen.Port == 0 {
-		cfg.SFTPListen = defaultDevConfig().SFTPListen
+	if c.SigningKeyHex == "" {
+		return nil, errors.New("config: signing_key is required (run `stellar-daemon configure <token>`)")
 	}
-	if cfg.DataDir == "" {
-		cfg.DataDir = defaultDevConfig().DataDir
+	if c.APIBaseURL == "" {
+		return nil, errors.New("config: api_base_url is required")
 	}
-	return &cfg, nil
-}
-
-// Save writes the config to disk at `DefaultPath()`. Permissions are 0600
-// because the file holds the per-node signing key.
-func Save(cfg *Config) error {
-	path := DefaultPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return fmt.Errorf("mkdir %s: %w", filepath.Dir(path), err)
+	if c.HTTPListen == "" {
+		c.HTTPListen = ":8081"
 	}
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
+	if c.DataDir == "" {
+		c.DataDir = "/var/lib/stellarstack"
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return fmt.Errorf("write %s: %w", path, err)
+	if c.DockerSocket == "" {
+		c.DockerSocket = "/var/run/docker.sock"
 	}
-	return nil
-}
-
-func defaultDevConfig() *Config {
-	dataDir := "/var/lib/stellar"
-	if os.Getuid() != 0 {
-		if env := os.Getenv("STELLAR_DATA_DIR"); env != "" {
-			dataDir = env
-		} else if home, err := os.UserHomeDir(); err == nil {
-			dataDir = filepath.Join(home, ".stellar", "data")
-		}
+	if c.HistoryLines <= 0 {
+		c.HistoryLines = 150
 	}
-	return &Config{
-		NodeID:        "",
-		APIURL:        "http://localhost:3000",
-		WebsocketURL:  "ws://localhost:3000/daemon/ws",
-		SigningKeyHex: "",
-		Listen:        ListenConfig{Host: "0.0.0.0", Port: 8080},
-		SFTPListen:    ListenConfig{Host: "0.0.0.0", Port: 2022},
-		DataDir:       dataDir,
-	}
+	return &c, nil
 }

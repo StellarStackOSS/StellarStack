@@ -1,82 +1,69 @@
 import { z } from "zod"
 
-const reasonSchema = z.object({
+/**
+ * Lifecycle state Zod schema. Mirrors the four-state machine the daemon
+ * runs (offline → starting → running → stopping → offline). Install /
+ * restore are tracked on the server row as separate boolean flags, not as
+ * lifecycle states.
+ */
+export const lifecycleStateSchema = z.enum([
+  "offline",
+  "starting",
+  "running",
+  "stopping",
+])
+
+export const lifecycleStates = lifecycleStateSchema.options
+
+/**
+ * Reason metadata for a state transition. `code` is a translation key in
+ * the `servers.lifecycle.*` namespace; `params` are interpolation values.
+ */
+export const lifecycleReasonSchema = z.object({
   code: z.string(),
   params: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
     .optional(),
 })
 
-const lifecycleStateSchema = z.enum([
-  "installing",
-  "installed_stopped",
-  "starting",
-  "running",
-  "stopping",
-  "stopped",
-  "crashed",
-  "restoring_backup",
-])
-
-const serverStateChangedSchema = z.object({
-  type: z.literal("server.state.changed"),
-  serverId: z.string(),
-  from: lifecycleStateSchema,
-  to: lifecycleStateSchema,
-  reason: reasonSchema,
-  at: z.string(),
-})
-
-const serverStatsSchema = z.object({
-  type: z.literal("server.stats"),
-  serverId: z.string(),
-  memoryBytes: z.number().nonnegative(),
-  memoryLimitBytes: z.number().nonnegative(),
-  cpuFraction: z.number().nonnegative(),
-  diskBytes: z.number().nonnegative(),
-  networkRxBytes: z.number().nonnegative(),
-  networkTxBytes: z.number().nonnegative(),
-  diskReadBytes: z.number().nonnegative().default(0),
-  diskWriteBytes: z.number().nonnegative().default(0),
-  startedAt: z.string().optional(),
-  at: z.string(),
-})
-
-const nodeDaemonStatusSchema = z.object({
-  type: z.literal("node.daemon.status"),
-  nodeId: z.string(),
-  connected: z.boolean(),
-  at: z.string(),
-})
-
-const jobProgressSchema = z.object({
-  type: z.literal("job.progress"),
-  jobId: z.string(),
-  serverId: z.string().optional(),
-  jobType: z.string(),
-  percent: z.number().min(0).max(100),
-  message: reasonSchema.optional(),
-  at: z.string(),
-})
-
-const serverInstallLogSchema = z.object({
-  type: z.literal("server.install_log"),
-  serverId: z.string(),
-  stream: z.enum(["stdout", "stderr"]),
-  line: z.string(),
+/**
+ * Payload sent over the daemon WS as `{event:"status", args:[state]}` and
+ * by the daemon's HTTP status callback as `{previous_state, new_state}`.
+ * Kept as a Zod schema so both API and web can validate without sharing
+ * runtime code.
+ */
+export const stateChangedPayloadSchema = z.object({
+  previousState: lifecycleStateSchema,
+  newState: lifecycleStateSchema,
+  reason: lifecycleReasonSchema.optional(),
   at: z.string(),
 })
 
 /**
- * Zod schema for the panel WS event union. Used by both producer (worker) and
- * consumer (web) sides to validate before publish/dispatch.
+ * Stats payload broadcast over the daemon WS as `{event:"stats", args:[…]}`.
+ * Field names match Pelican's wire format (snake_case) so existing tooling
+ * and docs remain useful for debugging.
  */
-export const panelEventSchema = z.discriminatedUnion("type", [
-  serverStateChangedSchema,
-  serverStatsSchema,
-  jobProgressSchema,
-  nodeDaemonStatusSchema,
-  serverInstallLogSchema,
-])
+export const statsPayloadSchema = z.object({
+  memory_bytes: z.number().nonnegative(),
+  memory_limit_bytes: z.number().nonnegative(),
+  cpu_absolute: z.number().nonnegative(),
+  network: z.object({
+    rx_bytes: z.number().nonnegative(),
+    tx_bytes: z.number().nonnegative(),
+  }),
+  disk_bytes: z.number().nonnegative(),
+  disk_read_bytes: z.number().nonnegative(),
+  disk_write_bytes: z.number().nonnegative(),
+  uptime_ms: z.number().nonnegative().optional(),
+  state: lifecycleStateSchema,
+})
 
-export const lifecycleStates = lifecycleStateSchema.options
+/**
+ * Envelope schema for every frame on the per-server daemon WebSocket.
+ * Pelican-shape: `{event, args}` discriminated by `event`.
+ */
+export const wsEnvelopeSchema = z.object({
+  event: z.string(),
+  args: z.array(z.unknown()).default([]),
+})

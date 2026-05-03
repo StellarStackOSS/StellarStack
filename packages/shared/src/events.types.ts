@@ -1,19 +1,17 @@
 /**
- * Lifecycle states a managed server can occupy.
+ * Lifecycle states a managed server can occupy. Four states, mirrored on
+ * daemon and frontend. Install/restore are separate flags on the server
+ * row, not lifecycle states.
  */
 export type ServerLifecycleState =
-  | "installing"
-  | "installed_stopped"
+  | "offline"
   | "starting"
   | "running"
   | "stopping"
-  | "stopped"
-  | "crashed"
-  | "restoring_backup"
 
 /**
- * Reason metadata for a state transition. `code` is a translation key in the
- * `servers.lifecycle.*` namespace; `params` are interpolation values.
+ * Reason metadata for a state transition. `code` is a translation key in
+ * the `servers.lifecycle.*` namespace; `params` are interpolation values.
  */
 export type ServerLifecycleReason = {
   code: string
@@ -21,79 +19,37 @@ export type ServerLifecycleReason = {
 }
 
 /**
- * Event published when a server's lifecycle state changes. Emitted by the
- * daemon, persisted by the worker, and fanned out to subscribed panel sessions.
+ * Stats payload pushed by the daemon as the `stats` event on the per-
+ * server WebSocket. Wire field names are snake_case to match the
+ * Pelican-shape protocol the daemon emits.
  */
-export type ServerStateChangedEvent = {
-  type: "server.state.changed"
-  serverId: string
-  from: ServerLifecycleState
-  to: ServerLifecycleState
-  reason: ServerLifecycleReason
-  at: string
+export type ServerStatsPayload = {
+  memory_bytes: number
+  memory_limit_bytes: number
+  cpu_absolute: number
+  network: { rx_bytes: number; tx_bytes: number }
+  disk_bytes: number
+  disk_read_bytes: number
+  disk_write_bytes: number
+  uptime_ms?: number
+  state: ServerLifecycleState
 }
 
 /**
- * Periodic resource-usage snapshot pushed by the daemon while a server is
- * running. Memory in bytes, CPU as a fraction (0..N — 1.0 = one full core).
+ * Per-server WebSocket envelope. Every frame the daemon sends or the
+ * browser sends fits this shape; `event` is the discriminator.
  */
-export type ServerStatsEvent = {
-  type: "server.stats"
-  serverId: string
-  memoryBytes: number
-  memoryLimitBytes: number
-  cpuFraction: number
-  diskBytes: number
-  networkRxBytes: number
-  networkTxBytes: number
-  diskReadBytes: number
-  diskWriteBytes: number
-  /** Container uptime in milliseconds as reported by the daemon (Docker StartedAt). */
-  uptimeMs?: number
-  at: string
+export type WsEnvelope<E extends string = string, A = unknown[]> = {
+  event: E
+  args: A
 }
 
 /**
- * Progress for a long-running job (install, backup, restore, transfer).
+ * Daemon → API HTTP status callback body.
  */
-export type JobProgressEvent = {
-  type: "job.progress"
-  jobId: string
-  serverId?: string
-  jobType: string
-  percent: number
-  message?: { code: string; params?: Record<string, string | number | boolean> }
+export type StateCallbackBody = {
+  previousState: ServerLifecycleState
+  newState: ServerLifecycleState
+  reason?: ServerLifecycleReason
   at: string
 }
-
-/**
- * Published when a daemon's control WebSocket connects or disconnects from
- * the API bridge. Lets the web client show node reachability inline.
- */
-export type NodeDaemonStatusEvent = {
-  type: "node.daemon.status"
-  nodeId: string
-  connected: boolean
-  at: string
-}
-
-/**
- * Install script log line forwarded from daemon → worker → panel WS.
- */
-export type ServerInstallLogEvent = {
-  type: "server.install_log"
-  serverId: string
-  stream: "stdout" | "stderr"
-  line: string
-  at: string
-}
-
-/**
- * Discriminated union of every event the panel WS may carry.
- */
-export type PanelEvent =
-  | ServerStateChangedEvent
-  | ServerStatsEvent
-  | JobProgressEvent
-  | NodeDaemonStatusEvent
-  | ServerInstallLogEvent
