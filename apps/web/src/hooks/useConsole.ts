@@ -39,7 +39,7 @@ const parseLogLine = (raw: string): { text: string; logTimestamp: string | null;
 }
 
 const MAX_LINES = 250
-const REFRESH_BEFORE_EXPIRY_MS = 15_000
+const REFRESH_BEFORE_EXPIRY_MS = 60_000
 
 const credentialsSchema = z.object({
   token: z.string(),
@@ -111,10 +111,17 @@ export const useConsole = (
           }
           hasConnectedRef.current = true
           setState("open")
+          // Anchor the refresh schedule to NOW (socket-open time) rather
+          // than the credentials' issuance moment. If the credentials
+          // request lagged or the tab was backgrounded mid-fetch, the
+          // remaining lifetime here is what actually matters; using the
+          // raw expiresAt could schedule a refresh after the daemon has
+          // already rejected the token.
           const expiresAt = new Date(parsed.data.expiresAt).getTime()
+          const remainingMs = expiresAt - Date.now()
           const refreshIn = Math.max(
-            1_000,
-            expiresAt - Date.now() - REFRESH_BEFORE_EXPIRY_MS
+            5_000,
+            Math.min(remainingMs - REFRESH_BEFORE_EXPIRY_MS, remainingMs - 5_000)
           )
           refreshTimerRef.current = window.setTimeout(() => {
             plannedRefreshRef.current = true

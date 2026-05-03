@@ -150,7 +150,6 @@ export const buildServerPowerHandler = (params: {
     const action = job.data.action
 
     if (action === "start") {
-      // Start must await the daemon ACK so we know the container launched.
       const result = await daemonClient.request({
         nodeId: server.nodeId,
         message: await buildStartMessage(),
@@ -159,15 +158,27 @@ export const buildServerPowerHandler = (params: {
       if (result.envelope.message.type === "error") {
         throw new Error(`daemon error: ${result.envelope.message.code}`)
       }
-    } else if (action === "restart") {
-      // Stop first (fire-and-forget — daemon pushes state changes), then start.
-      void daemonClient
-        .request({ nodeId: server.nodeId, message: await buildStopMessage(), timeoutMs: 30_000 })
-        .catch((err: unknown) => log.warn({ err }, "restart stop phase error"))
-
-      // Brief delay to let the daemon begin the stop before we fire the start.
-      await new Promise<void>((resolve) => setTimeout(resolve, 2_000))
-
+    } else if (action === "stop" || action === "kill") {
+      const result = await daemonClient.request({
+        nodeId: server.nodeId,
+        message: await messageFor(action),
+        timeoutMs: 10 * 60_000,
+      })
+      if (result.envelope.message.type === "error") {
+        throw new Error(`daemon error: ${result.envelope.message.code}`)
+      }
+    } else {
+      // restart: stop synchronously (daemon's stop now blocks until the
+      // container is gone), then start. Mirrors Pelican's WaitForStop+Start
+      // chain so a slow shutdown can't race the new container's create.
+      const stopResult = await daemonClient.request({
+        nodeId: server.nodeId,
+        message: await buildStopMessage(),
+        timeoutMs: 10 * 60_000,
+      })
+      if (stopResult.envelope.message.type === "error") {
+        throw new Error(`daemon error during restart-stop: ${stopResult.envelope.message.code}`)
+      }
       const startResult = await daemonClient.request({
         nodeId: server.nodeId,
         message: await buildStartMessage(),
@@ -176,17 +187,6 @@ export const buildServerPowerHandler = (params: {
       if (startResult.envelope.message.type === "error") {
         throw new Error(`daemon error during restart-start: ${startResult.envelope.message.code}`)
       }
-    } else {
-      // stop / kill: fire-and-forget — the daemon emits server.state.changed push
-      // events as the container transitions, so the UI updates via WebSocket without
-      // the worker needing to block on the full container shutdown.
-      void daemonClient
-        .request({
-          nodeId: server.nodeId,
-          message: await messageFor(action),
-          timeoutMs: 30_000,
-        })
-        .catch((err: unknown) => log.warn({ err }, `${action} daemon error`))
     }
 
     log.info("Power action dispatched")

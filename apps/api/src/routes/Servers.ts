@@ -321,7 +321,7 @@ export const buildServersRoute = (params: {
         serverId: access.server.id,
         nodeId: node.id,
         scope,
-        ttlSeconds: 60,
+        ttlSeconds: 600,
       })
       return c.json({
         token: minted.token,

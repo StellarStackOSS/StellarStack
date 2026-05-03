@@ -91,6 +91,7 @@ export const attachWebSocketRoutes = (
     "/events",
     buildEventsRoute({
       auth: params.auth,
+      db: params.db,
       env: params.env,
       logger: params.logger,
       upgradeWebSocket: params.upgradeWebSocket,
