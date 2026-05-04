@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -612,9 +613,18 @@ func streamMultiplexedLines(ctx context.Context, r io.Reader, out chan<- LogLine
 func streamRawLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
 	buf := make([]byte, 8192)
 	leftover := ""
+	totalBytes := 0
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
+			totalBytes += n
+			if totalBytes <= 200 {
+				preview := string(buf[:n])
+				if len(preview) > 80 {
+					preview = preview[:80]
+				}
+				log.Printf("docker.streamRawLines: read=%d total=%d first=%q", n, totalBytes, preview)
+			}
 			data := leftover + string(buf[:n])
 			lastNL := strings.LastIndex(data, "\n")
 			if lastNL < 0 {
@@ -635,6 +645,7 @@ func streamRawLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
 			}
 		}
 		if err != nil {
+			log.Printf("docker.streamRawLines: read err=%v total=%d", err, totalBytes)
 			return
 		}
 	}
