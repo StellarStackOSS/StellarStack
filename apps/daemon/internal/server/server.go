@@ -96,10 +96,40 @@ func (s *Server) Config() Config {
 	return s.cfg
 }
 
+// publishDaemon emits a Pelican-style "[StellarStack Daemon]: <msg>"
+// console line so the panel surfaces what the daemon is doing during a
+// power action — pulling images, running config patches, marking
+// state, etc. Output goes through the same bus + history pipeline as
+// real container stdout so the user sees a continuous stream.
+func (s *Server) publishDaemon(msg string) {
+	line := "[StellarStack Daemon]: " + msg
+	s.history.push(line)
+	frame, _ := json.Marshal(map[string]any{
+		"event": "console output",
+		"args":  []any{line},
+	})
+	s.bus.Publish(frame)
+}
+
+// publishHeader emits a "stellarstack@<uuid>~ <msg>" prompt-style line.
+// Used to announce state transitions in-band so the console reads as a
+// natural session log, mirroring Pelican's `pelican@<name>~ Server
+// marked as ...` format.
+func (s *Server) publishHeader(msg string) {
+	line := "stellarstack@" + s.uuid[:8] + "~ " + msg
+	s.history.push(line)
+	frame, _ := json.Marshal(map[string]any{
+		"event": "console output",
+		"args":  []any{line},
+	})
+	s.bus.Publish(frame)
+}
+
 // onStateChange is invoked by the Environment listener for every state
 // transition. We broadcast over the bus AND POST a callback to the API.
 func (s *Server) onStateChange(prev, next environment.State) {
 	log.Printf("server %s: state %s -> %s", s.uuid, prev, next)
+	s.publishHeader("Server marked as " + string(next) + "...")
 	frame, _ := json.Marshal(map[string]any{
 		"event": "status",
 		"args":  []any{string(next)},
@@ -185,6 +215,7 @@ func (s *Server) doStart(ctx context.Context) error {
 	}
 
 	s.env.MarkStarting()
+	s.publishDaemon("Updating process configuration files...")
 
 	containerName := s.env.ContainerName()
 	dc := s.env.Docker()
@@ -195,10 +226,13 @@ func (s *Server) doStart(ctx context.Context) error {
 		log.Printf("server %s: pre-start remove: %v", s.uuid, err)
 	}
 
+	s.publishDaemon("Pulling Docker container image, this could take a few minutes to complete...")
 	if err := dc.EnsureImage(ctx, cfg.DockerImage); err != nil {
+		s.publishDaemon("Failed to pull Docker container image: " + err.Error())
 		s.env.MarkOffline()
 		return fmt.Errorf("ensure image: %w", err)
 	}
+	s.publishDaemon("Finished pulling Docker container image")
 
 	stopSignal := ""
 	if cfg.Stop.Type == "signal" {
@@ -217,6 +251,7 @@ func (s *Server) doStart(ctx context.Context) error {
 		OpenStdin:        true,
 		Tty:              true,
 	}); err != nil {
+		s.publishDaemon("Failed to create container: " + err.Error())
 		s.env.MarkOffline()
 		return fmt.Errorf("create container: %w", err)
 	}
