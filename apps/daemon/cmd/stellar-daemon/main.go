@@ -57,6 +57,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("panel client: %v", err)
 	}
+	// Tell the API the node is alive. Best-effort on boot; the ticker
+	// below keeps it fresh so the admin nodes page reflects reality.
+	go func() {
+		hbCtx, hbCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_ = panelClient.Heartbeat(hbCtx)
+		hbCancel()
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			_ = panelClient.Heartbeat(c)
+			cancel()
+		}
+	}()
+
 	mgr := server.NewManager(dc, panelClient, cfg.HistoryLines)
 	fm := files.New(cfg.DataDir)
 	bm := backup.New(cfg.DataDir)

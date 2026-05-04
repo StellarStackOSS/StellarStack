@@ -72,6 +72,26 @@ func (c *Client) PushStatus(ctx context.Context, serverUUID, prev, next string) 
 	return nil
 }
 
+// Heartbeat tells the API "this node is alive". POSTed by the daemon
+// on startup and on a 30s ticker so the admin nodes page can render an
+// online/offline pill backed by a fresh `connected_at` row column.
+func (c *Client) Heartbeat(ctx context.Context) error {
+	req, err := c.signedRequest(ctx, http.MethodPost, "/api/remote/heartbeat", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("panel heartbeat %s: %s", resp.Status, string(raw))
+	}
+	return nil
+}
+
 // PushAudit posts an audit-log entry for the supplied server. Best-effort
 // — the daemon-WS power-action handler calls this immediately after
 // enqueuing the action so the activity tab gets a timestamped row even

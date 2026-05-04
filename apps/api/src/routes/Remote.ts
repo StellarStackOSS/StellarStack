@@ -79,6 +79,22 @@ export const buildRemoteRoute = (params: {
       }
       return c.json({ ok: true })
     })
+    .post("/heartbeat", async (c) => {
+      const ok = await verifyDaemonSignature({
+        db,
+        env,
+        headers: c.req.raw.headers,
+      })
+      if (!ok) {
+        throw new ApiException("auth.session.invalid", { status: 401 })
+      }
+      const nodeId = c.req.raw.headers.get("x-stellar-node-id") ?? ""
+      await db
+        .update(nodesTable)
+        .set({ connectedAt: new Date() })
+        .where(eq(nodesTable.id, nodeId))
+      return c.json({ ok: true })
+    })
     .post("/servers/:id/audit", async (c) => {
       const serverId = c.req.param("id")
       const ok = await verifyDaemonSignature({

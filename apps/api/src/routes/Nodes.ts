@@ -64,7 +64,18 @@ export const buildNodesRoute = (params: { auth: Auth; db: Db }) => {
     .use("*", ...adminMiddleware)
     .get("/", async (c) => {
       const rows = await db.select().from(nodesTable)
-      return c.json({ nodes: rows })
+      // Treat heartbeats older than 90s as "not connected" so a dead
+      // daemon stops showing as online. The admin nodes page renders
+      // online/offline based on whether connectedAt is null.
+      const cutoff = Date.now() - 90_000
+      const out = rows.map((r) => ({
+        ...r,
+        connectedAt:
+          r.connectedAt !== null && r.connectedAt.getTime() >= cutoff
+            ? r.connectedAt
+            : null,
+      }))
+      return c.json({ nodes: out })
     })
     .post("/", async (c) => {
       const parsed = createNodeSchema.safeParse(await c.req.json())
