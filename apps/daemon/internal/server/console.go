@@ -61,6 +61,14 @@ var ansiRE = regexp.MustCompile(`\x1b(?:\[[0-9;?]*[A-Za-z]|[^[\x1b])`)
 
 func cleanLine(s string) string {
 	s = ansiRE.ReplaceAllString(s, "")
+	// Trim trailing CR first — it's just the line terminator from
+	// `\r\n` after splitting on `\n` and shouldn't be treated as a
+	// cursor-overwrite. Without this, a line that ended `…\r\n` would
+	// have its entire content wiped by the LastIndex("\r") logic.
+	s = strings.TrimRight(s, "\r")
+	// Any *interior* CR is a real cursor reset (progress bars, `[K`
+	// clears) — keep only the last segment, what a terminal would
+	// have rendered.
 	if i := strings.LastIndex(s, "\r"); i >= 0 {
 		s = s[i+1:]
 	}
