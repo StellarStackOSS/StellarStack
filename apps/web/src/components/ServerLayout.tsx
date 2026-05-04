@@ -29,6 +29,7 @@ import {
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { ServerStatusBadge } from "@/components/ServerStatusBadge"
 import { AppSidebar } from "@/components/AppSidebar"
 import type { NavItem } from "@/components/NavMain.types"
 import { ServerLayoutContext } from "@/components/ServerLayoutContext"
@@ -201,11 +202,7 @@ export const ServerLayout = () => {
           </span>
 
           <div className="ml-auto flex items-center gap-3">
-            <span
-              className={`text-xs font-medium uppercase tracking-wider ${statusTextColor[status] ?? "text-zinc-500"}`}
-            >
-              {t(`lifecycle.${status}`, { ns: "common" })}
-            </span>
+            <ServerStatusBadge status={status} />
 
             <Separator orientation="vertical" className="mx-1 h-4" />
 

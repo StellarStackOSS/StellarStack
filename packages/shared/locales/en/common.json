@@ -2,6 +2,11 @@
   "server_layout.servers_breadcrumb": "Servers",
   "server_layout.daemon_offline": "Node offline",
 
+  "status_badge.offline": "Offline",
+  "status_badge.starting": "Starting",
+  "status_badge.running": "Online",
+  "status_badge.stopping": "Stopping",
+
   "lifecycle.offline": "Offline",
   "lifecycle.starting": "Starting",
   "lifecycle.running": "Running",

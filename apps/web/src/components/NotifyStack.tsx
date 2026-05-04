@@ -4,7 +4,6 @@ import {
   Alert02Icon,
   CheckmarkCircle02Icon,
   InformationCircleIcon,
-  Loading03Icon,
   MultiplicationSignCircleIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -14,6 +13,7 @@ import {
   AlertTitle,
 } from "@workspace/ui/components/alert"
 
+import { DotmSquare3 } from "@/components/DotmSquare3"
 import { notify } from "@/lib/notify"
 import type { NotifyItem, NotifyKind } from "@/lib/notify.types"
 
@@ -39,13 +39,7 @@ const icons: Record<NotifyKind, React.ReactNode> = {
       className="text-blue-500"
     />
   ),
-  loading: (
-    <HugeiconsIcon
-      icon={Loading03Icon}
-      strokeWidth={2}
-      className="animate-spin text-muted-foreground"
-    />
-  ),
+  loading: <DotmSquare3 size={14} dotSize={2} speed={1.6} animated />,
 }
 
 const NotifyToast = ({ item }: { item: NotifyItem }) => (
