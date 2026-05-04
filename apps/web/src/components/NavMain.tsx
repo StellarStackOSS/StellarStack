@@ -26,7 +26,7 @@ export const NavMain = ({
   const [hovered, setHovered] = useState<string | null>(null)
 
   return (
-    <SidebarGroup className="px-0 py-1">
+    <SidebarGroup className="px-2 py-1">
       {label !== undefined ? (
         <SidebarGroupLabel className="px-2 text-[10px] font-medium tracking-wider text-zinc-600 uppercase">
           {label}

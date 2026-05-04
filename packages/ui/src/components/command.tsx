@@ -60,7 +60,12 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/* cmdk's CommandInput / List / Group / Item all need a sibling
+            Command primitive in their tree to register with — otherwise
+            the input's subscribe-on-mount throws because its store is
+            undefined. Wrap once here so every consumer gets the right
+            context for free. */}
+        <Command>{children}</Command>
       </DialogContent>
     </Dialog>
   )

@@ -15,7 +15,7 @@ import {
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
 
-import { AdminBrandHeader, AppSidebar } from "@/components/AppSidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import type { NavItem } from "@/components/NavMain.types"
 import { useSession } from "@/lib/AuthClient"
 
@@ -72,13 +72,15 @@ export const AdminLayout = () => {
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--sidebar-width": "calc(var(--spacing) * 60)",
           "--header-height": "calc(var(--spacing) * 12)",
         } as CSSProperties
       }
     >
       <AppSidebar
-        header={<AdminBrandHeader />}
+        variant="inset"
+        brandLabel="StellarStack"
+        brandSecondary="Admin"
         nav={{ items, label: "Manage", layoutId: "admin-nav-pill" }}
       />
       <SidebarInset>

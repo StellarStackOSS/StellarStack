@@ -93,6 +93,9 @@
   "sidebar.transfer": "Transfer",
   "sidebar.startup": "Startup",
   "sidebar.activity": "Activity",
+  "sidebar.section.overview": "Overview",
+  "sidebar.section.management": "Management",
+  "sidebar.section.config": "Configuration",
   "sidebar.instances": "Instances",
   "sidebar.settings": "Settings",
 

@@ -117,37 +117,52 @@ export const ServerLayout = () => {
     : ""
   const currentRoute = routeMap[sub] ?? routeMap[""]
 
-  const navItems: NavItem[] = [
-    { title: t("sidebar.overview"), icon: DashboardSquare02Icon,
-      to: "/servers/$id", params: { id: server.id },
-      isActive: sub === "" || sub === "/" },
-    { title: t("sidebar.files"), icon: FolderLibraryIcon,
-      to: "/servers/$id/files", params: { id: server.id },
-      isActive: sub === "/files" },
-    { title: t("sidebar.backups"), icon: HardDriveIcon,
-      to: "/servers/$id/backups", params: { id: server.id },
-      isActive: sub === "/backups" },
-    { title: t("sidebar.schedules"), icon: Calendar03Icon,
-      to: "/servers/$id/schedules", params: { id: server.id },
-      isActive: sub === "/schedules" },
-    { title: t("sidebar.users"), icon: UserMultipleIcon,
-      to: "/servers/$id/users", params: { id: server.id },
-      isActive: sub === "/users" },
-    { title: t("sidebar.network"), icon: EthernetPortIcon,
-      to: "/servers/$id/network", params: { id: server.id },
-      isActive: sub === "/network" },
-    { title: t("sidebar.startup"), icon: ComputerTerminal02Icon,
-      to: "/servers/$id/startup", params: { id: server.id },
-      isActive: sub === "/startup" },
-    { title: t("sidebar.instances"), icon: Layers01Icon,
-      to: "/servers/$id/instances", params: { id: server.id },
-      isActive: sub === "/instances" },
-    { title: t("sidebar.activity"), icon: ListViewIcon,
-      to: "/servers/$id/activity", params: { id: server.id },
-      isActive: sub === "/activity" },
-    { title: t("sidebar.settings"), icon: Settings02Icon,
-      to: "/servers/$id/settings", params: { id: server.id },
-      isActive: sub === "/settings" },
+  const navSections = [
+    {
+      label: t("sidebar.section.overview", { defaultValue: "Overview" }),
+      items: [
+        { title: t("sidebar.overview"), icon: DashboardSquare02Icon,
+          to: "/servers/$id", params: { id: server.id },
+          isActive: sub === "" || sub === "/" },
+        { title: t("sidebar.activity"), icon: ListViewIcon,
+          to: "/servers/$id/activity", params: { id: server.id },
+          isActive: sub === "/activity" },
+      ] as NavItem[],
+    },
+    {
+      label: t("sidebar.section.management", { defaultValue: "Management" }),
+      items: [
+        { title: t("sidebar.files"), icon: FolderLibraryIcon,
+          to: "/servers/$id/files", params: { id: server.id },
+          isActive: sub === "/files" },
+        { title: t("sidebar.backups"), icon: HardDriveIcon,
+          to: "/servers/$id/backups", params: { id: server.id },
+          isActive: sub === "/backups" },
+        { title: t("sidebar.schedules"), icon: Calendar03Icon,
+          to: "/servers/$id/schedules", params: { id: server.id },
+          isActive: sub === "/schedules" },
+        { title: t("sidebar.instances"), icon: Layers01Icon,
+          to: "/servers/$id/instances", params: { id: server.id },
+          isActive: sub === "/instances" },
+      ] as NavItem[],
+    },
+    {
+      label: t("sidebar.section.config", { defaultValue: "Configuration" }),
+      items: [
+        { title: t("sidebar.startup"), icon: ComputerTerminal02Icon,
+          to: "/servers/$id/startup", params: { id: server.id },
+          isActive: sub === "/startup" },
+        { title: t("sidebar.network"), icon: EthernetPortIcon,
+          to: "/servers/$id/network", params: { id: server.id },
+          isActive: sub === "/network" },
+        { title: t("sidebar.users"), icon: UserMultipleIcon,
+          to: "/servers/$id/users", params: { id: server.id },
+          isActive: sub === "/users" },
+        { title: t("sidebar.settings"), icon: Settings02Icon,
+          to: "/servers/$id/settings", params: { id: server.id },
+          isActive: sub === "/settings" },
+      ] as NavItem[],
+    },
   ]
   const wsConnected = consoleHook.state === "open"
   const canStart = status === "offline"
@@ -168,7 +183,10 @@ export const ServerLayout = () => {
     >
       <AppSidebar
         variant="inset"
-        nav={{ items: navItems, layoutId: "server-nav-pill" }}
+        brandLabel={server.name}
+        brandSecondary={server.nodeName ?? undefined}
+        brandHref="/dashboard"
+        nav={navSections}
       />
       <SidebarInset className="overflow-hidden border border-white/10">
         <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-white/5 px-4">
