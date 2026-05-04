@@ -6,15 +6,30 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 
+	"github.com/stellarstack/daemon/internal/docker"
+	"github.com/stellarstack/daemon/internal/environment"
 	"github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/server"
 )
+
+// filepathServerDir is the per-server bind mount root, computed off
+// the daemon-wide data dir.
+func filepathServerDir(uuid string) string {
+	// Caller passes the WS-handler's router config indirectly; we
+	// resolve via the package-level convention used everywhere else.
+	return filepath.Join(serverDirRoot, "servers", uuid)
+}
+
+// serverDirRoot is set by router.New so the WS handler can construct
+// per-server paths without threading config through every call site.
+var serverDirRoot = "/var/lib/stellarstack"
 
 // envelope is the wire shape every frame on the per-server WS uses.
 // `event` is the discriminator; `args` carries event-specific payloads.
@@ -206,6 +221,39 @@ func (r *Router) handleSetState(ctx context.Context, conn *websocket.Conn, srv *
 	go func() {
 		runCtx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
+		// Fresh config pull on every power action so a panel-side
+		// blueprint/variable/memory change lands on the next start.
+		// Stop/kill don't strictly need it but the call is cheap.
+		if p := srv.Panel(); p != nil {
+			cfgCtx, cfgCancel := context.WithTimeout(runCtx, 10*time.Second)
+			cfg, err := p.FetchServerConfig(cfgCtx, srv.UUID())
+			cfgCancel()
+			if err != nil {
+				log.Printf("set state %s: fetch config: %v", action, err)
+				return
+			}
+			ports := make([]docker.PortMapping, 0, len(cfg.Ports))
+			for _, p := range cfg.Ports {
+				ports = append(ports, docker.PortMapping{
+					HostIP:        p.HostIP,
+					HostPort:      p.HostPort,
+					ContainerPort: p.ContainerPort,
+				})
+			}
+			srv.SetConfig(server.Config{
+				DockerImage:    cfg.DockerImage,
+				StartupCommand: cfg.StartupCommand,
+				Environment:    cfg.Environment,
+				Stop: environment.StopConfig{
+					Type:  cfg.Stop.Type,
+					Value: cfg.Stop.Value,
+				},
+				Memory:       cfg.MemoryLimitMb,
+				CPUPercent:   cfg.CPULimitPercent,
+				PortMappings: ports,
+				BindMount:    filepathServerDir(srv.UUID()),
+			})
+		}
 		if err := srv.HandlePower(runCtx, server.PowerAction(action)); err != nil {
 			log.Printf("set state %s: %v", action, err)
 		}

@@ -5,9 +5,18 @@ import { Hono } from "hono"
 import { z } from "zod"
 
 import type { Db } from "@workspace/db/client.types"
-import { nodesTable } from "@workspace/db/schema/nodes"
-import { serversTable } from "@workspace/db/schema/servers"
+import { blueprintsTable } from "@workspace/db/schema/blueprints"
+import {
+  nodeAllocationsTable,
+  nodesTable,
+} from "@workspace/db/schema/nodes"
+import {
+  serverAllocationsTable,
+  serverVariablesTable,
+  serversTable,
+} from "@workspace/db/schema/servers"
 import { lifecycleStateSchema } from "@workspace/shared/events"
+import type { Blueprint } from "@workspace/shared/blueprint.types"
 import { ApiException } from "@workspace/shared/errors"
 
 import { writeAudit } from "@/lib/Audit"
@@ -78,6 +87,77 @@ export const buildRemoteRoute = (params: {
         })
       }
       return c.json({ ok: true })
+    })
+    .get("/servers/:id/config", async (c) => {
+      const ok = await verifyDaemonSignature({
+        db,
+        env,
+        headers: c.req.raw.headers,
+      })
+      if (!ok) {
+        throw new ApiException("auth.session.invalid", { status: 401 })
+      }
+      const serverId = c.req.param("id")
+      const row = (
+        await db
+          .select({ server: serversTable, blueprint: blueprintsTable })
+          .from(serversTable)
+          .innerJoin(
+            blueprintsTable,
+            eq(blueprintsTable.id, serversTable.blueprintId)
+          )
+          .where(eq(serversTable.id, serverId))
+          .limit(1)
+      )[0]
+      if (row === undefined) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      const blueprint = row.blueprint as unknown as Blueprint
+      const allocations = await db
+        .select({
+          id: nodeAllocationsTable.id,
+          ip: nodeAllocationsTable.ip,
+          port: nodeAllocationsTable.port,
+        })
+        .from(nodeAllocationsTable)
+        .innerJoin(
+          serverAllocationsTable,
+          eq(serverAllocationsTable.allocationId, nodeAllocationsTable.id)
+        )
+        .where(eq(serverAllocationsTable.serverId, serverId))
+      const variableRows = await db
+        .select()
+        .from(serverVariablesTable)
+        .where(eq(serverVariablesTable.serverId, serverId))
+      const env_: Record<string, string> = {}
+      for (const v of blueprint.variables) env_[v.key] = v.default
+      for (const r of variableRows) env_[r.variableKey] = r.value
+      env_["SERVER_MEMORY"] = String(row.server.memoryLimitMb)
+      const startupCommand = row.server.startupExtra
+        ? `${blueprint.startupCommand} ${row.server.startupExtra}`
+        : blueprint.startupCommand
+      // Translate the blueprint stop signal into the daemon's StopConfig
+      // shape: leading `^` means "write rest to stdin", anything else is
+      // a kill signal name (SIGTERM, SIGINT, …).
+      const sig = blueprint.stopSignal ?? ""
+      const stop = sig.startsWith("^")
+        ? { type: "command" as const, value: sig.slice(1) }
+        : sig
+          ? { type: "signal" as const, value: sig }
+          : { type: "" as const, value: "" }
+      return c.json({
+        dockerImage: row.server.dockerImage,
+        startupCommand,
+        environment: env_,
+        stop,
+        memoryLimitMb: row.server.memoryLimitMb,
+        cpuLimitPercent: row.server.cpuLimitPercent,
+        ports: allocations.map((a) => ({
+          hostIp: a.ip,
+          hostPort: a.port,
+          containerPort: a.port,
+        })),
+      })
     })
     .post("/heartbeat", async (c) => {
       const ok = await verifyDaemonSignature({

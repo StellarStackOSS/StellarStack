@@ -36,6 +36,9 @@ type Router struct {
 }
 
 func New(cfg *config.Config, v *jwt.Verifier, m *server.Manager, f *files.Manager, b *backup.Manager) *Router {
+	// Inform the WS handler where bind mounts live so it can compute
+	// per-server paths without threading config in.
+	serverDirRoot = cfg.DataDir
 	return &Router{cfg: cfg, verifier: v, manager: m, files: f, backups: b}
 }
 

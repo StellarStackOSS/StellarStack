@@ -72,6 +72,59 @@ func (c *Client) PushStatus(ctx context.Context, serverUUID, prev, next string) 
 	return nil
 }
 
+// ServerConfig mirrors the API's GET /api/remote/servers/:id/config
+// response. The daemon doesn't keep server config in its own state
+// store — it pulls fresh on each power action so a panel-side change
+// (memory bump, blueprint swap, variable update) lands on the next
+// start without operator intervention.
+type ServerConfig struct {
+	DockerImage     string            `json:"dockerImage"`
+	StartupCommand  string            `json:"startupCommand"`
+	Environment     map[string]string `json:"environment"`
+	Stop            StopConfig        `json:"stop"`
+	MemoryLimitMb   int64             `json:"memoryLimitMb"`
+	CPULimitPercent int64             `json:"cpuLimitPercent"`
+	Ports           []PortMapping     `json:"ports"`
+}
+
+// StopConfig matches environment.StopConfig on the wire.
+type StopConfig struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+// PortMapping matches docker.PortMapping on the wire.
+type PortMapping struct {
+	HostIP        string `json:"hostIp"`
+	HostPort      int    `json:"hostPort"`
+	ContainerPort int    `json:"containerPort"`
+}
+
+// FetchServerConfig pulls the API's authoritative server runtime
+// config so the daemon can configure the docker container without the
+// browser carrying that data over the WS.
+func (c *Client) FetchServerConfig(ctx context.Context, serverUUID string) (*ServerConfig, error) {
+	req, err := c.signedRequest(ctx, http.MethodGet,
+		fmt.Sprintf("/api/remote/servers/%s/config", serverUUID), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, fmt.Errorf("panel fetch config %s: %s", resp.Status, string(raw))
+	}
+	var cfg ServerConfig
+	if err := json.NewDecoder(resp.Body).Decode(&cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 // Heartbeat tells the API "this node is alive". POSTed by the daemon
 // on startup and on a 30s ticker so the admin nodes page can render an
 // online/offline pill backed by a fresh `connected_at` row column.
