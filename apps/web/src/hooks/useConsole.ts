@@ -108,12 +108,15 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
     )
   }, [status, serverId, queryClient])
 
-  // Clear the buffer + stats history when the server transitions to
-  // offline so the console only shows the most recent "Server marked
-  // as offline..." header and the metric cards reset to zero. Pelican-
-  // shape behaviour. The previous-status ref ensures we only clear on
-  // the *transition* — re-renders while already offline are no-ops so
-  // the synthetic offline line we re-emit isn't churned.
+  // Clear the buffer + stats history on lifecycle transitions that the
+  // user expects to "reset" the panel:
+  //   any -> offline   : show only "Server marked as offline..." and zero
+  //                       the metric cards.
+  //   offline -> starting (restart's second leg or a fresh start) :
+  //                       wipe the offline header so the new boot run
+  //                       gets a clean console. Pelican-shape.
+  // The previous-status ref ensures we only clear on the *transition*
+  // — re-renders while status is unchanged are no-ops.
   const prevStatusRef = useRef<ServerLifecycleState | null>(null)
   useEffect(() => {
     if (status === null) return
@@ -132,6 +135,10 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
           receivedAt: Date.now(),
         },
       ])
+      setStatsHistory([])
+    }
+    if (status === "starting" && prev !== null && prev !== "starting") {
+      setLines([])
       setStatsHistory([])
     }
   }, [status])

@@ -21,6 +21,8 @@ export type ErrorCode =
   | "files.path_outside_jail"
   | "files.read_only"
   | "files.too_large"
+  | "instances.nested_not_allowed"
+  | "instances.pool_exhausted"
   | "internal.unexpected"
   | "nodes.has_servers"
   | "nodes.not_found"
@@ -90,6 +92,8 @@ export const errorCodes = [
   "files.path_outside_jail",
   "files.read_only",
   "files.too_large",
+  "instances.nested_not_allowed",
+  "instances.pool_exhausted",
   "internal.unexpected",
   "nodes.has_servers",
   "nodes.not_found",

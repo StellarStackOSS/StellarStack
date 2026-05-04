@@ -44,6 +44,15 @@ export const serversTable = pgTable(
       () => nodeAllocationsTable.id,
       { onDelete: "restrict" }
     ),
+    /**
+     * Server splitting: a child instance carves a slice out of its
+     * parent's resource pool. One level deep — children cannot themselves
+     * have children. Cascade delete: removing the parent removes every
+     * child it spawned.
+     */
+    parentId: uuid("parent_id").references((): any => serversTable.id, {
+      onDelete: "cascade",
+    }),
     name: text("name").notNull(),
     description: text("description"),
     memoryLimitMb: bigint("memory_limit_mb", { mode: "number" }).notNull(),
@@ -80,6 +89,7 @@ export const serversTable = pgTable(
     index("servers_owner_id_idx").on(table.ownerId),
     index("servers_node_id_idx").on(table.nodeId),
     index("servers_status_idx").on(table.status),
+    index("servers_parent_id_idx").on(table.parentId),
   ]
 )
 

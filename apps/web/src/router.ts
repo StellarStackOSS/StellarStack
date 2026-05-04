@@ -33,6 +33,7 @@ import { Route as serverSettingsRoute } from "@/routes/ServerSettings"
 import { Route as serverStartupRoute } from "@/routes/ServerStartup"
 import { Route as serverActivityRoute } from "@/routes/ServerActivity"
 import { Route as serverTransferRoute } from "@/routes/ServerTransfer"
+import { Route as serverInstancesRoute } from "@/routes/ServerInstances"
 
 const userAreaTree = userAreaRoute.addChildren([
   dashboardRoute,
@@ -65,6 +66,7 @@ const serverTree = serverRoute.addChildren([
   serverActivityRoute,
   serverSettingsRoute,
   serverTransferRoute,
+  serverInstancesRoute,
 ])
 
 const routeTree = rootRoute.addChildren([

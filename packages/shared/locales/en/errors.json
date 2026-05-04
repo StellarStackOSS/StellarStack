@@ -24,7 +24,10 @@
   "blueprints.parse.invalid_json": "JSON parse error: the editor content is not valid JSON.",
 
   "servers.not_found": "Server not found.",
-  "servers.create.allocation_unavailable": "Allocation {allocation} is no longer available.",
+  "instances.nested_not_allowed": "This server is itself an instance and cannot be split further.",
+  "instances.pool_exhausted": "Not enough {resource} available in the parent server's pool.",
+
+  "servers.create.allocation_unavailable":"Allocation {allocation} is no longer available.",
   "servers.create.node_at_capacity": "Node {node} doesn't have enough resources (needs {requested}, has {available}).",
   "servers.create.no_free_allocation": "No free allocations are available on the selected node.",
   "servers.startup.invalid_docker_image": "That image is not available for this blueprint. Valid values: {values}.",

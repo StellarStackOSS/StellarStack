@@ -20,6 +20,9 @@ export type ServerListRow = {
   suspended: boolean
   allocationLimit: number
   backupLimit: number
+  parentId: string | null
+  installState: "pending" | "running" | "succeeded" | "failed"
+  startupExtra: string | null
   createdAt: string
   updatedAt: string
 }

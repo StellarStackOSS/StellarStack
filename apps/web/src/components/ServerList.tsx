@@ -49,6 +49,11 @@ export const ServerList = ({
                 <TextureBadge variant={statusVariant(server.status)}>
                   {t(`lifecycle.${server.status}`, { ns: "common" })}
                 </TextureBadge>
+                {server.parentId !== null ? (
+                  <TextureBadge variant="secondary">
+                    {t("instances.parent_badge")}
+                  </TextureBadge>
+                ) : null}
               </div>
               <div className="mt-1.5 flex items-center gap-3 text-xs text-zinc-500">
                 <span>{server.memoryLimitMb} MB RAM</span>

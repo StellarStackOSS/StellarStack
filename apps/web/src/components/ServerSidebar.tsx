@@ -9,6 +9,7 @@ import {
   HardDriveIcon,
   ComputerTerminal02Icon,
   ListViewIcon,
+  Layers01Icon,
   Settings02Icon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
@@ -102,6 +103,13 @@ export const ServerSidebar = ({
       to: "/servers/$id/startup",
       params: { id: server.id },
       isActive: sub === "/startup",
+    },
+    {
+      title: t("sidebar.instances"),
+      icon: Layers01Icon,
+      to: "/servers/$id/instances",
+      params: { id: server.id },
+      isActive: sub === "/instances",
     },
     {
       title: t("sidebar.activity"),
