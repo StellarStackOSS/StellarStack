@@ -98,8 +98,14 @@ export const ActivityTab = () => {
     // local state. PAGE_SIZE matches the limit the hook sends.
   })
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil((data?.total ?? 0) / PAGE_SIZE)
+  )
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>{t("activity.title")}</CardTitle>
@@ -111,12 +117,12 @@ export const ActivityTab = () => {
         </CardInner>
       </Card>
 
-      <Card>
+      <Card className="flex min-h-0 flex-1 flex-col">
         <CardHeader>
           <CardTitle>{t("activity.history_heading")}</CardTitle>
         </CardHeader>
-        <CardInner className="p-3 flex flex-col gap-3">
-          <div className="overflow-x-auto rounded border border-border">
+        <CardInner className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+          <div className="min-h-0 flex-1 overflow-auto rounded border border-border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((hg) => (
@@ -171,42 +177,44 @@ export const ActivityTab = () => {
             </Table>
           </div>
 
-          {/* Same pagination shape as the FileManager strip: 'from–to
-              of total' on the left, ‹ Prev / page X / Y › on the right.
-              Driven by server-side offset/limit since the activity API
-              is paginated; total comes from the response. */}
-          {(data?.total ?? 0) > PAGE_SIZE && (
-            <div className="flex items-center justify-between border-t border-border px-1 pt-2 text-xs text-muted-foreground">
-              <span>
-                {entries.length === 0 ? 0 : offset + 1}–
-                {offset + entries.length} of {data?.total ?? 0}
+          {/* Pagination footer — always rendered so the layout doesn't
+              jump when the page count crosses 1. Same shape as the
+              FileManager bottom strip: 'from–to of total' on the left,
+              ‹ Prev / X / Y › on the right. Driven by server-side
+              offset/limit; total comes from the response. */}
+          <div className="flex shrink-0 items-center justify-between border-t border-border px-1 pt-2 text-xs text-muted-foreground">
+            <span>
+              {entries.length === 0 ? 0 : offset + 1}–
+              {offset + entries.length} of {data?.total ?? entries.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="xs"
+                variant="ghost"
+                disabled={offset === 0}
+                onClick={() =>
+                  setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
+                }
+              >
+                ‹ Prev
+              </Button>
+              <span className="px-1">
+                {currentPage} / {totalPages}
               </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  disabled={offset === 0}
-                  onClick={() =>
-                    setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
-                  }
-                >
-                  ‹ Prev
-                </Button>
-                <span className="px-1">
-                  {Math.floor(offset / PAGE_SIZE) + 1} /{" "}
-                  {Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE))}
-                </span>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  disabled={offset + entries.length >= (data?.total ?? 0)}
-                  onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-                >
-                  Next ›
-                </Button>
-              </div>
+              <Button
+                size="xs"
+                variant="ghost"
+                disabled={
+                  data?.total !== undefined
+                    ? offset + entries.length >= data.total
+                    : entries.length < PAGE_SIZE
+                }
+                onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+              >
+                Next ›
+              </Button>
             </div>
-          )}
+          </div>
         </CardInner>
       </Card>
     </div>
