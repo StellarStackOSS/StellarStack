@@ -205,10 +205,13 @@ const PoolBars = ({
   pool: {
     memoryTotalMb: number
     memoryUsedMb: number
+    memoryFreeMb: number
     diskTotalMb: number
     diskUsedMb: number
+    diskFreeMb: number
     cpuTotalPercent: number
     cpuUsedPercent: number
+    cpuFreePercent: number
   } | null
 }) => {
   const { t } = useTranslation()
@@ -222,18 +225,21 @@ const PoolBars = ({
       <PoolBar
         label={t("instances.pool.memory")}
         used={pool.memoryUsedMb}
+        free={pool.memoryFreeMb}
         total={pool.memoryTotalMb}
         unit="MB"
       />
       <PoolBar
         label={t("instances.pool.cpu")}
         used={pool.cpuUsedPercent}
+        free={pool.cpuFreePercent}
         total={pool.cpuTotalPercent}
         unit="%"
       />
       <PoolBar
         label={t("instances.pool.disk")}
         used={pool.diskUsedMb}
+        free={pool.diskFreeMb}
         total={pool.diskTotalMb}
         unit="MB"
       />
@@ -244,11 +250,13 @@ const PoolBars = ({
 const PoolBar = ({
   label,
   used,
+  free,
   total,
   unit,
 }: {
   label: string
   used: number
+  free: number
   total: number
   unit: string
 }) => {
@@ -257,15 +265,13 @@ const PoolBar = ({
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-mono">
-          {used} / {total} {unit}
+        <span className="font-mono text-[0.7rem]">
+          {used} {unit} allocated
+          <span className="text-muted-foreground"> · {free} free of {total}</span>
         </span>
       </div>
       <div className="bg-muted h-1.5 w-full overflow-hidden rounded">
-        <div
-          className="bg-primary h-full"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )

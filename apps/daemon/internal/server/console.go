@@ -150,6 +150,7 @@ func (s *Server) runAttachStream(ctx context.Context, reader io.Reader, tty bool
 			"args":  []any{cleaned},
 		})
 		s.bus.Publish(frame)
+		s.scanLineForErrors(cleaned)
 	}
 	log.Printf("server %s: attach stream end (lines=%d ctx=%v)", s.uuid, count, ctx.Err())
 }
@@ -205,6 +206,7 @@ func (s *Server) SnapshotLogs(ctx context.Context, tail int) {
 			"args":  []any{cleaned},
 		})
 		s.bus.Publish(frame)
+		s.scanLineForErrors(cleaned)
 	}
 }
 
@@ -243,6 +245,7 @@ func (s *Server) runAttachPump(ctx context.Context) {
 				"args":  []any{cleaned},
 			})
 			s.bus.Publish(frame)
+			s.scanLineForErrors(cleaned)
 		}
 		log.Printf("server %s: log stream closed (read %d lines)", s.uuid, lineCount)
 		if !sleepOrDone(ctx, 1) {

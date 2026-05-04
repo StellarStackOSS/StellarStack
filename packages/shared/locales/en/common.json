@@ -129,6 +129,15 @@
   "instances.error.required_fields": "Name, blueprint, image and allocation are required.",
   "instances.parent_badge": "Instance",
 
+  "eula.title": "Minecraft EULA required",
+  "eula.description": "This server failed to start because the Minecraft End User License Agreement has not been accepted yet.",
+  "eula.body_line_1": "By clicking 'Accept and start', you confirm that you have read and agreed to the Minecraft EULA on behalf of this server.",
+  "eula.body_line_2": "You can review the agreement at",
+  "eula.cancel": "Close",
+  "eula.accept_and_start": "Accept and start",
+  "eula.accepting": "Accepting…",
+  "eula.error.write_failed": "Couldn't write eula.txt to the server. Try again or write it manually from the file manager.",
+
   "server_list.loading": "Loading…",
   "server_list.empty": "No servers yet.",
   "server_list.resources": "{memoryMb} MB · {cpuPercent}% CPU · {diskMb} MB disk",

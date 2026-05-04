@@ -44,6 +44,14 @@ export type UseConsoleResult = {
   status: ServerLifecycleState | null
   lines: ConsoleLine[]
   stats: { latest: StatsSample | null; history: StatsSample[] }
+  /**
+   * Most recent code from a daemon-emitted `{event:"daemon error"}`
+   * frame, e.g. `"eula-required"`. Cleared on the next start. The
+   * EulaModal subscribes to this to know when to surface itself.
+   */
+  daemonError: string | null
+  /** Clear `daemonError` (used by modals after the user dismisses). */
+  clearDaemonError: () => void
   /** Send a console command (writes `<line>\n` to the container stdin). */
   sendCommand: (line: string) => void
   /** Dispatch a power action over the same WS. */

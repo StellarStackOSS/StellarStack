@@ -90,6 +90,8 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
   const [lines, setLines] = useState<ConsoleLine[]>([])
   const [status, setStatus] = useState<ServerLifecycleState | null>(null)
   const [statsHistory, setStatsHistory] = useState<StatsSample[]>([])
+  const [daemonError, setDaemonError] = useState<string | null>(null)
+  const clearDaemonError = useCallback(() => setDaemonError(null), [])
 
   // Whenever the daemon WS reports a fresh status, also write it
   // through to the React Query cache for the server detail row so any
@@ -140,6 +142,10 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
     if (status === "starting" && prev !== null && prev !== "starting") {
       setLines([])
       setStatsHistory([])
+      // A fresh start should also clear any leftover daemon-error
+      // surface (e.g. eula-required) so a successful retry hides the
+      // modal automatically without the user dismissing it manually.
+      setDaemonError(null)
     }
   }, [status])
   const counterRef = useRef(0)
@@ -228,6 +234,7 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
             setStatus,
             setLines,
             setStatsHistory,
+            setDaemonError,
             counterRef,
           })
           if (env.data.event === "token expiring") {
@@ -296,6 +303,8 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
     status,
     lines,
     stats: { latest: latestStats, history: statsHistory },
+    daemonError,
+    clearDaemonError,
     sendCommand,
     setState: setStateAction,
   }
@@ -305,6 +314,7 @@ type FrameSetters = {
   setStatus: (s: ServerLifecycleState) => void
   setLines: React.Dispatch<React.SetStateAction<ConsoleLine[]>>
   setStatsHistory: React.Dispatch<React.SetStateAction<StatsSample[]>>
+  setDaemonError: React.Dispatch<React.SetStateAction<string | null>>
   counterRef: React.MutableRefObject<number>
 }
 
@@ -365,9 +375,13 @@ const dispatchFrame = (
       setters.setStatus(p.state)
       return
     }
+    case "daemon error": {
+      const code = typeof args[0] === "string" ? args[0] : null
+      if (code !== null) setters.setDaemonError(code)
+      return
+    }
     case "auth success":
     case "token expired":
-    case "daemon error":
     default:
       return
   }

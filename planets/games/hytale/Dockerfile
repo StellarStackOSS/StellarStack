@@ -1,4 +1,4 @@
-FROM 		--platform=$TARGETOS/$TARGETARCH ghcr.io/stellarstack/yolks:java_25
+FROM 		--platform=$TARGETOS/$TARGETARCH ghcr.io/stellarstackoss/planets:java_25
 
 LABEL       maintainer="william.venner@infraly.co"
 
@@ -7,7 +7,7 @@ LABEL       org.opencontainers.image.licenses=MIT
 
 USER		root
 
-COPY        --from=ghcr.io/stellarstack/yolks:java_25 entrypoint.sh /java.sh
+COPY        --from=ghcr.io/stellarstackoss/planets:java_25 entrypoint.sh /java.sh
 RUN 		chmod +x /java.sh
 
 RUN			apt-get update -y \

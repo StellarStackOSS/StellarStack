@@ -30,6 +30,7 @@ import type { ServerLifecycleState } from "@workspace/shared/events.types"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { ServerSidebar } from "@/components/ServerSidebar"
 import { ServerLayoutContext } from "@/components/ServerLayoutContext"
+import { EulaModal } from "@/components/server/EulaModal"
 import { useConsole } from "@/hooks/useConsole"
 import type { ConsolePowerAction } from "@/hooks/useConsole.types"
 import { useServer } from "@/hooks/useServers"
@@ -207,6 +208,7 @@ export const ServerLayout = () => {
               }}
             >
               <Outlet />
+              <EulaModal />
             </ServerLayoutContext.Provider>
           </main>
         </div>

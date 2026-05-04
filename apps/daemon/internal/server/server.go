@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"runtime"
 	"sync"
 	"time"
@@ -41,6 +42,12 @@ type Server struct {
 	statsMu     sync.Mutex
 	statsCancel context.CancelFunc
 	startedAt   time.Time
+
+	// errorOnce gates one-shot daemon error events (eula-required, …).
+	// Reset on each start so a subsequent run can re-emit. Prevents
+	// every console line that contains "eula" from spamming the bus.
+	errorMu      sync.Mutex
+	errorEmitted map[string]bool
 }
 
 // Config is the operating data the daemon needs to actually run a
@@ -115,6 +122,55 @@ func (s *Server) publishDaemon(msg string) {
 		"args":  []any{line},
 	})
 	s.bus.Publish(frame)
+}
+
+// publishDaemonError emits a one-shot `{event:"daemon error", args:[code]}`
+// frame over the bus so the panel can react with a structured response
+// (e.g. show the EULA modal). The same code is only emitted once per
+// run; resetErrors() in doStart wipes the gate so a fresh attempt can
+// re-emit on a still-broken state.
+func (s *Server) publishDaemonError(code string) {
+	s.errorMu.Lock()
+	if s.errorEmitted == nil {
+		s.errorEmitted = map[string]bool{}
+	}
+	if s.errorEmitted[code] {
+		s.errorMu.Unlock()
+		return
+	}
+	s.errorEmitted[code] = true
+	s.errorMu.Unlock()
+	frame, _ := json.Marshal(map[string]any{
+		"event": "daemon error",
+		"args":  []any{code},
+	})
+	s.bus.Publish(frame)
+}
+
+// resetErrors clears the per-run daemon-error gate. Called at the start
+// of every power-on so a previous run's eula-required (or whatever)
+// doesn't suppress this run's emission.
+func (s *Server) resetErrors() {
+	s.errorMu.Lock()
+	s.errorEmitted = nil
+	s.errorMu.Unlock()
+}
+
+// eulaPattern catches the canonical Minecraft "you need to agree to the
+// EULA" line. Lower-case match on the cleaned console text — vanilla
+// emits `[]: You need to agree to the EULA in order to run the server.
+// Go to eula.txt for more info.` Various third-party JARs reword it
+// slightly so we match the stable substring rather than the full line.
+var eulaPattern = regexp.MustCompile(`(?i)you need to agree to the eula`)
+
+// scanLineForErrors looks at one cleaned console line and emits a
+// daemon error if it matches a known failure pattern. Cheap; called
+// from the attach pump for every line.
+func (s *Server) scanLineForErrors(line string) {
+	if eulaPattern.MatchString(line) {
+		s.publishDaemon("Server failed to start because the EULA has not been accepted. Accept it from the panel to continue.")
+		s.publishDaemonError("eula-required")
+	}
 }
 
 // publishHeader emits a "stellarstack@<uuid>~ <msg>" prompt-style line.
@@ -230,6 +286,7 @@ func (s *Server) doStart(ctx context.Context) error {
 		return errors.New("server has no docker image configured (start payload missing)")
 	}
 
+	s.resetErrors()
 	s.env.MarkStarting()
 	s.publishDaemon("Updating process configuration files...")
 
