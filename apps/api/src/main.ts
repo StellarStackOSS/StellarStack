@@ -11,6 +11,7 @@ import { buildAuth } from "@/auth"
 import { loadEnv } from "@/env"
 import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
+import { Scheduler } from "@/lib/Scheduler"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildActivityRoute } from "@/routes/Activity"
@@ -45,6 +46,8 @@ const redis = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null })
 const auth = buildAuth({ db, env })
 const statusCache = new StatusCache(redis)
 const installRunner = new InstallRunner(db)
+const scheduler = new Scheduler(db, statusCache)
+scheduler.start()
 
 const app = new Hono<{ Variables: ApiVariables }>()
 

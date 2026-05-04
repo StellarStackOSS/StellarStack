@@ -46,33 +46,41 @@ export const ActivityTab = () => {
             <p className="text-muted-foreground text-xs">{t("activity.empty")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {entries.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="bg-muted font-mono rounded px-1.5 py-0.5 text-[0.65rem]">
-                      {entry.action}
-                    </span>
-                    <span className="text-muted-foreground shrink-0">
-                      {new Date(entry.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  {entry.actorId !== null && (
-                    <p className="text-muted-foreground">
-                      {entry.actorId.slice(0, 8)}...
-                    </p>
-                  )}
-                  {entry.metadata !== null && (
-                    <p className="text-muted-foreground">
-                      {Object.entries(entry.metadata)
-                        .map(([k, v]) => `${k}=${String(v)}`)
-                        .join(" · ")}
-                    </p>
-                  )}
-                </li>
-              ))}
+              {entries.map((entry) => {
+                // The audit code is a translation key (e.g.
+                // `servers.power.start`); the wire never carries
+                // English. defaultValue surfaces the raw code if a
+                // translation is missing so the row stays readable.
+                const label = t(`audit.${entry.action}`, {
+                  defaultValue: entry.action,
+                  ns: "common",
+                })
+                return (
+                  <li
+                    key={entry.id}
+                    className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-200">{label}</span>
+                      <span className="text-muted-foreground shrink-0 font-mono text-[0.65rem]">
+                        {new Date(entry.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    {entry.actorId !== null && (
+                      <p className="text-muted-foreground font-mono">
+                        {entry.actorId.slice(0, 8)}…
+                      </p>
+                    )}
+                    {entry.metadata !== null && (
+                      <p className="text-muted-foreground">
+                        {Object.entries(entry.metadata)
+                          .map(([k, v]) => `${k}=${String(v)}`)
+                          .join(" · ")}
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
 
