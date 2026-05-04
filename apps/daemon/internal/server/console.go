@@ -67,9 +67,28 @@ func cleanLine(s string) string {
 	return strings.TrimRight(s, " \t")
 }
 
-// startAttachPump opens a follow-logs stream and pushes each line into
-// the bus + history. Idempotent: a second call cancels the first.
+// startAttachPump is the reconcile-side fallback for surfaces where
+// the container is already running and we never opened a pre-start
+// attach (daemon restart while server was up). No-op when an attach
+// stream is already active so doStart's pre-start attach can't be
+// double-consumed.
 func (s *Server) startAttachPump() {
+	s.attachMu.Lock()
+	defer s.attachMu.Unlock()
+	if s.attachCancel != nil {
+		// Already pumping (pre-start attach owns the stream).
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	s.attachCancel = cancel
+	go s.runAttachPump(ctx)
+}
+
+// startAttachStream takes ownership of an already-attached docker
+// stream (opened before StartContainer) and pumps lines through the
+// bus + history. Mirrors Pelican wings: ScanReader on the attach
+// stream's stdout/stderr until EOF or context cancel.
+func (s *Server) startAttachStream(reader io.Reader, tty bool, closer func()) {
 	s.attachMu.Lock()
 	defer s.attachMu.Unlock()
 	if s.attachCancel != nil {
@@ -77,7 +96,54 @@ func (s *Server) startAttachPump() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s.attachCancel = cancel
-	go s.runAttachPump(ctx)
+	go func() {
+		s.runAttachStream(ctx, reader, tty, closer)
+		// Clear attachCancel when the stream ends so a future running
+		// transition can spawn a fresh pump.
+		s.attachMu.Lock()
+		if s.attachCancel != nil {
+			cancelFn := s.attachCancel
+			s.attachCancel = nil
+			s.attachMu.Unlock()
+			_ = cancelFn // already returned; exists only for symmetry
+			return
+		}
+		s.attachMu.Unlock()
+	}()
+}
+
+func (s *Server) runAttachStream(ctx context.Context, reader io.Reader, tty bool, closer func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("server %s: attach stream panic: %v", s.uuid, r)
+		}
+	}()
+	defer closer()
+	log.Printf("server %s: attach stream start (tty=%v)", s.uuid, tty)
+	out := make(chan docker.LogLine, 64)
+	go func() {
+		defer close(out)
+		if tty {
+			docker.StreamRawLines(ctx, reader, out)
+		} else {
+			docker.StreamMultiplexedLines(ctx, reader, out)
+		}
+	}()
+	count := 0
+	for line := range out {
+		cleaned := cleanLine(line.Line)
+		if cleaned == "" {
+			continue
+		}
+		count++
+		s.history.push(cleaned)
+		frame, _ := json.Marshal(map[string]any{
+			"event": "console output",
+			"args":  []any{cleaned},
+		})
+		s.bus.Publish(frame)
+	}
+	log.Printf("server %s: attach stream end (lines=%d ctx=%v)", s.uuid, count, ctx.Err())
 }
 
 func (s *Server) stopAttachPump() {

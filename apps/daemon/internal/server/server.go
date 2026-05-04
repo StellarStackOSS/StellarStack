@@ -262,7 +262,29 @@ func (s *Server) doStart(ctx context.Context) error {
 		return fmt.Errorf("create container: %w", err)
 	}
 
+	// Pelican-shape: open the docker attach stream BEFORE starting the
+	// container so we capture every byte of stdout/stderr from the
+	// moment the entrypoint runs. The /logs?follow=1 path loses output
+	// between StartContainer and the first follow read.
+	attachConn, attachReader, attachErr := dc.Attach(context.Background(), containerName, docker.AttachOptions{
+		Stdin:  true,
+		Stdout: true,
+		Stderr: true,
+		Stream: true,
+	})
+	if attachErr != nil {
+		s.publishDaemon("Failed to attach to container: " + attachErr.Error())
+		s.env.MarkOffline()
+		return fmt.Errorf("pre-start attach: %w", attachErr)
+	}
+	tty := false
+	if t, err := dc.InspectConfigTTY(ctx, containerName); err == nil {
+		tty = t
+	}
+	s.startAttachStream(attachReader, tty, func() { _ = attachConn.Close() })
+
 	if err := dc.StartContainer(ctx, containerName); err != nil {
+		_ = attachConn.Close()
 		s.env.MarkOffline()
 		return fmt.Errorf("start container: %w", err)
 	}
