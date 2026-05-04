@@ -313,6 +313,13 @@ func (s *Server) watchExit() {
 			_ = s.panel.PushAudit(ctx, s.uuid, "", reason, metadata)
 		}()
 	}
+	// Drain the docker log buffer one last time so a fast-exit
+	// container (e.g. JVM version mismatch that dies in <1s before
+	// the streaming pump's first read returns) still leaves its
+	// failure reason in the panel console + history.
+	drainCtx, drainCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	s.SnapshotLogs(drainCtx, 200)
+	drainCancel()
 	s.env.MarkOffline()
 }
 

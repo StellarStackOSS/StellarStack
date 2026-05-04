@@ -491,7 +491,11 @@ func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, e
 	q.Set("stdout", "1")
 	q.Set("stderr", "1")
 	q.Set("follow", "1")
-	q.Set("tail", "0")
+	// Pull the last 200 lines on attach so a freshly-connected pump
+	// (post-daemon-restart, post-reconcile) surfaces recent boot output
+	// instead of waiting for the next line the container happens to
+	// emit. Pelican does the same.
+	q.Set("tail", "200")
 	resp, err := c.do(ctx, http.MethodGet, "/containers/"+name+"/logs?"+q.Encode(), nil)
 	if err != nil {
 		return nil, err
@@ -514,6 +518,25 @@ func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, e
 		streamMultiplexedLines(ctx, resp.Body, out)
 	}()
 	return out, nil
+}
+
+// InspectConfigTTY is the exported sibling of inspectConfigTty so the
+// server package can reuse the same lookup when doing one-shot log
+// snapshots without re-doing the parser plumbing.
+func (c *Client) InspectConfigTTY(ctx context.Context, name string) (bool, error) {
+	return c.inspectConfigTty(ctx, name)
+}
+
+// StreamRawLines is the exported sibling of streamRawLines so callers
+// outside this package (snapshot reads in server/console.go) can
+// dispatch on the right parser when a one-shot Logs read is in flight.
+func StreamRawLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
+	streamRawLines(ctx, r, out)
+}
+
+// StreamMultiplexedLines mirrors StreamRawLines for non-TTY containers.
+func StreamMultiplexedLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
+	streamMultiplexedLines(ctx, r, out)
 }
 
 // inspectConfigTty fetches the container's Config.Tty without

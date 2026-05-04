@@ -89,6 +89,51 @@ func (s *Server) stopAttachPump() {
 	}
 }
 
+// SnapshotLogs pulls the last `tail` lines from the docker log buffer
+// synchronously and pushes them through the bus + history. Used on
+// state transitions where the streaming pump may not have caught the
+// final output (e.g. container exits in <1s after start before the
+// pump's first FollowLogs call returns). Idempotent — pushing the
+// same line twice just means the browser sees a duplicate.
+func (s *Server) SnapshotLogs(ctx context.Context, tail int) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("server %s: snapshot panic: %v", s.uuid, r)
+		}
+	}()
+	dc := s.env.Docker()
+	rd, err := dc.Logs(ctx, s.env.ContainerName(), tail)
+	if err != nil {
+		return
+	}
+	defer rd.Close()
+	tty := false
+	if cfg, err := dc.InspectConfigTTY(ctx, s.env.ContainerName()); err == nil {
+		tty = cfg
+	}
+	out := make(chan docker.LogLine, 64)
+	go func() {
+		defer close(out)
+		if tty {
+			docker.StreamRawLines(ctx, rd, out)
+		} else {
+			docker.StreamMultiplexedLines(ctx, rd, out)
+		}
+	}()
+	for line := range out {
+		cleaned := cleanLine(line.Line)
+		if cleaned == "" {
+			continue
+		}
+		s.history.push(cleaned)
+		frame, _ := json.Marshal(map[string]any{
+			"event": "console output",
+			"args":  []any{cleaned},
+		})
+		s.bus.Publish(frame)
+	}
+}
+
 func (s *Server) runAttachPump(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
