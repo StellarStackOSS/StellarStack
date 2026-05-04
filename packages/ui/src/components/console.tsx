@@ -287,10 +287,12 @@ export const Console = ({
               <TextureButton
                 type="submit"
                 disabled={isOffline || !input.trim()}
-                variant="primary"
+                variant="dark"
+                size="sm"
                 aria-label="Send command"
+                className="h-7 w-7 shrink-0 [&>div]:h-full [&>div]:w-full [&>div]:px-0 [&>div]:py-0"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-3.5 w-3.5" />
               </TextureButton>
             )}
           </div>

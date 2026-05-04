@@ -28,7 +28,20 @@ import {
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { ConfirmDialog } from "@/components/ConfirmDialog"
-import { ServerSidebar } from "@/components/ServerSidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import {
+  Calendar03Icon,
+  ComputerTerminal02Icon,
+  DashboardSquare02Icon,
+  EthernetPortIcon,
+  FolderLibraryIcon,
+  HardDriveIcon,
+  Layers01Icon,
+  ListViewIcon,
+  Settings02Icon,
+  UserMultipleIcon,
+} from "@hugeicons/core-free-icons"
+import type { NavItem } from "@/components/NavMain.types"
 import { ServerLayoutContext } from "@/components/ServerLayoutContext"
 import { EulaModal } from "@/components/server/EulaModal"
 import { useConsole } from "@/hooks/useConsole"
@@ -115,6 +128,38 @@ export const ServerLayout = () => {
     : ""
   const currentRoute = routeMap[sub] ?? routeMap[""]
 
+  const navItems: NavItem[] = [
+    { title: t("sidebar.overview"), icon: DashboardSquare02Icon,
+      to: "/servers/$id", params: { id: server.id },
+      isActive: sub === "" || sub === "/" },
+    { title: t("sidebar.files"), icon: FolderLibraryIcon,
+      to: "/servers/$id/files", params: { id: server.id },
+      isActive: sub === "/files" },
+    { title: t("sidebar.backups"), icon: HardDriveIcon,
+      to: "/servers/$id/backups", params: { id: server.id },
+      isActive: sub === "/backups" },
+    { title: t("sidebar.schedules"), icon: Calendar03Icon,
+      to: "/servers/$id/schedules", params: { id: server.id },
+      isActive: sub === "/schedules" },
+    { title: t("sidebar.users"), icon: UserMultipleIcon,
+      to: "/servers/$id/users", params: { id: server.id },
+      isActive: sub === "/users" },
+    { title: t("sidebar.network"), icon: EthernetPortIcon,
+      to: "/servers/$id/network", params: { id: server.id },
+      isActive: sub === "/network" },
+    { title: t("sidebar.startup"), icon: ComputerTerminal02Icon,
+      to: "/servers/$id/startup", params: { id: server.id },
+      isActive: sub === "/startup" },
+    { title: t("sidebar.instances"), icon: Layers01Icon,
+      to: "/servers/$id/instances", params: { id: server.id },
+      isActive: sub === "/instances" },
+    { title: t("sidebar.activity"), icon: ListViewIcon,
+      to: "/servers/$id/activity", params: { id: server.id },
+      isActive: sub === "/activity" },
+    { title: t("sidebar.settings"), icon: Settings02Icon,
+      to: "/servers/$id/settings", params: { id: server.id },
+      isActive: sub === "/settings" },
+  ]
   const wsConnected = consoleHook.state === "open"
   const canStart = status === "offline"
   const canStop = status === "running" || status === "starting"
@@ -132,7 +177,10 @@ export const ServerLayout = () => {
       }
       className="h-svh"
     >
-      <ServerSidebar server={server} liveStatus={consoleHook.status} />
+      <AppSidebar
+        variant="inset"
+        nav={{ items: navItems, layoutId: "server-nav-pill" }}
+      />
       <SidebarInset className="overflow-hidden border border-white/10">
         <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-white/5 px-4">
           <SidebarTrigger className="-ml-1 text-zinc-500 hover:text-zinc-200" />

@@ -1,5 +1,12 @@
 import type { CSSProperties } from "react"
-import { Link, Outlet } from "@tanstack/react-router"
+import { Link, Outlet, useLocation } from "@tanstack/react-router"
+import {
+  AuditIcon,
+  CubeIcon,
+  ServerStack02Icon,
+  ServerStackIcon,
+  UserMultipleIcon,
+} from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -8,7 +15,8 @@ import {
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
 
-import { AdminSidebar } from "@/components/AdminSidebar"
+import { AdminBrandHeader, AppSidebar } from "@/components/AppSidebar"
+import type { NavItem } from "@/components/NavMain.types"
 import { useSession } from "@/lib/AuthClient"
 
 /**
@@ -23,6 +31,19 @@ import { useSession } from "@/lib/AuthClient"
  */
 export const AdminLayout = () => {
   const { data: session, isPending } = useSession()
+  const location = useLocation()
+  const items: NavItem[] = [
+    { title: "Nodes", icon: ServerStackIcon, to: "/admin/nodes",
+      isActive: location.pathname.startsWith("/admin/nodes") },
+    { title: "Servers", icon: ServerStack02Icon, to: "/admin/servers",
+      isActive: location.pathname.startsWith("/admin/servers") },
+    { title: "Blueprints", icon: CubeIcon, to: "/admin/blueprints",
+      isActive: location.pathname.startsWith("/admin/blueprints") },
+    { title: "Users", icon: UserMultipleIcon, to: "/admin/users",
+      isActive: location.pathname.startsWith("/admin/users") },
+    { title: "Audit Log", icon: AuditIcon, to: "/admin/audit",
+      isActive: location.pathname.startsWith("/admin/audit") },
+  ]
 
   if (isPending) {
     return (
@@ -56,7 +77,10 @@ export const AdminLayout = () => {
         } as CSSProperties
       }
     >
-      <AdminSidebar />
+      <AppSidebar
+        header={<AdminBrandHeader />}
+        nav={{ items, label: "Manage", layoutId: "admin-nav-pill" }}
+      />
       <SidebarInset>
         <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />

@@ -99,7 +99,7 @@ export const NavUser = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 6, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 420, damping: 32 }}
-              className="absolute bottom-full left-0 right-0 z-50 mb-1.5 overflow-hidden rounded-xl border border-white/8 bg-[#1e1f26] shadow-2xl"
+              className="absolute bottom-full left-0 right-0 z-50 mb-1.5 overflow-hidden rounded-xl border border-white/8 bg-[#0e0e0e] shadow-2xl"
             >
               <div className="flex items-center gap-2.5 border-b border-white/6 px-3 py-2.5">
                 <span

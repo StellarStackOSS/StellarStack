@@ -105,8 +105,9 @@
     /* card: #171717 */
     --card: #171717;
     --card-foreground: oklch(0.961 0.001 286);
-    /* popover: zinc-900 */
-    --popover: oklch(0.15 0.002 286);
+    /* popover: matches the CardInner surface (#0e0e0e) so popovers
+       read as a continuation of card content. */
+    --popover: #0e0e0e;
     --popover-foreground: oklch(0.961 0.001 286);
     /* primary button: near-white */
     --primary: oklch(0.922 0 0);
@@ -131,8 +132,9 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.22 0 0);
-    /* sidebar outer wrapper: #0c0d11 */
-    --sidebar: oklch(0.1598 0.0086 274.3);
+    /* sidebar outer wrapper: matches card / page (#171717) so the
+       whole shell is one tonal surface. */
+    --sidebar: #171717;
     --sidebar-foreground: oklch(0.961 0.001 286);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);

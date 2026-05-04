@@ -1,5 +1,9 @@
 import type { CSSProperties } from "react"
-import { Outlet } from "@tanstack/react-router"
+import { Outlet, useLocation } from "@tanstack/react-router"
+import {
+  Add01Icon,
+  ServerStack02Icon,
+} from "@hugeicons/core-free-icons"
 
 import {
   SidebarInset,
@@ -7,9 +11,26 @@ import {
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
 
-import { MainSidebar } from "@/components/MainSidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import type { NavItem } from "@/components/NavMain.types"
 
-export const UserAreaLayout = () => (
+export const UserAreaLayout = () => {
+  const location = useLocation()
+  const items: NavItem[] = [
+    {
+      title: "Servers",
+      icon: ServerStack02Icon,
+      to: "/dashboard",
+      isActive: location.pathname === "/dashboard",
+    },
+    {
+      title: "New server",
+      icon: Add01Icon,
+      to: "/servers/new",
+      isActive: location.pathname === "/servers/new",
+    },
+  ]
+  return (
   <SidebarProvider
     style={
       {
@@ -18,7 +39,7 @@ export const UserAreaLayout = () => (
       } as CSSProperties
     }
   >
-    <MainSidebar />
+    <AppSidebar nav={{ items }} />
     <SidebarInset>
       <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 border-b px-4">
         <SidebarTrigger className="-ml-1" />
@@ -30,4 +51,5 @@ export const UserAreaLayout = () => (
       </div>
     </SidebarInset>
   </SidebarProvider>
-)
+  )
+}
