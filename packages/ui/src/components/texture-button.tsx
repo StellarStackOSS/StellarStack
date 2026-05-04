@@ -22,6 +22,18 @@ const outerVariants = cva("transition-all duration-300 cursor-pointer", {
         "disabled:opacity-50 disabled:cursor-not-allowed border dark:border-[2px] border-black/10 dark:border-zinc-950 bg-gradient-to-b from-amber-300/90 to-amber-500 dark:from-amber-300/70 dark:to-amber-600 p-[1px]",
       accent:
         "disabled:opacity-50 disabled:cursor-not-allowed border dark:border-[2px] border-black/10 dark:border-zinc-950 bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px]",
+      // Spec'd by design: stroke gradient #4B4951 -> #313036, fill
+      // gradient #201E25 -> #323137, plus a y=2 blur-4 black/10 drop
+      // shadow and a 1px #0D0D0D outer halo. Outer wrapper carries the
+      // stroke + the halo; the inner div paints the fill.
+      dark:
+        "disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-b from-[#4B4951] to-[#313036] p-[1px] shadow-[0_2px_4px_rgba(0,0,0,0.10),0_0_0_1px_#0D0D0D]",
+      // Spec'd by design: stroke gradient #FDFDFD -> #F1F1F1 (fades to
+      // 0% alpha at the bottom edge so the button reads as raised),
+      // fill #E3E3E3 80%, drop shadows black/10 y=2 blur-4 + black/16
+      // 1px outer ring.
+      light:
+        "disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-b from-[#FDFDFD] to-[#F1F1F1]/0 p-[1px] shadow-[0_2px_4px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.16)]",
     },
     size: {
       sm: "rounded-[8px] text-xs",
@@ -53,6 +65,10 @@ const innerVariants = cva(
           "bg-gradient-to-b from-amber-400 to-amber-600 text-black/90 hover:from-amber-400/80 hover:to-amber-600/80",
         accent:
           "bg-gradient-to-b from-indigo-400 to-indigo-600 text-white/90 hover:from-indigo-400/70 hover:to-indigo-600/70",
+        dark:
+          "bg-gradient-to-b from-[#201E25] to-[#323137] text-white/95 hover:brightness-110",
+        light:
+          "bg-[#E3E3E3] text-zinc-900 hover:bg-[#EDEDED]",
       },
       size: {
         sm: "rounded-[7px] px-3 py-1 text-xs",
@@ -66,7 +82,7 @@ const innerVariants = cva(
 
 export interface TextureButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "destructive" | "minimal" | "ghost" | "success" | "warning" | "accent"
+  variant?: "primary" | "secondary" | "destructive" | "minimal" | "ghost" | "success" | "warning" | "accent" | "dark" | "light"
   size?: "sm" | "default" | "lg"
   asChild?: boolean
 }

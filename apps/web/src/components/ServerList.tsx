@@ -39,7 +39,7 @@ export const ServerList = ({
           <Link
             to="/servers/$id"
             params={{ id: server.id }}
-            className="group relative flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] px-6 py-5 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-[1.005] hover:border-zinc-200/20"
+            className="group relative flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200/10 bg-[#0e0e0e] px-6 py-5 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-[1.005] hover:border-zinc-200/20"
           >
             <div>
               <div className="flex items-center gap-3">

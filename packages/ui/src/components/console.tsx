@@ -199,7 +199,7 @@ export const Console = ({
       <div
         className={cn(
           "relative flex min-h-0 flex-1 flex-col rounded-lg border transition-colors",
-          "border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
+          "border-zinc-200/10 bg-[#0e0e0e] shadow-lg shadow-black/20",
           isOffline && "opacity-60",
           className
         )}

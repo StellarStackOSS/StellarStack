@@ -98,12 +98,12 @@
 }
 
 .dark {
-    /* page/content background: #000000 */
-    --background: oklch(0 0 0);
+    /* page/content background: #0e0e0e */
+    --background: #0e0e0e;
     /* primary text: zinc-100 */
     --foreground: oklch(0.961 0.001 286);
-    /* card: same as sidebar #0c0d11 */
-    --card: oklch(0.1598 0.0086 274.3);
+    /* card: #171717 */
+    --card: #171717;
     --card-foreground: oklch(0.961 0.001 286);
     /* popover: zinc-900 */
     --popover: oklch(0.15 0.002 286);

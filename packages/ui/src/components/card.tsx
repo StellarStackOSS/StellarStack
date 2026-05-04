@@ -81,7 +81,7 @@ function CardInner({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-inner"
       className={cn(
-        "flex-1 rounded-lg border border-zinc-200/10 bg-gradient-to-b from-[#141414] via-[#0f0f0f] to-[#0a0a0a] shadow-lg shadow-black/20",
+        "flex-1 rounded-lg border border-zinc-200/10 bg-[#0e0e0e] shadow-lg shadow-black/20",
         className
       )}
       {...props}

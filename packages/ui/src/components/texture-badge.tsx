@@ -12,6 +12,8 @@ const outerVariants = cva("inline-block", {
       destructive: "bg-gradient-to-b from-red-300/90 to-red-500 dark:from-red-300/90 dark:to-red-500 p-[1px]",
       accent:    "bg-gradient-to-b from-indigo-300/90 to-indigo-500 dark:from-indigo-200/70 dark:to-indigo-500 p-[1px]",
       ghost:     "border border-transparent bg-transparent p-[1px]",
+      dark:      "bg-gradient-to-b from-[#4B4951] to-[#313036] p-[1px] shadow-[0_2px_4px_rgba(0,0,0,0.10),0_0_0_1px_#0D0D0D]",
+      light:     "bg-gradient-to-b from-[#FDFDFD] to-[#F1F1F1]/0 p-[1px] shadow-[0_2px_4px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.16)]",
     },
     size: {
       sm:      "rounded-[4px]",
@@ -34,6 +36,8 @@ const innerVariants = cva(
         destructive: "bg-gradient-to-b from-red-400/60 to-red-500/60 text-white/90",
         accent:      "bg-gradient-to-b from-indigo-400 to-indigo-600 text-white/90",
         ghost:       "bg-transparent text-zinc-400",
+        dark:        "bg-gradient-to-b from-[#201E25] to-[#323137] text-white/95",
+        light:       "bg-[#E3E3E3] text-zinc-900",
       },
       size: {
         sm:      "rounded-[3px]",
