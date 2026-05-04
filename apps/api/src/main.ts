@@ -22,6 +22,7 @@ import { buildBackupsRoute } from "@/routes/Backups"
 import { buildBlueprintsRoute } from "@/routes/Blueprints"
 import { buildSchedulesRoute } from "@/routes/Schedules"
 import { buildSubusersRoute } from "@/routes/Subusers"
+import { buildTransfersRoute } from "@/routes/Transfers"
 import { buildMeRoute } from "@/routes/Me"
 import {
   buildNodesRoute,
@@ -90,6 +91,7 @@ app.route("/servers", buildServerAllocationsRoute({ auth, db }))
 app.route("/servers", buildSubusersRoute({ auth, db }))
 app.route("/servers", buildActivityRoute({ auth, db }))
 app.route("/servers", buildSchedulesRoute({ auth, db }))
+app.route("/servers", buildTransfersRoute({ auth, db }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
 app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 
