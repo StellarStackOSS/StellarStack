@@ -163,7 +163,7 @@ export const buildServersRoute = (params: {
       const id = c.req.param("id")
       const user = c.get("user")
       const access = await loadServerAccess(db, user, id)
-      const [variables, blueprint] = await Promise.all([
+      const [serverVars, blueprint] = await Promise.all([
         db
           .select()
           .from(serverVariablesTable)
@@ -173,17 +173,38 @@ export const buildServersRoute = (params: {
             variables: blueprintsTable.variables,
             startupCommand: blueprintsTable.startupCommand,
             dockerImages: blueprintsTable.dockerImages,
+            features: blueprintsTable.features,
           })
           .from(blueprintsTable)
           .where(eq(blueprintsTable.id, access.server.blueprintId))
           .limit(1)
           .then((rows) => rows[0] ?? null),
       ])
+      // Merge the blueprint variable schema with the server's persisted
+      // values into the shape useServerVariables expects (key, name,
+      // description, default, userViewable, userEditable, rules,
+      // currentValue). The frontend StartupTab renders nothing without
+      // this merge — the blueprint's startupCommand and dockerImages
+      // also need to be lifted to the top of the response.
+      const valueByKey = new Map<string, string>()
+      for (const row of serverVars) valueByKey.set(row.variableKey, row.value)
+      const merged = (blueprint?.variables ?? []).map((v) => ({
+        key: v.key,
+        name: v.name,
+        description: v.description,
+        default: v.default,
+        userViewable: v.userViewable,
+        userEditable: v.userEditable,
+        rules: v.rules,
+        currentValue: valueByKey.get(v.key) ?? v.default,
+      }))
       return c.json({
-        variables,
-        startupExtra: access.server.startupExtra,
+        variables: merged,
+        startupCommand: blueprint?.startupCommand ?? "",
         dockerImage: access.server.dockerImage,
-        blueprint,
+        startupExtra: access.server.startupExtra ?? "",
+        dockerImages: blueprint?.dockerImages ?? {},
+        features: blueprint?.features ?? {},
       })
     })
     .patch("/:id/variables", async (c) => {
