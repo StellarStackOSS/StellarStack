@@ -477,7 +477,16 @@ type LogLine struct {
 	Line   string
 }
 
+// FollowLogs streams container stdout+stderr forever. Auto-detects
+// TTY-mode by inspecting the container first: TTY containers return a
+// raw byte stream; non-TTY containers use Docker's 8-byte-header
+// multiplexed format. Pelican-style yolks images run with TTY=true so
+// the entrypoint can render its prompt with ANSI escapes.
 func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, error) {
+	tty := false
+	if cfg, err := c.inspectConfigTty(ctx, name); err == nil {
+		tty = cfg
+	}
 	q := url.Values{}
 	q.Set("stdout", "1")
 	q.Set("stderr", "1")
@@ -498,33 +507,95 @@ func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, e
 	go func() {
 		defer close(out)
 		defer resp.Body.Close()
-		header := make([]byte, 8)
-		for {
-			if _, err := io.ReadFull(resp.Body, header); err != nil {
+		if tty {
+			streamRawLines(ctx, resp.Body, out)
+			return
+		}
+		streamMultiplexedLines(ctx, resp.Body, out)
+	}()
+	return out, nil
+}
+
+// inspectConfigTty fetches the container's Config.Tty without
+// pulling the rest of the inspect payload through Inspect (which
+// trims the field). Best-effort; failures default to non-TTY.
+func (c *Client) inspectConfigTty(ctx context.Context, name string) (bool, error) {
+	resp, err := c.do(ctx, http.MethodGet, "/containers/"+name+"/json", nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return false, errorFromResponse(resp, "inspect tty")
+	}
+	var raw struct {
+		Config struct {
+			Tty bool
+		}
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return false, err
+	}
+	return raw.Config.Tty, nil
+}
+
+func streamMultiplexedLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
+	header := make([]byte, 8)
+	for {
+		if _, err := io.ReadFull(r, header); err != nil {
+			return
+		}
+		size := int(uint32(header[4])<<24 | uint32(header[5])<<16 | uint32(header[6])<<8 | uint32(header[7]))
+		if size <= 0 {
+			continue
+		}
+		payload := make([]byte, size)
+		if _, err := io.ReadFull(r, payload); err != nil {
+			return
+		}
+		stream := "stdout"
+		if header[0] == 2 {
+			stream = "stderr"
+		}
+		for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
+			select {
+			case <-ctx.Done():
 				return
+			case out <- LogLine{Stream: stream, Line: line}:
 			}
-			size := int(uint32(header[4])<<24 | uint32(header[5])<<16 | uint32(header[6])<<8 | uint32(header[7]))
-			if size <= 0 {
-				continue
-			}
-			payload := make([]byte, size)
-			if _, err := io.ReadFull(resp.Body, payload); err != nil {
-				return
-			}
-			stream := "stdout"
-			if header[0] == 2 {
-				stream = "stderr"
-			}
-			for _, line := range strings.Split(strings.TrimRight(string(payload), "\n"), "\n") {
-				select {
-				case <-ctx.Done():
-					return
-				case out <- LogLine{Stream: stream, Line: line}:
+		}
+	}
+}
+
+func streamRawLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
+	buf := make([]byte, 8192)
+	leftover := ""
+	for {
+		n, err := r.Read(buf)
+		if n > 0 {
+			data := leftover + string(buf[:n])
+			lastNL := strings.LastIndex(data, "\n")
+			if lastNL < 0 {
+				leftover = data
+			} else {
+				chunk := data[:lastNL]
+				leftover = data[lastNL+1:]
+				for _, line := range strings.Split(chunk, "\n") {
+					if line == "" {
+						continue
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case out <- LogLine{Stream: "stdout", Line: line}:
+					}
 				}
 			}
 		}
-	}()
-	return out, nil
+		if err != nil {
+			return
+		}
+	}
 }
 
 // StatsSnapshot is the parsed sample we emit on the WS stats event. cpu
