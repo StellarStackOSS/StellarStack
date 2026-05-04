@@ -13,9 +13,12 @@ import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
+import { buildActivityRoute } from "@/routes/Activity"
 import { buildAdminServersRoute } from "@/routes/AdminServers"
+import { buildServerAllocationsRoute } from "@/routes/Allocations"
 import { buildBackupsRoute } from "@/routes/Backups"
 import { buildBlueprintsRoute } from "@/routes/Blueprints"
+import { buildSubusersRoute } from "@/routes/Subusers"
 import { buildMeRoute } from "@/routes/Me"
 import {
   buildNodesRoute,
@@ -75,6 +78,12 @@ app.route(
 // a layered middleware chain inside buildBlueprintsRoute.
 app.route("/admin/blueprints", buildBlueprintsRoute({ auth, db }))
 app.route("/backups", buildBackupsRoute({ auth, db }))
+// Sibling-mount of allocation handlers: their paths start with
+// /:serverId/allocations[...] which doesn't collide with any existing
+// `/servers/:id/...` handler in buildServersRoute.
+app.route("/servers", buildServerAllocationsRoute({ auth, db }))
+app.route("/servers", buildSubusersRoute({ auth, db }))
+app.route("/servers", buildActivityRoute({ auth, db }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
 app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 

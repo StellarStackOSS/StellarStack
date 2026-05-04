@@ -296,6 +296,61 @@ export const buildServersRoute = (params: {
       await statusCache.set(id, "offline")
       return c.json({ ok: true })
     })
+    .post("/:id/files-credentials", async (c) => {
+      // Alias matching the existing useFiles hook contract: returns
+      // `{ token, expiresAt, baseUrl }` (no wsUrl). The token carries
+      // every files.* scope the user has on this server.
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      const node = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, access.server.nodeId))
+          .limit(1)
+      )[0]
+      if (node === undefined) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      if (node.daemonPublicKey === null) {
+        throw new ApiException("nodes.unreachable", {
+          status: 503,
+          params: { node: node.name },
+        })
+      }
+      const allowedSet = new Set<DaemonJwtScope>(
+        access.permissions as DaemonJwtScope[]
+      )
+      const filesScopes: DaemonJwtScope[] = [
+        "files.read",
+        "files.write",
+        "files.delete",
+      ]
+      const granted: DaemonJwtScope[] = filesScopes.filter(
+        (s) => access.role === "owner" || access.role === "admin" || allowedSet.has(s)
+      )
+      if (granted.length === 0) {
+        throw new ApiException("permissions.denied", {
+          status: 403,
+          params: { statement: "files.read" },
+        })
+      }
+      const minted = mintDaemonToken({
+        signingKeyHex: node.daemonPublicKey,
+        userId: user.id,
+        serverId: access.server.id,
+        nodeId: node.id,
+        scope: granted,
+        ttlSeconds: 600,
+      })
+      const httpScheme = node.scheme === "https" ? "https" : "http"
+      return c.json({
+        token: minted.token,
+        expiresAt: minted.expiresAt.toISOString(),
+        baseUrl: `${httpScheme}://${node.fqdn}:${node.daemonPort}/api/servers/${access.server.id}/files`,
+      })
+    })
     .post("/:id/credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
