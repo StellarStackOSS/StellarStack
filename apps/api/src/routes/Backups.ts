@@ -35,7 +35,7 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
 
   return new Hono<{ Variables: AuthVariables }>()
     .use("*", requireSession)
-    .get("/:serverId", async (c) => {
+    .get("/:serverId/backups", async (c) => {
       const serverId = c.req.param("serverId")
       await assertAccess(db, c.get("user"), serverId)
       const rows = await db
@@ -44,7 +44,7 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
         .where(eq(backupsTable.serverId, serverId))
       return c.json({ backups: rows })
     })
-    .post("/:serverId", async (c) => {
+    .post("/:serverId/backups", async (c) => {
       const serverId = c.req.param("serverId")
       await assertAccess(db, c.get("user"), serverId)
       const parsed = createBackupSchema.safeParse(await c.req.json())
@@ -60,7 +60,7 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
         .limit(1)
       return c.json({ backup: row })
     })
-    .post("/:serverId/:backupId/restore", async (c) => {
+    .post("/:serverId/backups/:backupId/restore", async (c) => {
       const serverId = c.req.param("serverId")
       const backupId = c.req.param("backupId")
       await assertAccess(db, c.get("user"), serverId)
@@ -178,7 +178,7 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
         .where(eq(backupDestinationsTable.serverId, serverId))
       return c.json({ ok: true })
     })
-    .delete("/:serverId/:backupId", async (c) => {
+    .delete("/:serverId/backups/:backupId", async (c) => {
       const serverId = c.req.param("serverId")
       const backupId = c.req.param("backupId")
       await assertAccess(db, c.get("user"), serverId)

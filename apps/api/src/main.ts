@@ -86,7 +86,10 @@ app.route("/admin/users", buildAdminUsersRoute({ auth, db }))
 // list them) but mutations require admin. The route enforces this via
 // a layered middleware chain inside buildBlueprintsRoute.
 app.route("/admin/blueprints", buildBlueprintsRoute({ auth, db }))
-app.route("/backups", buildBackupsRoute({ auth, db }))
+// Backups paths are keyed off /:serverId so mount under /servers —
+// full URLs become /servers/:id/backups[...] and /servers/:id/destination
+// which is what the existing useBackups hook hits.
+app.route("/servers", buildBackupsRoute({ auth, db }))
 // Sibling-mount of allocation handlers: their paths start with
 // /:serverId/allocations[...] which doesn't collide with any existing
 // `/servers/:id/...` handler in buildServersRoute.
