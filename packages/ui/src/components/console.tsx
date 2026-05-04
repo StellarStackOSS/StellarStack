@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Send } from "lucide-react"
 
 import { cn } from "@workspace/ui/lib/utils"
+import { CardTitle } from "@workspace/ui/components/card"
 import { Input } from "@workspace/ui/components/input"
 import { TextureButton } from "@workspace/ui/components/texture-button"
 import { ConsoleScrollContext } from "@workspace/ui/components/console-scroll-context"
@@ -194,33 +195,37 @@ export const Console = ({
 
   return (
     <div className={cn("flex flex-col rounded-lg border border-white/5 bg-card p-1 pt-2", wrapperClassName)}>
-      <div className="shrink-0 pb-1 pl-2 text-xs opacity-50">CONSOLE</div>
+      {/* Card-style header: title on the left, line counter (and the
+          Scroll-to-bottom affordance when off-bottom) on the right.
+          The inner top strip + border are gone; the fade-overlay at
+          the top of the scroll region still anchors the upper edge. */}
+      <div className="shrink-0 flex items-center justify-between gap-2 px-2 pb-1">
+        <CardTitle>Console</CardTitle>
+        <div className="flex items-center gap-2 text-xs">
+          {!autoScroll && (
+            <button
+              onClick={() => {
+                setAutoScroll(true)
+                scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+              }}
+              className="cursor-pointer text-zinc-500 transition-colors hover:text-zinc-300"
+            >
+              Scroll to bottom
+            </button>
+          )}
+          <span className="text-zinc-600">{display.length} lines</span>
+        </div>
+      </div>
 
       <div
         className={cn(
-          "relative flex min-h-0 flex-1 flex-col rounded-lg border transition-colors",
+          "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border transition-colors",
           "border-zinc-200/10 bg-[#0e0e0e] shadow-lg shadow-black/20",
           isOffline && "opacity-60",
           className
         )}
         onClick={handleConsoleClick}
       >
-        <div className="flex items-center justify-end border-b border-zinc-200/10 px-4 py-2">
-          <div className="flex items-center gap-2">
-            {!autoScroll && (
-              <button
-                onClick={() => {
-                  setAutoScroll(true)
-                  scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-                }}
-                className="cursor-pointer text-xs text-zinc-500 transition-colors hover:text-zinc-300"
-              >
-                Scroll to bottom
-              </button>
-            )}
-            <span className="text-xs text-zinc-600">{display.length} lines</span>
-          </div>
-        </div>
 
         <ConsoleScrollContext.Provider value={scrollSignal}>
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
