@@ -35,9 +35,11 @@ export const MemoryStatCard = ({
       ? (latest.memoryBytes / latest.memoryLimitBytes) * 100
       : null
   const color = usageColor(pct ?? 0)
-  const data = history.map((s) =>
-    s.memoryLimitBytes > 0 ? (s.memoryBytes / s.memoryLimitBytes) * 100 : 0
-  )
+  // Plot raw bytes with the Y domain pinned to the configured limit
+  // so the line scales identically to the percent-view, but the
+  // tooltip can format the underlying value in MB / GB.
+  const data = history.map((s) => s.memoryBytes)
+  const limit = latest?.memoryLimitBytes ?? 0
 
   return (
     <Card>
@@ -51,7 +53,15 @@ export const MemoryStatCard = ({
           </div>
         </div>
         <div className="h-16 w-28 shrink-0">
-          <Sparkline data={data} color={color} height={64} />
+          <Sparkline
+            data={data}
+            color={color}
+            height={64}
+            minDomain={0}
+            maxDomain={limit > 0 ? limit : 1}
+            label="Memory"
+            formatValue={formatBytes}
+          />
         </div>
       </CardInner>
     </Card>

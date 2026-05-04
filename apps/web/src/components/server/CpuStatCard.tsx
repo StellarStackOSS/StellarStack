@@ -43,7 +43,13 @@ export const CpuStatCard = ({
           </div>
         </div>
         <div className="h-16 w-28 shrink-0">
-          <Sparkline data={data} color={color} height={64} />
+          <Sparkline
+            data={data}
+            color={color}
+            height={64}
+            label="CPU"
+            formatValue={(v) => `${v.toFixed(1)}%`}
+          />
         </div>
       </CardInner>
     </Card>

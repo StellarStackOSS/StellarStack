@@ -67,6 +67,9 @@ export const NetworkStatCard = ({
             height={64}
             minDomain={0}
             maxDomain={maxSpeed}
+            label1="↓ Rx"
+            label2="↑ Tx"
+            formatValue={formatSpeed}
           />
         </div>
       </CardInner>

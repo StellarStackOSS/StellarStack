@@ -1,5 +1,12 @@
 import { useId } from "react"
-import { Area, AreaChart, ComposedChart, ResponsiveContainer, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  YAxis,
+} from "recharts"
 
 type SparklineProps = {
   data: number[]
@@ -7,6 +14,8 @@ type SparklineProps = {
   height?: number
   minDomain?: number
   maxDomain?: number
+  formatValue?: (v: number) => string
+  label?: string
 }
 
 type DualSparklineProps = {
@@ -17,9 +26,27 @@ type DualSparklineProps = {
   height?: number
   minDomain?: number
   maxDomain?: number
+  formatValue?: (v: number) => string
+  label1?: string
+  label2?: string
 }
 
 const DOT_COLOR = "rgba(255, 255, 255, 0.15)"
+
+const tooltipContentStyle: React.CSSProperties = {
+  background: "#0e0e0e",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  borderRadius: 6,
+  padding: "4px 8px",
+  fontSize: 11,
+  color: "#e4e4e7",
+  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+}
+
+const tooltipCursor = {
+  stroke: "rgba(255, 255, 255, 0.15)",
+  strokeDasharray: "2 2",
+}
 
 export const Sparkline = ({
   data,
@@ -27,6 +54,8 @@ export const Sparkline = ({
   height = 32,
   minDomain = 0,
   maxDomain = 100,
+  formatValue = (v) => v.toFixed(1),
+  label,
 }: SparklineProps) => {
   const id = useId()
   const gradientId = `sg-${id}`
@@ -53,6 +82,13 @@ export const Sparkline = ({
               </linearGradient>
             </defs>
             <YAxis domain={[minDomain, maxDomain]} hide type="number" />
+            <Tooltip
+              cursor={tooltipCursor}
+              contentStyle={tooltipContentStyle}
+              labelFormatter={() => ""}
+              formatter={(value: number) => [formatValue(value), label ?? ""]}
+              wrapperStyle={{ outline: "none" }}
+            />
             <Area
               type="monotone"
               dataKey="value"
@@ -78,6 +114,9 @@ export const DualSparkline = ({
   height = 32,
   minDomain = 0,
   maxDomain = 100,
+  formatValue = (v) => v.toFixed(1),
+  label1 = "Series 1",
+  label2 = "Series 2",
 }: DualSparklineProps) => {
   const id = useId()
   const g1 = `dsg1-${id}`
@@ -109,6 +148,16 @@ export const DualSparkline = ({
               </linearGradient>
             </defs>
             <YAxis domain={[minDomain, maxDomain]} hide type="number" />
+            <Tooltip
+              cursor={tooltipCursor}
+              contentStyle={tooltipContentStyle}
+              labelFormatter={() => ""}
+              formatter={(value: number, name) => [
+                formatValue(value),
+                name === "v1" ? label1 : label2,
+              ]}
+              wrapperStyle={{ outline: "none" }}
+            />
             <Area
               type="monotone"
               dataKey="v1"

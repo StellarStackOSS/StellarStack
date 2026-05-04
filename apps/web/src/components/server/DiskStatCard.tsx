@@ -67,6 +67,9 @@ export const DiskStatCard = ({
             height={64}
             minDomain={0}
             maxDomain={maxSpeed}
+            label1="Read"
+            label2="Write"
+            formatValue={formatSpeed}
           />
         </div>
       </CardInner>
