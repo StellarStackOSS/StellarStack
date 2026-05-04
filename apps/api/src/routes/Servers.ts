@@ -16,6 +16,7 @@ import type { DaemonJwtScope } from "@workspace/shared/jwt.types"
 
 import type { Auth } from "@/auth"
 import type { Env } from "@/env"
+import { writeAudit } from "@/lib/Audit"
 import type { InstallRunner } from "@/lib/InstallRunner"
 import type { StatusCache } from "@/lib/StatusCache"
 import { mintDaemonToken } from "@/lib/Tokens"
@@ -387,6 +388,14 @@ export const buildServersRoute = (params: {
 
       // Fire the install in the background; client polls /servers/:id/install.
       void installRunner.enqueue(inserted.id)
+      void writeAudit({
+        db,
+        actorId: user.id,
+        action: "servers.created",
+        targetType: "server",
+        targetId: inserted.id,
+        metadata: { name: inserted.name },
+      })
       return c.json({ server: inserted })
     })
     .get("/:id/install", async (c) => {
@@ -430,6 +439,13 @@ export const buildServersRoute = (params: {
         await tx.delete(serversTable).where(eq(serversTable.id, id))
       })
       await statusCache.set(id, "offline")
+      void writeAudit({
+        db,
+        actorId: user.id,
+        action: "servers.deleted",
+        targetType: "server",
+        targetId: id,
+      })
       return c.json({ ok: true })
     })
     .post("/:id/files-credentials", async (c) => {
