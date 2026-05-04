@@ -37,7 +37,13 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
-import { Card } from "@workspace/ui/components/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Input } from "@workspace/ui/components/input"
 import {
@@ -747,7 +753,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 50 } },
+    initialState: { pagination: { pageSize: 10 } },
     enableRowSelection: true,
     autoResetPageIndex: true,
   })
@@ -756,7 +762,12 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   const segments = pathSegments(path)
 
   return (
-    <Card className="gap-0 p-0 rounded-xl">
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{t("files.heading", { defaultValue: "File manager" })}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <CardInner className="flex flex-col gap-0 overflow-hidden p-0">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         {/* Breadcrumb */}
@@ -1093,16 +1104,18 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
         </Table>
       </div>
 
-      {/* Pagination */}
-      {table.getPageCount() > 1 && (
+      {/* Pagination — always shown so the chrome is consistent across
+          short and long directories. */}
+      {(() => {
+        const pageCount = Math.max(1, table.getPageCount())
+        const filteredCount = table.getFilteredRowModel().rows.length
+        const pageIndex = table.getState().pagination.pageIndex
+        const pageSize = table.getState().pagination.pageSize
+        return (
         <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <span>
-            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}–
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            of {table.getFilteredRowModel().rows.length}
+            {filteredCount === 0 ? 0 : pageIndex * pageSize + 1}–
+            {Math.min((pageIndex + 1) * pageSize, filteredCount)} of {filteredCount}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -1114,7 +1127,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               ‹ Prev
             </Button>
             <span className="px-1">
-              {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+              {pageIndex + 1} / {pageCount}
             </span>
             <Button
               size="xs"
@@ -1126,7 +1139,8 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             </Button>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* SFTP credentials */}
       {sftp.data !== undefined ? (
@@ -1164,6 +1178,8 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         onOpenChange={(open) => { if (!open) setMoveTarget(null) }}
         onMove={handleMoveConfirm}
       />
+        </CardInner>
+      </CardContent>
     </Card>
   )
 }

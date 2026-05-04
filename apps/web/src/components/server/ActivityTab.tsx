@@ -10,6 +10,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
+  CardContent,
   CardHeader,
   CardInner,
   CardTitle,
@@ -117,16 +118,12 @@ export const ActivityTab = () => {
         </CardInner>
       </Card>
 
-      {/* Mirrors the FileManager Card: gap-0 p-0 rounded-xl outer, an
-          internal header strip, the table in an overflow-auto region,
-          and the pagination strip pinned to the bottom — all sharing
-          the same rounded border so the table reads as one panel. */}
-      <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-xl p-0">
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-medium">
-            {t("activity.history_heading")}
-          </span>
-        </div>
+      <Card className="flex min-h-0 w-full flex-1 flex-col">
+        <CardHeader>
+          <CardTitle>{t("activity.history_heading")}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex min-h-0 flex-1 flex-col">
+          <CardInner className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
         <div className="min-h-0 flex-1 overflow-auto">
           <Table>
             <TableHeader>
@@ -216,6 +213,8 @@ export const ActivityTab = () => {
             </Button>
           </div>
         </div>
+          </CardInner>
+        </CardContent>
       </Card>
     </div>
   )
