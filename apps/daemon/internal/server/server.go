@@ -62,6 +62,14 @@ type Config struct {
 	CPUPercent     int64
 	PortMappings   []docker.PortMapping
 	BindMount      string
+	StartupDone    []*regexp.Regexp
+	ConfigFiles    []ConfigFilePatch
+}
+
+type ConfigFilePatch struct {
+	Path    string
+	Parser  string
+	Patches map[string]string
 }
 
 // New constructs a Server for the supplied uuid. Container name follows
@@ -170,6 +178,28 @@ func (s *Server) scanLineForErrors(line string) {
 	if eulaPattern.MatchString(line) {
 		s.publishDaemon("Server failed to start because the EULA has not been accepted. Accept it from the panel to continue.")
 		s.publishDaemonError("eula-required")
+	}
+	s.scanLineForReady(line)
+}
+
+// scanLineForReady flips Starting → Running the first time a console
+// line matches one of the blueprint's startup-done patterns. No-op
+// outside Starting and when no patterns are configured.
+func (s *Server) scanLineForReady(line string) {
+	if s.env.State() != environment.StateStarting {
+		return
+	}
+	cfg := s.Config()
+	if len(cfg.StartupDone) == 0 {
+		return
+	}
+	bytes := []byte(line)
+	for _, re := range cfg.StartupDone {
+		if re.Match(bytes) {
+			log.Printf("server %s: startup-done match (%q); state -> running", s.uuid, re.String())
+			s.env.ForceState(environment.StateRunning)
+			return
+		}
 	}
 }
 
@@ -289,6 +319,9 @@ func (s *Server) doStart(ctx context.Context) error {
 	s.resetErrors()
 	s.env.MarkStarting()
 	s.publishDaemon("Updating process configuration files...")
+	if cfg.BindMount != "" {
+		s.applyConfigFiles(cfg.BindMount, cfg.Environment)
+	}
 
 	containerName := s.env.ContainerName()
 	dc := s.env.Docker()
@@ -366,13 +399,24 @@ func (s *Server) doStart(ctx context.Context) error {
 		}
 	}
 
-	// Note: flip to running the moment Docker reports the
-	// container is up. ForceState (vs MarkRunning) emits even when the
-	// previous cached state already happened to be running — covers
-	// reconcile-then-restart where the env's prev state matched the
-	// new state and the listener would otherwise no-op.
-	s.env.ForceState(environment.StateRunning)
-	log.Printf("server %s: state -> running (container started)", s.uuid)
+	// Stream stats as soon as the container is up — even while we're
+	// still in `starting` waiting on the blueprint's done pattern.
+	// startStatsPump cancels any in-flight stream first, so the later
+	// listener-side call on the running transition is a no-op.
+	s.startStatsPump()
+
+	// Standard readiness: stay in `starting` until the blueprint's
+	// startup-done patterns match a console line. The console pump
+	// runs scanLineForReady on every line; first match flips Starting
+	// → Running. If no patterns are configured fall back to flipping
+	// the moment Docker reports up so blueprints without a lifecycle
+	// block don't sit in `starting` forever.
+	if len(cfg.StartupDone) == 0 {
+		s.env.ForceState(environment.StateRunning)
+		log.Printf("server %s: state -> running (no startup probes configured)", s.uuid)
+	} else {
+		log.Printf("server %s: container started; waiting for startup-done match (%d patterns)", s.uuid, len(cfg.StartupDone))
+	}
 
 	// Watch for unexpected exit. When this fires while the watcher
 	// hasn't been replaced (i.e. nobody pressed stop), flip to offline.

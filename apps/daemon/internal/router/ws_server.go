@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,8 +17,33 @@ import (
 	"github.com/stellarstack/daemon/internal/docker"
 	"github.com/stellarstack/daemon/internal/environment"
 	"github.com/stellarstack/daemon/internal/jwt"
+	"github.com/stellarstack/daemon/internal/panel"
 	"github.com/stellarstack/daemon/internal/server"
 )
+
+// compileDonePattern lifts a wire DonePattern into a Go regexp. The
+// substring case is wrapped in QuoteMeta so it matches verbatim. Bad
+// patterns are skipped (returns false) — we never want a typo in a
+// blueprint to brick the daemon's start path.
+func compileDonePattern(p panel.DonePattern) (*regexp.Regexp, bool) {
+	switch p.Type {
+	case "regex":
+		expr := p.Value
+		if p.Flags != "" {
+			expr = "(?" + p.Flags + ")" + expr
+		}
+		re, err := regexp.Compile(expr)
+		if err != nil {
+			log.Printf("invalid startup-done regex %q: %v", p.Value, err)
+			return nil, false
+		}
+		return re, true
+	case "substring":
+		return regexp.MustCompile(regexp.QuoteMeta(p.Value)), true
+	default:
+		return nil, false
+	}
+}
 
 // filepathServerDir is the per-server bind mount root, computed off
 // the daemon-wide data dir.
@@ -250,6 +276,22 @@ func (r *Router) handleSetState(ctx context.Context, conn *websocket.Conn, srv *
 					ContainerPort: p.ContainerPort,
 				})
 			}
+			done := make([]*regexp.Regexp, 0, len(cfg.StartupDone))
+			for _, p := range cfg.StartupDone {
+				re, ok := compileDonePattern(p)
+				if !ok {
+					continue
+				}
+				done = append(done, re)
+			}
+			patches := make([]server.ConfigFilePatch, 0, len(cfg.ConfigFiles))
+			for _, f := range cfg.ConfigFiles {
+				patches = append(patches, server.ConfigFilePatch{
+					Path:    f.Path,
+					Parser:  f.Parser,
+					Patches: f.Patches,
+				})
+			}
 			srv.SetConfig(server.Config{
 				DockerImage:    cfg.DockerImage,
 				StartupCommand: cfg.StartupCommand,
@@ -262,6 +304,8 @@ func (r *Router) handleSetState(ctx context.Context, conn *websocket.Conn, srv *
 				CPUPercent:   cfg.CPULimitPercent,
 				PortMappings: ports,
 				BindMount:    filepathServerDir(srv.UUID()),
+				StartupDone:  done,
+				ConfigFiles:  patches,
 			})
 		}
 		if err := srv.HandlePower(runCtx, server.PowerAction(action)); err != nil {

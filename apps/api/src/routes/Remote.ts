@@ -133,6 +133,30 @@ export const buildRemoteRoute = (params: {
       for (const v of blueprint.variables) env_[v.key] = v.default
       for (const r of variableRows) env_[r.variableKey] = r.value
       env_["SERVER_MEMORY"] = String(row.server.memoryLimitMb)
+      // Resolve the primary allocation's port and expose as SERVER_PORT
+      // (and SERVER_IP) — blueprints reference these in configFiles
+      // patches like `server-port: "{{SERVER_PORT}}"`.
+      const primary =
+        row.server.primaryAllocationId !== null
+          ? allocations.find((a) => a.id === row.server.primaryAllocationId)
+          : undefined
+      const fallback = allocations[0]
+      const primaryPort = primary?.port ?? fallback?.port
+      const primaryIp = primary?.ip ?? fallback?.ip
+      if (primaryPort !== undefined) env_["SERVER_PORT"] = String(primaryPort)
+      if (primaryIp !== undefined) env_["SERVER_IP"] = String(primaryIp)
+      // Console-strategy starting probes → patterns the daemon scans
+      // for to flip Starting → Running. Other strategies (tcp/http/exec)
+      // aren't implemented on the daemon side yet so we drop them here.
+      const startupDone: Array<{ type: "regex" | "substring"; value: string; flags: string }> = []
+      for (const p of blueprint.lifecycle?.starting?.probes ?? []) {
+        if (p.strategy !== "console") continue
+        if (p.match.type === "regex") {
+          startupDone.push({ type: "regex", value: p.match.pattern, flags: p.match.flags ?? "" })
+        } else {
+          startupDone.push({ type: "substring", value: p.match.value, flags: "" })
+        }
+      }
       const startupCommand = row.server.startupExtra
         ? `${blueprint.startupCommand} ${row.server.startupExtra}`
         : blueprint.startupCommand
@@ -157,6 +181,8 @@ export const buildRemoteRoute = (params: {
           hostPort: a.port,
           containerPort: a.port,
         })),
+        startupDone,
+        configFiles: blueprint.configFiles ?? [],
       })
     })
     .post("/heartbeat", async (c) => {

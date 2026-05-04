@@ -85,6 +85,28 @@ type ServerConfig struct {
 	MemoryLimitMb   int64             `json:"memoryLimitMb"`
 	CPULimitPercent int64             `json:"cpuLimitPercent"`
 	Ports           []PortMapping     `json:"ports"`
+	// Console patterns the daemon scans for to detect the application-
+	// level "ready" signal. On match the server flips Starting →
+	// Running. Empty array → fall back to "running once Docker reports
+	// the container up" so blueprints without a lifecycle block don't
+	// wedge in starting.
+	StartupDone []DonePattern `json:"startupDone"`
+	// Blueprint configFiles the daemon patches before every start.
+	// Each entry's `patches` map values can reference {{ENV_VAR}} for
+	// substitution against the resolved environment.
+	ConfigFiles []ConfigFile `json:"configFiles"`
+}
+
+type DonePattern struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+	Flags string `json:"flags"`
+}
+
+type ConfigFile struct {
+	Path    string            `json:"path"`
+	Parser  string            `json:"parser"`
+	Patches map[string]string `json:"patches"`
 }
 
 // StopConfig matches environment.StopConfig on the wire.
