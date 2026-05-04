@@ -76,7 +76,7 @@ export const useMintPairingToken = () =>
   useMutation({
     mutationFn: (nodeId: string) =>
       apiFetch<PairingTokenResponse>(
-        `/admin/nodes/${nodeId}/pairing-tokens`,
+        `/admin/nodes/${nodeId}/pair`,
         { method: "POST", body: JSON.stringify({}) }
       ),
   })

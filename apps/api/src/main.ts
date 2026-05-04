@@ -13,6 +13,8 @@ import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
+import { buildAdminServersRoute } from "@/routes/AdminServers"
+import { buildBackupsRoute } from "@/routes/Backups"
 import { buildBlueprintsRoute } from "@/routes/Blueprints"
 import { buildMeRoute } from "@/routes/Me"
 import {
@@ -64,7 +66,15 @@ app.route(
   buildServersRoute({ auth, db, env, installRunner, statusCache })
 )
 app.route("/admin/nodes", buildNodesRoute({ auth, db }))
-app.route("/blueprints", buildBlueprintsRoute({ auth, db }))
+app.route(
+  "/admin/servers",
+  buildAdminServersRoute({ auth, db, installRunner, statusCache })
+)
+// Blueprints are visible to any signed-in user (server creation needs to
+// list them) but mutations require admin. The route enforces this via
+// a layered middleware chain inside buildBlueprintsRoute.
+app.route("/admin/blueprints", buildBlueprintsRoute({ auth, db }))
+app.route("/backups", buildBackupsRoute({ auth, db }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
 app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 

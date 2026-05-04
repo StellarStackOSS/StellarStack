@@ -69,6 +69,37 @@ export const buildBlueprintsRoute = (params: { auth: Auth; db: Db }) => {
       }
       return c.json({ blueprint: row })
     })
+    .put("/:id", async (c) => {
+      const id = c.req.param("id")
+      const parsed = blueprintSchema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const data = parsed.data
+      const [row] = await db
+        .update(blueprintsTable)
+        .set({
+          schemaVersion: String(data.schemaVersion),
+          name: data.name,
+          description: data.description ?? null,
+          author: data.author ?? null,
+          dockerImages: data.dockerImages,
+          stopSignal: data.stopSignal,
+          startupCommand: data.startupCommand,
+          configFiles: data.configFiles ?? null,
+          variables: data.variables,
+          installImage: data.install.image,
+          installEntrypoint: data.install.entrypoint,
+          installScript: data.install.script,
+          lifecycle: data.lifecycle,
+          features: data.features ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(blueprintsTable.id, id))
+        .returning()
+      if (row === undefined) {
+        throw new ApiException("blueprints.not_found", { status: 404 })
+      }
+      return c.json({ blueprint: row })
+    })
     .delete("/:id", async (c) => {
       const id = c.req.param("id")
       await db.delete(blueprintsTable).where(eq(blueprintsTable.id, id))

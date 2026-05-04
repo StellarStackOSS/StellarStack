@@ -81,6 +81,20 @@ export const buildNodesRoute = (params: { auth: Auth; db: Db }) => {
         .where(eq(nodeAllocationsTable.nodeId, id))
       return c.json({ node, allocations })
     })
+    .put("/:id", async (c) => {
+      const id = c.req.param("id")
+      const parsed = createNodeSchema.partial().safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const [row] = await db
+        .update(nodesTable)
+        .set(parsed.data)
+        .where(eq(nodesTable.id, id))
+        .returning()
+      if (row === undefined) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      return c.json({ node: row })
+    })
     .delete("/:id", async (c) => {
       const id = c.req.param("id")
       try {

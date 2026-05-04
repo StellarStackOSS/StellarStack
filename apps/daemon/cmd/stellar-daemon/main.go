@@ -20,8 +20,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/stellarstack/daemon/internal/backup"
 	"github.com/stellarstack/daemon/internal/config"
 	"github.com/stellarstack/daemon/internal/docker"
+	"github.com/stellarstack/daemon/internal/files"
 	stellarjwt "github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/panel"
 	"github.com/stellarstack/daemon/internal/router"
@@ -55,12 +57,14 @@ func main() {
 		log.Fatalf("panel client: %v", err)
 	}
 	mgr := server.NewManager(dc, panelClient, cfg.HistoryLines)
+	fm := files.New(cfg.DataDir)
+	bm := backup.New(cfg.DataDir)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	mgr.Reconcile(ctx)
 
-	r := router.New(cfg, verifier, mgr)
+	r := router.New(cfg, verifier, mgr, fm, bm)
 	srv := &http.Server{
 		Addr:              cfg.HTTPListen,
 		Handler:           r.Handler(),

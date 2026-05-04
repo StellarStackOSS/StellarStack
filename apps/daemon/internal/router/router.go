@@ -19,7 +19,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stellarstack/daemon/internal/backup"
 	"github.com/stellarstack/daemon/internal/config"
+	"github.com/stellarstack/daemon/internal/files"
 	"github.com/stellarstack/daemon/internal/jwt"
 	"github.com/stellarstack/daemon/internal/server"
 )
@@ -29,10 +31,12 @@ type Router struct {
 	cfg      *config.Config
 	verifier *jwt.Verifier
 	manager  *server.Manager
+	files    *files.Manager
+	backups  *backup.Manager
 }
 
-func New(cfg *config.Config, v *jwt.Verifier, m *server.Manager) *Router {
-	return &Router{cfg: cfg, verifier: v, manager: m}
+func New(cfg *config.Config, v *jwt.Verifier, m *server.Manager, f *files.Manager, b *backup.Manager) *Router {
+	return &Router{cfg: cfg, verifier: v, manager: m, files: f, backups: b}
 }
 
 // Handler returns the http.Handler the daemon should serve.
@@ -61,6 +65,10 @@ func (r *Router) routeServerSubpath(w http.ResponseWriter, req *http.Request) {
 	switch {
 	case len(parts) == 4 && parts[3] == "ws":
 		r.handleWS(w, req, uuid)
+	case len(parts) >= 4 && parts[3] == "files":
+		r.handleFiles(w, req, uuid)
+	case len(parts) >= 4 && parts[3] == "backups":
+		r.handleBackups(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "install":
 		// API-initiated install. Verified with daemon HMAC, not browser
 		// JWT, so route through the remote auth middleware.
