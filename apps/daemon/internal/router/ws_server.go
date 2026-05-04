@@ -210,6 +210,17 @@ func (r *Router) handleSetState(ctx context.Context, conn *websocket.Conn, srv *
 			log.Printf("set state %s: %v", action, err)
 		}
 	}()
+	// Best-effort audit push so the activity tab learns who triggered the
+	// power action; happens out of band and does not block the response.
+	if p := srv.Panel(); p != nil {
+		go func(actor, act string) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := p.PushAudit(ctx, srv.UUID(), actor, "servers.power."+act, nil); err != nil {
+				log.Printf("audit push: %v", err)
+			}
+		}(claims.Sub, action)
+	}
 	return nil
 }
 

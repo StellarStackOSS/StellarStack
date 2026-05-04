@@ -72,6 +72,43 @@ func (c *Client) PushStatus(ctx context.Context, serverUUID, prev, next string) 
 	return nil
 }
 
+// PushAudit posts an audit-log entry for the supplied server. Best-effort
+// — the daemon-WS power-action handler calls this immediately after
+// enqueuing the action so the activity tab gets a timestamped row even
+// when the action completes long after.
+func (c *Client) PushAudit(ctx context.Context, serverUUID, actorID, action string, metadata map[string]any) error {
+	payload := map[string]any{
+		"actorId": nil,
+		"action":  action,
+	}
+	if actorID != "" {
+		payload["actorId"] = actorID
+	}
+	if metadata != nil {
+		payload["metadata"] = metadata
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := c.signedRequest(ctx, http.MethodPost,
+		fmt.Sprintf("/api/remote/servers/%s/audit", serverUUID),
+		body)
+	if err != nil {
+		return err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("panel push audit %s: %s", resp.Status, string(raw))
+	}
+	return nil
+}
+
 func (c *Client) signedRequest(ctx context.Context, method, path string, body []byte) (*http.Request, error) {
 	url := c.baseURL + path
 	var rdr io.Reader

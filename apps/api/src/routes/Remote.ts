@@ -10,6 +10,7 @@ import { serversTable } from "@workspace/db/schema/servers"
 import { lifecycleStateSchema } from "@workspace/shared/events"
 import { ApiException } from "@workspace/shared/errors"
 
+import { writeAudit } from "@/lib/Audit"
 import type { Env } from "@/env"
 import type { StatusCache } from "@/lib/StatusCache"
 
@@ -17,6 +18,14 @@ const statusCallbackSchema = z.object({
   previousState: lifecycleStateSchema,
   newState: lifecycleStateSchema,
   at: z.string(),
+})
+
+const auditCallbackSchema = z.object({
+  actorId: z.string().uuid().nullable(),
+  action: z.string().min(1).max(120),
+  metadata: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .optional(),
 })
 
 /**
@@ -31,29 +40,69 @@ export const buildRemoteRoute = (params: {
   statusCache: StatusCache
 }) => {
   const { db, env, statusCache } = params
-  return new Hono().post("/servers/:id/container/status", async (c) => {
-    const serverId = c.req.param("id")
-    const ok = await verifyDaemonSignature({
-      db,
-      env,
-      headers: c.req.raw.headers,
+  return new Hono()
+    .post("/servers/:id/container/status", async (c) => {
+      const serverId = c.req.param("id")
+      const ok = await verifyDaemonSignature({
+        db,
+        env,
+        headers: c.req.raw.headers,
+      })
+      if (!ok) {
+        throw new ApiException("auth.session.invalid", { status: 401 })
+      }
+      const parsed = statusCallbackSchema.safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw new ApiException("validation.failed", { status: 422 })
+      }
+      await Promise.all([
+        db
+          .update(serversTable)
+          .set({ status: parsed.data.newState, updatedAt: new Date() })
+          .where(eq(serversTable.id, serverId)),
+        statusCache.set(serverId, parsed.data.newState),
+      ])
+      // If the daemon's transition carries a reason code we recognise as
+      // crash-shaped, persist it as audit metadata so the activity tab
+      // surfaces it. Reason codes follow `servers.lifecycle.crashed.*`.
+      if (
+        parsed.data.newState === "offline" &&
+        parsed.data.previousState === "running"
+      ) {
+        void writeAudit({
+          db,
+          actorId: null,
+          action: "servers.lifecycle.exited",
+          targetType: "server",
+          targetId: serverId,
+        })
+      }
+      return c.json({ ok: true })
     })
-    if (!ok) {
-      throw new ApiException("auth.session.invalid", { status: 401 })
-    }
-    const parsed = statusCallbackSchema.safeParse(await c.req.json())
-    if (!parsed.success) {
-      throw new ApiException("validation.failed", { status: 422 })
-    }
-    await Promise.all([
-      db
-        .update(serversTable)
-        .set({ status: parsed.data.newState, updatedAt: new Date() })
-        .where(eq(serversTable.id, serverId)),
-      statusCache.set(serverId, parsed.data.newState),
-    ])
-    return c.json({ ok: true })
-  })
+    .post("/servers/:id/audit", async (c) => {
+      const serverId = c.req.param("id")
+      const ok = await verifyDaemonSignature({
+        db,
+        env,
+        headers: c.req.raw.headers,
+      })
+      if (!ok) {
+        throw new ApiException("auth.session.invalid", { status: 401 })
+      }
+      const parsed = auditCallbackSchema.safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw new ApiException("validation.failed", { status: 422 })
+      }
+      await writeAudit({
+        db,
+        actorId: parsed.data.actorId,
+        action: parsed.data.action,
+        targetType: "server",
+        targetId: serverId,
+        metadata: parsed.data.metadata,
+      })
+      return c.json({ ok: true })
+    })
 }
 
 /**

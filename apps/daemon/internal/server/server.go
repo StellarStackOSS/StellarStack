@@ -79,6 +79,7 @@ func (s *Server) UUID() string                       { return s.uuid }
 func (s *Server) Environment() *environment.Environment { return s.env }
 func (s *Server) Bus() *events.Bus                   { return s.bus }
 func (s *Server) History() *consoleHistory           { return s.history }
+func (s *Server) Panel() *panel.Client               { return s.panel }
 
 // SetConfig replaces the operating data. Threadsafe; in-flight power
 // actions read the previous snapshot, the next read sees the update.
@@ -278,18 +279,38 @@ func (s *Server) doKill(ctx context.Context) error {
 func (s *Server) watchExit() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// WaitNotRunning blocks until the container is gone or ctx is
-	// cancelled. A panic here is a logic bug, not a runtime hazard, so
-	// we don't recover.
 	exited := s.env.Docker().WaitNotRunning(ctx, s.env.ContainerName())
 	if !exited {
 		return
 	}
 	// If state is already stopping/offline, the stop path will set it.
 	// We only intervene when we're in running.
-	if s.env.State() == environment.StateRunning {
-		s.env.MarkOffline()
+	if s.env.State() != environment.StateRunning {
+		return
 	}
+	// Inspect to learn how the container exited so we can emit a
+	// meaningful audit reason on the way to offline. OOM, non-zero exit,
+	// and clean exit each get their own metadata code.
+	st, _ := s.env.Docker().Inspect(context.Background(), s.env.ContainerName())
+	reason := "servers.lifecycle.exited.clean"
+	metadata := map[string]any{}
+	if st != nil {
+		metadata["exitCode"] = st.ExitCode
+		switch {
+		case st.OOMKilled:
+			reason = "servers.lifecycle.crashed.oom_killed"
+		case st.ExitCode != 0:
+			reason = "servers.lifecycle.crashed.container_exit"
+		}
+	}
+	if s.panel != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = s.panel.PushAudit(ctx, s.uuid, "", reason, metadata)
+		}()
+	}
+	s.env.MarkOffline()
 }
 
 // flattenEnv converts a map of environment variables into Docker's
