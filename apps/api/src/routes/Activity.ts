@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm"
+import { and, count, desc, eq } from "drizzle-orm"
 import { Hono } from "hono"
 
 import type { Db } from "@workspace/db/client.types"
@@ -30,19 +30,30 @@ export const buildActivityRoute = (params: { auth: Auth; db: Db }) => {
         Math.max(1, Number(c.req.query("limit") ?? 25))
       )
       const offset = Math.max(0, Number(c.req.query("offset") ?? 0))
-      const entries = await db
-        .select()
-        .from(auditLogTable)
-        .where(
-          and(
-            eq(auditLogTable.targetType, "server"),
-            eq(auditLogTable.targetId, serverId)
-          )
-        )
-        .orderBy(desc(auditLogTable.createdAt))
-        .limit(limit)
-        .offset(offset)
-      return c.json({ entries, offset, limit })
+      const filter = and(
+        eq(auditLogTable.targetType, "server"),
+        eq(auditLogTable.targetId, serverId)
+      )
+      const [entries, totalRow] = await Promise.all([
+        db
+          .select()
+          .from(auditLogTable)
+          .where(filter)
+          .orderBy(desc(auditLogTable.createdAt))
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ n: count() })
+          .from(auditLogTable)
+          .where(filter)
+          .then((rows) => rows[0]),
+      ])
+      return c.json({
+        entries,
+        offset,
+        limit,
+        total: Number(totalRow?.n ?? 0),
+      })
     })
 }
 

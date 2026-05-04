@@ -1046,8 +1046,15 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
                                 ) : (
                                   <div className="h-96">
                                     <Editor
+                                      // key forces a fresh editor instance per
+                                      // file so the *initial* value (defaultValue)
+                                      // is loaded once and ownership stays with
+                                      // Monaco — using `value=` instead would
+                                      // drive an internal setValue on every
+                                      // keystroke and reset the cursor to end.
+                                      key={selected ?? "_none"}
                                       path={selected}
-                                      value={editorValue}
+                                      defaultValue={editorValue}
                                       onChange={(value) => setDraft(value ?? "")}
                                       onMount={(ed) => { editorRef.current = ed }}
                                       theme="vs-dark"

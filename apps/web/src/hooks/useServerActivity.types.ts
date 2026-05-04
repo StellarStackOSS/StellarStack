@@ -13,4 +13,5 @@ export type ServerActivityResponse = {
   entries: ActivityEntry[]
   offset: number
   limit: number
+  total: number
 }

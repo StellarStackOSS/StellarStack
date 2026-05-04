@@ -171,34 +171,42 @@ export const ActivityTab = () => {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-muted-foreground text-xs">
-              {t("activity.pagination", {
-                from: entries.length === 0 ? 0 : offset + 1,
-                to: offset + entries.length,
-              })}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={offset === 0}
-                onClick={() =>
-                  setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
-                }
-              >
-                {t("activity.prev")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={entries.length < PAGE_SIZE}
-                onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-              >
-                {t("activity.next")}
-              </Button>
+          {/* Same pagination shape as the FileManager strip: 'from–to
+              of total' on the left, ‹ Prev / page X / Y › on the right.
+              Driven by server-side offset/limit since the activity API
+              is paginated; total comes from the response. */}
+          {(data?.total ?? 0) > PAGE_SIZE && (
+            <div className="flex items-center justify-between border-t border-border px-1 pt-2 text-xs text-muted-foreground">
+              <span>
+                {entries.length === 0 ? 0 : offset + 1}–
+                {offset + entries.length} of {data?.total ?? 0}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  disabled={offset === 0}
+                  onClick={() =>
+                    setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
+                  }
+                >
+                  ‹ Prev
+                </Button>
+                <span className="px-1">
+                  {Math.floor(offset / PAGE_SIZE) + 1} /{" "}
+                  {Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE))}
+                </span>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  disabled={offset + entries.length >= (data?.total ?? 0)}
+                  onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                >
+                  Next ›
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </CardInner>
       </Card>
     </div>
