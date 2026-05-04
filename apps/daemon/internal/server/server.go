@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
@@ -128,7 +129,12 @@ func (s *Server) publishHeader(msg string) {
 // onStateChange is invoked by the Environment listener for every state
 // transition. We broadcast over the bus AND POST a callback to the API.
 func (s *Server) onStateChange(prev, next environment.State) {
-	log.Printf("server %s: state %s -> %s", s.uuid, prev, next)
+	// Stack hint shows which call path triggered the transition; helps
+	// debug surprise offline transitions caused by a stale watchExit
+	// or a cancelled pump's deferred cleanup.
+	pc, _, _, _ := runtime.Caller(2)
+	caller := runtime.FuncForPC(pc).Name()
+	log.Printf("server %s: state %s -> %s (caller=%s)", s.uuid, prev, next, caller)
 	s.publishHeader("Server marked as " + string(next) + "...")
 	frame, _ := json.Marshal(map[string]any{
 		"event": "status",

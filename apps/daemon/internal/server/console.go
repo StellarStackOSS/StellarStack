@@ -142,14 +142,16 @@ func (s *Server) runAttachPump(ctx context.Context) {
 	}()
 	dc := s.env.Docker()
 	containerName := s.env.ContainerName()
+	log.Printf("server %s: attach pump start", s.uuid)
+	defer log.Printf("server %s: attach pump exit (ctx err=%v)", s.uuid, ctx.Err())
+	lineCount := 0
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		stream, err := dc.FollowLogs(ctx, containerName)
 		if err != nil {
-			// Container may not be up yet (race between MarkRunning and
-			// Docker actually attaching the log stream). Retry briefly.
+			log.Printf("server %s: follow logs: %v", s.uuid, err)
 			if !sleepOrDone(ctx, 1) {
 				return
 			}
@@ -160,6 +162,7 @@ func (s *Server) runAttachPump(ctx context.Context) {
 			if cleaned == "" {
 				continue
 			}
+			lineCount++
 			s.history.push(cleaned)
 			frame, _ := json.Marshal(map[string]any{
 				"event": "console output",
@@ -167,9 +170,7 @@ func (s *Server) runAttachPump(ctx context.Context) {
 			})
 			s.bus.Publish(frame)
 		}
-		// Stream closed (container exited or transient error). If the
-		// container is gone, watchExit handles state. Otherwise loop and
-		// retry.
+		log.Printf("server %s: log stream closed (read %d lines)", s.uuid, lineCount)
 		if !sleepOrDone(ctx, 1) {
 			return
 		}
