@@ -349,16 +349,35 @@ func (c *Client) IsRunning(ctx context.Context, name string) bool {
 	return st.Running
 }
 
-// WaitNotRunning blocks on Docker's `/containers/:name/wait?condition=
-// not-running` endpoint until the container exits or the context is
-// cancelled. Returns true on exit, false on context cancel.
+// WaitNotRunning matches the *current* state — fires immediately for a
+// created or exited container. Used by stop/wait paths that want to
+// know "is the container down yet, possibly already".
 func (c *Client) WaitNotRunning(ctx context.Context, name string) bool {
-	resp, err := c.do(ctx, http.MethodPost, "/containers/"+name+"/wait?condition=not-running", nil)
+	return c.containerWait(ctx, name, "not-running")
+}
+
+// WaitNextExit blocks until the container exits AFTER the call is
+// made — fires only on the next state transition out of running, not
+// on the current state. Used by per-container crash watchers so a
+// freshly-started container that's still in the brief `created`
+// window doesn't get flagged as exited the moment the watcher starts.
+func (c *Client) WaitNextExit(ctx context.Context, name string) bool {
+	return c.containerWait(ctx, name, "next-exit")
+}
+
+func (c *Client) containerWait(ctx context.Context, name, condition string) bool {
+	resp, err := c.do(ctx, http.MethodPost, "/containers/"+name+"/wait?condition="+condition, nil)
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode/100 == 2
+	if resp.StatusCode/100 != 2 {
+		return false
+	}
+	// Drain the response body so the docker daemon's wait actually
+	// unblocks server-side instead of holding the connection.
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return true
 }
 
 // EnsureImage pulls the image if it's not already present locally.

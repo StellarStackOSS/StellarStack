@@ -345,7 +345,11 @@ func (s *Server) doKill(ctx context.Context) error {
 func (s *Server) watchExit() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	exited := s.env.Docker().WaitNotRunning(ctx, s.env.ContainerName())
+	// next-exit fires only on the NEXT exit, not on the current state.
+	// Using condition=not-running here would race against the brief
+	// `created` window after StartContainer and flip a healthy
+	// container to offline immediately.
+	exited := s.env.Docker().WaitNextExit(ctx, s.env.ContainerName())
 	if !exited {
 		return
 	}
