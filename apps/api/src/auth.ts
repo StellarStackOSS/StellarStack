@@ -49,6 +49,11 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
     emailAndPassword: { enabled: true, autoSignIn: true },
     advanced: {
       crossSubDomainCookies: { enabled: false },
+      // Our auth tables use `uuid` columns with `gen_random_uuid()`
+      // defaults — let Postgres generate the id rather than letting
+      // better-auth slot in its 32-char nanoid (which Postgres rejects
+      // as `invalid input syntax for type uuid`).
+      database: { generateId: false },
     },
     plugins: [admin()],
   })
