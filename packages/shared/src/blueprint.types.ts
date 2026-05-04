@@ -141,5 +141,5 @@ export type Blueprint = {
   variables: BlueprintVariable[]
   install: BlueprintInstall
   lifecycle: BlueprintLifecycle
-  features?: string[]
+  features?: Record<string, string[]>
 }

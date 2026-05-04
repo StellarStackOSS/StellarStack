@@ -101,7 +101,7 @@ const minecraftBlueprint: Blueprint = {
       ],
     },
   },
-  features: ["eula", "java_version_picker"],
+  features: { eula: [], java_version_picker: [] },
 }
 
 const upsertBlueprint = async (blueprint: Blueprint): Promise<string> => {

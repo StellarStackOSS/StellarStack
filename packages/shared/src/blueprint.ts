@@ -138,6 +138,23 @@ export const blueprintSchema = z.object({
   variables: z.array(variableSchema),
   install: installSchema,
   lifecycle: blueprintLifecycleSchema,
-  /** feature-name → console patterns the daemon watches for (empty array = UI-only flag) */
-  features: z.record(z.string(), z.array(z.string())).optional(),
+  /**
+   * Feature flags. Accepted as either a flat string list (legacy
+   * Pelican-style) or a record mapping feature name → console patterns
+   * the daemon watches for. List form is normalised to a record with
+   * empty pattern arrays so downstream code only ever sees the record
+   * shape.
+   */
+  features: z
+    .union([z.array(z.string()), z.record(z.string(), z.array(z.string()))])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined
+      if (Array.isArray(v)) {
+        const out: Record<string, string[]> = {}
+        for (const k of v) out[k] = []
+        return out
+      }
+      return v
+    }),
 })
