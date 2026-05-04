@@ -148,9 +148,15 @@ export class Scheduler {
   }
 
   private tick(): void {
-    void this.runDue().finally(() => {
-      this.timer = setTimeout(() => this.tick(), TICK_MS)
-    })
+    void this.runDue()
+      .catch((err: unknown) => {
+        // A transient DB outage (Postgres restart, network blip) must
+        // not crash the API process. Log and reschedule.
+        console.error("scheduler tick failed:", err)
+      })
+      .finally(() => {
+        this.timer = setTimeout(() => this.tick(), TICK_MS)
+      })
   }
 
   private async runDue(): Promise<void> {
