@@ -44,6 +44,17 @@ const rowClass = (level: ConsoleLineLevel): string => {
   return "hover:bg-zinc-900/50"
 }
 
+// formatClock renders an epoch-ms timestamp as `HH:MM:SS` in the
+// browser's locale. Used as the fallback for lines that don't have an
+// embedded `[HH:MM:SS]` (synthetic daemon-status lines, our own
+// "Server marked as offline" headers, etc) so the timestamp column is
+// never blank — the line still has its receivedAt to fall back on.
+const formatClock = (epochMs: number): string => {
+  const d = new Date(epochMs)
+  const pad = (n: number) => n.toString().padStart(2, "0")
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 const textClass = (level: ConsoleLineLevel): string => {
   if (level === "warn" || level === "error") return "text-red-300"
   return "text-zinc-300"
@@ -242,7 +253,7 @@ export const Console = ({
                       onMouseMove={(e) => handleTsMove(line.timestamp, line.displayTimestamp, e)}
                       onMouseLeave={handleTsLeave}
                     >
-                      {line.displayTimestamp ?? "—"}
+                      {line.displayTimestamp ?? formatClock(line.timestamp)}
                     </span>
                     <span className={cn("min-w-0 break-words py-0.5 select-text", textClass(line.level))}>
                       {parseLinks(line.message)}
