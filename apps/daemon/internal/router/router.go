@@ -50,7 +50,35 @@ func (r *Router) Handler() http.Handler {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	})
-	return mux
+	return cors(mux)
+}
+
+// cors handles the browser preflight + sets the response headers the
+// browser needs when fetching directly against the daemon. The daemon
+// is dialled by the panel SPA which runs on a different origin (and a
+// different host once deployed), so wide-open CORS is required.
+//
+// Auth is not based on the Origin header — every browser hit carries a
+// per-server JWT that the daemon verifies anyway, so allowing any
+// origin doesn't change the security model.
+func cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set(
+			"Access-Control-Allow-Methods",
+			"GET, POST, PUT, DELETE, OPTIONS",
+		)
+		w.Header().Set(
+			"Access-Control-Allow-Headers",
+			"Authorization, Content-Type, X-Stellar-Node-Id, X-Stellar-Timestamp, X-Stellar-Transfer-Token, X-Stellar-Transfer-Timestamp",
+		)
+		w.Header().Set("Access-Control-Max-Age", "600")
+		if req.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, req)
+	})
 }
 
 // routeServerSubpath dispatches /api/servers/{uuid}/(ws|...). Only ws is
