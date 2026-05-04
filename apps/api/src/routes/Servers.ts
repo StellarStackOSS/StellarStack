@@ -500,7 +500,10 @@ export const buildServersRoute = (params: {
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
-        baseUrl: `${httpScheme}://${node.fqdn}:${node.daemonPort}/api/servers/${access.server.id}/files`,
+        // baseUrl is the per-server root; the hook concatenates "/files",
+        // "/files/content", etc. The daemon recognises those path
+        // suffixes and maps (path+method) → op internally.
+        baseUrl: `${httpScheme}://${node.fqdn}:${node.daemonPort}/api/servers/${access.server.id}`,
       })
     })
     .post("/:id/credentials", async (c) => {

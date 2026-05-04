@@ -44,8 +44,8 @@ func (r *Router) handleFiles(w http.ResponseWriter, req *http.Request, serverID 
 		return
 	}
 
-	op := req.URL.Query().Get("op")
 	relPath := req.URL.Query().Get("path")
+	op := resolveFilesOp(req)
 	switch op {
 	case "list":
 		if !claims.HasScope("files.read") {
@@ -169,7 +169,52 @@ func itoa(n int64) string {
 	return string(b[i:])
 }
 
-// withSlashCount is a tiny helper; the routeServerSubpath dispatcher
-// matches `/api/servers/:uuid/files` so any deeper segments aren't
-// significant — the operation is encoded in the `?op=` query.
-var _ = strings.Count
+// resolveFilesOp picks the operation from either the explicit `?op=`
+// query (used by the daemon's own diagnostic clients) or a (path+method)
+// mapping that matches the existing useFiles hook contract:
+//
+//	GET  /files            → list
+//	GET  /files/content    → read
+//	PUT  /files/content    → write
+//	DELETE /files          → delete
+//	POST /files/mkdir      → mkdir
+//	POST /files/move       → move
+//	GET  /files/stat       → stat
+func resolveFilesOp(req *http.Request) string {
+	if explicit := req.URL.Query().Get("op"); explicit != "" {
+		return explicit
+	}
+	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
+	// /api/servers/:uuid/files[/<extra>]
+	tail := ""
+	if len(parts) >= 5 {
+		tail = parts[4]
+	}
+	switch req.Method {
+	case http.MethodGet:
+		switch tail {
+		case "":
+			return "list"
+		case "content":
+			return "read"
+		case "stat":
+			return "stat"
+		}
+	case http.MethodPut:
+		if tail == "content" {
+			return "write"
+		}
+	case http.MethodDelete:
+		if tail == "" {
+			return "delete"
+		}
+	case http.MethodPost:
+		switch tail {
+		case "mkdir":
+			return "mkdir"
+		case "move":
+			return "move"
+		}
+	}
+	return ""
+}
