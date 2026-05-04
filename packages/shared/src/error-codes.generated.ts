@@ -17,6 +17,7 @@ export type ErrorCode =
   | "blueprints.parse.invalid_json"
   | "blueprints.parse.schema_version_unsupported"
   | "blueprints.parse.unknown_field"
+  | "files.decompress_failed"
   | "files.not_found"
   | "files.path_outside_jail"
   | "files.read_only"
@@ -88,6 +89,7 @@ export const errorCodes = [
   "blueprints.parse.invalid_json",
   "blueprints.parse.schema_version_unsupported",
   "blueprints.parse.unknown_field",
+  "files.decompress_failed",
   "files.not_found",
   "files.path_outside_jail",
   "files.read_only",

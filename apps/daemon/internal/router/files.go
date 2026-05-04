@@ -123,6 +123,21 @@ func (r *Router) handleFiles(w http.ResponseWriter, req *http.Request, serverID 
 			return
 		}
 		writeJSON(w, map[string]any{"ok": true})
+	case "decompress":
+		if !claims.HasScope("files.write") {
+			http.Error(w, "missing files.write", http.StatusForbidden)
+			return
+		}
+		var body struct{ Path, Destination string }
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "files.bad_request")
+			return
+		}
+		if err := r.files.Decompress(serverID, body.Path, body.Destination); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "files.decompress_failed")
+			return
+		}
+		writeJSON(w, map[string]any{"ok": true})
 	case "stat":
 		if !claims.HasScope("files.read") {
 			http.Error(w, "missing files.read", http.StatusForbidden)
@@ -214,6 +229,8 @@ func resolveFilesOp(req *http.Request) string {
 			return "mkdir"
 		case "move":
 			return "move"
+		case "decompress":
+			return "decompress"
 		}
 	}
 	return ""

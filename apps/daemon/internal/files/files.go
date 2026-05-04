@@ -5,6 +5,9 @@
 package files
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -182,6 +185,172 @@ func (m *Manager) Stat(serverID, path string) (Entry, error) {
 		ModTime: st.ModTime().UTC().Format(time.RFC3339),
 		Mode:    st.Mode().String(),
 	}, nil
+}
+
+// Decompress extracts the archive at `archivePath` into `destDir`.
+// Format is sniffed from the filename: `.tar.gz`/`.tgz` → tar+gzip,
+// `.tar` → tar, `.zip` → zip, `.gz` → single-file gzip. Every entry
+// is jail-checked against `destDir` (no `..` or absolute escapes) and
+// symlinks/devices are skipped, mirroring the upstream daemon's jail
+// rules.
+func (m *Manager) Decompress(serverID, archivePath, destDir string) error {
+	src, err := m.resolve(serverID, archivePath)
+	if err != nil {
+		return err
+	}
+	dst, err := m.resolve(serverID, destDir)
+	if err != nil {
+		return err
+	}
+	if st, err := os.Stat(dst); err != nil {
+		return err
+	} else if !st.IsDir() {
+		return errors.New("destination is not a directory")
+	}
+	lower := strings.ToLower(archivePath)
+	switch {
+	case strings.HasSuffix(lower, ".tar.gz"), strings.HasSuffix(lower, ".tgz"):
+		return extractTar(src, dst, true)
+	case strings.HasSuffix(lower, ".tar"):
+		return extractTar(src, dst, false)
+	case strings.HasSuffix(lower, ".zip"):
+		return extractZip(src, dst)
+	case strings.HasSuffix(lower, ".gz"):
+		base := filepath.Base(archivePath)
+		out := strings.TrimSuffix(base, ".gz")
+		if out == "" || out == base {
+			out = base + ".out"
+		}
+		target, err := jailedPath(dst, out)
+		if err != nil {
+			return err
+		}
+		return extractGzip(src, target)
+	default:
+		return errors.New("unsupported archive format")
+	}
+}
+
+func extractTar(archivePath, destDir string, gzipped bool) error {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	var rd io.Reader = f
+	if gzipped {
+		gz, err := gzip.NewReader(f)
+		if err != nil {
+			return err
+		}
+		defer gz.Close()
+		rd = gz
+	}
+	tr := tar.NewReader(rd)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		target, err := jailedPath(destDir, hdr.Name)
+		if err != nil {
+			return err
+		}
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return err
+			}
+		case tar.TypeReg, tar.TypeRegA:
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(out, tr); err != nil {
+				out.Close()
+				return err
+			}
+			out.Close()
+		}
+	}
+}
+
+func extractZip(archivePath, destDir string) error {
+	rd, err := zip.OpenReader(archivePath)
+	if err != nil {
+		return err
+	}
+	defer rd.Close()
+	for _, f := range rd.File {
+		target, err := jailedPath(destDir, f.Name)
+		if err != nil {
+			return err
+		}
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		in, err := f.Open()
+		if err != nil {
+			return err
+		}
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+		if err != nil {
+			in.Close()
+			return err
+		}
+		if _, err := io.Copy(out, in); err != nil {
+			in.Close()
+			out.Close()
+			return err
+		}
+		in.Close()
+		out.Close()
+	}
+	return nil
+}
+
+func extractGzip(archivePath, destFile string) error {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+	if err := os.MkdirAll(filepath.Dir(destFile), 0o755); err != nil {
+		return err
+	}
+	out, err := os.OpenFile(destFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, gz)
+	return err
+}
+
+func jailedPath(root, name string) (string, error) {
+	clean := filepath.Clean("/" + name)
+	abs := filepath.Join(root, clean)
+	if !strings.HasPrefix(abs, filepath.Clean(root)+string(os.PathSeparator)) && abs != root {
+		return "", errors.New("entry escapes destination")
+	}
+	return abs, nil
 }
 
 // safe is an internal helper used in tests. Kept here to avoid an

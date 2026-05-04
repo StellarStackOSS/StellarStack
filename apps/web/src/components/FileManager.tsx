@@ -106,8 +106,16 @@ const formatDate = (iso: string): string => {
   })
 }
 
-const isArchive = (name: string): boolean =>
-  name.endsWith(".zip") || name.endsWith(".tar.gz") || name.endsWith(".tgz")
+const isArchive = (name: string): boolean => {
+  const lower = name.toLowerCase()
+  return (
+    lower.endsWith(".zip") ||
+    lower.endsWith(".tar.gz") ||
+    lower.endsWith(".tgz") ||
+    lower.endsWith(".tar") ||
+    lower.endsWith(".gz")
+  )
+}
 
 const mediaKind = (path: string): "image" | "video" | null => {
   const lower = path.toLowerCase()

@@ -44,6 +44,7 @@
 
   "files.not_found": "File or directory not found.",
   "files.path_outside_jail": "Path is outside the server's directory.",
+  "files.decompress_failed": "Couldn't extract that archive — only .zip, .tar, .tar.gz, .tgz and .gz are supported.",
   "files.too_large": "File exceeds the maximum allowed size ({maxBytes} bytes).",
   "files.read_only": "This path is read-only.",
 
