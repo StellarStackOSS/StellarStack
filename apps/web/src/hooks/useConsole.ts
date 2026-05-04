@@ -107,6 +107,34 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
       }
     )
   }, [status, serverId, queryClient])
+
+  // Clear the buffer + stats history when the server transitions to
+  // offline so the console only shows the most recent "Server marked
+  // as offline..." header and the metric cards reset to zero. Pelican-
+  // shape behaviour. The previous-status ref ensures we only clear on
+  // the *transition* — re-renders while already offline are no-ops so
+  // the synthetic offline line we re-emit isn't churned.
+  const prevStatusRef = useRef<ServerLifecycleState | null>(null)
+  useEffect(() => {
+    if (status === null) return
+    const prev = prevStatusRef.current
+    prevStatusRef.current = status
+    if (status === "offline" && prev !== null && prev !== "offline") {
+      counterRef.current += 1
+      setLines([
+        {
+          id: counterRef.current,
+          stream: "stdout",
+          line: "Server marked as offline...",
+          logTimestamp: null,
+          logLevel: "default",
+          historical: false,
+          receivedAt: Date.now(),
+        },
+      ])
+      setStatsHistory([])
+    }
+  }, [status])
   const counterRef = useRef(0)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
