@@ -52,14 +52,19 @@ func (r *Router) handleInstall(w http.ResponseWriter, req *http.Request, serverU
 	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
 
-	// Drop the script onto disk so the container can mount + execute it.
-	scratch, err := os.MkdirTemp("", "stellar-install-")
-	if err != nil {
-		emit(w, flusher, "stderr", "scratch dir: "+err.Error())
+	// The install container mounts the server's bind dir at /home/container
+	// so anything the script writes there persists into the running
+	// server's data tree. We stage the install script inside the same
+	// bind dir under .install/, then remove it at the end so it doesn't
+	// leak into the runtime container.
+	serverDir := filepath.Join(r.cfg.DataDir, "servers", serverUUID)
+	stageDir := filepath.Join(serverDir, ".install")
+	if err := os.MkdirAll(stageDir, 0o755); err != nil {
+		emit(w, flusher, "stderr", "mkdir server dir: "+err.Error())
 		return
 	}
-	defer os.RemoveAll(scratch)
-	scriptPath := filepath.Join(scratch, "install.sh")
+	defer os.RemoveAll(stageDir)
+	scriptPath := filepath.Join(stageDir, "install.sh")
 	if err := os.WriteFile(scriptPath, []byte(body.Script), 0o755); err != nil {
 		emit(w, flusher, "stderr", "write script: "+err.Error())
 		return
@@ -75,9 +80,10 @@ func (r *Router) handleInstall(w http.ResponseWriter, req *http.Request, serverU
 
 	entrypoint := body.Entrypoint
 	if entrypoint == "" {
-		entrypoint = "/bin/sh"
+		entrypoint = "/bin/ash"
 	}
-	cmd := []string{"-c", "/install/install.sh"}
+	// Inside the container the script lives at /home/container/.install/install.sh
+	cmd := []string{"-c", "/home/container/.install/install.sh"}
 
 	id, err := dc.CreateContainer(ctx, docker.CreateContainerOptions{
 		Name:       containerName,
@@ -85,7 +91,8 @@ func (r *Router) handleInstall(w http.ResponseWriter, req *http.Request, serverU
 		Env:        body.Environment,
 		Entrypoint: []string{entrypoint},
 		Cmd:        cmd,
-		BindMount:  scratch,
+		BindMount:  serverDir,
+		WorkingDir: "/home/container",
 		AutoRemove: true,
 	})
 	if err != nil {

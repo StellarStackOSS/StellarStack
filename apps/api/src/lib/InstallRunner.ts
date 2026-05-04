@@ -2,7 +2,10 @@ import { eq } from "drizzle-orm"
 
 import type { Db } from "@workspace/db/client.types"
 import { nodesTable } from "@workspace/db/schema/nodes"
-import { serversTable } from "@workspace/db/schema/servers"
+import {
+  serverVariablesTable,
+  serversTable,
+} from "@workspace/db/schema/servers"
 import { blueprintsTable } from "@workspace/db/schema/blueprints"
 import type { Blueprint } from "@workspace/shared/blueprint.types"
 
@@ -105,6 +108,23 @@ export class InstallRunner {
       installScript: string
     }
 
+    // Resolve install env: blueprint variable defaults overlaid with the
+    // server's persisted values. Mirrors what the daemon would compute
+    // locally, but assembled here so we can keep the daemon endpoint a
+    // pure executor.
+    const variableRows = await this.db
+      .select()
+      .from(serverVariablesTable)
+      .where(eq(serverVariablesTable.serverId, job.serverId))
+    const env: Record<string, string> = {}
+    for (const v of blueprintData.variables) {
+      env[v.key] = v.default
+    }
+    for (const r of variableRows) {
+      env[r.variableKey] = r.value
+    }
+    env["SERVER_MEMORY"] = String(server.memoryLimitMb)
+
     const baseUrl = `${node.scheme}://${node.fqdn}:${node.daemonPort}`
     const resp = await callDaemon({
       baseUrl,
@@ -116,7 +136,7 @@ export class InstallRunner {
         image: blueprintData.installImage,
         entrypoint: blueprintData.installEntrypoint,
         script: blueprintData.installScript,
-        environment: {},
+        environment: env,
       },
     })
     if (!resp.ok || resp.body === null) {

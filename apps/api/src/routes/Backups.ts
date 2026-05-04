@@ -24,6 +24,8 @@ const createBackupSchema = z.object({
     .min(1)
     .max(64)
     .regex(/^[A-Za-z0-9._-]+$/),
+  /** Optional S3 destination id; ignored in v1 (local-only backups). */
+  destinationId: z.string().uuid().optional(),
 })
 
 export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
