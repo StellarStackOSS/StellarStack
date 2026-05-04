@@ -456,7 +456,11 @@ export const buildServersRoute = (params: {
       await loadServerAccess(db, user, id)
       const job = installRunner.get(id)
       if (job === undefined) {
-        return c.json({ state: "unknown", log: [] })
+        // Process restart loses the in-memory job; fall back to persisted
+        // log lines so the panel can keep rendering history. The
+        // server's `installState` column gives the terminal verdict.
+        const persisted = await installRunner.logsFromDb(id)
+        return c.json({ state: "unknown", log: persisted })
       }
       return c.json({
         state: job.state,

@@ -7,6 +7,18 @@
   "lifecycle.running": "Running",
   "lifecycle.stopping": "Stopping",
 
+  "audit.servers.created": "Created server",
+  "audit.servers.deleted": "Deleted server",
+  "audit.servers.blueprint_changed": "Changed blueprint",
+  "audit.servers.power.start": "Started",
+  "audit.servers.power.stop": "Stopped",
+  "audit.servers.power.restart": "Restarted",
+  "audit.servers.power.kill": "Force-killed",
+  "audit.servers.lifecycle.exited.clean": "Server exited cleanly",
+  "audit.servers.lifecycle.exited": "Server transitioned to offline",
+  "audit.servers.lifecycle.crashed.container_exit": "Server crashed: process exited unexpectedly",
+  "audit.servers.lifecycle.crashed.oom_killed": "Server killed by OOM",
+
   "dashboard.title": "Your servers",
   "dashboard.description": "Manage and monitor your provisioned servers.",
   "dashboard.empty": "No servers yet. Click \"New server\" in the sidebar to provision one.",

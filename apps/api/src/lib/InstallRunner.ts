@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 
 import type { Db } from "@workspace/db/client.types"
+import { installLogsTable } from "@workspace/db/schema/install"
 import { nodesTable } from "@workspace/db/schema/nodes"
 import {
   serverVariablesTable,
@@ -40,6 +41,22 @@ export class InstallRunner {
     return this.jobs.get(serverId)
   }
 
+  /**
+   * Read persisted log lines for a server. Used when the API process
+   * restarts mid-install: the in-memory job is gone, but the log rows
+   * survive so the install panel can keep rendering.
+   */
+  public async logsFromDb(
+    serverId: string
+  ): Promise<{ stream: "stdout" | "stderr"; line: string }[]> {
+    const rows = await this.db
+      .select({ stream: installLogsTable.stream, line: installLogsTable.line })
+      .from(installLogsTable)
+      .where(eq(installLogsTable.serverId, serverId))
+      .orderBy(asc(installLogsTable.seq))
+    return rows.map((r) => ({ stream: r.stream, line: r.line }))
+  }
+
   public list(): InstallJob[] {
     return Array.from(this.jobs.values())
   }
@@ -75,6 +92,12 @@ export class InstallRunner {
 
   private async run(job: InstallJob): Promise<void> {
     job.state = "running"
+    // Wipe any stale log rows from a prior install so the live read
+    // doesn't show two runs concatenated.
+    await this.db
+      .delete(installLogsTable)
+      .where(eq(installLogsTable.serverId, job.serverId))
+    let seq = 0
 
     const server = (
       await this.db
@@ -169,11 +192,30 @@ export class InstallRunner {
             job.exitCode = frame.exitCode
             job.state = frame.exitCode === 0 ? "succeeded" : "failed"
             job.finishedAt = new Date()
+            await this.db
+              .update(serversTable)
+              .set({
+                installState: frame.exitCode === 0 ? "succeeded" : "failed",
+                updatedAt: new Date(),
+              })
+              .where(eq(serversTable.id, job.serverId))
           } else {
             job.log.push(frame)
             if (job.log.length > MAX_LOG_LINES) {
               job.log.splice(0, job.log.length - MAX_LOG_LINES)
             }
+            seq += 1
+            void this.db
+              .insert(installLogsTable)
+              .values({
+                serverId: job.serverId,
+                seq,
+                stream: frame.stream,
+                line: frame.line,
+              })
+              .catch(() => {
+                // Best-effort persistence; in-memory log is still kept.
+              })
           }
         } catch {
           // ignore malformed line

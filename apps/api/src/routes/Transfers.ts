@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto"
+import { createHmac } from "node:crypto"
 
 import { desc, eq } from "drizzle-orm"
 import { Hono } from "hono"
@@ -9,7 +9,10 @@ import {
   nodeAllocationsTable,
   nodesTable,
 } from "@workspace/db/schema/nodes"
-import { serversTable } from "@workspace/db/schema/servers"
+import {
+  serverAllocationsTable,
+  serversTable,
+} from "@workspace/db/schema/servers"
 import { serverTransfersTable } from "@workspace/db/schema/transfers"
 import {
   ApiException,
@@ -17,6 +20,8 @@ import {
 } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
+import { writeAudit } from "@/lib/Audit"
+import { callDaemon } from "@/lib/DaemonHttp"
 import {
   buildRequireSession,
   type AuthVariables,
@@ -80,7 +85,30 @@ export const buildTransfersRoute = (params: { auth: Auth; db: Db }) => {
           status: 409,
         })
       }
-      const token = randomBytes(32).toString("hex")
+      // Mint the one-time HMAC token the source daemon will present to
+      // the target. Signed with the *target* node's key — only the
+      // target can verify, only the source can present.
+      if (targetNode.daemonPublicKey === null) {
+        throw new ApiException("nodes.unreachable", { status: 503 })
+      }
+      const sourceNode = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, server.nodeId))
+          .limit(1)
+      )[0]
+      if (sourceNode === undefined || sourceNode.daemonPublicKey === null) {
+        throw new ApiException("nodes.unreachable", { status: 503 })
+      }
+      const ts = Math.floor(Date.now() / 1000)
+      const token = createHmac(
+        "sha256",
+        Buffer.from(targetNode.daemonPublicKey, "hex")
+      )
+        .update(`${serverId}|${ts}`)
+        .digest("hex")
+
       const [row] = await db
         .insert(serverTransfersTable)
         .values({
@@ -89,13 +117,100 @@ export const buildTransfersRoute = (params: { auth: Auth; db: Db }) => {
           targetNodeId: parsed.data.targetNodeId,
           targetAllocationId: parsed.data.targetAllocationId,
           token,
-          status: "failed",
-          error: "not_implemented",
+          status: "running",
         })
         .returning()
       if (row === undefined) {
         throw new ApiException("internal.unexpected", { status: 500 })
       }
+
+      // Kick the source daemon to push to the target. Async so the
+      // response returns quickly; the row's `status` flips to completed
+      // / failed inline below once the source's call returns.
+      const targetUrl = `${targetNode.scheme}://${targetNode.fqdn}:${targetNode.daemonPort}/api/servers/${serverId}/transfer/ingest`
+      const pushBody = { targetUrl, token, timestamp: ts }
+      void (async () => {
+        try {
+          const resp = await callDaemon({
+            baseUrl: `${sourceNode.scheme}://${sourceNode.fqdn}:${sourceNode.daemonPort}`,
+            nodeId: sourceNode.id,
+            signingKeyHex: sourceNode.daemonPublicKey ?? "",
+            method: "POST",
+            path: `/api/servers/${serverId}/transfer/push`,
+            body: pushBody,
+          })
+          if (!resp.ok) {
+            await db
+              .update(serverTransfersTable)
+              .set({
+                status: "failed",
+                error: `source push: ${resp.status}`,
+                completedAt: new Date(),
+              })
+              .where(eq(serverTransfersTable.id, row.id))
+            return
+          }
+          // Atomic switchover: free the old primary allocation, link
+          // the new one, retarget the server's nodeId.
+          await db.transaction(async (tx) => {
+            const oldAllocId = server.primaryAllocationId
+            await tx
+              .update(nodeAllocationsTable)
+              .set({ serverId: null })
+              .where(eq(nodeAllocationsTable.serverId, serverId))
+            await tx
+              .delete(serverAllocationsTable)
+              .where(eq(serverAllocationsTable.serverId, serverId))
+            await tx
+              .update(nodeAllocationsTable)
+              .set({ serverId })
+              .where(
+                eq(
+                  nodeAllocationsTable.id,
+                  parsed.data.targetAllocationId
+                )
+              )
+            await tx.insert(serverAllocationsTable).values({
+              serverId,
+              allocationId: parsed.data.targetAllocationId,
+            })
+            await tx
+              .update(serversTable)
+              .set({
+                nodeId: parsed.data.targetNodeId,
+                primaryAllocationId: parsed.data.targetAllocationId,
+                status: "offline",
+                updatedAt: new Date(),
+              })
+              .where(eq(serversTable.id, serverId))
+            await tx
+              .update(serverTransfersTable)
+              .set({ status: "completed", completedAt: new Date() })
+              .where(eq(serverTransfersTable.id, row.id))
+            void oldAllocId // explicit unused binding for clarity
+          })
+          void writeAudit({
+            db,
+            actorId: null,
+            action: "servers.transferred",
+            targetType: "server",
+            targetId: serverId,
+            metadata: {
+              sourceNode: sourceNode.id,
+              targetNode: parsed.data.targetNodeId,
+            },
+          })
+        } catch (err) {
+          await db
+            .update(serverTransfersTable)
+            .set({
+              status: "failed",
+              error: err instanceof Error ? err.message : "unknown",
+              completedAt: new Date(),
+            })
+            .where(eq(serverTransfersTable.id, row.id))
+        }
+      })()
       return c.json({ transfer: row })
     })
 }

@@ -69,6 +69,10 @@ func (r *Router) routeServerSubpath(w http.ResponseWriter, req *http.Request) {
 		r.handleFiles(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "backups":
 		r.handleBackups(w, req, uuid)
+	case len(parts) == 5 && parts[3] == "transfer" && parts[4] == "ingest":
+		r.handleTransferIngest(w, req, uuid)
+	case len(parts) == 5 && parts[3] == "transfer" && parts[4] == "push":
+		r.handleTransferPush(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "install":
 		// API-initiated install. Verified with daemon HMAC, not browser
 		// JWT, so route through the remote auth middleware.

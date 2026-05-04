@@ -39,6 +39,7 @@
     "./schema/schedules": "./src/schema/schedules.ts",
     "./schema/transfers": "./src/schema/transfers.ts",
     "./schema/audit": "./src/schema/audit.ts",
+    "./schema/install": "./src/schema/install.ts",
     "./schema/jobs": "./src/schema/jobs.ts"
   }
 }
