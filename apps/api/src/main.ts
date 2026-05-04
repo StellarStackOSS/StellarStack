@@ -14,7 +14,9 @@ import { InstallRunner } from "@/lib/InstallRunner"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildActivityRoute } from "@/routes/Activity"
+import { buildAdminAuditRoute } from "@/routes/AdminAudit"
 import { buildAdminServersRoute } from "@/routes/AdminServers"
+import { buildAdminUsersRoute } from "@/routes/AdminUsers"
 import { buildServerAllocationsRoute } from "@/routes/Allocations"
 import { buildBackupsRoute } from "@/routes/Backups"
 import { buildBlueprintsRoute } from "@/routes/Blueprints"
@@ -64,16 +66,18 @@ app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
   auth.handler(c.req.raw)
 )
 
-app.route("/me", buildMeRoute(auth))
+app.route("/me", buildMeRoute(auth, db))
 app.route(
   "/servers",
   buildServersRoute({ auth, db, env, installRunner, statusCache })
 )
+app.route("/admin/audit", buildAdminAuditRoute({ auth, db }))
 app.route("/admin/nodes", buildNodesRoute({ auth, db }))
 app.route(
   "/admin/servers",
   buildAdminServersRoute({ auth, db, installRunner, statusCache })
 )
+app.route("/admin/users", buildAdminUsersRoute({ auth, db }))
 // Blueprints are visible to any signed-in user (server creation needs to
 // list them) but mutations require admin. The route enforces this via
 // a layered middleware chain inside buildBlueprintsRoute.

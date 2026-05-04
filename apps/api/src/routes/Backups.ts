@@ -3,13 +3,13 @@ import { Hono } from "hono"
 import { z } from "zod"
 
 import type { Db } from "@workspace/db/client.types"
-import { backupsTable } from "@workspace/db/schema/backups"
+import {
+  backupDestinationsTable,
+  backupsTable,
+} from "@workspace/db/schema/backups"
 import { nodesTable } from "@workspace/db/schema/nodes"
 import { serversTable } from "@workspace/db/schema/servers"
-import {
-  ApiException,
-  apiValidationError,
-} from "@workspace/shared/errors"
+import { ApiException, apiValidationError } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
 import { callDaemon } from "@/lib/DaemonHttp"
@@ -129,6 +129,60 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
       if (!resp.ok) {
         throw new ApiException("internal.unexpected", { status: 502 })
       }
+      return c.json({ ok: true })
+    })
+    .get("/:serverId/destination", async (c) => {
+      const serverId = c.req.param("serverId")
+      await assertAccess(db, c.get("user"), serverId)
+      const dest = (
+        await db
+          .select({
+            id: backupDestinationsTable.id,
+            endpoint: backupDestinationsTable.endpoint,
+            region: backupDestinationsTable.region,
+            bucket: backupDestinationsTable.bucket,
+            prefix: backupDestinationsTable.prefix,
+            accessKeyId: backupDestinationsTable.accessKeyId,
+            forcePathStyle: backupDestinationsTable.forcePathStyle,
+            createdAt: backupDestinationsTable.createdAt,
+            updatedAt: backupDestinationsTable.updatedAt,
+          })
+          .from(backupDestinationsTable)
+          .where(eq(backupDestinationsTable.serverId, serverId))
+          .limit(1)
+      )[0]
+      return c.json({ destination: dest ?? null })
+    })
+    .put("/:serverId/destination", async (c) => {
+      const serverId = c.req.param("serverId")
+      await assertAccess(db, c.get("user"), serverId)
+      const schema = z.object({
+        endpoint: z.string().url(),
+        region: z.string().min(1),
+        bucket: z.string().min(1),
+        prefix: z.string().default(""),
+        accessKeyId: z.string().min(1),
+        secretAccessKey: z.string().min(1),
+        forcePathStyle: z.boolean().default(true),
+      })
+      const parsed = schema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const [row] = await db
+        .insert(backupDestinationsTable)
+        .values({ serverId, ...parsed.data })
+        .onConflictDoUpdate({
+          target: backupDestinationsTable.serverId,
+          set: { ...parsed.data, updatedAt: new Date() },
+        })
+        .returning({ id: backupDestinationsTable.id })
+      return c.json({ destinationId: row?.id ?? null })
+    })
+    .delete("/:serverId/destination", async (c) => {
+      const serverId = c.req.param("serverId")
+      await assertAccess(db, c.get("user"), serverId)
+      await db
+        .delete(backupDestinationsTable)
+        .where(eq(backupDestinationsTable.serverId, serverId))
       return c.json({ ok: true })
     })
     .delete("/:serverId/:backupId", async (c) => {

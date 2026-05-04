@@ -138,6 +138,142 @@ export const buildServersRoute = (params: {
         access: { role: access.role, permissions: access.permissions },
       })
     })
+    .patch("/:id", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const body = await c.req.json()
+      const schema = z.object({
+        name: z.string().min(1).max(120).optional(),
+        description: z.string().max(500).nullable().optional(),
+      })
+      const parsed = schema.safeParse(body)
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      await db
+        .update(serversTable)
+        .set({ ...parsed.data, updatedAt: new Date() })
+        .where(eq(serversTable.id, id))
+      return c.json({ ok: true })
+    })
+    .get("/:id/variables", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      const [variables, blueprint] = await Promise.all([
+        db
+          .select()
+          .from(serverVariablesTable)
+          .where(eq(serverVariablesTable.serverId, id)),
+        db
+          .select({
+            variables: blueprintsTable.variables,
+            startupCommand: blueprintsTable.startupCommand,
+            dockerImages: blueprintsTable.dockerImages,
+          })
+          .from(blueprintsTable)
+          .where(eq(blueprintsTable.id, access.server.blueprintId))
+          .limit(1)
+          .then((rows) => rows[0] ?? null),
+      ])
+      return c.json({
+        variables,
+        startupExtra: access.server.startupExtra,
+        dockerImage: access.server.dockerImage,
+        blueprint,
+      })
+    })
+    .patch("/:id/variables", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const schema = z.object({
+        variables: z.record(z.string(), z.string()),
+      })
+      const parsed = schema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      await db.transaction(async (tx) => {
+        for (const [key, value] of Object.entries(parsed.data.variables)) {
+          await tx
+            .insert(serverVariablesTable)
+            .values({ serverId: id, variableKey: key, value })
+            .onConflictDoUpdate({
+              target: [
+                serverVariablesTable.serverId,
+                serverVariablesTable.variableKey,
+              ],
+              set: { value },
+            })
+        }
+      })
+      return c.json({ ok: true })
+    })
+    .patch("/:id/startup", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const schema = z.object({ startupExtra: z.string().nullable() })
+      const parsed = schema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      await db
+        .update(serversTable)
+        .set({ startupExtra: parsed.data.startupExtra, updatedAt: new Date() })
+        .where(eq(serversTable.id, id))
+      return c.json({ ok: true })
+    })
+    .patch("/:id/docker-image", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const schema = z.object({ dockerImage: z.string().min(1) })
+      const parsed = schema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const blueprint = (
+        await db
+          .select({ dockerImages: blueprintsTable.dockerImages })
+          .from(blueprintsTable)
+          .where(eq(blueprintsTable.id, access.server.blueprintId))
+          .limit(1)
+      )[0]
+      if (
+        blueprint === undefined ||
+        !Object.values(blueprint.dockerImages).includes(parsed.data.dockerImage)
+      ) {
+        throw new ApiException("servers.startup.invalid_docker_image", {
+          status: 422,
+        })
+      }
+      await db
+        .update(serversTable)
+        .set({ dockerImage: parsed.data.dockerImage, updatedAt: new Date() })
+        .where(eq(serversTable.id, id))
+      return c.json({ ok: true })
+    })
+    .post("/:id/reinstall", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      await db
+        .update(serversTable)
+        .set({ installState: "pending", updatedAt: new Date() })
+        .where(eq(serversTable.id, id))
+      void installRunner.enqueue(access.server.id)
+      return c.json({ ok: true })
+    })
     .post("/", async (c) => {
       const user = c.get("user")
       const parsed = createServerSchema.safeParse(await c.req.json())
