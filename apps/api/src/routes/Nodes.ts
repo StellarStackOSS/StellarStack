@@ -29,11 +29,22 @@ const createNodeSchema = z.object({
   diskTotalMb: z.number().int().positive(),
 })
 
-const allocationsSchema = z.object({
-  ip: z.string().min(1),
-  ports: z.array(z.number().int().min(1).max(65535)).min(1),
-  alias: z.string().max(120).optional(),
-})
+const allocationsSchema = z
+  .object({
+    ip: z.string().min(1),
+    ports: z.array(z.number().int().min(1).max(65535)).optional(),
+    portRange: z
+      .object({
+        start: z.number().int().min(1).max(65535),
+        end: z.number().int().min(1).max(65535),
+      })
+      .optional(),
+    alias: z.string().max(120).optional(),
+  })
+  .refine(
+    (v) => v.ports !== undefined || v.portRange !== undefined,
+    "ports or portRange required"
+  )
 
 const PAIRING_TTL_SECONDS = 600
 
@@ -104,11 +115,31 @@ export const buildNodesRoute = (params: { auth: Auth; db: Db }) => {
       }
       return c.json({ ok: true })
     })
+    .get("/:id/allocations", async (c) => {
+      const id = c.req.param("id")
+      const allocations = await db
+        .select()
+        .from(nodeAllocationsTable)
+        .where(eq(nodeAllocationsTable.nodeId, id))
+      return c.json({ allocations })
+    })
     .post("/:id/allocations", async (c) => {
       const id = c.req.param("id")
       const parsed = allocationsSchema.safeParse(await c.req.json())
       if (!parsed.success) throw apiValidationError(parsed.error)
-      const rows = parsed.data.ports.map((port) => ({
+      const ports: number[] =
+        parsed.data.ports !== undefined
+          ? parsed.data.ports
+          : (() => {
+              const range = parsed.data.portRange
+              if (range === undefined) return []
+              const lo = Math.min(range.start, range.end)
+              const hi = Math.max(range.start, range.end)
+              const out: number[] = []
+              for (let p = lo; p <= hi; p++) out.push(p)
+              return out
+            })()
+      const rows = ports.map((port) => ({
         id: randomUUID(),
         nodeId: id,
         ip: parsed.data.ip,
@@ -121,7 +152,24 @@ export const buildNodesRoute = (params: { auth: Auth; db: Db }) => {
         .values(rows)
         .onConflictDoNothing()
         .returning()
-      return c.json({ allocations: inserted })
+      return c.json({ created: inserted.length, allocations: inserted })
+    })
+    .delete("/:id/allocations/:allocId", async (c) => {
+      const allocId = c.req.param("allocId")
+      const row = (
+        await db
+          .select({ serverId: nodeAllocationsTable.serverId })
+          .from(nodeAllocationsTable)
+          .where(eq(nodeAllocationsTable.id, allocId))
+          .limit(1)
+      )[0]
+      if (row !== undefined && row.serverId !== null) {
+        throw new ApiException("servers.action.invalid_state", { status: 409 })
+      }
+      await db
+        .delete(nodeAllocationsTable)
+        .where(eq(nodeAllocationsTable.id, allocId))
+      return c.json({ ok: true })
     })
     .post("/:id/pair", async (c) => {
       const id = c.req.param("id")
