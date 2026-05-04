@@ -8,11 +8,15 @@ import { serversTable } from "@workspace/db/schema/servers"
 import { callDaemon } from "@/lib/DaemonHttp"
 
 /**
- * Single-call helper for triggering a backup against a paired daemon
- * and persisting the resulting row. Used by the manual /backups POST
- * route and by the schedule executor's `backup` task type.
+ * Insert a `pending` backup row and kick off the daemon call in the
+ * background. Returns the pending row's id immediately so the API
+ * response doesn't block on the tarball walk + gzip — useBackups polls
+ * the list every 5s while any row is `pending`, so the UI tracks the
+ * progression pending → ready (or pending → failed) without the POST
+ * hanging for tens of seconds.
  *
- * Returns the inserted backup row id, or null on failure.
+ * Used by the manual /servers/:id/backups POST and by the schedule
+ * executor's `backup` task type.
  */
 export const runBackup = async (params: {
   db: Db
@@ -38,34 +42,50 @@ export const runBackup = async (params: {
   if (created === undefined) return null
 
   const baseUrl = `${row.node.scheme}://${row.node.fqdn}:${row.node.daemonPort}`
-  const resp = await callDaemon({
-    baseUrl,
-    nodeId: row.node.id,
-    signingKeyHex: row.node.daemonPublicKey,
-    method: "POST",
-    path: `/api/servers/${serverId}/backups?op=create`,
-    body: { name },
-  })
-  if (!resp.ok) {
-    await db
-      .update(backupsTable)
-      .set({ state: "failed", failureCode: "backups.create_failed" })
-      .where(eq(backupsTable.id, created.id))
-    return created.id
-  }
-  const result = (await resp.json()) as {
-    name: string
-    bytes: number
-    sha256: string
-  }
-  await db
-    .update(backupsTable)
-    .set({
-      state: "ready",
-      bytes: result.bytes,
-      sha256: result.sha256,
-      completedAt: new Date(),
-    })
-    .where(eq(backupsTable.id, created.id))
-  return created.id
+  const nodeId = row.node.id
+  const signingKeyHex = row.node.daemonPublicKey
+  const backupId = created.id
+  void (async () => {
+    try {
+      const resp = await callDaemon({
+        baseUrl,
+        nodeId,
+        signingKeyHex,
+        method: "POST",
+        path: `/api/servers/${serverId}/backups?op=create`,
+        body: { name },
+      })
+      if (!resp.ok) {
+        await db
+          .update(backupsTable)
+          .set({ state: "failed", failureCode: "backups.create_failed" })
+          .where(eq(backupsTable.id, backupId))
+        return
+      }
+      const result = (await resp.json()) as {
+        name: string
+        bytes: number
+        sha256: string
+      }
+      await db
+        .update(backupsTable)
+        .set({
+          state: "ready",
+          bytes: result.bytes,
+          sha256: result.sha256,
+          completedAt: new Date(),
+        })
+        .where(eq(backupsTable.id, backupId))
+    } catch (err) {
+      console.error("backup runner:", err)
+      await db
+        .update(backupsTable)
+        .set({
+          state: "failed",
+          failureCode: "backups.create_failed",
+        })
+        .where(eq(backupsTable.id, backupId))
+    }
+  })()
+  return backupId
 }

@@ -97,6 +97,11 @@ func (s *Server) Config() Config {
 	return s.cfg
 }
 
+// PublishDaemon is the exported sibling of publishDaemon for callers
+// outside the server package (router/backups.go etc) that want to push
+// daemon-prefixed status messages into the same console stream.
+func (s *Server) PublishDaemon(msg string) { s.publishDaemon(msg) }
+
 // publishDaemon emits a Pelican-style "[StellarStack Daemon]: <msg>"
 // console line so the panel surfaces what the daemon is doing during a
 // power action — pulling images, running config patches, marking
