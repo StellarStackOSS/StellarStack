@@ -36,3 +36,6 @@ npm-debug.log*
 # Go
 apps/daemon/bin
 apps/daemon/vendor
+
+# Claude Code workspace metadata
+.claude/

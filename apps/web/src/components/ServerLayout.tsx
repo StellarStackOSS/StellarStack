@@ -6,11 +6,12 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import type { HugeiconsIconElement } from "@hugeicons/react"
 import {
   Calendar03Icon,
+  ComputerTerminal02Icon,
   DashboardSquare02Icon,
   EthernetPortIcon,
   FolderLibraryIcon,
   HardDriveIcon,
-  ComputerTerminal02Icon,
+  Layers01Icon,
   ListViewIcon,
   Settings02Icon,
   UserMultipleIcon,
@@ -29,18 +30,6 @@ import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { AppSidebar } from "@/components/AppSidebar"
-import {
-  Calendar03Icon,
-  ComputerTerminal02Icon,
-  DashboardSquare02Icon,
-  EthernetPortIcon,
-  FolderLibraryIcon,
-  HardDriveIcon,
-  Layers01Icon,
-  ListViewIcon,
-  Settings02Icon,
-  UserMultipleIcon,
-} from "@hugeicons/core-free-icons"
 import type { NavItem } from "@/components/NavMain.types"
 import { ServerLayoutContext } from "@/components/ServerLayoutContext"
 import { EulaModal } from "@/components/server/EulaModal"

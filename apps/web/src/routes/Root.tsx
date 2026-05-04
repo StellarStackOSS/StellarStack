@@ -1,6 +1,8 @@
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router"
 import type { QueryClient } from "@tanstack/react-query"
 
+import { PageTitle } from "@/components/PageTitle"
+
 /**
  * Context shape made available to every route via TanStack Router's
  * `createRootRouteWithContext`. The router is constructed in
@@ -17,5 +19,10 @@ export type RouterContext = {
  * mounted alongside the outlet in the dev build.
  */
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <PageTitle />
+      <Outlet />
+    </>
+  ),
 })
