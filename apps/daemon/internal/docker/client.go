@@ -21,9 +21,10 @@ import (
 	"time"
 )
 
-// API version matches what's stable on Docker Engine 24+. The path is
-// optional but pinning avoids "no such endpoint" surprises after upgrades.
-const apiVersion = "v1.43"
+// API version matches what's stable on Docker Engine 25+ (Colima ships
+// 25 by default). Pinning avoids "no such endpoint" surprises after
+// upgrades; v1.44 is the floor recent Docker daemons accept.
+const apiVersion = "v1.44"
 
 // Client is a thin wrapper that dials the Docker socket and parses JSON
 // responses. Concurrent calls are safe; each round trip dials a fresh
