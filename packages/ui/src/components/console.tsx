@@ -93,9 +93,12 @@ export const Console = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Smooth scroll fires handleScroll mid-animation, briefly registers
+  // a not-at-bottom position, and flips autoScroll false — so the next
+  // line append doesn't auto-scroll. Instant scroll skips that race.
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "instant" as ScrollBehavior })
     }
   }, [lines, autoScroll])
 
