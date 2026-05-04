@@ -15,6 +15,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/stellarstack/daemon/internal/docker"
+	"github.com/stellarstack/daemon/internal/environment"
+	"github.com/stellarstack/daemon/internal/server"
 )
 
 // installRequest is the body the API sends to /api/servers/:id/install.
@@ -44,13 +46,32 @@ func (r *Router) handleInstall(w http.ResponseWriter, req *http.Request, serverU
 		return
 	}
 
-	dc := r.manager.Get(serverUUID).Environment().Docker()
+	srv := r.manager.Get(serverUUID)
+	dc := srv.Environment().Docker()
 	containerName := "stellar-install-" + serverUUID + "-" + uuid.New().String()[:8]
 
 	w.Header().Set("Content-Type", "application/x-ndjson")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
+
+	// A reinstall on a running container would race the install script
+	// against the live server writing to the same bind-mount. Stop the
+	// runtime container first and wait for offline before kicking off
+	// the install. Falls back to SIGKILL if the graceful stop times out.
+	if srv.Environment().State() != environment.StateOffline {
+		emit(w, flusher, "stdout", "[StellarStack Daemon]: Stopping server before installation...")
+		srv.PublishDaemon("Stopping server before installation...")
+		stopCtx, stopCancel := context.WithTimeout(req.Context(), 30*time.Second)
+		err := srv.HandlePower(stopCtx, server.PowerStop)
+		stopCancel()
+		if err != nil {
+			emit(w, flusher, "stderr", "stop server: "+err.Error()+" — forcing kill")
+			killCtx, killCancel := context.WithTimeout(req.Context(), 10*time.Second)
+			_ = srv.HandlePower(killCtx, server.PowerKill)
+			killCancel()
+		}
+	}
 
 	// The install container mounts the server's bind dir at /home/container
 	// so anything the script writes there persists into the running

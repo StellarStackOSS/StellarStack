@@ -29,6 +29,7 @@ import {
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { InstallOverlay } from "@/components/InstallOverlay"
 import { ServerStatusBadge } from "@/components/ServerStatusBadge"
 import { AppSidebar } from "@/components/AppSidebar"
 import type { NavItem } from "@/components/NavMain.types"
@@ -249,7 +250,7 @@ export const ServerLayout = () => {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col">
           <main className="@container/main flex min-h-0 w-full flex-1 flex-col p-6">
             <ServerLayoutContext.Provider
               value={{
@@ -263,6 +264,12 @@ export const ServerLayout = () => {
               <EulaModal />
             </ServerLayoutContext.Provider>
           </main>
+          {server.installState !== "succeeded" ? (
+            <InstallOverlay
+              serverId={server.id}
+              installState={server.installState}
+            />
+          ) : null}
         </div>
       </SidebarInset>
 
