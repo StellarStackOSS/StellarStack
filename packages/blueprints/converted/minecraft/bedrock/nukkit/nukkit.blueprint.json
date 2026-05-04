@@ -4,10 +4,10 @@
   "author": "parker@parkervcp.com",
   "description": "Nukkit is a nuclear-powered server software for Minecraft Bedrock Edition\r\n\r\nhttps://cloudburstmc.org",
   "dockerImages": {
-    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "Java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}} --language eng",
@@ -43,7 +43,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
     "script": "#!/bin/ash\n# Nukkit Installation Script\n#\n# Server Files: /mnt/server\napk add --no-cache openssl\n\ncd /mnt/server\n\n## Only download if a path is provided, otherwise continue.\nif [ \"${NUKKIT_VERSION}\" == \"latest\" ]; then\n    wget https://repo.opencollab.dev/api/maven/latest/file/maven-snapshots/cn/nukkit/nukkit/1.0-SNAPSHOT?extension=jar -O ${SERVER_JARFILE}\nelif [ -n \"${NUKKIT_VERSION}\" ]; then\n    wget https://repo.opencollab.dev/maven-snapshots/cn/nukkit/nukkit/1.0-SNAPSHOT/nukkit-${NUKKIT_VERSION}.jar -O ${SERVER_JARFILE}\nfi\n\necho -s \"Install completed!\""
   },

@@ -24,7 +24,7 @@ const (
 // Stop describes how this server is shut down. Type "command" writes
 // `Value\n` to the container stdin; type "signal" sends the named signal
 // via Docker's kill API; type "" (empty) lets Docker's stop API use the
-// container's configured StopSignal. Mirrors Pelican's StopConfig union.
+// container's configured StopSignal. Mirrors the upstream daemon's StopConfig union.
 type StopConfig struct {
 	Type  string // "" | "command" | "signal"
 	Value string // command text without trailing \n, or signal name like "SIGTERM"

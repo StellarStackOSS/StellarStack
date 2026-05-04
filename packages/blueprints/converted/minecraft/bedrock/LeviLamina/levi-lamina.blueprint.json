@@ -4,7 +4,7 @@
   "author": "eggs@purpleflaghosting.com",
   "description": "LeviLamina is an unofficial mod loader designed to offer indispensable API support for Minecraft Bedrock Edition. It boasts a comprehensive API, an array of utility interfaces, a robust event system, and comprehensive support for basic interfaces. LeviLamina provides an expansive API, a powerful event system, and a wealth of encapsulated development infrastructure interfaces, forming a solid foundation for augmenting the Minecraft Bedrock Edition with additional gameplay features and functionalities. By leveraging mods, the process of extending Bedrock functionality becomes effortless, with a user-friendly development process and an adaptable approach.",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:wine_latest": "ghcr.io/ptero-eggs/yolks:wine_latest"
+    "ghcr.io/stellarstackoss/planets:wine_latest": "ghcr.io/stellarstackoss/planets:wine_latest"
   },
   "stopSignal": "^C",
   "startupCommand": "cat | wine bedrock_server_mod.exe",
@@ -96,7 +96,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "image": "ghcr.io/stellarstackoss/planets:installers_debian",
     "entrypoint": "bash",
     "script": "# Install required packages\napt update\napt install -y lsb-release xvfb\n\n# Install wine\nwget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key\nwget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/debian/dists/$(lsb_release -sc 2>/dev/null)/winehq-$(lsb_release -sc 2>/dev/null).sources\napt update\napt install --no-install-recommends winehq-stable cabextract -y\n\nexport WINEPREFIX=/root/.wine\nmkdir -p $WINEPREFIX\n\n\n# Setup display\nexport DISPLAY=:0\nXvfb :0 -screen 0 1024x768x16 &\n\n\n\n\n# Install Winetricks\necho \"Installing winetricks\"\nwget -q -O /usr/sbin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && chmod +x /usr/sbin/winetricks\n\necho \"Installing mono\"\nwget -q -O $WINEPREFIX/mono.msi https://dl.winehq.org/wine/wine-mono/9.1.0/wine-mono-9.1.0-x86.msi\nWINEDLLOVERRIDES=\"mscoree,mshtml=\" wine msiexec /i $WINEPREFIX/mono.msi /qn /quiet /norestart /log $WINEPREFIX/mono_install.log\n\n# Install dotnet\necho \"Installing dotnet\"\nwinetricks -q dotnet9           \n\n\n# Setup tty width so wine console output doesn't prematurely wrap\nstty columns 250\n\n\ncd /mnt/server || { echo \"Failed to change directory\"; exit 1; }\n\n# Install lip\nLIP_URL=\"https://github.com/futrime/lip/releases/latest/download/lip-cli-win-x64.zip\"\nwget $LIP_URL -O lip.zip\nunzip -o lip.zip lip.exe\nrm lip.zip\n\n\nif [ -n \"$VERSION\" ] && [ \"$VERSION\" != \"latest\" ]; then\n    wine lip.exe install github.com/LiteLDev/LeviLamina@\"$VERSION\"\nelse\n    wine lip.exe install github.com/LiteLDev/LeviLamina\nfi\n\n\necho \"Server Installed\"\n\nif [ -f \"lip-install.txt\" ]; then\n    for package in $(cat \"lip-install.txt\" ); do\n        echo \"Installing ${package} from lip-install.txt\"\n        wine lip.exe install \"${package}\"\n    done\n    echo \"Packages installed\"\nfi"
   },

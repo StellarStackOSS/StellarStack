@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "Attack of the B-Team",
-  "author": "support@pterodactyl.io",
+  "author": "support@stellarstack.io",
   "description": "This modpack was designed with one thing in mind, crazy mad science! With the help of the B-Team we hand picked the wackiest mods we could find and shoved them all in a modpack for you guys. The result is Attack of the B-Team!",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:java_8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "ghcr.io/stellarstackoss/planets:java_8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar BTeam.jar",
@@ -31,7 +31,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
     "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\n\n\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/bteam/BTeam_Server_v$MODPACK_VERSION.zip -o BTeam_Server_v$MODPACK_VERSION.zip\n\nunzip -o BTeam_Server_v$MODPACK_VERSION.zip\n\nrm -rf BTeam_Server_v$MODPACK_VERSION.zip\n\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },

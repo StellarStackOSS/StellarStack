@@ -4,7 +4,7 @@
   "author": "parker@parkervcp.com",
   "description": "Bedrock Edition (also known as the Bedrock Version, Bedrock Codebase, Bedrock Engine or just Bedrock) refers to the multi-platform family of editions of Minecraft developed by Mojang AB, Microsoft Studios, 4J Studios, and SkyBox Labs. Prior to this term, as the engine originated with Pocket Edition, this entire product family was referred to as \"Pocket Edition\", \"MCPE\", or \"Pocket/Windows 10 Edition\".",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:debian": "ghcr.io/ptero-eggs/yolks:debian"
+    "ghcr.io/stellarstackoss/planets:debian": "ghcr.io/stellarstackoss/planets:debian"
   },
   "stopSignal": "^stop",
   "startupCommand": "./bedrock_server",
@@ -78,7 +78,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "image": "ghcr.io/stellarstackoss/planets:installers_debian",
     "entrypoint": "bash",
     "script": "#!/bin/bash\n\napt update\napt install -y zip unzip wget curl jq\n\ncd /mnt/server || { echo \"Failed to change directory to /mnt/server\"; exit 1; }\n\n# Default version to latest if not set\nBEDROCK_VERSION=${BEDROCK_VERSION:-latest}\n\n# Filename to use for the downloaded file\nDOWNLOAD_FILE=\"bedrock-server-installer.zip\"\n\n# Minecraft CDN Akamai blocks script user-agents\nRANDVERSION=$(echo $((1 + $RANDOM % 4000)))\n\n\nif [ \"${BEDROCK_VERSION}\" == \"latest\" ]; then\n    echo \"Finding latest Bedrock server version\"\n    DOWNLOAD_URL=$(curl --silent https://net-secondary.web.minecraft-services.net/api/v1.0/download/links | jq -r '.result.links[] | select(.downloadType == \"serverBedrockLinux\") | .downloadUrl')\n    if [ -z \"${DOWNLOAD_URL}\" ]; then\n        echo \"Failed to retrieve the latest Bedrock server version. Please check your network connection or the Minecraft API.\"\n        exit 1\n    fi\nelse\n    echo \"Downloading ${BEDROCK_VERSION} Bedrock server\"\n    DOWNLOAD_URL=https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-$BEDROCK_VERSION.zip\nfi\n\necho \"Download URL: $DOWNLOAD_URL\"\n\n\n\n\n\necho -e \"Backing up config files\"\nmkdir /tmp/config_backup\ncp -v server.properties /tmp/config_backup/ 2>/dev/null \ncp -v permissions.json /tmp/config_backup/ 2>/dev/null \ncp -v allowlist.json /tmp/config_backup/ 2>/dev/null \n\n\n\necho -e \"Downloading files from: $DOWNLOAD_URL\"\ncurl -L -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.$RANDVERSION.212 Safari/537.36\" -H \"Accept-Language: en\" -o $DOWNLOAD_FILE $DOWNLOAD_URL\n\necho -e \"Unpacking server files\"\nunzip -o $DOWNLOAD_FILE\n\necho -e \"Cleaning up after installing\"\nrm $DOWNLOAD_FILE\n\necho -e \"Restoring backup config files\"\ncp -rfv /tmp/config_backup/* /mnt/server/ 2>/dev/null || { echo \"No files to restore\"; }\n\nchmod +x bedrock_server\n\necho -e \"Install Completed\""
   },

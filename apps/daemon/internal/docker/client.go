@@ -500,7 +500,7 @@ type LogLine struct {
 // FollowLogs streams container stdout+stderr forever. Auto-detects
 // TTY-mode by inspecting the container first: TTY containers return a
 // raw byte stream; non-TTY containers use Docker's 8-byte-header
-// multiplexed format. Pelican-style yolks images run with TTY=true so
+// multiplexed format. standard yolks images run with TTY=true so
 // the entrypoint can render its prompt with ANSI escapes.
 func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, error) {
 	tty := false
@@ -514,7 +514,7 @@ func (c *Client) FollowLogs(ctx context.Context, name string) (<-chan LogLine, e
 	// Pull the last 200 lines on attach so a freshly-connected pump
 	// (post-daemon-restart, post-reconcile) surfaces recent boot output
 	// instead of waiting for the next line the container happens to
-	// emit. Pelican does the same.
+	// emit. StellarStack does the same.
 	q.Set("tail", "200")
 	resp, err := c.do(ctx, http.MethodGet, "/containers/"+name+"/logs?"+q.Encode(), nil)
 	if err != nil {
@@ -656,7 +656,7 @@ func streamRawLines(ctx context.Context, r io.Reader, out chan<- LogLine) {
 type StatsSnapshot struct {
 	MemoryBytes      int64
 	MemoryLimitBytes int64
-	CPUAbsolute      float64 // Pelican-style: (cpu_delta / system_delta) * num_online_cpus
+	CPUAbsolute      float64 // standard: (cpu_delta / system_delta) * num_online_cpus
 	NetworkRxBytes   int64
 	NetworkTxBytes   int64
 	DiskReadBytes    int64

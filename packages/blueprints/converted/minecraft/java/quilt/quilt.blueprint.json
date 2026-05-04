@@ -4,13 +4,13 @@
   "author": "diedyesterdaywashere@gmail.com",
   "description": "The Quilt project is an open-source, community-driven modding toolchain designed primarily for Minecraft. By focusing on speed, ease of use and modularity, Quilt aims to provide a sleek and modern modding toolchain with an open ecosystem.",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 25": "ghcr.io/stellarstackoss/planets:java_25"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -XX:MaxRAMPercentage=95.0 -jar {{SERVER_JARFILE}} nogui",

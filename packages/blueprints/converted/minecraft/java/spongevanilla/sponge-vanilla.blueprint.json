@@ -4,13 +4,13 @@
   "author": "parker@parkervcp.com",
   "description": "SpongeVanilla is the implementation of the Sponge API on top of Vanilla Minecraft.",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 25": "ghcr.io/stellarstackoss/planets:java_25"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}",
@@ -46,9 +46,9 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "image": "ghcr.io/stellarstackoss/planets:installers_debian",
     "entrypoint": "bash",
-    "script": "#!/bin/bash\n# spongeVanilla Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y jq curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n#Adding .jar when not eding by SERVER_JARFILE\nif [[ ! ${SERVER_JARFILE} = *\\.jar ]]; then\n  SERVER_JARFILE=\"${SERVER_JARFILE}.jar\"\nfi\n\n## check spongevanilla version and default to recommended if it's invalid\nif [ -z ${SV_VERSION} ] || [ \"$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/${SV_VERSION})\" == \"Unknown version\" ]; then\n    echo -e \"defaulting to recommended\"\n    SV_VERSION=\"recommended\"\nfi\n\n## handle getting download linsk for sponge\nif [ \"${SV_VERSION}\" == \"recommended\" ]; then\n    echo -e \"using recommended spongevanilla version\"\n    SV_VERSION=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.version')\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\n    SV_DL_LINK=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.artifacts.\"\".url')\nelif [ \"${SV_VERSION}\" == \"latest\" ]; then\n    echo -e \"using latest SpongForge version\"\n    SV_VERSION=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla | jq -r '.buildTypes.stable.latest.version')\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\nelse\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\n    SV_DL_LINK=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/${SV_VERSION} | jq -r '.artifacts.\"\".url')\nfi\n\nif [ -f ${SERVER_JARFILE} ] && [ $(sha1sum server.jar | awk '{ print $1 }') == $(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.artifacts.\"\".sha1') ]; then\n    echo -e \"Already have the correct spongevanilla version\"\nelse\n    echo -e \"Downloading spongevanilla version ${SV_VERSION}\"\n    echo -e \"running: curl -s ${SV_DL_LINK} -o /mnt/server/mods/spongevanilla-${SV_VERSION}.jar\"\n    curl -s ${SV_DL_LINK} -o /mnt/server/${SERVER_JARFILE}\nfi\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -s -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi\n\necho -e \"Install for spongevanilla is complete\""
+    "script": "#!/bin/bash\n# spongeVanilla Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y jq curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n#Adding .jar when not eding by SERVER_JARFILE\nif [[ ! ${SERVER_JARFILE} = *\\.jar ]]; then\n  SERVER_JARFILE=\"${SERVER_JARFILE}.jar\"\nfi\n\n## check spongevanilla version and default to recommended if it's invalid\nif [ -z ${SV_VERSION} ] || [ \"$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/${SV_VERSION})\" == \"Unknown version\" ]; then\n    echo -e \"defaulting to recommended\"\n    SV_VERSION=\"recommended\"\nfi\n\n## handle getting download linsk for sponge\nif [ \"${SV_VERSION}\" == \"recommended\" ]; then\n    echo -e \"using recommended spongevanilla version\"\n    SV_VERSION=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.version')\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\n    SV_DL_LINK=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.artifacts.\"\".url')\nelif [ \"${SV_VERSION}\" == \"latest\" ]; then\n    echo -e \"using latest SpongForge version\"\n    SV_VERSION=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla | jq -r '.buildTypes.stable.latest.version')\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\nelse\n    echo -e \"found spongevanilla Version ${SV_VERSION}\"\n    SV_DL_LINK=$(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/${SV_VERSION} | jq -r '.artifacts.\"\".url')\nfi\n\nif [ -f ${SERVER_JARFILE} ] && [ $(sha1sum server.jar | awk '{ print $1 }') == $(curl -s https://dl-api.spongepowered.org/v1/org.spongepowered/spongevanilla/downloads/recommended | jq -r '.artifacts.\"\".sha1') ]; then\n    echo -e \"Already have the correct spongevanilla version\"\nelse\n    echo -e \"Downloading spongevanilla version ${SV_VERSION}\"\n    echo -e \"running: curl -s ${SV_DL_LINK} -o /mnt/server/mods/spongevanilla-${SV_VERSION}.jar\"\n    curl -s ${SV_DL_LINK} -o /mnt/server/${SERVER_JARFILE}\nfi\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -s -o server.properties https://raw.githubusercontent.com/stellarstack-planets/game-eggs/main/minecraft/java/server.properties\nfi\n\necho -e \"Install for spongevanilla is complete\""
   },
   "lifecycle": {
     "starting": {

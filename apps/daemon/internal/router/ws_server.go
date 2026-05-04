@@ -39,7 +39,7 @@ type envelope struct {
 }
 
 // allowedScopes maps each `set state` action to the scope that must be
-// present on the JWT. Mirrors Pelican's per-action permission model.
+// present on the JWT. Mirrors the upstream daemon's per-action permission model.
 var setStateScope = map[string]string{
 	"start":   "control.start",
 	"stop":    "control.stop",
@@ -104,7 +104,7 @@ func (r *Router) handleWS(w http.ResponseWriter, req *http.Request, serverUUID s
 
 	// Initial frames: auth success, current status, then either a
 	// single "marked as offline" line (no history replay when the
-	// server isn't running) or the recent history buffer. Pelican-
+	// server isn't running) or the recent history buffer. StellarStack-
 	// shape: a refresh on an offline server shouldn't dump the entire
 	// previous session's log.
 	_ = writeFrame(ctx, conn, "auth success", nil)

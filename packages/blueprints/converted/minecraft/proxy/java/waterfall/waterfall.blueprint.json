@@ -4,12 +4,12 @@
   "author": "hostmaster@waterfallgaming.net",
   "description": "Waterfall is a fork of the well-known BungeeCord server teleportation suite.",
   "dockerImages": {
-    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "Java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^end",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
@@ -62,9 +62,9 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "image": "ghcr.io/stellarstackoss/planets:installers_debian",
     "entrypoint": "bash",
-    "script": "#!/bin/bash\n# Waterfall Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=waterfall\n\napt update\napt install -y curl jq\n\nif [ -n \"${DL_LINK}\" ]; then\n\techo -e \"Using supplied download url: ${DL_LINK}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_LINK} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep true`\n\tLATEST_VERSION=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\t\n\tBUILD_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep true`\n\tLATEST_BUILD=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[-1]'`\n\t\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\t\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\t\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER}/downloads/${JAR_NAME}\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f config.yml ]; then\n\techo -e \"Downloading ${PROJECT} config.yml\"\n\tcurl -o config.yml https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/proxy/java/waterfall/config.yml\nelse\n\techo -e \"${PROJECT} config.yml exists. Will not pull a new file\"\nfi"
+    "script": "#!/bin/bash\n# Waterfall Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=waterfall\n\napt update\napt install -y curl jq\n\nif [ -n \"${DL_LINK}\" ]; then\n\techo -e \"Using supplied download url: ${DL_LINK}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_LINK} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep true`\n\tLATEST_VERSION=`curl -s https://api.papermc.io/v2/projects/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\t\n\tBUILD_EXISTS=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep true`\n\tLATEST_BUILD=`curl -s https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[-1]'`\n\t\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\t\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\t\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.papermc.io/v2/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER}/downloads/${JAR_NAME}\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f config.yml ]; then\n\techo -e \"Downloading ${PROJECT} config.yml\"\n\tcurl -o config.yml https://raw.githubusercontent.com/stellarstack-planets/game-eggs/main/minecraft/proxy/java/waterfall/config.yml\nelse\n\techo -e \"${PROJECT} config.yml exists. Will not pull a new file\"\nfi"
   },
   "lifecycle": {
     "starting": {

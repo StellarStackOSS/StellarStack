@@ -21,7 +21,7 @@ export type ServerLifecycleReason = {
 /**
  * Stats payload pushed by the daemon as the `stats` event on the per-
  * server WebSocket. Wire field names are snake_case to match the
- * Pelican-shape protocol the daemon emits.
+ * standard protocol the daemon emits.
  */
 export type ServerStatsPayload = {
   memory_bytes: number

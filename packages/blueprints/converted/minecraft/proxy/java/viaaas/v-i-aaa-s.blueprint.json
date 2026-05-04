@@ -4,12 +4,12 @@
   "author": "regulad@outlook.com",
   "description": "VIAaaS - ViaVersion as a Service - Standalone ViaVersion proxy",
   "dockerImages": {
-    "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "Java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^end",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}} -sslPort={{WEBSERVER_PORT}}",
@@ -44,7 +44,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
     "script": "#!/bin/ash\n# VIAaaS Installation Script\n#\n# Server Files: /mnt/server\ncd /mnt/server\nwget -O ${SERVER_JARFILE} \"https://jitpack.io/com/github/ViaVersion/VIAaaS/master-SNAPSHOT/VIAaaS-master-SNAPSHOT-all.jar\"\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },

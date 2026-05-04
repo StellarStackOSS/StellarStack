@@ -4,7 +4,7 @@
   "author": "geoffrey@remedygaming.net",
   "description": "Created by the Technic team, Tekkit Classic is a modpack for the record breaking sandbox construction game Minecraft. \r\nIt brings together some of the best mods from the Minecraft community for automating, industrializing and powering your worlds and bundles them into one easy download!",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar Tekkit.jar",
@@ -29,9 +29,9 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
-    "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/tekkit/Tekkit_Server_$MODPACK_VERSION.zip -o Tekkit_Server_$MODPACK_VERSION.zip\n\nunzip Tekkit_Server_$MODPACK_VERSION.zip\n\nrm -rf Tekkit_Server_$MODPACK_VERSION.zip\n\nrm launch.bat\n\nrm launch.sh\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
+    "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/tekkit/Tekkit_Server_$MODPACK_VERSION.zip -o Tekkit_Server_$MODPACK_VERSION.zip\n\nunzip Tekkit_Server_$MODPACK_VERSION.zip\n\nrm -rf Tekkit_Server_$MODPACK_VERSION.zip\n\nrm launch.bat\n\nrm launch.sh\n\nif [ ! -f server.properties ]; then\n    echo -e \"Downloading MC server.properties\"\n    curl -o server.properties https://raw.githubusercontent.com/stellarstack-planets/game-eggs/main/minecraft/java/server.properties\nfi\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },
   "lifecycle": {
     "starting": {

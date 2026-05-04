@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "name": "VanillaCord",
-  "author": "support@pterodactyl.io",
+  "author": "support@stellarstack.io",
   "description": "Minecraft is a game about placing blocks and going on adventures. Explore randomly generated worlds and build amazing things from the simplest of homes to the grandest of castles. Play in Creative Mode with unlimited resources or mine deep in Survival Mode, crafting weapons and armor to fend off dangerous mobs. Do all this alone or with friends.\r\n\r\nVanillaCord adds support for BungeeCord's ip_forward setting.",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 25": "ghcr.io/stellarstackoss/planets:java_25"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}",

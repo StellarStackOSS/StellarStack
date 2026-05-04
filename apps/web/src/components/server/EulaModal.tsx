@@ -15,7 +15,7 @@ import { useServerLayout } from "@/components/ServerLayoutContext"
 import { useWriteFile } from "@/hooks/useFiles"
 
 /**
- * Pelican-style modal that surfaces when the daemon detects the
+ * standard modal that surfaces when the daemon detects the
  * Minecraft EULA prompt in the container's stdout. The container
  * exits cleanly on its own — we don't kill it, and we don't suppress
  * the offline transition. We just give the user a one-click path to

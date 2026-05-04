@@ -140,7 +140,7 @@ export const blueprintSchema = z.object({
   lifecycle: blueprintLifecycleSchema,
   /**
    * Feature flags. Accepted as either a flat string list (legacy
-   * Pelican-style) or a record mapping feature name → console patterns
+   * standard) or a record mapping feature name → console patterns
    * the daemon watches for. List form is normalised to a record with
    * empty pattern arrays so downstream code only ever sees the record
    * shape.

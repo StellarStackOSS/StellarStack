@@ -109,7 +109,7 @@ func (s *Server) Config() Config {
 // daemon-prefixed status messages into the same console stream.
 func (s *Server) PublishDaemon(msg string) { s.publishDaemon(msg) }
 
-// publishDaemon emits a Pelican-style "[StellarStack Daemon]: <msg>"
+// publishDaemon emits a standard "[StellarStack Daemon]: <msg>"
 // console line so the panel surfaces what the daemon is doing during a
 // power action — pulling images, running config patches, marking
 // state, etc. Output goes through the same bus + history pipeline as
@@ -175,7 +175,7 @@ func (s *Server) scanLineForErrors(line string) {
 
 // publishHeader emits a "stellarstack@<uuid>~ <msg>" prompt-style line.
 // Used to announce state transitions in-band so the console reads as a
-// natural session log, mirroring Pelican's `pelican@<name>~ Server
+// natural session log, mirroring the upstream daemon's `stellarstack@<name>~ Server
 // marked as ...` format.
 func (s *Server) publishHeader(msg string) {
 	line := "stellarstack@" + s.uuid[:8] + "~ " + msg
@@ -250,7 +250,7 @@ func (s *Server) HandlePower(ctx context.Context, action PowerAction) error {
 			defer func() { <-s.powerLock }()
 		default:
 			// Lock held by another action; kill anyway via direct SIGKILL,
-			// don't wait. Mirrors Pelican's "kill bypasses lock" path.
+			// don't wait. Mirrors the upstream daemon's "kill bypasses lock" path.
 			return s.doKill(ctx)
 		}
 		return s.doKill(ctx)
@@ -329,7 +329,7 @@ func (s *Server) doStart(ctx context.Context) error {
 		return fmt.Errorf("create container: %w", err)
 	}
 
-	// Pelican-shape: open the docker attach stream BEFORE starting the
+	// Note: open the docker attach stream BEFORE starting the
 	// container so we capture every byte of stdout/stderr from the
 	// moment the entrypoint runs. The /logs?follow=1 path loses output
 	// between StartContainer and the first follow read.
@@ -366,7 +366,7 @@ func (s *Server) doStart(ctx context.Context) error {
 		}
 	}
 
-	// Pelican-shape: flip to running the moment Docker reports the
+	// Note: flip to running the moment Docker reports the
 	// container is up. ForceState (vs MarkRunning) emits even when the
 	// previous cached state already happened to be running — covers
 	// reconcile-then-restart where the env's prev state matched the
@@ -458,7 +458,7 @@ func (s *Server) watchExit() {
 }
 
 // flattenEnv converts a map of environment variables into Docker's
-// expected slice form, injecting STARTUP and SERVER_MEMORY (Pelican-
+// expected slice form, injecting STARTUP and SERVER_MEMORY (StellarStack-
 // compatible names so blueprints don't need a translation layer).
 func flattenEnv(env map[string]string, startup string, memoryMb int64) map[string]string {
 	out := make(map[string]string, len(env)+2)

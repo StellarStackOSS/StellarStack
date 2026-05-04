@@ -4,7 +4,7 @@
   "author": "aevum@decess.us",
   "description": "Blightfall is a combination modpack and adventure map about surviving on an alien planet. It uses magic mods and tech mods to create a novel gameplay experience. Can you survive on a world completely covered by Thaumcraft taint?\r\n\r\nhttps://www.technicpack.net/modpack/blightfall.592618",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:java_8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "ghcr.io/stellarstackoss/planets:java_8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar Blightfall.jar",
@@ -31,7 +31,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
     "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\n\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/blightfall/Blightfall_Server_$MODPACK_VERSION.zip -o Blightfall_$MODPACK_VERSION.zip\n\nunzip Blightfall_$MODPACK_VERSION.zip\n\nrm -rf Blightfall_$MODPACK_VERSION.zip\n\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },

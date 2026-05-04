@@ -37,7 +37,7 @@ func (e *Environment) IssueStop(ctx context.Context) error {
 			Stream: true,
 		})
 		if err != nil {
-			// Fall back to SIGTERM — same as Pelican's behavior when
+			// Fall back to SIGTERM — same as the upstream daemon's behavior when
 			// send_command fails.
 			log.Printf("environment: stop attach failed: %v; falling back to SIGTERM", err)
 			return e.docker.KillContainer(context.Background(), e.containerName, "SIGTERM")

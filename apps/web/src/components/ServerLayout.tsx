@@ -65,7 +65,7 @@ const routeMap: Record<string, RouteEntry> = {
  * WebSocket subscription via `useConsole` and exposes it (status,
  * lines, stats, power dispatch) to child pages through context. Power
  * buttons send `{event:"set state",…}` over that same socket — no REST
- * roundtrip, mirroring Pelican's panel UX.
+ * roundtrip, mirroring the upstream daemon's panel UX.
  */
 export const ServerLayout = () => {
   const { id } = useParams({ from: "/servers/$id" })

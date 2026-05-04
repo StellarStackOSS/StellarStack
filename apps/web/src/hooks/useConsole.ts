@@ -116,7 +116,7 @@ export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult
   //                       the metric cards.
   //   offline -> starting (restart's second leg or a fresh start) :
   //                       wipe the offline header so the new boot run
-  //                       gets a clean console. Pelican-shape.
+  //                       gets a clean console. standard.
   // The previous-status ref ensures we only clear on the *transition*
   // — re-renders while status is unchanged are no-ops.
   const prevStatusRef = useRef<ServerLifecycleState | null>(null)

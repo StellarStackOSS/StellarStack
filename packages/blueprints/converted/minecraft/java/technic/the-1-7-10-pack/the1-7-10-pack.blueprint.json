@@ -4,7 +4,7 @@
   "author": "contact@sweplox.se",
   "description": "The 1.7.10 Pack",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:java_8": "ghcr.io/ptero-eggs/yolks:java_8"
+    "ghcr.io/stellarstackoss/planets:java_8": "ghcr.io/stellarstackoss/planets:java_8"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar forge-*.jar",
@@ -31,7 +31,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
     "script": "#!/bin/ash\n# Forge Installation Script\n#\n# Server Files: /mnt/server\n\ncd /mnt/server\n\ncurl -sS https://servers.technicpack.net/Technic/servers/the-1710-pack/the-1710-pack_$MODPACK_VERSION.zip -o the-1710-pack_$MODPACK_VERSION.zip\n\nunzip the-1710-pack_$MODPACK_VERSION.zip\n\nrm -rf the-1710-pack_$MODPACK_VERSION.zip\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },

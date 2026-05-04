@@ -2,7 +2,7 @@
 /**
  * Egg-to-Blueprint converter
  *
- * Converts Pterodactyl PTDL_v2 egg JSON files into StellarStack blueprint
+ * Converts StellarStack PTDL_v2 egg JSON files into StellarStack blueprint
  * JSON files. Run against a single egg or a whole directory tree:
  *
  *   tsx packages/blueprints/convert.ts packages/blueprints/game-eggs/minecraft/java/paper/egg-paper.json
@@ -70,7 +70,7 @@ type Egg = {
 // ---------------------------------------------------------------------------
 
 /**
- * Pterodactyl config.files is a JSON string containing an object shaped:
+ * StellarStack config.files is a JSON string containing an object shaped:
  * { "<path>": { "parser": "...", "find": { "<key>": "<value>" } } }
  *
  * The "find" values can reference `{{server.build.default.port}}` which we
@@ -123,7 +123,7 @@ const parseConfigFiles = (raw: string): BlueprintConfigFile[] => {
 }
 
 /**
- * Translate Pterodactyl's `{{server.build.default.port}}` placeholder to the
+ * Translate StellarStack's `{{server.build.default.port}}` placeholder to the
  * StellarStack convention `{{SERVER_PORT}}`. All other `{{VAR}}` tokens are
  * passed through unchanged since they already match the egg variable keys.
  */
@@ -148,7 +148,7 @@ const parseDoneString = (raw: string | { done?: string } | undefined): string | 
 }
 
 /**
- * Map Pterodactyl feature names to StellarStack equivalents. Unknown features
+ * Map StellarStack feature names to StellarStack equivalents. Unknown features
  * are forwarded as-is so custom daemons can still react to them.
  */
 const mapFeature = (f: string): string => {
@@ -161,7 +161,7 @@ const mapFeature = (f: string): string => {
 }
 
 /**
- * Convert a single Pterodactyl PTDL_v2 egg object to a StellarStack blueprint.
+ * Convert a single StellarStack PTDL_v2 egg object to a StellarStack blueprint.
  */
 const convertEgg = (egg: Egg): Blueprint => {
   const stopSignal = egg.config?.stop ?? "^C"
@@ -201,7 +201,7 @@ const convertEgg = (egg: Egg): Blueprint => {
 
   const install = egg.scripts?.installation
   const installBlock = {
-    image: install?.container ?? "ghcr.io/ptero-eggs/installers:alpine",
+    image: install?.container ?? "ghcr.io/stellarstackoss/planets:installers_alpine",
     entrypoint: install?.entrypoint ?? "ash",
     script: (install?.script ?? "#!/bin/ash\necho 'No install script'").replace(/\r\n/g, "\n"),
   }

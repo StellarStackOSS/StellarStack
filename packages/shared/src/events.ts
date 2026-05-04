@@ -41,7 +41,7 @@ export const stateChangedPayloadSchema = z.object({
 
 /**
  * Stats payload broadcast over the daemon WS as `{event:"stats", args:[…]}`.
- * Field names match Pelican's wire format (snake_case) so existing tooling
+ * Field names match the upstream daemon's wire format (snake_case) so existing tooling
  * and docs remain useful for debugging.
  */
 export const statsPayloadSchema = z.object({
@@ -61,7 +61,7 @@ export const statsPayloadSchema = z.object({
 
 /**
  * Envelope schema for every frame on the per-server daemon WebSocket.
- * Pelican-shape: `{event, args}` discriminated by `event`.
+ * Note: `{event, args}` discriminated by `event`.
  */
 export const wsEnvelopeSchema = z.object({
   event: z.string(),

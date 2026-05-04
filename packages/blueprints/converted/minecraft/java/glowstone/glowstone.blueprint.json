@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "name": "Glowstone",
-  "author": "support@pterodactyl.io",
+  "author": "support@stellarstack.io",
   "description": "Glowstone is an open-source server implementation for Minecraft: Java Edition 1.12.2 and up.",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
-    "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
-    "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
-    "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
-    "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
-    "Java 25": "ghcr.io/ptero-eggs/yolks:java_25"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11",
+    "Java 16": "ghcr.io/stellarstackoss/planets:java_16",
+    "Java 17": "ghcr.io/stellarstackoss/planets:java_17",
+    "java 21": "ghcr.io/stellarstackoss/planets:java_21",
+    "java 22": "ghcr.io/stellarstackoss/planets:java_22",
+    "Java 25": "ghcr.io/stellarstackoss/planets:java_25"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -Xms768M -Xmx{{SERVER_MEMORY}}M -XX:+UseG1GC -jar {{SERVER_JARFILE}}",

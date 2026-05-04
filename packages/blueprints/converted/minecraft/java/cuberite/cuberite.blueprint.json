@@ -4,7 +4,7 @@
   "author": "parker@parkervcp.com",
   "description": "A lightweight, fast and extensible game server for Minecraft",
   "dockerImages": {
-    "ghcr.io/ptero-eggs/yolks:debian": "ghcr.io/ptero-eggs/yolks:debian"
+    "ghcr.io/stellarstackoss/planets:debian": "ghcr.io/stellarstackoss/planets:debian"
   },
   "stopSignal": "^stop",
   "startupCommand": "./Cuberite",
@@ -31,7 +31,7 @@
       "key": "SERV_DESC",
       "name": "Server Description",
       "description": "Server Description",
-      "default": "Cuberite on Pterodactyl!",
+      "default": "Cuberite on StellarStack!",
       "userViewable": true,
       "userEditable": true,
       "rules": "nullable|string"
@@ -56,7 +56,7 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:debian",
+    "image": "ghcr.io/stellarstackoss/planets:installers_debian",
     "entrypoint": "bash",
     "script": "#!/bin/ash\n# Cuberite\n#\n# Server Files: /mnt/server\n\ncd /mnt/server\n\nARCH=$([[ \"$(uname -m)\" == \"x86_64\" ]] && echo \"x86_64\" || echo \"aarch64\")\n\nwget https://download.cuberite.org/linux-${ARCH}/Cuberite.tar.gz\n\ntar -xzf Cuberite.tar.gz\n\n## install end\necho \"-----------------------------------------\"\necho \"Installation completed...\"\necho \"-----------------------------------------\""
   },

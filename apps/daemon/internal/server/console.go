@@ -94,7 +94,7 @@ func (s *Server) startAttachPump() {
 
 // startAttachStream takes ownership of an already-attached docker
 // stream (opened before StartContainer) and pumps lines through the
-// bus + history. Mirrors Pelican wings: ScanReader on the attach
+// bus + history. Mirrors the daemon: ScanReader on the attach
 // stream's stdout/stderr until EOF or context cancel.
 func (s *Server) startAttachStream(reader io.Reader, tty bool, closer func()) {
 	s.attachMu.Lock()

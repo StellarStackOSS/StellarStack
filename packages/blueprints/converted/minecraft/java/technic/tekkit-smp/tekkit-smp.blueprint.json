@@ -4,8 +4,8 @@
   "author": "lovinoes@lovinoes.de",
   "description": "Tekkit SMP contains the full range of mods from Tekkit 2, plus the extra mods that were originally dropped in the transition from Technic SSP (to Technic SMP) to Tekkit, in favour of multiplayer and Bukkit support: mainly Thaumcraft, Mystcraft, and Mo' Creatures. The new Tekkit SMP expands on that with various carefully selected Thaumcraft and Mystcraft addons, alongside Mo' Creatures Extended, and smaller custom additions such as Re-Crystallized Wing. Electro-Magic Tools is another starring mod, being an addon to both Industrial Craft and Thaumcraft, combining the worlds of tech and magic.",
   "dockerImages": {
-    "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
-    "Java 11": "ghcr.io/ptero-eggs/yolks:java_11"
+    "Java 8": "ghcr.io/stellarstackoss/planets:java_8",
+    "Java 11": "ghcr.io/stellarstackoss/planets:java_11"
   },
   "stopSignal": "^stop",
   "startupCommand": "java -server -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -Dfml.queryResult=confirm -jar forge.jar nogui",
@@ -40,9 +40,9 @@
     }
   ],
   "install": {
-    "image": "ghcr.io/ptero-eggs/installers:alpine",
+    "image": "ghcr.io/stellarstackoss/planets:installers_alpine",
     "entrypoint": "ash",
-    "script": "#!/bin/ash\n# Tekkit SMP Installation Script\n#\n# Server Files: /mnt/server\n\napk update\napk add --no-cache curl zip unzip jq\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nBUILD_TYPE=${BUILD_TYPE:-\"recommended\"}\n\nif [ -z \"$MODPACK_VERSION\" ]; then\n  MODPACK_VERSION=v$(curl -s https://solder.technicpack.net/api/modpack/tekkit-smp | jq -r \".${BUILD_TYPE}\")\nfi\n\necho \"Downloading Tekkit SMP version ${MODPACK_VERSION} (This may take a while!)\"\ncurl -sSL \"https://servers.technicpack.net/Technic/servers/tekkit-smp/Tekkit-SMP_Server_${MODPACK_VERSION}.zip\" -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nunzip -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\n\nrm -rf \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nrm -f RestoreBackup.bat LaunchServer.bat LaunchServer.sh RestoreBackup.sh\n\nmv forge-1.12.2-*.jar forge.jar\n\nif [ ! -f server.properties ]; then\n  curl -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi\n\necho \"Done\""
+    "script": "#!/bin/ash\n# Tekkit SMP Installation Script\n#\n# Server Files: /mnt/server\n\napk update\napk add --no-cache curl zip unzip jq\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nBUILD_TYPE=${BUILD_TYPE:-\"recommended\"}\n\nif [ -z \"$MODPACK_VERSION\" ]; then\n  MODPACK_VERSION=v$(curl -s https://solder.technicpack.net/api/modpack/tekkit-smp | jq -r \".${BUILD_TYPE}\")\nfi\n\necho \"Downloading Tekkit SMP version ${MODPACK_VERSION} (This may take a while!)\"\ncurl -sSL \"https://servers.technicpack.net/Technic/servers/tekkit-smp/Tekkit-SMP_Server_${MODPACK_VERSION}.zip\" -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nunzip -o \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\n\nrm -rf \"Tekkit-SMP_Server_${MODPACK_VERSION}.zip\"\nrm -f RestoreBackup.bat LaunchServer.bat LaunchServer.sh RestoreBackup.sh\n\nmv forge-1.12.2-*.jar forge.jar\n\nif [ ! -f server.properties ]; then\n  curl -o server.properties https://raw.githubusercontent.com/stellarstack-planets/game-eggs/main/minecraft/java/server.properties\nfi\n\necho \"Done\""
   },
   "lifecycle": {
     "starting": {

@@ -64,14 +64,14 @@ export const serversTable = pgTable(
     /**
      * Maximum number of backups the server can hold. The frontend
      * disables the create button when count >= limit; the API also
-     * rejects creates past it. Mirrors Pelican's per-server backup cap.
+     * rejects creates past it. Mirrors the upstream daemon's per-server backup cap.
      */
     backupLimit: integer("backup_limit").notNull().default(5),
     status: text("status").$type<ServerLifecycleState>().notNull().default("offline"),
     /**
      * Install lifecycle is tracked separately from the live container
      * status: a server can be `installing` while its container is offline.
-     * Pelican-shape — no probe-driven mid-state on the lifecycle enum.
+     * standard — no probe-driven mid-state on the lifecycle enum.
      */
     installState: text("install_state")
       .$type<"pending" | "running" | "succeeded" | "failed">()
