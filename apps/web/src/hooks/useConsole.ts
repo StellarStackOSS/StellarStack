@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
@@ -84,10 +85,28 @@ const envelopeSchema = z.object({
  * buffer reset).
  */
 export const useConsole = (serverId: string, enabled: boolean): UseConsoleResult => {
+  const queryClient = useQueryClient()
   const [state, setState] = useState<ConsoleConnectionState>("idle")
   const [lines, setLines] = useState<ConsoleLine[]>([])
   const [status, setStatus] = useState<ServerLifecycleState | null>(null)
   const [statsHistory, setStatsHistory] = useState<StatsSample[]>([])
+
+  // Whenever the daemon WS reports a fresh status, also write it
+  // through to the React Query cache for the server detail row so any
+  // component reading from `useServer(id)` (the layout fallback when
+  // consoleHook.status is null, the dashboard list, etc.) reflects
+  // it on the next render. Belt-and-suspenders against missed frames.
+  useEffect(() => {
+    if (status === null) return
+    queryClient.setQueryData<{ server: { status: ServerLifecycleState } }>(
+      ["servers", serverId],
+      (existing) => {
+        if (existing === undefined) return existing
+        if (existing.server.status === status) return existing
+        return { ...existing, server: { ...existing.server, status } }
+      }
+    )
+  }, [status, serverId, queryClient])
   const counterRef = useRef(0)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)

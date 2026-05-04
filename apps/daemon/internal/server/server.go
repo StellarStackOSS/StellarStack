@@ -99,6 +99,7 @@ func (s *Server) Config() Config {
 // onStateChange is invoked by the Environment listener for every state
 // transition. We broadcast over the bus AND POST a callback to the API.
 func (s *Server) onStateChange(prev, next environment.State) {
+	log.Printf("server %s: state %s -> %s", s.uuid, prev, next)
 	frame, _ := json.Marshal(map[string]any{
 		"event": "status",
 		"args":  []any{string(next)},
@@ -235,11 +236,13 @@ func (s *Server) doStart(ctx context.Context) error {
 		}
 	}
 
-	// Pelican-shape: flip to running immediately. The probe-based
-	// "wait for Done!" path is the one that bricked the UI before; we do
-	// not bring it back. If consumers need a "waiting for ready" indicator
-	// they can build one in front of the running state from log content.
-	s.env.MarkRunning()
+	// Pelican-shape: flip to running the moment Docker reports the
+	// container is up. ForceState (vs MarkRunning) emits even when the
+	// previous cached state already happened to be running — covers
+	// reconcile-then-restart where the env's prev state matched the
+	// new state and the listener would otherwise no-op.
+	s.env.ForceState(environment.StateRunning)
+	log.Printf("server %s: state -> running (container started)", s.uuid)
 
 	// Watch for unexpected exit. When this fires while the watcher
 	// hasn't been replaced (i.e. nobody pressed stop), flip to offline.
