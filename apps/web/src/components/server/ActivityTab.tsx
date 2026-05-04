@@ -117,105 +117,105 @@ export const ActivityTab = () => {
         </CardInner>
       </Card>
 
-      <Card className="flex min-h-0 flex-1 flex-col">
-        <CardHeader>
-          <CardTitle>{t("activity.history_heading")}</CardTitle>
-        </CardHeader>
-        <CardInner className="flex min-h-0 flex-1 flex-col gap-3 p-3">
-          <div className="min-h-0 flex-1 overflow-auto rounded border border-border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id}>
-                    {hg.headers.map((h) => (
-                      <TableHead key={h.id} className="text-xs">
-                        {h.isPlaceholder
-                          ? null
-                          : flexRender(
-                              h.column.columnDef.header,
-                              h.getContext()
-                            )}
-                      </TableHead>
+      {/* Mirrors the FileManager Card: gap-0 p-0 rounded-xl outer, an
+          internal header strip, the table in an overflow-auto region,
+          and the pagination strip pinned to the bottom — all sharing
+          the same rounded border so the table reads as one panel. */}
+      <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-xl p-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+          <span className="text-sm font-medium">
+            {t("activity.history_heading")}
+          </span>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="hover:bg-transparent">
+                  {hg.headers.map((h) => (
+                    <TableHead key={h.id} className="text-xs h-9">
+                      {h.isPlaceholder
+                        ? null
+                        : flexRender(
+                            h.column.columnDef.header,
+                            h.getContext()
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-muted-foreground text-xs"
+                  >
+                    {t("activity.loading")}
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-muted-foreground text-xs"
+                  >
+                    {t("activity.empty")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-muted-foreground text-xs"
-                    >
-                      {t("activity.loading")}
-                    </TableCell>
-                  </TableRow>
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-muted-foreground text-xs"
-                    >
-                      {t("activity.empty")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-          {/* Pagination footer — always rendered so the layout doesn't
-              jump when the page count crosses 1. Same shape as the
-              FileManager bottom strip: 'from–to of total' on the left,
-              ‹ Prev / X / Y › on the right. Driven by server-side
-              offset/limit; total comes from the response. */}
-          <div className="flex shrink-0 items-center justify-between border-t border-border px-1 pt-2 text-xs text-muted-foreground">
-            <span>
-              {entries.length === 0 ? 0 : offset + 1}–
-              {offset + entries.length} of {data?.total ?? entries.length}
+        {/* Pagination strip pinned to the bottom of the card */}
+        <div className="flex shrink-0 items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span>
+            {entries.length === 0 ? 0 : offset + 1}–
+            {offset + entries.length} of {data?.total ?? entries.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={offset === 0}
+              onClick={() =>
+                setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
+              }
+            >
+              ‹ Prev
+            </Button>
+            <span className="px-1">
+              {currentPage} / {totalPages}
             </span>
-            <div className="flex items-center gap-1">
-              <Button
-                size="xs"
-                variant="ghost"
-                disabled={offset === 0}
-                onClick={() =>
-                  setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
-                }
-              >
-                ‹ Prev
-              </Button>
-              <span className="px-1">
-                {currentPage} / {totalPages}
-              </span>
-              <Button
-                size="xs"
-                variant="ghost"
-                disabled={
-                  data?.total !== undefined
-                    ? offset + entries.length >= data.total
-                    : entries.length < PAGE_SIZE
-                }
-                onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-              >
-                Next ›
-              </Button>
-            </div>
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={
+                data?.total !== undefined
+                  ? offset + entries.length >= data.total
+                  : entries.length < PAGE_SIZE
+              }
+              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+            >
+              Next ›
+            </Button>
           </div>
-        </CardInner>
+        </div>
       </Card>
     </div>
   )
