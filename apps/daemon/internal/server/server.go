@@ -160,6 +160,11 @@ func (s *Server) onStateChange(prev, next environment.State) {
 	case environment.StateOffline:
 		s.stopAttachPump()
 		s.stopStatsPump()
+		// Clear the history ring so a future browser (re)connect on an
+		// offline server doesn't dump the previous session's log. The
+		// frontend's offline-transition path also clears its in-memory
+		// buffer; this is the daemon-side counterpart for fresh tabs.
+		s.history.Reset()
 	}
 }
 

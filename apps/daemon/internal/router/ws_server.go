@@ -102,13 +102,23 @@ func (r *Router) handleWS(w http.ResponseWriter, req *http.Request, serverUUID s
 		mu:     sync.Mutex{},
 	}
 
-	// Initial frames: auth success, current status, replay the recent
-	// history. Order mirrors Pelican's panel hookup: auth response →
-	// state → history → live stream.
+	// Initial frames: auth success, current status, then either a
+	// single "marked as offline" line (no history replay when the
+	// server isn't running) or the recent history buffer. Pelican-
+	// shape: a refresh on an offline server shouldn't dump the entire
+	// previous session's log.
 	_ = writeFrame(ctx, conn, "auth success", nil)
-	_ = writeFrame(ctx, conn, "status", []any{string(srv.Environment().State())})
-	for _, line := range srv.History().Snapshot() {
-		_ = writeFrame(ctx, conn, "console output", []any{line})
+	currentState := srv.Environment().State()
+	_ = writeFrame(ctx, conn, "status", []any{string(currentState)})
+	if currentState == "offline" {
+		_ = writeFrame(
+			ctx, conn, "console output",
+			[]any{"stellarstack@" + serverUUID[:8] + "~ Server marked as offline..."},
+		)
+	} else {
+		for _, line := range srv.History().Snapshot() {
+			_ = writeFrame(ctx, conn, "console output", []any{line})
+		}
 	}
 
 	// Pump bus → ws.
