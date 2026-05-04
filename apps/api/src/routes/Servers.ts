@@ -562,6 +562,51 @@ export const buildServersRoute = (params: {
         baseUrl: `${httpScheme}://${node.fqdn}:${node.daemonPort}/api/servers/${access.server.id}`,
       })
     })
+    .post("/:id/sftp-credentials", async (c) => {
+      // Alias matching the existing useSftpCredentials hook contract:
+      // returns { host, port, username, password (=JWT), expiresAt }.
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      const node = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, access.server.nodeId))
+          .limit(1)
+      )[0]
+      if (node === undefined) {
+        throw new ApiException("nodes.not_found", { status: 404 })
+      }
+      if (node.daemonPublicKey === null) {
+        throw new ApiException("nodes.unreachable", {
+          status: 503,
+          params: { node: node.name },
+        })
+      }
+      if (
+        access.role !== "owner" &&
+        access.role !== "admin" &&
+        !(access.permissions as DaemonJwtScope[]).includes("sftp")
+      ) {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const minted = mintDaemonToken({
+        signingKeyHex: node.daemonPublicKey,
+        userId: user.id,
+        serverId: access.server.id,
+        nodeId: node.id,
+        scope: ["sftp"],
+        ttlSeconds: 86_400,
+      })
+      return c.json({
+        host: node.fqdn,
+        port: node.sftpPort,
+        username: `${user.id}.${access.server.id}`,
+        password: minted.token,
+        expiresAt: minted.expiresAt.toISOString(),
+      })
+    })
     .post("/:id/credentials", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
@@ -613,12 +658,21 @@ export const buildServersRoute = (params: {
       const wsScheme = node.scheme === "https" ? "wss" : "ws"
       const httpScheme = node.scheme === "https" ? "https" : "http"
       const baseUrl = `${node.fqdn}:${node.daemonPort}`
+      const sftp =
+        parsed.data.purpose === "sftp"
+          ? {
+              host: node.fqdn,
+              port: node.sftpPort,
+              username: `${user.id}.${access.server.id}`,
+            }
+          : null
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
         wsUrl: `${wsScheme}://${baseUrl}/api/servers/${access.server.id}/ws`,
         httpBaseUrl: `${httpScheme}://${baseUrl}`,
         scopes: granted,
+        sftp,
       })
     })
 }

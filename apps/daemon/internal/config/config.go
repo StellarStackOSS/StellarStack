@@ -22,6 +22,8 @@ type Config struct {
 	SigningKeyHex string `toml:"signing_key"`
 	APIBaseURL    string `toml:"api_base_url"`
 	HTTPListen    string `toml:"http_listen"`
+	SFTPListen    string `toml:"sftp_listen"`
+	SFTPHostKey   string `toml:"sftp_host_key"`
 	DataDir       string `toml:"data_dir"`
 	DockerSocket  string `toml:"docker_socket"`
 	HistoryLines  int    `toml:"history_lines"`
@@ -51,6 +53,12 @@ func Load(path string) (*Config, error) {
 	}
 	if c.HTTPListen == "" {
 		c.HTTPListen = ":8081"
+	}
+	if c.SFTPListen == "" {
+		c.SFTPListen = ":2022"
+	}
+	if c.SFTPHostKey == "" {
+		c.SFTPHostKey = "/etc/stellar-daemon/sftp_host_key"
 	}
 	if c.DataDir == "" {
 		c.DataDir = "/var/lib/stellarstack"

@@ -8,40 +8,110 @@ import {
 } from "@workspace/db/schema/schedules"
 import { serversTable } from "@workspace/db/schema/servers"
 
-import type { StatusCache } from "@/lib/StatusCache"
+import { runBackup } from "@/lib/BackupRunner"
 import { callDaemon } from "@/lib/DaemonHttp"
+import type { StatusCache } from "@/lib/StatusCache"
+
+type ScheduleTaskRow = (typeof scheduleTasksTable)["$inferSelect"]
 
 const TICK_MS = 30_000
 
-/**
- * Compute the next firing time for a cron expression. We support a
- * deliberately small subset (`*`, single value, comma-list) on the
- * 5-field schedule (m h dom mon dow) — full vixie cron requires a parser
- * we don't want to maintain. If the expression is unsupported, the
- * scheduler treats the schedule as "never" so it doesn't crash-loop on
- * bad input.
- */
-const nextFiring = (expr: string, after: Date): Date | null => {
-  const fields = expr.trim().split(/\s+/)
-  if (fields.length !== 5) return null
-  const [mField, hField, domField, monField, dowField] = fields
-  const matches = (field: string | undefined, value: number): boolean => {
-    if (field === undefined || field === "*") return true
-    return field
-      .split(",")
-      .some((part) => Number.parseInt(part, 10) === value)
+type FieldRange = { min: number; max: number }
+
+const RANGES: Record<"m" | "h" | "dom" | "mon" | "dow", FieldRange> = {
+  m: { min: 0, max: 59 },
+  h: { min: 0, max: 23 },
+  dom: { min: 1, max: 31 },
+  mon: { min: 1, max: 12 },
+  dow: { min: 0, max: 6 },
+}
+
+// Parse one cron field into the explicit set of values it permits.
+// Supports * comma-lists a-b ranges and step expressions of form base/N.
+// Returns null if the field is malformed.
+const parseField = (
+  field: string,
+  range: FieldRange
+): Set<number> | null => {
+  const out = new Set<number>()
+  for (const part of field.split(",")) {
+    const stepMatch = /^(.+?)\/(\d+)$/.exec(part)
+    let base = part
+    let step = 1
+    if (stepMatch !== null) {
+      base = stepMatch[1] ?? "*"
+      step = Number.parseInt(stepMatch[2] ?? "1", 10)
+      if (Number.isNaN(step) || step <= 0) return null
+    }
+    let lo = range.min
+    let hi = range.max
+    if (base !== "*") {
+      const rangeMatch = /^(\d+)-(\d+)$/.exec(base)
+      if (rangeMatch !== null) {
+        lo = Number.parseInt(rangeMatch[1] ?? "", 10)
+        hi = Number.parseInt(rangeMatch[2] ?? "", 10)
+      } else {
+        const single = Number.parseInt(base, 10)
+        if (Number.isNaN(single)) return null
+        lo = single
+        hi = single
+      }
+    }
+    if (
+      Number.isNaN(lo) ||
+      Number.isNaN(hi) ||
+      lo < range.min ||
+      hi > range.max ||
+      lo > hi
+    ) {
+      return null
+    }
+    for (let v = lo; v <= hi; v += step) out.add(v)
   }
-  // Search forward minute-by-minute for up to a year. This is wasteful
-  // for very-rarely-firing schedules but bounded; production-grade we'd
-  // pull `cron-parser`, but we don't want the dep just for this.
+  return out
+}
+
+const NAMED: Record<string, string> = {
+  "@yearly": "0 0 1 1 *",
+  "@annually": "0 0 1 1 *",
+  "@monthly": "0 0 1 * *",
+  "@weekly": "0 0 * * 0",
+  "@daily": "0 0 * * *",
+  "@midnight": "0 0 * * *",
+  "@hourly": "0 * * * *",
+}
+
+// Compute the next firing time for a cron expression. Supports * lists
+// 1,5,10 ranges 1-5 step expressions like every-15-minutes and the named
+// macros hourly/daily/weekly/monthly/yearly. Returns null on unparseable
+// input so the scheduler treats bad rows as never instead of crash-looping.
+const nextFiring = (raw: string, after: Date): Date | null => {
+  const expr = raw.trim()
+  const resolved = expr in NAMED ? (NAMED[expr] as string) : expr
+  const fields = resolved.split(/\s+/)
+  if (fields.length !== 5) return null
+  const minutes = parseField(fields[0]!, RANGES.m)
+  const hours = parseField(fields[1]!, RANGES.h)
+  const doms = parseField(fields[2]!, RANGES.dom)
+  const months = parseField(fields[3]!, RANGES.mon)
+  const dows = parseField(fields[4]!, RANGES.dow)
+  if (
+    minutes === null ||
+    hours === null ||
+    doms === null ||
+    months === null ||
+    dows === null
+  ) {
+    return null
+  }
   const cur = new Date(Math.ceil(after.getTime() / 60_000) * 60_000)
   for (let i = 0; i < 60 * 24 * 366; i++) {
     if (
-      matches(mField, cur.getUTCMinutes()) &&
-      matches(hField, cur.getUTCHours()) &&
-      matches(domField, cur.getUTCDate()) &&
-      matches(monField, cur.getUTCMonth() + 1) &&
-      matches(dowField, cur.getUTCDay())
+      minutes.has(cur.getUTCMinutes()) &&
+      hours.has(cur.getUTCHours()) &&
+      doms.has(cur.getUTCDate()) &&
+      months.has(cur.getUTCMonth() + 1) &&
+      dows.has(cur.getUTCDay())
     ) {
       return cur
     }
@@ -180,9 +250,10 @@ export class Scheduler {
     nodeId: string,
     signingKeyHex: string,
     serverId: string,
-    task: typeof scheduleTasksTable.$inferSelect
+    task: ScheduleTaskRow
   ): Promise<void> {
-    const payload = task.payload ?? {}
+    const payload: Record<string, string | number | boolean> =
+      task.payload ?? {}
     switch (task.action) {
       case "power": {
         const action = String(payload["action"] ?? "")
@@ -218,12 +289,17 @@ export class Scheduler {
         return
       }
       case "backup": {
-        // Backups need a DB row + the API's backup orchestration; not
-        // wireable from the scheduler without lifting that helper out.
-        // Phase-5 work — log and continue so other tasks still fire.
-        console.warn("schedule task: backup action not yet wired", task.id)
+        const explicit = typeof payload["name"] === "string" ? payload["name"] : ""
+        const stamp = new Date()
+          .toISOString()
+          .replace(/:/g, "-")
+          .replace(/\./g, "-")
+        const name = explicit !== "" ? explicit : "scheduled-" + stamp
+        await runBackup({ db: this.db, serverId, name })
         return
       }
+      default:
+        return
     }
   }
 }

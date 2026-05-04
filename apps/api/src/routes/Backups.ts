@@ -12,6 +12,7 @@ import { serversTable } from "@workspace/db/schema/servers"
 import { ApiException, apiValidationError } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
+import { runBackup } from "@/lib/BackupRunner"
 import { callDaemon } from "@/lib/DaemonHttp"
 import {
   buildRequireSession,
@@ -48,53 +49,16 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
       await assertAccess(db, c.get("user"), serverId)
       const parsed = createBackupSchema.safeParse(await c.req.json())
       if (!parsed.success) throw apiValidationError(parsed.error)
-      const { node, server } = await loadServerNode(db, serverId)
-      if (node.daemonPublicKey === null) {
-        throw new ApiException("nodes.unreachable", { status: 503 })
-      }
-      const [row] = await db
-        .insert(backupsTable)
-        .values({
-          serverId,
-          name: parsed.data.name,
-          storage: "local",
-          state: "pending",
-        })
-        .returning()
-      if (row === undefined) throw new ApiException("internal.unexpected", { status: 500 })
-
-      const baseUrl = `${node.scheme}://${node.fqdn}:${node.daemonPort}`
-      const resp = await callDaemon({
-        baseUrl,
-        nodeId: node.id,
-        signingKeyHex: node.daemonPublicKey,
-        method: "POST",
-        path: `/api/servers/${server.id}/backups?op=create`,
-        body: { name: parsed.data.name },
-      })
-      if (!resp.ok) {
-        await db
-          .update(backupsTable)
-          .set({ state: "failed", failureCode: "backups.create_failed" })
-          .where(eq(backupsTable.id, row.id))
+      const id = await runBackup({ db, serverId, name: parsed.data.name })
+      if (id === null) {
         throw new ApiException("internal.unexpected", { status: 502 })
       }
-      const result = (await resp.json()) as {
-        name: string
-        bytes: number
-        sha256: string
-      }
-      const [updated] = await db
-        .update(backupsTable)
-        .set({
-          state: "ready",
-          bytes: result.bytes,
-          sha256: result.sha256,
-          completedAt: new Date(),
-        })
-        .where(eq(backupsTable.id, row.id))
-        .returning()
-      return c.json({ backup: updated })
+      const [row] = await db
+        .select()
+        .from(backupsTable)
+        .where(eq(backupsTable.id, id))
+        .limit(1)
+      return c.json({ backup: row })
     })
     .post("/:serverId/:backupId/restore", async (c) => {
       const serverId = c.req.param("serverId")
@@ -158,23 +122,50 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
     .put("/:serverId/destination", async (c) => {
       const serverId = c.req.param("serverId")
       await assertAccess(db, c.get("user"), serverId)
+      // Partial-update support: secretAccessKey is optional on update so
+      // operators can rotate the public credential without retyping the
+      // secret. The first PUT must include it; subsequent PUTs without
+      // it preserve the stored value.
       const schema = z.object({
         endpoint: z.string().url(),
         region: z.string().min(1),
         bucket: z.string().min(1),
         prefix: z.string().default(""),
         accessKeyId: z.string().min(1),
-        secretAccessKey: z.string().min(1),
+        secretAccessKey: z.string().optional(),
         forcePathStyle: z.boolean().default(true),
       })
       const parsed = schema.safeParse(await c.req.json())
       if (!parsed.success) throw apiValidationError(parsed.error)
+      const existing = (
+        await db
+          .select({ secret: backupDestinationsTable.secretAccessKey })
+          .from(backupDestinationsTable)
+          .where(eq(backupDestinationsTable.serverId, serverId))
+          .limit(1)
+      )[0]
+      const secret = parsed.data.secretAccessKey ?? existing?.secret
+      if (secret === undefined || secret === "") {
+        throw new ApiException("validation.failed", {
+          status: 422,
+          params: { field: "secretAccessKey" },
+        })
+      }
+      const values = {
+        endpoint: parsed.data.endpoint,
+        region: parsed.data.region,
+        bucket: parsed.data.bucket,
+        prefix: parsed.data.prefix,
+        accessKeyId: parsed.data.accessKeyId,
+        secretAccessKey: secret,
+        forcePathStyle: parsed.data.forcePathStyle,
+      }
       const [row] = await db
         .insert(backupDestinationsTable)
-        .values({ serverId, ...parsed.data })
+        .values({ serverId, ...values })
         .onConflictDoUpdate({
           target: backupDestinationsTable.serverId,
-          set: { ...parsed.data, updatedAt: new Date() },
+          set: { ...values, updatedAt: new Date() },
         })
         .returning({ id: backupDestinationsTable.id })
       return c.json({ destinationId: row?.id ?? null })

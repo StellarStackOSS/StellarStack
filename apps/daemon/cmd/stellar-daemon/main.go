@@ -28,6 +28,7 @@ import (
 	"github.com/stellarstack/daemon/internal/panel"
 	"github.com/stellarstack/daemon/internal/router"
 	"github.com/stellarstack/daemon/internal/server"
+	"github.com/stellarstack/daemon/internal/sftp"
 )
 
 func main() {
@@ -77,6 +78,29 @@ func main() {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
+
+	sftpServer, err := sftp.New(struct {
+		Listen      string
+		HostKeyPath string
+		Verifier    *stellarjwt.Verifier
+		DataDir     string
+		NodeID      string
+	}{
+		Listen:      cfg.SFTPListen,
+		HostKeyPath: cfg.SFTPHostKey,
+		Verifier:    verifier,
+		DataDir:     cfg.DataDir,
+		NodeID:      cfg.NodeID,
+	})
+	if err != nil {
+		log.Printf("sftp: skipped (%v)", err)
+	} else {
+		go func() {
+			if err := sftpServer.ListenAndServe(); err != nil {
+				log.Printf("sftp: listener exited: %v", err)
+			}
+		}()
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
