@@ -760,12 +760,20 @@ func convertStats(s rawStats) StatsSnapshot {
 		rx += int64(n.RxBytes)
 		tx += int64(n.TxBytes)
 	}
+	// Block-IO op names diverge across Docker / cgroup versions:
+	//   cgroup v1            : "Read", "Write" (also "Sync"/"Async"/"Total"
+	//                           — ignored, "Total" double-counts)
+	//   cgroup v2 (modern)   : "rbytes", "wbytes"
+	//   some intermediates   : "read_bytes", "write_bytes"
+	// Match every spelling we know about; if a host emits something else
+	// the field will read as 0 and we surface an obvious gap rather than
+	// a confidently-wrong number.
 	var rd, wr int64
 	for _, e := range s.BlkioStats.IOServiceBytesRecursive {
 		switch strings.ToLower(e.Op) {
-		case "read":
+		case "read", "rbytes", "read_bytes":
 			rd += int64(e.Value)
-		case "write":
+		case "write", "wbytes", "write_bytes":
 			wr += int64(e.Value)
 		}
 	}
