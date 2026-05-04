@@ -230,6 +230,58 @@ export const buildServersRoute = (params: {
         .where(eq(serversTable.id, id))
       return c.json({ ok: true })
     })
+    .patch("/:id/blueprint", async (c) => {
+      const id = c.req.param("id")
+      const user = c.get("user")
+      const access = await loadServerAccess(db, user, id)
+      if (access.role !== "owner" && access.role !== "admin") {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const schema = z.object({
+        blueprintId: z.string().uuid(),
+        dockerImage: z.string().min(1),
+      })
+      const parsed = schema.safeParse(await c.req.json())
+      if (!parsed.success) throw apiValidationError(parsed.error)
+      const blueprint = (
+        await db
+          .select({ dockerImages: blueprintsTable.dockerImages })
+          .from(blueprintsTable)
+          .where(eq(blueprintsTable.id, parsed.data.blueprintId))
+          .limit(1)
+      )[0]
+      if (blueprint === undefined) {
+        throw new ApiException("blueprints.not_found", { status: 404 })
+      }
+      if (!Object.values(blueprint.dockerImages).includes(parsed.data.dockerImage)) {
+        throw new ApiException("servers.startup.invalid_docker_image", {
+          status: 422,
+        })
+      }
+      await db
+        .update(serversTable)
+        .set({
+          blueprintId: parsed.data.blueprintId,
+          dockerImage: parsed.data.dockerImage,
+          installState: "pending",
+          updatedAt: new Date(),
+        })
+        .where(eq(serversTable.id, id))
+      // Drop the old per-server variables; the new blueprint owns the
+      // schema. Owners can refill them from the StartupTab.
+      await db
+        .delete(serverVariablesTable)
+        .where(eq(serverVariablesTable.serverId, id))
+      void writeAudit({
+        db,
+        actorId: user.id,
+        action: "servers.blueprint_changed",
+        targetType: "server",
+        targetId: id,
+        metadata: { blueprintId: parsed.data.blueprintId },
+      })
+      return c.json({ ok: true })
+    })
     .patch("/:id/docker-image", async (c) => {
       const id = c.req.param("id")
       const user = c.get("user")
