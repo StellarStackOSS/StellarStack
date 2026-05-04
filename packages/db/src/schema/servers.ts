@@ -52,6 +52,12 @@ export const serversTable = pgTable(
     dockerImage: text("docker_image").notNull(),
     startupExtra: text("startup_extra"),
     allocationLimit: integer("allocation_limit").notNull().default(3),
+    /**
+     * Maximum number of backups the server can hold. The frontend
+     * disables the create button when count >= limit; the API also
+     * rejects creates past it. Mirrors Pelican's per-server backup cap.
+     */
+    backupLimit: integer("backup_limit").notNull().default(5),
     status: text("status").$type<ServerLifecycleState>().notNull().default("offline"),
     /**
      * Install lifecycle is tracked separately from the live container

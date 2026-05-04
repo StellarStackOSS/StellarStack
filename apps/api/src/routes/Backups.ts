@@ -49,6 +49,26 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
       await assertAccess(db, c.get("user"), serverId)
       const parsed = createBackupSchema.safeParse(await c.req.json())
       if (!parsed.success) throw apiValidationError(parsed.error)
+      // Per-server backup limit: refuse new creates once we're at or
+      // over it. Counts every non-failed row so locked + ready + pending
+      // all consume a slot.
+      const server = (
+        await db
+          .select({ limit: serversTable.backupLimit })
+          .from(serversTable)
+          .where(eq(serversTable.id, serverId))
+          .limit(1)
+      )[0]
+      const existing = await db
+        .select({ id: backupsTable.id })
+        .from(backupsTable)
+        .where(eq(backupsTable.serverId, serverId))
+      if (server !== undefined && existing.length >= server.limit) {
+        throw new ApiException("internal.unexpected", {
+          status: 409,
+          params: { limit: server.limit },
+        })
+      }
       const id = await runBackup({ db, serverId, name: parsed.data.name })
       if (id === null) {
         throw new ApiException("internal.unexpected", { status: 502 })

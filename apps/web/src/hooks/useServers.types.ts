@@ -18,6 +18,8 @@ export type ServerListRow = {
   dockerImage: string
   status: ServerLifecycleState
   suspended: boolean
+  allocationLimit: number
+  backupLimit: number
   createdAt: string
   updatedAt: string
 }

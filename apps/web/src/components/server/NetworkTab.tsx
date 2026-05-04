@@ -10,6 +10,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
+  CardDescription,
   CardHeader,
   CardInner,
   CardTitle,

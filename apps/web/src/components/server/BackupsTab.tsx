@@ -145,6 +145,7 @@ export const BackupsTab = () => {
             <Button
               size="xs"
               variant="outline"
+              disabled={row.original.state === "pending" || lockBackup.isPending}
               onClick={() =>
                 lockBackup.mutate({ backupId: row.original.id, locked: !row.original.locked })
               }
@@ -175,7 +176,11 @@ export const BackupsTab = () => {
             <Button
               size="xs"
               variant="destructive"
-              disabled={row.original.locked || deleteBackup.isPending}
+              disabled={
+                row.original.locked ||
+                row.original.state === "pending" ||
+                deleteBackup.isPending
+              }
               onClick={() => setConfirmDelete(row.original)}
             >
               {t("backups.delete")}
@@ -206,7 +211,12 @@ export const BackupsTab = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("backups.take_heading")}</CardTitle>
+          <CardTitle>
+            {t("backups.take_heading")}{" "}
+            <span className="text-muted-foreground text-xs font-normal">
+              ({rows.length}/{server.backupLimit})
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardInner className="p-3 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +229,7 @@ export const BackupsTab = () => {
             <Button
               size="sm"
               onClick={() => void handleTake()}
-              disabled={createBackup.isPending}
+              disabled={createBackup.isPending || rows.length >= server.backupLimit}
             >
               {t("backups.take_local")}
             </Button>
