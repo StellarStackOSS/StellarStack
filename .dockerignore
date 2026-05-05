@@ -16,5 +16,4 @@
 **/.env.test.local
 apps/daemon/bin
 apps/daemon/vendor
-packages/db/drizzle
 infra/docker/.env

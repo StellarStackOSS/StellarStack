@@ -39,7 +39,7 @@ RUN pnpm --filter @workspace/shared codegen:errors \
 
 # Use pnpm deploy to flatten just the API + its prod deps into /out so
 # the runtime image stays small.
-RUN pnpm --filter api deploy --legacy --prod --no-optional /out \
+RUN pnpm --filter api deploy --prod --no-optional /out \
  && cp -r apps/api/dist /out/dist \
  && cp -r packages/db/drizzle /out/drizzle
 
