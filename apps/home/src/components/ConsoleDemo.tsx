@@ -78,21 +78,25 @@ export const ConsoleDemo = ({ height = 176 }: { height?: number }) => {
   }, [lines])
 
   return (
-    <Card className="w-full">
+    <Card className="w-full" style={{ height }}>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2">
+        <CardTitle
+          className="flex items-center justify-between gap-2"
+          style={{ fontSize: 11 }}
+        >
           <span>Console</span>
-          <span className="text-xs font-normal text-zinc-600">
+          <span className="font-normal text-zinc-600" style={{ fontSize: 10 }}>
             {lines.length} lines
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <CardInner className="relative overflow-hidden p-0" style={{ height }}>
+      <CardContent className="min-h-0 flex-1">
+        <CardInner className="relative h-full min-h-0 overflow-hidden p-0">
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-[#0e0e0e] to-transparent" />
           <div
             ref={scrollRef}
-            className="font-mono h-full overflow-auto px-3 py-2 text-[11px] leading-relaxed"
+            className="font-mono h-full overflow-auto px-3 py-2"
+            style={{ fontSize: 11, lineHeight: "16px" }}
           >
             {lines.map((l, i) => (
               <div
