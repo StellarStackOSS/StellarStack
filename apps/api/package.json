@@ -22,6 +22,7 @@
     "ioredis": "^5.4.1",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
+    "postgres": "^3.4.5",
     "zod": "^4.0.0"
   },
   "devDependencies": {
