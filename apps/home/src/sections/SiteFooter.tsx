@@ -34,9 +34,11 @@ export const SiteFooter = () => {
           <div className="grid gap-12 md:grid-cols-[1fr_auto_auto_auto]">
             <div className="flex flex-col gap-3">
               <a href="#" className="flex items-center gap-2">
-                <span className="bg-white/[0.06] flex aspect-square size-7 items-center justify-center rounded-md text-[11px] font-bold text-white">
-                  S
-                </span>
+                <img
+                  src="/icon.png"
+                  alt=""
+                  className="size-7 shrink-0 rounded-md"
+                />
                 <span className="text-sm font-semibold tracking-tight text-white">
                   StellarStack
                 </span>
@@ -71,7 +73,7 @@ export const SiteFooter = () => {
             aria-hidden
             className="select-none text-center font-semibold tracking-tighter text-white/[0.04]"
             style={{
-              fontSize: "clamp(80px, 18vw, 240px)",
+              fontSize: "clamp(40px, 16vw, 240px)",
               lineHeight: 0.85,
             }}
           >

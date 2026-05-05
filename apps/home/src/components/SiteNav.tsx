@@ -17,9 +17,11 @@ export const SiteNav = () => {
     >
       <nav className="mx-auto grid h-16 w-full max-w-7xl grid-cols-3 items-center px-6">
         <a href="#" className="flex items-center gap-2 justify-self-start">
-          <span className="bg-white/[0.06] flex aspect-square size-7 items-center justify-center rounded-md text-[11px] font-bold text-white">
-            S
-          </span>
+          <img
+            src="/icon.png"
+            alt=""
+            className="size-7 shrink-0 rounded-md"
+          />
           <span className="text-sm font-semibold tracking-tight text-white">
             StellarStack
           </span>

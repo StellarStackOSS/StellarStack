@@ -82,9 +82,17 @@ export const AppSidebar = ({
             to={brandHref ?? "/dashboard"}
             className="group/brand flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 hover:bg-sidebar-accent/40"
           >
-            <span className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-7 items-center justify-center rounded-md text-[11px] font-bold">
-              {brandIcon ?? "S"}
-            </span>
+            {brandIcon !== undefined ? (
+              <span className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-7 items-center justify-center rounded-md text-[11px] font-bold">
+                {brandIcon}
+              </span>
+            ) : (
+              <img
+                src="/icon.png"
+                alt=""
+                className="size-7 shrink-0 rounded-md"
+              />
+            )}
             <div className="flex min-w-0 flex-1 flex-col leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate text-sm font-semibold">
                 {brandLabel ?? "StellarStack"}
