@@ -52,13 +52,13 @@ export const MemoryCardDemo = () => {
       <CardHeader>
         <CardTitle>Memory</CardTitle>
       </CardHeader>
-      <CardInner className="flex h-16 items-center">
-        <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-snug text-zinc-100">
+      <CardInner className="flex h-16 min-w-0 items-center">
+        <div className="min-w-0 flex-1 px-3">
+          <div className="font-mono text-base font-medium leading-snug text-zinc-100 truncate whitespace-nowrap">
             {formatBytes(latest)}
           </div>
         </div>
-        <div className="h-16 w-28 shrink-0">
+        <div className="h-16 w-20 shrink-0 sm:w-24">
           <Sparkline
             data={series}
             color="#3b82f6"
@@ -84,13 +84,13 @@ export const CpuCardDemo = () => {
       <CardHeader>
         <CardTitle>CPU</CardTitle>
       </CardHeader>
-      <CardInner className="flex h-16 items-center">
-        <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-snug text-zinc-100">
+      <CardInner className="flex h-16 min-w-0 items-center">
+        <div className="min-w-0 flex-1 px-3">
+          <div className="font-mono text-base font-medium leading-snug text-zinc-100 truncate whitespace-nowrap">
             {latest.toFixed(1)}%
           </div>
         </div>
-        <div className="h-16 w-28 shrink-0">
+        <div className="h-16 w-20 shrink-0 sm:w-24">
           <Sparkline
             data={series}
             color="#22c55e"
@@ -114,13 +114,13 @@ export const NetworkCardDemo = () => {
       <CardHeader>
         <CardTitle>Network</CardTitle>
       </CardHeader>
-      <CardInner className="flex h-16 items-center">
-        <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-snug text-zinc-100">
+      <CardInner className="flex h-16 min-w-0 items-center">
+        <div className="min-w-0 flex-1 px-3">
+          <div className="font-mono text-base font-medium leading-snug text-zinc-100 truncate whitespace-nowrap">
             ↓ {formatSpeed(latest)}
           </div>
         </div>
-        <div className="h-16 w-28 shrink-0">
+        <div className="h-16 w-20 shrink-0 sm:w-24">
           <DualSparkline
             data1={rx}
             data2={tx}
@@ -149,13 +149,13 @@ export const DiskCardDemo = () => {
       <CardHeader>
         <CardTitle>Disk I/O</CardTitle>
       </CardHeader>
-      <CardInner className="flex h-16 items-center">
-        <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-snug text-zinc-100">
+      <CardInner className="flex h-16 min-w-0 items-center">
+        <div className="min-w-0 flex-1 px-3">
+          <div className="font-mono text-base font-medium leading-snug text-zinc-100 truncate whitespace-nowrap">
             R {formatSpeed(latest)}
           </div>
         </div>
-        <div className="h-16 w-28 shrink-0">
+        <div className="h-16 w-20 shrink-0 sm:w-24">
           <DualSparkline
             data1={read}
             data2={write}
