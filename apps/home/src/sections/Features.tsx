@@ -1,5 +1,13 @@
 import type { ReactNode } from "react"
 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
+
 import { Reveal, RevealItem, RevealStagger } from "@/components/Reveal"
 import { ConsoleDemo } from "@/components/ConsoleDemo"
 import {
@@ -18,56 +26,106 @@ type Feat = {
 }
 
 const InstallPreview = () => (
-  <div className="font-mono flex flex-col gap-1 rounded-md border border-white/10 bg-black/60 p-3 text-[11px] leading-relaxed text-zinc-300">
-    <span className="text-emerald-400">[StellarStack Daemon]: Pulling Docker container image...</span>
-    <span>[install] curl -sL https://api.papermc.io/v2/...</span>
-    <span>[install] Resolved version 1.21.4-build.182</span>
-    <span>[install] {"  "}downloaded {"  "}88.3 MB</span>
-    <span className="text-emerald-400">[StellarStack Daemon]: Installation succeeded ✓</span>
-  </div>
+  <Card className="w-full">
+    <CardHeader>
+      <CardTitle style={{ fontSize: 11 }}>Install log</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <CardInner
+        className="font-mono flex flex-col gap-1 p-3 leading-relaxed text-zinc-300"
+        style={{ fontSize: 11 }}
+      >
+        <span className="text-emerald-400">[StellarStack Daemon]: Pulling Docker container image...</span>
+        <span>[install] curl -sL https://api.papermc.io/v2/...</span>
+        <span>[install] Resolved version 1.21.4-build.182</span>
+        <span>[install] {"  "}downloaded {"  "}88.3 MB</span>
+        <span className="text-emerald-400">[StellarStack Daemon]: Installation succeeded ✓</span>
+      </CardInner>
+    </CardContent>
+  </Card>
 )
 
 const FilesPreview = () => (
-  <div className="rounded-md border border-white/10 bg-black/60 p-3 text-[11.5px]">
-    <div className="flex items-center justify-between border-b border-white/5 pb-2 text-zinc-500">
-      <span>home</span>
-      <span className="font-mono text-[10px]">12 files</span>
-    </div>
-    <ul className="mt-2 flex flex-col gap-1.5 text-zinc-300">
-      {[
-        ["plugins", "—"],
-        ["world", "—"],
-        ["server.properties", "1.4 KB"],
-        ["eula.txt", "157 B"],
-        ["bukkit.yml", "1.1 KB"],
-      ].map(([name, size]) => (
-        <li key={name} className="flex items-center justify-between font-mono">
-          <span>{name}</span>
-          <span className="text-zinc-500">{size}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
+  <Card className="w-full">
+    <CardHeader>
+      <CardTitle
+        className="flex items-center justify-between gap-2"
+        style={{ fontSize: 11 }}
+      >
+        <span>home</span>
+        <span className="font-normal text-zinc-600" style={{ fontSize: 10 }}>
+          12 files
+        </span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <CardInner className="p-3" style={{ fontSize: 11 }}>
+        <ul className="flex flex-col gap-1.5 text-zinc-300">
+          {[
+            ["plugins", "—"],
+            ["world", "—"],
+            ["server.properties", "1.4 KB"],
+            ["eula.txt", "157 B"],
+            ["bukkit.yml", "1.1 KB"],
+          ].map(([name, size]) => (
+            <li key={name} className="flex items-center justify-between font-mono">
+              <span>{name}</span>
+              <span className="text-zinc-500">{size}</span>
+            </li>
+          ))}
+        </ul>
+      </CardInner>
+    </CardContent>
+  </Card>
 )
 
 const PoolBars = () => (
-  <div className="flex flex-col gap-2 rounded-md border border-white/10 bg-black/60 p-3 text-[11px]">
-    {[
-      { label: "Memory", used: 60, color: "bg-blue-400" },
-      { label: "CPU", used: 35, color: "bg-emerald-400" },
-      { label: "Disk", used: 18, color: "bg-purple-400" },
-    ].map((b) => (
-      <div key={b.label} className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-zinc-400">
-          <span>{b.label}</span>
-          <span className="font-mono text-zinc-500">{b.used}% allocated</span>
+  <Card className="w-full">
+    <CardHeader>
+      <CardTitle style={{ fontSize: 11 }}>Resource pool</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <CardInner
+        className="flex flex-col gap-2 p-3"
+        style={{ fontSize: 11 }}
+      >
+        {[
+          { label: "Memory", used: 60, color: "bg-blue-400" },
+          { label: "CPU", used: 35, color: "bg-emerald-400" },
+          { label: "Disk", used: 18, color: "bg-purple-400" },
+        ].map((b) => (
+          <div key={b.label} className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span>{b.label}</span>
+              <span className="font-mono text-zinc-500">{b.used}% allocated</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded bg-white/5">
+              <div className={`h-full ${b.color}`} style={{ width: `${b.used}%` }} />
+            </div>
+          </div>
+        ))}
+      </CardInner>
+    </CardContent>
+  </Card>
+)
+
+const StatusPreview = () => (
+  <Card className="w-full">
+    <CardHeader>
+      <CardTitle style={{ fontSize: 11 }}>Live state</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <CardInner
+        className="flex flex-col items-start gap-3 p-4"
+        style={{ fontSize: 11 }}
+      >
+        <ServerStatusBadgeDemo />
+        <div className="font-mono text-zinc-500" style={{ fontSize: 10.5 }}>
+          [Server thread/INFO]: Done (4.203s)! For help, type "help"
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded bg-white/5">
-          <div className={`h-full ${b.color}`} style={{ width: `${b.used}%` }} />
-        </div>
-      </div>
-    ))}
-  </div>
+      </CardInner>
+    </CardContent>
+  </Card>
 )
 
 const features: Feat[] = [
@@ -82,17 +140,7 @@ const features: Feat[] = [
     title: "Status that means something",
     description:
       "Starting → running is gated on the blueprint's console-done patterns. No more lying flags.",
-    preview: (
-      <div className="flex h-full flex-col items-start gap-3 rounded-md border border-white/10 bg-black/60 p-4">
-        <span className="text-[10.5px] uppercase tracking-wider text-zinc-500">
-          Live state
-        </span>
-        <ServerStatusBadgeDemo />
-        <div className="font-mono mt-2 text-[10.5px] text-zinc-500">
-          [Server thread/INFO]: Done (4.203s)! For help, type "help"
-        </div>
-      </div>
-    ),
+    preview: <StatusPreview />,
   },
   {
     title: "Live stats, not screenshots",
