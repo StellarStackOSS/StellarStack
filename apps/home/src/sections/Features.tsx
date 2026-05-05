@@ -2,7 +2,12 @@ import type { ReactNode } from "react"
 
 import { Reveal, RevealItem, RevealStagger } from "@/components/Reveal"
 import { ConsoleDemo } from "@/components/ConsoleDemo"
-import { CpuCardDemo, MemoryCardDemo } from "@/components/StatCardDemos"
+import {
+  CpuCardDemo,
+  DiskCardDemo,
+  MemoryCardDemo,
+  NetworkCardDemo,
+} from "@/components/StatCardDemos"
 import { ServerStatusBadgeDemo } from "@/components/ServerStatusBadgeDemo"
 
 type Feat = {
@@ -94,9 +99,11 @@ const features: Feat[] = [
     description:
       "CPU, memory, network, disk I/O streamed from the daemon's stats pump. Hover for the underlying value.",
     preview: (
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 grid-cols-2">
         <CpuCardDemo />
         <MemoryCardDemo />
+        <NetworkCardDemo />
+        <DiskCardDemo />
       </div>
     ),
     span: "wide",
