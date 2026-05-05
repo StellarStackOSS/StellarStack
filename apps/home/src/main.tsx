@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 
 import "@fontsource-variable/geist"
 import "@workspace/ui/globals.css"
+import "@/styles/fonts.css"
 import { App } from "@/App"
 
 const rootElement = document.getElementById("root")

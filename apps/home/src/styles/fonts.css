@@ -1,0 +1,12 @@
+/* Override the shared @workspace/ui token so every Tailwind `font-sans`
+   class on the marketing site renders Geist instead of Space Grotesk.
+   The body rule in globals.css already sets the document default to
+   Geist Variable, but Tailwind utilities point at the --font-sans
+   custom property — so we need to pin that here too. */
+:root,
+html,
+body {
+  --font-sans: "Geist Variable", "Geist", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
+}
