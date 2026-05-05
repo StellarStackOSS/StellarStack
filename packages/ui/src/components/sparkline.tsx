@@ -86,7 +86,10 @@ export const Sparkline = ({
               cursor={tooltipCursor}
               contentStyle={tooltipContentStyle}
               labelFormatter={() => ""}
-              formatter={(value: number) => [formatValue(value), label ?? ""]}
+              formatter={((value: number | string) => [
+                formatValue(typeof value === "number" ? value : Number(value)),
+                label ?? "",
+              ]) as never}
               wrapperStyle={{ outline: "none" }}
             />
             <Area
@@ -152,10 +155,10 @@ export const DualSparkline = ({
               cursor={tooltipCursor}
               contentStyle={tooltipContentStyle}
               labelFormatter={() => ""}
-              formatter={(value: number, name) => [
-                formatValue(value),
+              formatter={((value: number | string, name: string) => [
+                formatValue(typeof value === "number" ? value : Number(value)),
                 name === "v1" ? label1 : label2,
-              ]}
+              ]) as never}
               wrapperStyle={{ outline: "none" }}
             />
             <Area

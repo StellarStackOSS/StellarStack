@@ -70,6 +70,58 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  apps/home:
+    dependencies:
+      '@fontsource-variable/geist':
+        specifier: ^5.2.8
+        version: 5.2.8
+      '@hugeicons/core-free-icons':
+        specifier: ^4.1.1
+        version: 4.1.1
+      '@hugeicons/react':
+        specifier: ^1.1.6
+        version: 1.1.6(react@19.2.4)
+      '@workspace/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      framer-motion:
+        specifier: ^12.38.0
+        version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.4)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
+      recharts:
+        specifier: 3.8.0
+        version: 3.8.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react-is@16.13.1)(react@19.2.4)(redux@5.0.1)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.1.18
+        version: 4.2.1(vite@7.3.2(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
+      '@types/node':
+        specifier: ^25.1.0
+        version: 25.3.0
+      '@types/react':
+        specifier: ^19.2.10
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.1
+        version: 5.1.4(vite@7.3.2(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.2
+        version: 7.3.2(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
+
   apps/web:
     dependencies:
       '@fontsource-variable/geist':
