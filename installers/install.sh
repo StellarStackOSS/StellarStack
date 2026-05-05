@@ -53,22 +53,36 @@ ensure_gum() {
     return 0
   fi
 
-  local arch os url tmp
-  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  # Charm publishes gum at
+  #   https://github.com/charmbracelet/gum/releases/download/v<ver>/gum_<ver>_<OS>_<arch>.tar.gz
+  # OS is capitalised (Linux, Darwin, …), arch uses {x86_64, arm64, armv6,
+  # armv7, i386}. Pinned so the URL matches a real asset filename;
+  # bumping is a one-line edit when a new version ships.
+  local gum_version="0.17.0"
+  local os arch url tmp
+  case "$(uname -s)" in
+    Linux)  os="Linux" ;;
+    Darwin) os="Darwin" ;;
+    *) fail "Unsupported OS: $(uname -s)" ;;
+  esac
   case "$(uname -m)" in
-    x86_64|amd64) arch="x86_64" ;;
+    x86_64|amd64)  arch="x86_64" ;;
     aarch64|arm64) arch="arm64" ;;
+    armv7l)        arch="armv7" ;;
+    armv6l)        arch="armv6" ;;
+    i386|i686)     arch="i386" ;;
     *) fail "Unsupported architecture: $(uname -m)" ;;
   esac
 
   log "Fetching gum (TUI helper)…"
   tmp=$(mktemp -d)
-  url="https://github.com/charmbracelet/gum/releases/latest/download/gum_${os}_${arch}.tar.gz"
-  curl -fsSL "$url" -o "$tmp/gum.tar.gz" || fail "Couldn't download gum from $url"
+  url="https://github.com/charmbracelet/gum/releases/download/v${gum_version}/gum_${gum_version}_${os}_${arch}.tar.gz"
+  curl -fsSL "$url" -o "$tmp/gum.tar.gz" \
+    || fail "Couldn't download gum from $url"
   tar -xzf "$tmp/gum.tar.gz" -C "$tmp"
   install -m 0755 "$(find "$tmp" -name gum -type f -print -quit)" /usr/local/bin/gum
   rm -rf "$tmp"
-  ok "Installed gum"
+  ok "Installed gum $gum_version"
 }
 
 # ---------------------------------------------------------------------------
