@@ -193,8 +193,8 @@ install_compose_stack() {
 
   write_env_once "$config_dir/.env" "$panel_url"
 
-  cp "$(installer_dir)/templates/docker-compose.${mode}.yml" "$config_dir/docker-compose.yml"
-  cp "$(installer_dir)/templates/Caddyfile.tmpl" "$config_dir/Caddyfile"
+  fetch_template "docker-compose.${mode}.yml" "$config_dir/docker-compose.yml"
+  fetch_template "Caddyfile.tmpl" "$config_dir/Caddyfile"
   sed -i "s|__PANEL_HOST__|${panel_url#https://}|g; s|__PANEL_HOST__|${panel_url#http://}|g" \
     "$config_dir/Caddyfile"
   if [[ "$enable_tls" != "true" ]]; then
@@ -252,7 +252,7 @@ install_daemon() {
   ok "Installed /usr/local/bin/stellar-daemon"
 
   install -d -m 0755 "$data_dir"
-  cp "$(installer_dir)/templates/stellar-daemon.service" /etc/systemd/system/stellar-daemon.service
+  fetch_template "stellar-daemon.service" /etc/systemd/system/stellar-daemon.service
   sed -i "s|__DATA_DIR__|$data_dir|g" /etc/systemd/system/stellar-daemon.service
 
   log "Pairing daemon to $panel_url…"
@@ -278,10 +278,32 @@ installer_dir() {
     return
   fi
   src="${BASH_SOURCE[0]}"
+  # Bash sets BASH_SOURCE[0] to /dev/fd/<N> when piped from curl, which
+  # has no parent directory we can look beside. In that case echo "" so
+  # callers know to fall back to the network fetch.
+  if [[ -z "$src" || "$src" == /dev/fd/* || "$src" == /proc/self/fd/* || "$src" == /dev/stdin ]]; then
+    return 0
+  fi
   while [[ -h "$src" ]]; do
     src=$(readlink "$src")
   done
-  cd "$(dirname "$src")" && pwd
+  ( cd "$(dirname "$src")" && pwd ) 2>/dev/null
+}
+
+# Fetch a template by name into a destination path. Prefers the local
+# templates/ directory if the installer was run from a checkout; falls
+# back to curling from the repo's raw URL when run via `curl … | bash`.
+TEMPLATE_BASE_URL="${TEMPLATE_BASE_URL:-https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/installers/templates}"
+
+fetch_template() {
+  local name="$1" dest="$2" dir
+  dir=$(installer_dir)
+  if [[ -n "$dir" && -f "$dir/templates/$name" ]]; then
+    cp "$dir/templates/$name" "$dest"
+  else
+    curl -fsSL "${TEMPLATE_BASE_URL}/$name" -o "$dest" \
+      || fail "Couldn't download template $name from $TEMPLATE_BASE_URL"
+  fi
 }
 
 # ---------------------------------------------------------------------------
