@@ -1,0 +1,25 @@
+# Caddy front-door for StellarStack. The installer rewrites __PANEL_HOST__
+# to the host the operator picked. If TLS was declined, the site block is
+# rewritten to listen on :80 plain.
+#
+# Routing:
+#   /api/*       → api container (Hono)
+#   /api/servers/*/ws → api container (proxies the daemon WS handshake)
+#   everything else → panel container (Vite-built static SPA)
+
+{
+  email admin@__PANEL_HOST__
+}
+
+__PANEL_HOST__ {
+  encode gzip zstd
+
+  @api path /api/* /auth/*
+  handle @api {
+    reverse_proxy api:3000
+  }
+
+  handle {
+    reverse_proxy panel:5173
+  }
+}

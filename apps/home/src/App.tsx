@@ -5,6 +5,7 @@ import { Hero } from "@/sections/Hero"
 import { HowItWorks } from "@/sections/HowItWorks"
 import { SiteFooter } from "@/sections/SiteFooter"
 import { SiteNav } from "@/components/SiteNav"
+import { StackStrip } from "@/sections/StackStrip"
 
 export const App = () => {
   return (
@@ -12,6 +13,7 @@ export const App = () => {
       <SiteNav />
       <main className="mx-auto w-full max-w-7xl px-4 md:px-6">
         <Hero />
+        <StackStrip />
         <HowItWorks />
         <Features />
         <Faq />

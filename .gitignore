@@ -39,3 +39,12 @@ apps/daemon/vendor
 
 # Claude Code workspace metadata
 .claude/
+
+# Sibling reference checkouts / separate repos kept locally
+new-wings/
+panel/
+StellarStack/
+planets/
+
+# Local placeholder media not for distribution
+example.mp4

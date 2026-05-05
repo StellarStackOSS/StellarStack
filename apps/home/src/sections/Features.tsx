@@ -23,6 +23,21 @@ type Feat = {
   description: string
   preview: ReactNode
   span?: "wide" | "tall"
+  /** Background image used behind the preview. Files live in /public. */
+  bg?: "orange" | "green" | "purple"
+}
+
+const bgImage = (bg: Feat["bg"]) => {
+  switch (bg) {
+    case "orange":
+      return "/bg-orange.png"
+    case "green":
+      return "/bg-green.png"
+    case "purple":
+      return "/bg-purple.png"
+    default:
+      return "/example.jpeg"
+  }
 }
 
 const InstallPreview = () => (
@@ -135,12 +150,14 @@ const features: Feat[] = [
       "Every per-server WebSocket multiplexes power, console, stats and commands. The API stays out of the live path.",
     preview: <ConsoleDemo />,
     span: "wide",
+    bg: "purple",
   },
   {
     title: "Status that means something",
     description:
       "Starting → running is gated on the blueprint's console-done patterns. No more lying flags.",
     preview: <StatusPreview />,
+    bg: "green",
   },
   {
     title: "Live stats, not screenshots",
@@ -155,18 +172,21 @@ const features: Feat[] = [
       </div>
     ),
     span: "wide",
+    bg: "orange",
   },
   {
     title: "Server splitting",
     description:
       "Carve a parent's resource pool into child instances with their own containers and consoles.",
     preview: <PoolBars />,
+    bg: "purple",
   },
   {
     title: "File manager",
     description:
       "Browse, edit, upload, decompress (.zip / .tar / .tar.gz / .tgz / .gz). Monaco-powered editor for content.",
     preview: <FilesPreview />,
+    bg: "orange",
   },
   {
     title: "Install + reinstall",
@@ -174,6 +194,7 @@ const features: Feat[] = [
       "Separate install container, persistent log, streaming overlay. Reinstall stops the runtime container first.",
     preview: <InstallPreview />,
     span: "wide",
+    bg: "green",
   },
 ]
 
@@ -216,7 +237,7 @@ const FeatureCard = ({ feature }: { feature: Feat }) => (
         aria-hidden
         className="absolute inset-0 opacity-70 transition-transform duration-700 group-hover:scale-105"
         style={{
-          backgroundImage: "url(/example.jpeg)",
+          backgroundImage: `url(${bgImage(feature.bg)})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

@@ -1,0 +1,24 @@
+[Unit]
+Description=StellarStack daemon
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/stellar-daemon start --data-dir __DATA_DIR__
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=65536
+
+# Hardening — keep the daemon close to root for Docker access but rule out
+# the obvious shoot-yourself-in-the-foot paths.
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=__DATA_DIR__ /var/run/docker.sock
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
