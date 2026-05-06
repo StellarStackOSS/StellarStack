@@ -202,7 +202,7 @@ const CreateNodeSheet = ({ open, onClose }: { open: boolean; onClose: () => void
   )
 }
 
-const initialAllocationForm = { ip: "127.0.0.1", startPort: 25565, endPort: 25569, alias: "" }
+const initialAllocationForm = { ip: "0.0.0.0", startPort: 25565, endPort: 25569, alias: "" }
 
 const AllocationsPanel = ({ nodeId }: { nodeId: string }) => {
   const { t } = useTranslation()
