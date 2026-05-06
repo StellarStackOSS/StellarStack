@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { admin } from "better-auth/plugins"
+import { count, eq } from "drizzle-orm"
 
 import type { Db } from "@workspace/db/client.types"
 import {
@@ -47,15 +47,27 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
       },
     },
     emailAndPassword: { enabled: true, autoSignIn: true },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            const rows = await params.db
+              .select({ value: count() })
+              .from(usersTable)
+            if (rows[0]?.value === 1) {
+              await params.db
+                .update(usersTable)
+                .set({ isAdmin: true })
+                .where(eq(usersTable.id, user.id))
+            }
+          },
+        },
+      },
+    },
     advanced: {
       crossSubDomainCookies: { enabled: false },
-      // Our auth tables use `uuid` columns with `gen_random_uuid()`
-      // defaults — let Postgres generate the id rather than letting
-      // better-auth slot in its 32-char nanoid (which Postgres rejects
-      // as `invalid input syntax for type uuid`).
       database: { generateId: false },
     },
-    plugins: [admin()],
   })
 }
 
