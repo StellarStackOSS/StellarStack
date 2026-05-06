@@ -458,7 +458,10 @@ main() {
       title "Done."
       printf '  Panel:  %s\n' "$panel_url"
       printf '  Admin:  set up at %s/register on first visit\n' "$panel_url"
-      [[ "$mode" != "panel" ]] || printf '  Pair a daemon: this script | bash -s -- daemon\n'
+      printf '\n  Next: pair a daemon. After signing in as admin go to\n'
+      printf '          %s/admin/nodes → Add\n' "$panel_url"
+      printf '        copy the token, then on this same box (or any node) run\n'
+      printf '          curl -fsSL %s/install.sh | sudo bash -s -- daemon\n' "$TEMPLATE_BASE_URL/.."
       ;;
     daemon)
       local panel_url pairing_token data_dir
