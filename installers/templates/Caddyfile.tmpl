@@ -19,6 +19,10 @@ __PANEL_HOST__ {
     reverse_proxy api:3000
   }
 
+  handle_path /daemon/* {
+    reverse_proxy host.docker.internal:8081
+  }
+
   handle {
     reverse_proxy panel:80
   }

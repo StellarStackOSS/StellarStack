@@ -67,6 +67,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ../../var/lib/stellarstack/caddy:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - api
       - panel

@@ -573,14 +573,13 @@ export const buildServersRoute = (params: {
         scope: granted,
         ttlSeconds: 600,
       })
-      const httpScheme = node.scheme === "https" ? "https" : "http"
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
         // baseUrl is the per-server root; the hook concatenates "/files",
         // "/files/content", etc. The daemon recognises those path
         // suffixes and maps (path+method) → op internally.
-        baseUrl: `${httpScheme}://${node.fqdn}:${node.daemonPort}/api/servers/${access.server.id}`,
+        baseUrl: `${env.APP_BASE_URL}/daemon/api/servers/${access.server.id}`,
       })
     })
     .post("/:id/sftp-credentials", async (c) => {
@@ -676,9 +675,8 @@ export const buildServersRoute = (params: {
         scope: granted,
         ttlSeconds: config.ttlSeconds,
       })
-      const wsScheme = node.scheme === "https" ? "wss" : "ws"
-      const httpScheme = node.scheme === "https" ? "https" : "http"
-      const baseUrl = `${node.fqdn}:${node.daemonPort}`
+      const browserBase = env.APP_BASE_URL.replace(/\/$/, "")
+      const wsBase = browserBase.replace(/^http/, "ws")
       const sftp =
         parsed.data.purpose === "sftp"
           ? {
@@ -690,8 +688,8 @@ export const buildServersRoute = (params: {
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
-        wsUrl: `${wsScheme}://${baseUrl}/api/servers/${access.server.id}/ws`,
-        httpBaseUrl: `${httpScheme}://${baseUrl}`,
+        wsUrl: `${wsBase}/daemon/api/servers/${access.server.id}/ws`,
+        httpBaseUrl: `${browserBase}/daemon`,
         scopes: granted,
         sftp,
       })
