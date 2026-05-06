@@ -267,9 +267,7 @@ install_daemon() {
 
   log "Pairing daemon to $panel_url…"
   /usr/local/bin/stellar-daemon configure \
-    --panel-url "$panel_url" \
-    --token "$pairing_token" \
-    --data-dir "$data_dir" \
+    "$panel_url" "$pairing_token" --force \
     || fail "Pairing failed. Verify the panel URL and that the token hasn't expired."
 
   systemctl daemon-reload
