@@ -4,14 +4,14 @@
  * import this object rather than touching `import.meta.env` directly so
  * defaults live in one place.
  */
+const sameOrigin =
+  typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+
+const apiUrl = import.meta.env.VITE_API_URL ?? sameOrigin
+
 export const env = {
-  apiUrl: import.meta.env.VITE_API_URL ?? "http://localhost:3000",
-  wsUrl:
-    import.meta.env.VITE_WS_URL ??
-    (import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(
-      /^http/,
-      "ws"
-    ),
+  apiUrl,
+  wsUrl: import.meta.env.VITE_WS_URL ?? apiUrl.replace(/^http/, "ws"),
   defaultLocale: import.meta.env.VITE_DEFAULT_LOCALE ?? "en",
 } as const
 
