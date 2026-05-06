@@ -405,6 +405,13 @@ reset_all() {
 # ---------------------------------------------------------------------------
 
 main() {
+  # Reset cwd to / before doing anything. If the operator just ran
+  # 'reset' from inside /etc/stellarstack, that directory's gone but
+  # bash still thinks it's the cwd. Every subprocess (gum, docker,
+  # systemctl, install -d) then prints 'job-working-directory: error
+  # retrieving current directory'. Stepping out of it makes the rest
+  # of the script silent and reliable.
+  cd / || true
   require_root
   ensure_gum
 
