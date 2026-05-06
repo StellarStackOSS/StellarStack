@@ -317,7 +317,8 @@ fetch_template() {
 }
 
 # ---------------------------------------------------------------------------
-# Sub-command: uninstall.
+# Sub-command: uninstall — interactive, walks the operator through three
+# confirmations.
 # ---------------------------------------------------------------------------
 
 uninstall() {
@@ -341,6 +342,65 @@ uninstall() {
 }
 
 # ---------------------------------------------------------------------------
+# Sub-command: reset — debug mode. Wipes EVERYTHING without prompting:
+# compose stack, systemd unit, daemon binary, /etc/stellarstack,
+# /var/lib/stellarstack, dangling images. Use during install testing
+# to get back to a fresh box in one command. Pass --force to skip the
+# single 'are you sure' confirmation, useful in CI loops.
+#
+#   bash install.sh reset           # one confirmation, then nuke
+#   bash install.sh reset --force   # no prompts at all
+# ---------------------------------------------------------------------------
+
+reset_all() {
+  local force="${1:-}"
+  if [[ "$force" != "--force" && "$force" != "-y" ]]; then
+    title "StellarStack — reset"
+    warn "This wipes EVERYTHING:"
+    printf '    • docker compose stack at %s (containers + named volumes)\n' "$DEFAULT_CONFIG_DIR"
+    printf '    • systemd unit /etc/systemd/system/stellar-daemon.service\n'
+    printf '    • binary /usr/local/bin/stellar-daemon\n'
+    printf '    • config dir %s (.env + compose + Caddyfile)\n' "$DEFAULT_CONFIG_DIR"
+    printf '    • data dir %s (Postgres data, backups, server bind mounts)\n' "$DEFAULT_DATA_DIR"
+    printf '    • dangling stellarstack/* docker images\n\n'
+    if ! gum confirm "Proceed?" --default=false; then
+      log "Aborted."
+      exit 0
+    fi
+  fi
+
+  log "Stopping compose stack…"
+  if [[ -f "$DEFAULT_CONFIG_DIR/docker-compose.yml" ]]; then
+    ( cd "$DEFAULT_CONFIG_DIR" && docker compose down -v --remove-orphans ) 2>/dev/null || true
+  fi
+  ok "Compose stack stopped"
+
+  log "Removing systemd unit…"
+  if systemctl list-unit-files 2>/dev/null | grep -q stellar-daemon.service; then
+    systemctl disable --now stellar-daemon 2>/dev/null || true
+  fi
+  rm -f /etc/systemd/system/stellar-daemon.service
+  systemctl daemon-reload 2>/dev/null || true
+  rm -f /usr/local/bin/stellar-daemon /usr/local/bin/stellar-daemon.new /usr/local/bin/stellar-daemon.bak
+  ok "Systemd + binary removed"
+
+  log "Removing config + data dirs…"
+  rm -rf "$DEFAULT_CONFIG_DIR" "$DEFAULT_DATA_DIR"
+  ok "Removed $DEFAULT_CONFIG_DIR and $DEFAULT_DATA_DIR"
+
+  log "Pruning dangling stellarstack images…"
+  # Untag (don't force) — leaves layers in the cache so the next
+  # 'compose pull' is fast, but kills the local :latest pointers so
+  # the next install always grabs a fresh manifest.
+  for repo in api panel daemon; do
+    docker image rm "ghcr.io/stellarstackoss/${repo}:latest" 2>/dev/null || true
+  done
+  ok "Image tags cleared"
+
+  title "Reset complete. Re-run with: install.sh full|panel|daemon"
+}
+
+# ---------------------------------------------------------------------------
 # Main.
 # ---------------------------------------------------------------------------
 
@@ -350,6 +410,11 @@ main() {
 
   if [[ "${1:-}" == "uninstall" ]]; then
     uninstall
+    exit 0
+  fi
+
+  if [[ "${1:-}" == "reset" ]]; then
+    reset_all "${2:-}"
     exit 0
   fi
 
