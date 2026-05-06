@@ -32,7 +32,8 @@ export const apiFetch = async <T>(
   path: string,
   init?: RequestInit
 ): Promise<T> => {
-  const url = new URL(path, env.apiUrl)
+  const prefixed = path.startsWith("/api/") ? path : `/api${path.startsWith("/") ? "" : "/"}${path}`
+  const url = new URL(prefixed, env.apiUrl)
   const response = await fetch(url, {
     ...init,
     credentials: "include",

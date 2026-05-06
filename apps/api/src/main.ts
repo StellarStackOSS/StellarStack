@@ -71,35 +71,26 @@ app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
   auth.handler(c.req.raw)
 )
 
-app.route("/me", buildMeRoute(auth, db))
+app.route("/api/me", buildMeRoute(auth, db))
 app.route(
-  "/servers",
+  "/api/servers",
   buildServersRoute({ auth, db, env, installRunner, statusCache })
 )
-app.route("/admin/audit", buildAdminAuditRoute({ auth, db }))
-app.route("/admin/nodes", buildNodesRoute({ auth, db }))
+app.route("/api/admin/audit", buildAdminAuditRoute({ auth, db }))
+app.route("/api/admin/nodes", buildNodesRoute({ auth, db }))
 app.route(
-  "/admin/servers",
+  "/api/admin/servers",
   buildAdminServersRoute({ auth, db, installRunner, statusCache })
 )
-app.route("/admin/users", buildAdminUsersRoute({ auth, db }))
-// Blueprints are visible to any signed-in user (server creation needs to
-// list them) but mutations require admin. The route enforces this via
-// a layered middleware chain inside buildBlueprintsRoute.
-app.route("/admin/blueprints", buildBlueprintsRoute({ auth, db }))
-// Backups paths are keyed off /:serverId so mount under /servers —
-// full URLs become /servers/:id/backups[...] and /servers/:id/destination
-// which is what the existing useBackups hook hits.
-app.route("/servers", buildBackupsRoute({ auth, db }))
-// Sibling-mount of allocation handlers: their paths start with
-// /:serverId/allocations[...] which doesn't collide with any existing
-// `/servers/:id/...` handler in buildServersRoute.
-app.route("/servers", buildServerAllocationsRoute({ auth, db }))
-app.route("/servers", buildSubusersRoute({ auth, db }))
-app.route("/servers", buildActivityRoute({ auth, db }))
-app.route("/servers", buildSchedulesRoute({ auth, db }))
-app.route("/servers", buildTransfersRoute({ auth, db }))
-app.route("/servers", buildInstancesRoute({ auth, db, installRunner }))
+app.route("/api/admin/users", buildAdminUsersRoute({ auth, db }))
+app.route("/api/admin/blueprints", buildBlueprintsRoute({ auth, db }))
+app.route("/api/servers", buildBackupsRoute({ auth, db }))
+app.route("/api/servers", buildServerAllocationsRoute({ auth, db }))
+app.route("/api/servers", buildSubusersRoute({ auth, db }))
+app.route("/api/servers", buildActivityRoute({ auth, db }))
+app.route("/api/servers", buildSchedulesRoute({ auth, db }))
+app.route("/api/servers", buildTransfersRoute({ auth, db }))
+app.route("/api/servers", buildInstancesRoute({ auth, db, installRunner }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
 app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 
