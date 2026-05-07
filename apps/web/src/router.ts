@@ -32,6 +32,7 @@ import { Route as serverNetworkRoute } from "@/routes/ServerNetwork"
 import { Route as serverSettingsRoute } from "@/routes/ServerSettings"
 import { Route as serverStartupRoute } from "@/routes/ServerStartup"
 import { Route as serverActivityRoute } from "@/routes/ServerActivity"
+import { Route as serverCrashesRoute } from "@/routes/ServerCrashes"
 import { Route as serverTransferRoute } from "@/routes/ServerTransfer"
 import { Route as serverInstancesRoute } from "@/routes/ServerInstances"
 
@@ -64,6 +65,7 @@ const serverTree = serverRoute.addChildren([
   serverNetworkRoute,
   serverStartupRoute,
   serverActivityRoute,
+  serverCrashesRoute,
   serverSettingsRoute,
   serverTransferRoute,
   serverInstancesRoute,

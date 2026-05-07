@@ -8,6 +8,7 @@ import * as transfers from "@workspace/db/schema/transfers"
 import * as audit from "@workspace/db/schema/audit"
 import * as install from "@workspace/db/schema/install"
 import * as jobs from "@workspace/db/schema/jobs"
+import * as crashes from "@workspace/db/schema/crashes"
 
 /**
  * Aggregate schema object passed to `drizzle()`. Application code should not
@@ -26,4 +27,5 @@ export const schema = {
   ...audit,
   ...install,
   ...jobs,
+  ...crashes,
 }

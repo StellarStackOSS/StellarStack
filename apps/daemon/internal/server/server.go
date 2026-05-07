@@ -11,6 +11,7 @@ import (
 	"log"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -475,13 +476,16 @@ func (s *Server) watchExit() {
 	st, _ := s.env.Docker().Inspect(context.Background(), s.env.ContainerName())
 	reason := "servers.lifecycle.exited.clean"
 	metadata := map[string]any{}
+	isCrash := false
 	if st != nil {
 		metadata["exitCode"] = st.ExitCode
 		switch {
 		case st.OOMKilled:
 			reason = "servers.lifecycle.crashed.oom_killed"
+			isCrash = true
 		case st.ExitCode != 0:
 			reason = "servers.lifecycle.crashed.container_exit"
+			isCrash = true
 		}
 	}
 	if s.panel != nil {
@@ -489,6 +493,17 @@ func (s *Server) watchExit() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			_ = s.panel.PushAudit(ctx, s.uuid, "", reason, metadata)
+		}()
+	}
+	if isCrash && s.panel != nil && st != nil {
+		tail := strings.Join(s.history.Snapshot(), "\n")
+		if len(tail) > 16_000 {
+			tail = tail[len(tail)-16_000:]
+		}
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = s.panel.ReportCrash(ctx, s.uuid, st.ExitCode, "", st.OOMKilled, tail)
 		}()
 	}
 	// Drain the docker log buffer one last time so a fast-exit

@@ -24,6 +24,7 @@
   "blueprints.parse.invalid_json": "JSON parse error: the editor content is not valid JSON.",
 
   "servers.not_found": "Server not found.",
+  "crashes.not_found": "Crash report not found.",
   "instances.nested_not_allowed": "This server is itself an instance and cannot be split further.",
   "instances.pool_exhausted": "Not enough {resource} available in the parent server's pool.",
 

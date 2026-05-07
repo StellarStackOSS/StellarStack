@@ -72,6 +72,41 @@ func (c *Client) PushStatus(ctx context.Context, serverUUID, prev, next string) 
 	return nil
 }
 
+// ReportCrash tells the API a container exited unexpectedly (non-zero
+// exit or OOM). Best-effort; we never want a panel outage to mask the
+// crash from the operator's local logs.
+func (c *Client) ReportCrash(ctx context.Context, serverUUID string, exitCode int, signal string, oomKilled bool, logTail string) error {
+	oom := 0
+	if oomKilled {
+		oom = 1
+	}
+	body, err := json.Marshal(map[string]any{
+		"exitCode":   exitCode,
+		"signal":     signal,
+		"oomKilled":  oom,
+		"logTail":    logTail,
+		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
+	})
+	if err != nil {
+		return err
+	}
+	req, err := c.signedRequest(ctx, http.MethodPost,
+		fmt.Sprintf("/api/remote/servers/%s/crashes", serverUUID), body)
+	if err != nil {
+		return err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("panel report crash %s: %s", resp.Status, string(raw))
+	}
+	return nil
+}
+
 // ServerConfig mirrors the API's GET /api/remote/servers/:id/config
 // response. The daemon doesn't keep server config in its own state
 // store — it pulls fresh on each power action so a panel-side change

@@ -14,4 +14,14 @@ export default defineConfig({
   optimizeDeps: {
     include: ["react-grid-layout"],
   },
+  server: {
+    proxy: {
+      "/daemon": {
+        target: "http://127.0.0.1:8081",
+        changeOrigin: true,
+        ws: true,
+        rewrite: (p) => p.replace(/^\/daemon/, ""),
+      },
+    },
+  },
 })

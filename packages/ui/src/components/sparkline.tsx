@@ -72,7 +72,7 @@ export const Sparkline = ({
         </defs>
         <rect width="100%" height="100%" fill={`url(#${patternId})`} />
       </svg>
-      <div className="relative" style={{ height, zIndex: 1 }}>
+      <div className="relative [&_.recharts-surface]:outline-none [&_*]:focus:outline-none" style={{ height, zIndex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
             <defs>
@@ -137,7 +137,7 @@ export const DualSparkline = ({
         </defs>
         <rect width="100%" height="100%" fill={`url(#${patternId})`} />
       </svg>
-      <div className="relative" style={{ height, zIndex: 1 }}>
+      <div className="relative [&_.recharts-surface]:outline-none [&_*]:focus:outline-none" style={{ height, zIndex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
             <defs>

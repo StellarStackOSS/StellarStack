@@ -156,6 +156,9 @@ func runConfigure(args []string) error {
 		return fmt.Errorf("usage: stellar-daemon configure <api-base-url> <pairing-token> [--out PATH] [--force]")
 	}
 	apiBase := strings.TrimRight(args[0], "/")
+	if !strings.HasPrefix(apiBase, "http://") && !strings.HasPrefix(apiBase, "https://") {
+		apiBase = "http://" + apiBase
+	}
 	token := args[1]
 	outPath := defaultConfigPath()
 	force := false
@@ -211,7 +214,8 @@ signing_key = %q
 api_base_url = %q
 http_listen = ":8081"
 data_dir = "/var/lib/stellarstack"
-docker_socket = "/var/run/docker.sock"
+# docker_socket left blank so the daemon auto-detects (Docker Desktop /
+# Colima / OrbStack / standard /var/run/docker.sock).
 history_lines = 150
 `, out.NodeID, out.SigningKey, apiBase)
 

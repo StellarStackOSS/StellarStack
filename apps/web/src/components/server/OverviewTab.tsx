@@ -105,11 +105,13 @@ export const OverviewTab = () => {
         <NetworkStatCard latest={stats.latest} history={stats.history} />
       </div>
 
-      <ConsoleTerminal
-        state={console.state}
-        lines={console.lines}
-        onSend={console.sendCommand}
-      />
+      <div className="flex min-h-[24rem] flex-1 flex-col">
+        <ConsoleTerminal
+          state={console.state}
+          lines={console.lines}
+          onSend={console.sendCommand}
+        />
+      </div>
     </div>
   )
 }

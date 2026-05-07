@@ -10,6 +10,7 @@ import {
   nodeAllocationsTable,
   nodesTable,
 } from "@workspace/db/schema/nodes"
+import { serverCrashesTable } from "@workspace/db/schema/crashes"
 import {
   serverAllocationsTable,
   serverVariablesTable,
@@ -27,6 +28,14 @@ const statusCallbackSchema = z.object({
   previousState: lifecycleStateSchema,
   newState: lifecycleStateSchema,
   at: z.string(),
+})
+
+const crashCallbackSchema = z.object({
+  exitCode: z.number().int(),
+  signal: z.string().optional().default(""),
+  oomKilled: z.number().int().min(0).max(1),
+  logTail: z.string(),
+  occurredAt: z.string(),
 })
 
 const auditCallbackSchema = z.object({
@@ -199,6 +208,31 @@ export const buildRemoteRoute = (params: {
         .update(nodesTable)
         .set({ connectedAt: new Date() })
         .where(eq(nodesTable.id, nodeId))
+      return c.json({ ok: true })
+    })
+    .post("/servers/:id/crashes", async (c) => {
+      const serverId = c.req.param("id")
+      const ok = await verifyDaemonSignature({
+        db,
+        env,
+        headers: c.req.raw.headers,
+      })
+      if (!ok) {
+        throw new ApiException("auth.session.invalid", { status: 401 })
+      }
+      const parsed = crashCallbackSchema.safeParse(await c.req.json())
+      if (!parsed.success) {
+        throw new ApiException("validation.failed", { status: 422 })
+      }
+      const occurredAt = new Date(parsed.data.occurredAt)
+      await db.insert(serverCrashesTable).values({
+        serverId,
+        exitCode: parsed.data.exitCode,
+        signal: parsed.data.signal.length > 0 ? parsed.data.signal : null,
+        oomKilled: parsed.data.oomKilled,
+        logTail: parsed.data.logTail,
+        occurredAt: Number.isNaN(occurredAt.getTime()) ? new Date() : occurredAt,
+      })
       return c.json({ ok: true })
     })
     .post("/servers/:id/audit", async (c) => {

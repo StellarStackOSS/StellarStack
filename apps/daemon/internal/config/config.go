@@ -8,9 +8,34 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
+
+// detectDockerSocket returns the first plausible Docker socket path: the
+// $DOCKER_HOST unix:// override, then the standard /var/run path, then
+// common per-user locations used by Docker Desktop, Colima, and OrbStack.
+func detectDockerSocket() string {
+	if v := os.Getenv("DOCKER_HOST"); strings.HasPrefix(v, "unix://") {
+		return strings.TrimPrefix(v, "unix://")
+	}
+	candidates := []string{"/var/run/docker.sock"}
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates,
+			filepath.Join(home, ".docker/run/docker.sock"),
+			filepath.Join(home, ".colima/default/docker.sock"),
+			filepath.Join(home, ".orbstack/run/docker.sock"),
+		)
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return "/var/run/docker.sock"
+}
 
 // Version is the daemon build version reported in the hello frame and
 // status callbacks. Overridden at link time in production builds.
@@ -42,6 +67,11 @@ func Load(path string) (*Config, error) {
 	if err := toml.Unmarshal(raw, &c); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
+	// Pick user-writable defaults when the config lives in $HOME, system
+	// paths otherwise. Avoids permission errors during local dev.
+	cfgDir := filepath.Dir(path)
+	home, _ := os.UserHomeDir()
+	userScoped := home != "" && strings.HasPrefix(cfgDir, home)
 	if c.NodeID == "" {
 		return nil, errors.New("config: node_id is required (run `stellar-daemon configure <token>`)")
 	}
@@ -58,13 +88,21 @@ func Load(path string) (*Config, error) {
 		c.SFTPListen = ":2022"
 	}
 	if c.SFTPHostKey == "" {
-		c.SFTPHostKey = "/etc/stellar-daemon/sftp_host_key"
+		if userScoped {
+			c.SFTPHostKey = filepath.Join(cfgDir, "sftp_host_key")
+		} else {
+			c.SFTPHostKey = "/etc/stellar-daemon/sftp_host_key"
+		}
 	}
 	if c.DataDir == "" {
-		c.DataDir = "/var/lib/stellarstack"
+		if userScoped {
+			c.DataDir = filepath.Join(cfgDir, "data")
+		} else {
+			c.DataDir = "/var/lib/stellarstack"
+		}
 	}
 	if c.DockerSocket == "" {
-		c.DockerSocket = "/var/run/docker.sock"
+		c.DockerSocket = detectDockerSocket()
 	}
 	if c.HistoryLines <= 0 {
 		c.HistoryLines = 150

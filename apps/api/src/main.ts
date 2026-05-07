@@ -15,6 +15,7 @@ import { Scheduler } from "@/lib/Scheduler"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildActivityRoute } from "@/routes/Activity"
+import { buildCrashesRoute } from "@/routes/Crashes"
 import { buildAdminAuditRoute } from "@/routes/AdminAudit"
 import { buildAdminServersRoute } from "@/routes/AdminServers"
 import { buildAdminUsersRoute } from "@/routes/AdminUsers"
@@ -88,6 +89,7 @@ app.route("/api/servers", buildBackupsRoute({ auth, db }))
 app.route("/api/servers", buildServerAllocationsRoute({ auth, db }))
 app.route("/api/servers", buildSubusersRoute({ auth, db }))
 app.route("/api/servers", buildActivityRoute({ auth, db }))
+app.route("/api/servers", buildCrashesRoute({ auth, db }))
 app.route("/api/servers", buildSchedulesRoute({ auth, db }))
 app.route("/api/servers", buildTransfersRoute({ auth, db }))
 app.route("/api/servers", buildInstancesRoute({ auth, db, installRunner }))

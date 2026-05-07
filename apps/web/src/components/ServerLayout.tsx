@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { HugeiconsIcon } from "@hugeicons/react"
 import type { HugeiconsIconElement } from "@hugeicons/react"
 import {
+  Alert02Icon,
   Calendar03Icon,
   ComputerTerminal02Icon,
   DashboardSquare02Icon,
@@ -13,12 +14,19 @@ import {
   HardDriveIcon,
   Layers01Icon,
   ListViewIcon,
+  MoreHorizontalIcon,
   Settings02Icon,
   UserMultipleIcon,
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@workspace/ui/components/button"
 import { ButtonGroup } from "@workspace/ui/components/button-group"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import { Separator } from "@workspace/ui/components/separator"
 import {
   SidebarInset,
@@ -59,6 +67,7 @@ const routeMap: Record<string, RouteEntry> = {
   "/network": { title: "Network", icon: EthernetPortIcon },
   "/startup": { title: "Startup", icon: ComputerTerminal02Icon },
   "/activity": { title: "Activity", icon: ListViewIcon },
+  "/crashes": { title: "Crashes", icon: Alert02Icon },
   "/settings": { title: "Settings", icon: Settings02Icon },
 }
 
@@ -129,6 +138,9 @@ export const ServerLayout = () => {
         { title: t("sidebar.activity"), icon: ListViewIcon,
           to: "/servers/$id/activity", params: { id: server.id },
           isActive: sub === "/activity" },
+        { title: t("sidebar.crashes", { defaultValue: "Crashes" }), icon: Alert02Icon,
+          to: "/servers/$id/crashes", params: { id: server.id },
+          isActive: sub === "/crashes" },
       ] as NavItem[],
     },
     {
@@ -193,27 +205,27 @@ export const ServerLayout = () => {
       <SidebarInset className="overflow-hidden border border-white/10">
         <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-white/5 px-4">
           <SidebarTrigger className="-ml-1 text-zinc-500 hover:text-zinc-200" />
-          <Separator orientation="vertical" className="mx-1 h-4" />
+          <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
           <HugeiconsIcon
             icon={currentRoute.icon}
             className="size-4 shrink-0 text-zinc-500"
           />
-          <span className="text-sm font-medium text-zinc-200">
+          <span className="hidden text-sm font-medium text-zinc-200 sm:inline">
             {currentRoute.title}
           </span>
 
           <div className="ml-auto flex items-center gap-3">
             <ServerStatusBadge status={status} />
 
-            <Separator orientation="vertical" className="mx-1 h-4" />
+            <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
 
             {!wsConnected && (
-              <span className="text-destructive text-xs">
+              <span className="text-destructive hidden text-xs md:inline">
                 {t("server_layout.daemon_offline")}
               </span>
             )}
 
-            <ButtonGroup>
+            <ButtonGroup className="hidden md:flex">
               <Button
                 size="sm"
                 variant="default"
@@ -247,11 +259,50 @@ export const ServerLayout = () => {
                 {t("actions.kill")}
               </Button>
             </ButtonGroup>
+
+            <div className="flex items-center gap-2 md:hidden">
+              <Button
+                size="sm"
+                variant="default"
+                disabled={!wsConnected || powerBusy || !canStart}
+                onClick={() => handlePower("start")}
+              >
+                {t("actions.start")}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="size-8 p-0">
+                    <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={!wsConnected || powerBusy || !canRestart}
+                    onClick={() => handlePower("restart")}
+                  >
+                    {t("actions.restart")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={!wsConnected || powerBusy || !canStop}
+                    onClick={() => handlePower("stop")}
+                  >
+                    {t("actions.stop")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    disabled={!wsConnected || powerBusy || !canKill}
+                    onClick={() => setKillConfirmOpen(true)}
+                  >
+                    {t("actions.kill")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 
         <div className="relative flex min-h-0 flex-1 flex-col">
-          <main className="@container/main flex min-h-0 w-full flex-1 flex-col p-6">
+          <main className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 md:p-6">
             <ServerLayoutContext.Provider
               value={{
                 server,
