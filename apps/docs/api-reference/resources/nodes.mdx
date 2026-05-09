@@ -1,0 +1,121 @@
+---
+title: "Nodes"
+description: "Admin-only host management."
+icon: "microchip"
+---
+
+The `/admin/nodes` resource is admin-only. Routes return `403
+permissions.admin_only` for non-admin tokens.
+
+## List
+
+```http
+GET /api/admin/nodes
+Authorization: Bearer ssk_live_<admin-token>
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "name": "mc-eu-1",
+      "fqdn": "mc-eu-1.example.com",
+      "scheme": "https",
+      "daemonPort": 8443,
+      "region": "eu-west",
+      "status": "online",
+      "lastCallbackAt": "2026-05-09T12:34:56Z",
+      "memoryMb": 65536,
+      "diskMb": 1048576,
+      "maintenance": false
+    }
+  ]
+}
+```
+
+## Get one
+
+```http
+GET /api/admin/nodes/:id
+```
+
+Returns the node + its allocation pools + active server count.
+
+## Create
+
+```http
+POST /api/admin/nodes
+Content-Type: application/json
+
+{
+  "name": "mc-us-east-1",
+  "fqdn": "mc-us-east-1.example.com",
+  "scheme": "https",
+  "daemonPort": 8443,
+  "region": "us-east",
+  "memoryMb": 65536,
+  "diskMb": 1048576
+}
+```
+
+Returns the node row + a one-time pairing token. Use the token on the
+daemon host with `stellar-daemon configure <token>`.
+
+## Update
+
+```http
+PATCH /api/admin/nodes/:id
+
+{
+  "maintenance": true,
+  "region": "eu-central"
+}
+```
+
+Toggling `maintenance: true` drains new placements; existing servers
+keep running.
+
+## Rotate signing key
+
+```http
+POST /api/admin/nodes/:id/rotate-key
+```
+
+Mints a fresh pairing token. Run `stellar-daemon configure <token>` on
+the daemon to claim it. The old key is invalidated atomically once the
+new one is claimed.
+
+## Delete
+
+```http
+DELETE /api/admin/nodes/:id
+```
+
+Refused if the node has any servers. Move them via Transfer first.
+
+## Allocations
+
+Nested under the node:
+
+```http
+GET /api/admin/nodes/:id/allocations
+POST /api/admin/nodes/:id/allocations
+DELETE /api/admin/nodes/:id/allocations/:allocId
+```
+
+Create body:
+
+```json
+{
+  "ip": "188.114.97.1",
+  "portStart": 25500,
+  "portEnd": 25599
+}
+```
+
+Inserts one allocation row per port in `[portStart, portEnd]`. Dropping
+a pool removes all of its rows; refused if any are in use.
+
+Required scope: admin (no separate `allocations.*` admin scope —
+admins manage nodes wholesale).

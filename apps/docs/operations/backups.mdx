@@ -1,0 +1,102 @@
+---
+title: "Backups"
+description: "Snapshot the server's file tree to local disk or S3."
+icon: "box-archive"
+---
+
+A **backup** is a `.tar.zst` of the server's bind-mount at a point in
+time. Backups can stay on the daemon's disk (fast, free, lost if the
+node dies) or stream to S3-compatible storage (durable, costs you a
+bucket).
+
+## Triggers
+
+| Trigger      | How                                                     |
+| ------------ | ------------------------------------------------------- |
+| Manual       | **Server → Backups → Create**.                          |
+| Schedule     | Cron-driven via [Schedules](/operations/schedules).    |
+| API          | `POST /servers/:id/backups` — see [API](/api-reference/resources/backups). |
+| Pre-restore  | Auto-snapshots the current state before a restore wipes it. |
+
+## Storage targets
+
+<CardGroup cols={2}>
+  <Card title="Local" icon="hard-drive">
+    `/var/lib/stellar/backups/{server-uuid}/{name}.tar.zst` on the
+    daemon node. No additional config; default for new servers.
+  </Card>
+  <Card title="S3-compatible" icon="cloud">
+    AWS S3, Cloudflare R2, Backblaze B2, MinIO. Per-server target — set
+    it on **Server → Backups → Destination**.
+  </Card>
+</CardGroup>
+
+To use S3, the panel needs an access key + secret with `PutObject`,
+`GetObject`, `DeleteObject`, and `ListBucket` on the destination
+prefix.
+
+## States
+
+A backup row moves through:
+
+| State     | Meaning                                                          |
+| --------- | ---------------------------------------------------------------- |
+| `pending` | Daemon is archiving + (optionally) uploading.                    |
+| `ready`   | Archive exists at its destination; safe to download or restore.  |
+| `failed`  | Archive failed; row carries `failureCode` + a short reason.       |
+
+Polling the panel UI updates state every 3s while any backup is
+`pending`.
+
+## Locking
+
+A locked backup can't be deleted (manually or by retention) until
+unlocked. Use it for irreplaceable snapshots: pre-major-version world,
+the post-event finalised state, etc.
+
+The lock is just a flag — the file is the same archive.
+
+## Restore
+
+**Server → Backups → \[backup\] → Restore**.
+
+The restore flow:
+
+1. Stops the runtime container if running.
+2. *(Optional)* Snapshots the current files first — recommended unless
+   you really mean it.
+3. Streams the archive into the bind-mount, overwriting existing files.
+4. Returns control. The server stays in `offline` state; you start it.
+
+A failed restore leaves files in a partial state. The daemon doesn't
+roll back; rely on the pre-restore snapshot if you ticked the box.
+
+## Retention
+
+Per-server settings:
+
+- **Max backups**: oldest auto-deleted once the count exceeds this.
+  Default: 10.
+- **Max age**: anything older deleted nightly. Default: 30 days.
+
+Locked backups are exempt from both.
+
+## Multi-target
+
+A schedule can take a local backup *and* an S3 backup back-to-back.
+That's what most operators do: keep a fast local copy for restore +
+push S3 nightly for the off-site safety net.
+
+See [Schedules](/operations/schedules) for how to wire it as a flow.
+
+## Limits + sizing
+
+A `.tar.zst` is roughly 30–50% the size of the source files for typical
+game workloads. A 4 GB Minecraft world archives to ~1.5 GB.
+
+| Limit                       | Default     | Notes                                  |
+| --------------------------- | ----------- | -------------------------------------- |
+| Max archive size (local)    | 50 GB       | Bigger needs S3.                       |
+| Concurrent backups per node | 2           | Avoid I/O storms.                      |
+| Per-server retention count  | 10          | Settable per-server.                   |
+| Per-server retention age    | 30 days     | Settable per-server.                   |

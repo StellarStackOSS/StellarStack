@@ -1,0 +1,132 @@
+---
+title: "Servers"
+description: "List, create, update, delete game servers."
+icon: "server"
+---
+
+The `/servers` resource is the heaviest in the API. Most operations a
+panel user does map to a request here.
+
+## List
+
+```http
+GET /api/servers
+Authorization: Bearer ssk_live_...
+```
+
+Returns servers visible to the caller (owned + subuser-accessible).
+
+```json
+{
+  "data": [
+    {
+      "id": "d4f8c1a8-...",
+      "name": "minecraft-survival",
+      "blueprintId": "minecraft-paper",
+      "blueprintVersion": "1.21",
+      "nodeId": "...",
+      "ownerId": "...",
+      "memoryMb": 4096,
+      "diskMb": 20480,
+      "state": "running",
+      "installState": "succeeded",
+      "createdAt": "2026-04-12T11:24:01Z"
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+Required scope: `servers.read`.
+
+## Get one
+
+```http
+GET /api/servers/:id
+```
+
+Same shape as the list element, but with `flow`, `allocations`, and
+`subusers` included.
+
+## Create
+
+```http
+POST /api/servers
+Content-Type: application/json
+Idempotency-Key: <uuid>
+
+{
+  "name": "quickstart",
+  "nodeId": "...",
+  "blueprintId": "minecraft-paper",
+  "blueprintVersion": "1.21",
+  "memoryMb": 2048,
+  "diskMb": 5120,
+  "allocations": { "default": "<allocation-id>" },
+  "variables": { "EULA": true }
+}
+```
+
+Returns the created server row. Side effects: triggers install in the
+background; `installState=running` flips to `succeeded` when done.
+
+Required scope: `servers.write` (admin-only by default in v1; per-user
+quotas apply).
+
+## Update
+
+```http
+PATCH /api/servers/:id
+Content-Type: application/json
+
+{
+  "name": "renamed",
+  "memoryMb": 4096,
+  "variables": { "JVM_FLAGS": "..." }
+}
+```
+
+Only fields the caller has scope for (`settings.write` for variables,
+`settings.rename` for name) are accepted. Memory/disk changes restart
+the container on the next start.
+
+## Delete
+
+```http
+DELETE /api/servers/:id
+```
+
+Cascade-deletes backups, allocations, schedules, subuser memberships.
+The daemon stops the container and removes the bind-mount. The action
+is irreversible — pre-delete backups are highly recommended.
+
+Required scope: `servers.delete` (owner-only by default; admins
+override).
+
+## Power actions
+
+Power actions live on the daemon WebSocket, not the REST API. To
+trigger one programmatically, mint a console JWT
+(`POST /servers/:id/credentials` with `purpose: "console"`) and send
+the `set state` envelope:
+
+```json
+{ "event": "set state", "args": ["start"] }
+```
+
+See [Lifecycle](/concepts/lifecycle) for the full state machine.
+
+## Console + stats stream
+
+Open the daemon WebSocket at `wsUrl` from the credentials response.
+Frames you'll see:
+
+| `event`           | `args`                                                     |
+| ----------------- | ---------------------------------------------------------- |
+| `auth success`    | `[]`                                                       |
+| `status`          | `[<state>]` — one of offline/starting/running/stopping     |
+| `console output`  | `["<line>"]`                                               |
+| `stats`           | `[{ memory_bytes, cpu_absolute, network: {...} }]`         |
+| `daemon error`    | `["<message>"]`                                            |
+
+Send `{event:"send command", args:["..."]}` to write to stdin.

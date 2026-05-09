@@ -1,18 +1,15 @@
-/**
- * Schedule + nested task as returned by `GET /servers/:id/schedules`.
- * Mirrors the API's joined select shape so the UI doesn't have to do a
- * second fetch per row.
- */
-export type ScheduleTaskRow = {
-  id: string
-  scheduleId: string
-  sortOrder: number
-  action: "power" | "command" | "backup"
-  delaySeconds: number
-  payload: Record<string, string | number | boolean> | null
-  createdAt: string
-}
+import type {
+  ScheduleEdge,
+  ScheduleNode,
+  ScheduleNodeKind,
+  ScheduleNodeSubtype,
+} from "@workspace/shared/schedule.types"
 
+/**
+ * Schedule + flow as returned by `GET /servers/:id/schedules`. Mirrors the
+ * API's joined select shape so the UI doesn't have to do a second fetch
+ * per row.
+ */
 export type ScheduleRow = {
   id: string
   serverId: string
@@ -23,22 +20,33 @@ export type ScheduleRow = {
   nextRunAt: string | null
   lastRunAt: string | null
   createdAt: string
-  tasks: ScheduleTaskRow[]
+  flow: {
+    nodes: ScheduleNode[]
+    edges: ScheduleEdge[]
+  }
 }
 
 /**
- * Body shape for create/update. The API treats tasks as a full
- * replacement set on PATCH — no in-place task ids.
+ * Body shape for create/update. The API treats nodes + edges as a full
+ * replacement set on PATCH — no in-place id reuse beyond what the client
+ * sends.
  */
 export type ScheduleInput = {
   name: string
   cron: string
   enabled: boolean
   onlyWhenOnline: boolean
-  tasks: Array<{
-    sortOrder: number
-    action: "power" | "command" | "backup"
-    delaySeconds: number
-    payload: Record<string, string | number | boolean> | null
-  }>
+  flow: {
+    nodes: Array<{
+      id: string
+      kind: ScheduleNodeKind
+      subtype: ScheduleNodeSubtype
+      payload: Record<string, unknown> | null
+      position: { x: number; y: number }
+    }>
+    edges: Array<{
+      fromNodeId: string
+      toNodeId: string
+    }>
+  }
 }

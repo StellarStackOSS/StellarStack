@@ -1,0 +1,108 @@
+---
+title: "Lifecycle"
+description: "How a server moves between offline, starting, running, and stopping."
+icon: "circle-play"
+---
+
+StellarStack collapses server runtime state to four values:
+`offline`, `starting`, `running`, `stopping`. Anything else (installing,
+restoring, crashed) is tracked in **separate columns** so the lifecycle
+state stays purely about whether the container is up.
+
+## State machine
+
+```
+                ┌────────────┐
+       ┌────────│  offline   │◀────────┐
+       │        └────────────┘         │
+       │ start         ▲              │ stop completed
+       ▼               │              │
+┌────────────┐         │       ┌────────────┐
+│  starting  │─────────┼──────▶│  stopping  │
+└────────────┘  stop   │       └────────────┘
+       │ ready          │              ▲
+       ▼               │              │
+┌────────────┐         │              │
+│  running   │─────────┼──────────────┘
+└────────────┘  stop   │
+       │ container exit │
+       └────────────────┘
+```
+
+## Transitions
+
+| From       | Trigger              | To         | Driver                                                |
+| ---------- | -------------------- | ---------- | ----------------------------------------------------- |
+| `offline`  | User clicks Start    | `starting` | Daemon `Start()`                                      |
+| `starting` | Readiness probe pass | `running`  | Daemon                                                |
+| `starting` | User clicks Stop     | `stopping` | Daemon `Stop()`                                       |
+| `running`  | User clicks Stop     | `stopping` | Daemon `Stop()` (writes stdin or sends signal)        |
+| `running`  | Container exits      | `offline`  | Daemon exit watcher; logged as crash                  |
+| `stopping` | Container exits      | `offline`  | Daemon exit watcher                                   |
+| `stopping` | Grace timeout        | `offline`  | Daemon force-kills, marks as `crashed=false`          |
+
+There are **no probe-driven transitions** out of `running`. Once a
+server is running, only an explicit user action or a container exit can
+move it.
+
+## Side-channel state
+
+Two columns travel alongside the lifecycle state:
+
+| Column         | Values                                            | What it gates                                      |
+| -------------- | ------------------------------------------------- | -------------------------------------------------- |
+| `installState` | `pending`, `running`, `succeeded`, `failed`       | The install container; UI shows install overlay.   |
+| `restoreState` | `none`, `running`, `succeeded`, `failed`          | Backup restore in flight.                          |
+
+So a server's full state at any moment is something like:
+
+> `state=offline, installState=running` — fresh server still installing.
+>
+> `state=running, restoreState=none` — happy path.
+>
+> `state=offline, restoreState=running` — restore overwriting files.
+
+The UI uses this to show overlays without changing the headline state.
+
+## Power lock
+
+Per server, only one power action runs at a time. The daemon holds a
+mutex per server — Start, Stop, Restart, and Kill all take the same
+lock. Kill is special: it tries to acquire non-blocking, then sends
+SIGKILL regardless. That's how you recover from a stuck `stopping`.
+
+## Crash detection
+
+If the container exits while in `running`, the daemon:
+
+1. Captures the last 200 lines of stdout/stderr.
+2. Inserts a row into `server_crashes` (UUID, server, timestamp, exit
+   code, log tail).
+3. Flips the lifecycle state to `offline`.
+4. Surfaces the crash in the panel's UI.
+
+[Operations → Crash reports](/operations/crash-reports) covers the UI
+and how to mute repeat crashes.
+
+## Restart
+
+`Restart` is a single locked Stop → Start sequence, not two
+independently-actioned events. The browser sees:
+
+```
+running → stopping → offline → starting → running
+```
+
+— end-to-end on one power lock acquisition. This avoids the "user clicks
+Restart, server stops, autostart kicks in mid-stop" race.
+
+## What lives where
+
+| Concern                | Owner   | Why                                                   |
+| ---------------------- | ------- | ----------------------------------------------------- |
+| `state` value          | Daemon  | It alone knows the container's reality.               |
+| Status callback to API | Daemon  | API caches the value in Redis for cheap reads.        |
+| Power lock             | Daemon  | Lives next to the Docker socket.                      |
+| Probe evaluation       | Daemon  | Probes touch the container directly.                  |
+| Schedule execution     | API     | Cron is panel-side; the API dispatches actions to the daemon. |
+| Audit log              | API     | Cross-cutting; persisted in Postgres.                 |

@@ -23,6 +23,7 @@
     "@workspace/sdk": "workspace:*",
     "@workspace/shared": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "@xyflow/react": "^12.10.2",
     "better-auth": "^1.4.5",
     "framer-motion": "^12.38.0",
     "geist": "^1.7.0",

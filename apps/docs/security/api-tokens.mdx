@@ -1,0 +1,97 @@
+---
+title: "API tokens"
+description: "Programmatic access without using your panel session."
+icon: "code"
+---
+
+API tokens are how scripts talk to the panel. They're scoped, revocable,
+and don't carry your 2FA or passkey requirement — treat them like the
+keys to a smaller subset of your account.
+
+## Creating a token
+
+**Account → API tokens → New token**.
+
+1. Pick a name (`backup-cron-prod`, `monitoring`, etc.).
+2. Select the scopes the token needs. Same scope catalogue as
+   [Permissions](/multi-tenant/permissions).
+3. Optionally set an expiry — `30 days`, `90 days`, `1 year`, or
+   `Never`.
+4. **Create**. The token value is shown **once**. Copy it now.
+
+## Using a token
+
+Pass it as a `Bearer` token:
+
+```bash
+curl https://panel.example.com/api/servers \
+  -H "Authorization: Bearer ssk_live_abc123..."
+```
+
+Tokens are formatted `ssk_<env>_<random>`. The `<env>` segment is
+`live` or `test`; tokens are scoped to the environment they were
+created in.
+
+## Token shapes
+
+| Prefix       | Purpose                                                      |
+| ------------ | ------------------------------------------------------------ |
+| `ssk_live_*` | Production. Issued from the live panel, talks to live data.  |
+| `ssk_test_*` | Test environments. Created in panels with `ENVIRONMENT=test`. |
+
+The panel inspects the prefix on every request and refuses
+cross-environment tokens.
+
+## Scope inheritance
+
+A user's token can never have *more* scopes than the user has on the
+target server. If you're a subuser with `console.read`, your token can
+have `console.read` (good) but not `console.write` (refused at create
+time).
+
+Admin users can create admin tokens; specifying `admin: true` at create
+time is the explicit knob.
+
+## Rotation
+
+Two patterns:
+
+<Tabs>
+  <Tab title="Rotate then revoke">
+    Create a new token with the same scopes, deploy it to your scripts,
+    then **Revoke** the old one. Zero downtime.
+  </Tab>
+  <Tab title="Time-limited">
+    Set a 90-day expiry on creation. Renew before expiry. Forces you
+    onto a rotation cadence.
+  </Tab>
+</Tabs>
+
+There's no automatic rotation API yet — `POST /tokens/:id/rotate`
+exists in v2 but isn't shipped at the time of writing.
+
+## Revoking
+
+**Account → API tokens → \[token\] → Revoke**. The token is
+invalidated within seconds across the panel cluster (the API checks
+revocation on every request via Redis).
+
+A revoked token can't be re-enabled. Create a new one if you need it
+back.
+
+## What tokens do *not* do
+
+- They don't bypass scope checks. A token with `console.read` can't
+  silently upgrade to `console.write`.
+- They don't have access to the daemon WebSocket directly. Daemon JWTs
+  are minted *from* a panel session; there's no equivalent
+  "static daemon token". This is intentional — daemon access is
+  bursty, time-bounded, and shouldn't be a long-lived secret.
+- They don't expire automatically without an expiry being set. Be
+  explicit about lifetime.
+
+## Audit
+
+Every authenticated API request is logged with the token ID. The audit
+log makes it easy to see which token did what — useful when something
+unexpected happens.

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   type ColumnDef,
@@ -71,6 +71,79 @@ const stateBadgeClass: Record<BackupRow["state"], string> = {
   failed: "bg-destructive",
 }
 
+// Actions cell is its own memoized component so the Radix dropdown's open
+// state survives the polling refetch — re-renders of the parent with new
+// `rows` references no longer churn this subtree.
+type ActionsCellProps = {
+  row: BackupRow
+  canRestorePending: boolean
+  canDeletePending: boolean
+  canLockPending: boolean
+  onToggleLock: (id: string, locked: boolean) => void
+  onDownload: (name: string) => void
+  onRequestRestore: (row: BackupRow) => void
+  onRequestDelete: (row: BackupRow) => void
+}
+
+const ActionsCellInner = ({
+  row,
+  canRestorePending,
+  canDeletePending,
+  canLockPending,
+  onToggleLock,
+  onDownload,
+  onRequestRestore,
+  onRequestDelete,
+}: ActionsCellProps) => {
+  const { t } = useTranslation()
+  const canDownload = row.state === "ready" && row.storage === "local"
+  const canRestore = row.state === "ready" && !canRestorePending
+  const canDelete =
+    !row.locked && row.state !== "pending" && !canDeletePending
+  const canToggleLock = row.state !== "pending" && !canLockPending
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon-sm" variant="ghost" className="size-7">
+            <Icon name="more-horizontal" className="size-3.5" />
+            <span className="sr-only">Actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[10rem]">
+          <DropdownMenuItem
+            disabled={!canToggleLock}
+            onClick={() => onToggleLock(row.id, !row.locked)}
+          >
+            {row.locked ? t("backups.unlock") : t("backups.lock")}
+          </DropdownMenuItem>
+          {canDownload ? (
+            <DropdownMenuItem onClick={() => onDownload(row.name)}>
+              {t("backups.download")}
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem
+            disabled={!canRestore}
+            onClick={() => onRequestRestore(row)}
+          >
+            {t("backups.restore")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            disabled={!canDelete}
+            onClick={() => onRequestDelete(row)}
+          >
+            {t("backups.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
+const ActionsCell = memo(ActionsCellInner)
+
 export const BackupsTab = () => {
   const { t } = useTranslation()
   const { server } = useServerLayout()
@@ -87,9 +160,35 @@ export const BackupsTab = () => {
   const [confirmRestore, setConfirmRestore] = useState<BackupRow | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<BackupRow | null>(null)
 
-  const rows = backups.data?.backups ?? []
+  const rows = useMemo(
+    () => backups.data?.backups ?? [],
+    [backups.data]
+  )
   const isRunning = rows.some((r) => r.state === "pending")
   const atLimit = rows.length >= server.backupLimit
+
+  // Stable callbacks so the memoized ActionsCell doesn't re-render on every
+  // poll cycle. Depend only on `.mutate` (referentially stable in React Query)
+  // rather than the whole mutation object (new ref every render).
+  const lockMutate = lockBackup.mutate
+  const handleToggleLock = useCallback(
+    (id: string, locked: boolean) => {
+      lockMutate({ backupId: id, locked })
+    },
+    [lockMutate]
+  )
+  const handleDownload = useCallback(
+    (name: string) => {
+      void downloadBackup(name)
+    },
+    [downloadBackup]
+  )
+  const handleRequestRestore = useCallback((r: BackupRow) => {
+    setConfirmRestore(r)
+  }, [])
+  const handleRequestDelete = useCallback((r: BackupRow) => {
+    setConfirmDelete(r)
+  }, [])
 
   const handleTake = async () => {
     setErrorMessage(null)
@@ -161,58 +260,30 @@ export const BackupsTab = () => {
       {
         id: "actions",
         header: "",
-        cell: ({ row }) => {
-          const r = row.original
-          const canDownload = r.state === "ready" && r.storage === "local"
-          const canRestore = r.state === "ready" && !restoreBackup.isPending
-          const canDelete =
-            !r.locked && r.state !== "pending" && !deleteBackup.isPending
-          const canToggleLock = r.state !== "pending" && !lockBackup.isPending
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon-sm" variant="ghost" className="size-7">
-                    <Icon name="more-horizontal" className="size-3.5" />
-                    <span className="sr-only">Actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[10rem]">
-                  <DropdownMenuItem
-                    disabled={!canToggleLock}
-                    onClick={() =>
-                      lockBackup.mutate({ backupId: r.id, locked: !r.locked })
-                    }
-                  >
-                    {r.locked ? t("backups.unlock") : t("backups.lock")}
-                  </DropdownMenuItem>
-                  {canDownload ? (
-                    <DropdownMenuItem onClick={() => void downloadBackup(r.name)}>
-                      {t("backups.download")}
-                    </DropdownMenuItem>
-                  ) : null}
-                  <DropdownMenuItem
-                    disabled={!canRestore}
-                    onClick={() => setConfirmRestore(r)}
-                  >
-                    {t("backups.restore")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={!canDelete}
-                    onClick={() => setConfirmDelete(r)}
-                  >
-                    {t("backups.delete")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <ActionsCell
+            row={row.original}
+            canRestorePending={restoreBackup.isPending}
+            canDeletePending={deleteBackup.isPending}
+            canLockPending={lockBackup.isPending}
+            onToggleLock={handleToggleLock}
+            onDownload={handleDownload}
+            onRequestRestore={handleRequestRestore}
+            onRequestDelete={handleRequestDelete}
+          />
+        ),
       },
     ],
-    [t, lockBackup, downloadBackup, restoreBackup.isPending, deleteBackup.isPending, server.status]
+    [
+      t,
+      restoreBackup.isPending,
+      deleteBackup.isPending,
+      lockBackup.isPending,
+      handleToggleLock,
+      handleDownload,
+      handleRequestRestore,
+      handleRequestDelete,
+    ]
   )
 
   const table = useReactTable({

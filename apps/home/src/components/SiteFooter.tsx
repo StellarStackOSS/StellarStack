@@ -33,8 +33,6 @@ const linkGroups = [
   {
     heading: "Open source",
     links: [
-      { label: "GitHub", href: "https://github.com/StellarStackOSS" },
-      { label: "License", href: "#" },
       { label: "Open collaborative", href: "https://opencollective.com" },
     ],
   },

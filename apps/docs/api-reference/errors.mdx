@@ -1,0 +1,96 @@
+---
+title: "Errors"
+description: "Stable error codes, what they mean, what to do about them."
+icon: "circle-exclamation"
+---
+
+Every error response carries a stable `code` string. The HTTP status
+gives you the family; the code gives you the specific reason. Use the
+code for branching logic; use the HTTP status for retry policy.
+
+## Error envelope
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "validation.invalid",
+    "params": { "field": "name" }
+  }
+}
+```
+
+`params` is optional, present when the message has placeholders.
+
+## Code prefixes
+
+| Prefix          | Family                                                       |
+| --------------- | ------------------------------------------------------------ |
+| `auth.*`        | Authentication failed.                                       |
+| `permissions.*` | Authorisation failed (you're who you say but lack scope).    |
+| `validation.*`  | Request shape was wrong.                                     |
+| `servers.*`     | Server-resource-specific business errors.                    |
+| `nodes.*`       | Node-resource-specific business errors.                      |
+| `backups.*`     | Backup-specific business errors.                             |
+| `schedules.*`   | Schedule-specific business errors.                           |
+| `internal.*`    | Server-side bugs. Always file an issue.                      |
+
+## Common codes
+
+### Auth
+
+| Code                  | HTTP | Notes                                          |
+| --------------------- | ---- | ---------------------------------------------- |
+| `auth.unauthorized`   | 401  | Missing or malformed token / cookie.           |
+| `auth.token_invalid`  | 401  | Token doesn't exist or has been revoked.        |
+| `auth.token_expired`  | 401  | Token past expiry. Mint a fresh one.            |
+
+### Permissions
+
+| Code                       | HTTP | Notes                                       |
+| -------------------------- | ---- | ------------------------------------------- |
+| `permissions.denied`       | 403  | Your scopes don't cover this action.        |
+| `permissions.admin_only`   | 403  | Admin-only route accessed by non-admin.      |
+| `permissions.owner_only`   | 403  | Action restricted to the server owner.       |
+
+### Validation
+
+| Code                          | HTTP | Notes                                       |
+| ----------------------------- | ---- | ------------------------------------------- |
+| `validation.invalid`          | 400  | Generic shape error. Inspect zod error if surfaced. |
+| `validation.field_required`   | 400  | A required field is missing.                |
+| `validation.field_too_long`   | 400  | A string exceeded its max length.            |
+| `validation.field_too_short`  | 400  | A string fell below its min length.          |
+| `validation.idempotency_conflict` | 409 | Same `Idempotency-Key` reused with a different body. |
+
+### Servers
+
+| Code                              | HTTP | Notes                                     |
+| --------------------------------- | ---- | ----------------------------------------- |
+| `servers.not_found`               | 404  | Server doesn't exist or you can't see it. |
+| `servers.allocation_unavailable`  | 409  | Allocation already taken.                 |
+| `servers.power_locked`            | 409  | Another power action is in flight.        |
+| `servers.installing`              | 409  | Action refused while server is installing. |
+
+### Backups
+
+| Code                       | HTTP | Notes                                       |
+| -------------------------- | ---- | ------------------------------------------- |
+| `backups.locked`           | 409  | Tried to delete a locked backup.             |
+| `backups.in_flight`        | 409  | Another backup is already pending.           |
+| `backups.destination_invalid` | 400 | S3 credentials don't authenticate.          |
+
+### Internal
+
+| Code                  | HTTP | Notes                                              |
+| --------------------- | ---- | -------------------------------------------------- |
+| `internal.unexpected` | 500  | The API caught an exception you shouldn't see. File an issue. |
+
+## Localisation
+
+The panel translates `code` + `params` into a human message at render
+time. If you're consuming the API directly and want translated strings,
+look up the code in `@workspace/shared/locales/<lang>/errors.json`.
+
+The codes themselves never change between releases without notice —
+they're part of the public contract.

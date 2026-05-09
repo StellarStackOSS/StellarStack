@@ -1,0 +1,146 @@
+---
+title: "Install"
+description: "Stand up the panel + daemon on real infrastructure."
+icon: "download"
+---
+
+The [Quickstart](/quickstart) puts everything on one box. This page is
+for production: the panel and daemons on separate hosts, real TLS,
+managed (or self-hosted) Postgres + Redis.
+
+## Path A — Bundled Compose (recommended)
+
+The `stellar-installer` script lays down a Compose file that runs the
+panel, Postgres, Redis, and Caddy. It's the supported "I just want it
+running" deploy.
+
+```bash
+# On the panel host
+curl -fsSL https://get.stellarstack.dev | sudo bash -s -- \
+  --domain panel.example.com \
+  --email you@example.com \
+  --role panel
+```
+
+```bash
+# On each daemon host
+curl -fsSL https://get.stellarstack.dev | sudo bash -s -- \
+  --role daemon \
+  --panel-url https://panel.example.com
+```
+
+The daemon installer prints a one-time pairing token at the end. Take it
+to the panel — see [Pair a node](/self-hosting/pair-node).
+
+### What the installer creates
+
+```
+/opt/stellarstack/
+├── compose.yaml
+├── caddy/
+│   └── Caddyfile
+├── data/
+│   ├── postgres/
+│   ├── redis/
+│   └── caddy/
+└── .env
+```
+
+It also installs `stellar-panel.service` (panel hosts) or
+`stellar-daemon.service` (daemon hosts) under `systemd`.
+
+## Path B — Bring your own infrastructure
+
+If you already have managed Postgres, Redis, and a reverse proxy, point
+the panel at them via env vars.
+
+```bash
+# /opt/stellarstack/.env
+DATABASE_URL=postgres://user:pass@db.internal:5432/stellarstack
+REDIS_URL=redis://redis.internal:6379
+SESSION_SECRET=<32-byte hex>
+DAEMON_SIGNING_SECRET=<32-byte hex>
+
+# Email
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USER=resend
+SMTP_PASS=<api-key>
+SMTP_FROM="StellarStack <hello@panel.example.com>"
+
+# Public URLs
+PANEL_URL=https://panel.example.com
+```
+
+Then pull and run the panel image:
+
+```bash
+docker run -d --name stellar-panel \
+  --env-file /opt/stellarstack/.env \
+  -p 8000:8000 \
+  ghcr.io/stellarstackoss/panel:latest
+```
+
+Front it with your reverse proxy of choice. The panel listens on `:8000`
+and expects to be hit at `PANEL_URL`.
+
+## Path C — Build from source
+
+For air-gapped installs, custom auth providers, or contributing back.
+
+```bash
+git clone https://github.com/StellarStackOSS/stellarstack.git
+cd stellarstack
+pnpm install
+pnpm --filter @workspace/db db:migrate
+pnpm --filter api build
+pnpm --filter web build
+```
+
+Run the API behind systemd, serve `apps/web/dist` from any static host,
+and proxy `/api` to the API process. The daemon builds with
+`go build ./apps/daemon/cmd/stellar-daemon`.
+
+## Initial admin
+
+The installer prints an admin email + generated password on first boot.
+If you missed it, regenerate one:
+
+```bash
+docker exec -it stellar-panel \
+  node /app/dist/bin/admin-reset.js you@example.com
+```
+
+This rotates the admin password and prints the new one. There's no "self
+sign-up" — admins create users via **Admin → Users → New**.
+
+## Backups + restore
+
+The panel keeps everything important in Postgres. Back up Postgres and
+you've backed up StellarStack.
+
+```bash
+pg_dump --format=custom $DATABASE_URL > stellar.dump
+```
+
+To restore:
+
+```bash
+pg_restore --clean --if-exists --dbname=$DATABASE_URL stellar.dump
+```
+
+Game-server data lives on the daemon hosts at
+`/var/lib/stellar/servers/{uuid}` — back those volumes separately, or
+configure per-server backups inside the panel ([Operations →
+Backups](/operations/backups)).
+
+## What's next
+
+<CardGroup cols={2}>
+  <Card title="Pair a node" icon="link" href="/self-hosting/pair-node">
+    Hand the daemon a token and watch it appear in the panel.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/self-hosting/configuration">
+    Env vars, secrets rotation, allocation pools, blueprint catalog.
+  </Card>
+</CardGroup>

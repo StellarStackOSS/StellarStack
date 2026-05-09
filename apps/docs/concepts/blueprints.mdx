@@ -1,0 +1,143 @@
+---
+title: "Blueprints"
+description: "How StellarStack knows what 'a Minecraft server' means."
+icon: "shapes"
+---
+
+A **blueprint** is a manifest that describes:
+
+- The Docker image + entrypoint to run.
+- The install steps (download a JAR, fetch a server.properties template).
+- The environment variables the player can configure.
+- The readiness probes that turn `starting` into `running`.
+- The graceful shutdown command.
+
+Blueprints are the StellarStack equivalent of Pterodactyl's "eggs" or
+Multicraft's "JAR profiles" — but with a cleaner model and our own
+vocabulary.
+
+## Anatomy of a blueprint
+
+```yaml
+id: minecraft-paper
+version: 1.21
+display_name: Minecraft (Paper)
+description: High-performance Minecraft server with plugin support.
+category: minecraft
+
+image: ghcr.io/stellarstackoss/blueprints/minecraft-paper:1.21
+entrypoint: ["sh", "-c", "java $JVM_FLAGS -jar paper.jar"]
+
+variables:
+  - id: SERVER_VERSION
+    label: Minecraft version
+    type: string
+    default: "1.21"
+    user_editable: true
+
+  - id: JVM_FLAGS
+    label: JVM flags
+    type: string
+    default: "-Xms${MEMORY}M -Xmx${MEMORY}M -XX:+UseG1GC"
+    user_editable: false
+
+  - id: EULA
+    label: I accept the Mojang EULA
+    type: boolean
+    default: false
+    required: true
+
+install:
+  image: ghcr.io/stellarstackoss/blueprints/minecraft-paper-install:1.21
+  script: |
+    curl -L "https://api.papermc.io/.../paper.jar" -o paper.jar
+    echo "eula=true" > eula.txt
+
+lifecycle:
+  ready_when:
+    - type: console
+      pattern: 'Done \([0-9.]+s\)!'
+  stop:
+    type: command
+    command: "stop"
+  graceful_timeout_seconds: 30
+```
+
+## Where blueprints come from
+
+<CardGroup cols={3}>
+  <Card title="Catalog" icon="store">
+    Curated blueprints maintained by the StellarStack team. Free to
+    install from inside the panel. Auto-updates when you opt in.
+  </Card>
+  <Card title="Community" icon="users">
+    Third-party blueprints. Coming with the marketplace; for now, paste
+    a URL.
+  </Card>
+  <Card title="Custom" icon="wrench">
+    Author your own. Drop a `blueprint.yaml` in the panel via **Admin →
+    Blueprints → Upload**.
+  </Card>
+</CardGroup>
+
+## Variables
+
+Variables are the knobs a server owner sees on the **Configuration** tab.
+Each variable has:
+
+| Field            | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| `id`             | Env var name passed to the container.                        |
+| `label`          | Human-friendly name in the UI.                               |
+| `type`           | `string`, `number`, `boolean`, or `enum`.                    |
+| `default`        | Starting value.                                              |
+| `user_editable`  | If `false`, only admins can change the value.                |
+| `required`       | If `true`, the server can't start until set.                 |
+| `regex`          | Optional validation pattern.                                 |
+
+Internal templating lets defaults reference other variables (e.g.
+`-Xmx${MEMORY}M` interpolates the server's memory limit).
+
+## Lifecycle probes
+
+The `ready_when` array is a list of probes. The container is `running`
+once **any** of them succeeds (OR semantics).
+
+| Probe type        | Triggers when                                              |
+| ----------------- | ---------------------------------------------------------- |
+| `console`         | A line matching `pattern` is written to stdout.            |
+| `tcp`             | A TCP connection to `host:port` is accepted.               |
+| `udp_packet`      | A UDP packet to `host:port` returns expected bytes.        |
+| `http`            | An HTTP `GET` to `path` returns 200.                       |
+| `exec`            | A command run inside the container exits 0.                |
+| `container_exit`  | The container has not exited within `delay_seconds`.       |
+
+Most game servers print something Done!-shaped on startup; the `console`
+probe is the cheap default.
+
+## Stop strategies
+
+| `lifecycle.stop.type` | Behaviour                                                     |
+| --------------------- | ------------------------------------------------------------- |
+| `command`             | Writes `command` to stdin, then waits up to `graceful_timeout_seconds` before SIGKILL. |
+| `signal`              | Sends `SIGTERM` (or specified signal), then waits.            |
+| `none`                | SIGKILL immediately. Only sensible for stateless servers.     |
+
+For Minecraft, `command: "stop"` is the right thing; for Rust it's
+`type: signal` because Rust ignores stdin and trusts SIGTERM.
+
+## Updating a blueprint
+
+Blueprint updates ship as new versions: `minecraft-paper@1.20` and
+`minecraft-paper@1.21` coexist. Existing servers stay pinned to the
+version they were created with — operators choose to upgrade.
+
+The upgrade path:
+
+1. **Server → Configuration → Blueprint version → 1.21**.
+2. **Save**. Triggers a *re-install* (separate install container, persistent
+   log, streaming overlay). Re-install stops the runtime container first.
+3. New container boots with the new image and the same persistent files.
+
+Variable shape changes between versions are diff-merged — values you
+already set are preserved if their `id` still exists.

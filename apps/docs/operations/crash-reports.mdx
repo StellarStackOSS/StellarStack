@@ -1,0 +1,90 @@
+---
+title: "Crash reports"
+description: "When containers exit unexpectedly, here's what we capture."
+icon: "triangle-exclamation"
+---
+
+Every time a container exits while in `running` state, the daemon files
+a **crash report**. The panel surfaces them on the server's overview
+tab and a per-server **Crashes** tab.
+
+## What's captured
+
+| Field           | What it contains                                              |
+| --------------- | ------------------------------------------------------------- |
+| Timestamp       | When the daemon noticed the exit.                             |
+| Exit code       | Container exit code (0 = clean, anything else = crash-ish).   |
+| Signal          | If killed by signal (e.g. SIGKILL = OOM kill).                |
+| Log tail        | Last 200 lines of stdout/stderr.                              |
+| Resource snapshot | Memory + CPU usage at exit time (if available).             |
+| Uptime          | How long the container had been `running`.                    |
+
+## How "crash" is decided
+
+The daemon doesn't try to be clever. If the container exits while the
+lifecycle state was `running`, it's a crash. Caveats:
+
+- Exits during `stopping` are clean — the user asked for it.
+- Exits during `starting` are install/boot failures, surfaced
+  separately as install errors not crashes.
+- A clean exit code of 0 still files a crash if it happened in
+  `running` — Minecraft sometimes exits 0 after `/stop` *and* after a
+  Java OOM, so we can't trust the code alone.
+
+## Reading a report
+
+The panel renders:
+
+```
+─────────────────────────────────────────────────
+Crash · 2026-05-09 14:23:11 · ran for 2h 14m
+Exit 137  ·  signal: SIGKILL
+Memory at exit: 4.0 GB / 4.0 GB  (limit hit)
+─────────────────────────────────────────────────
+[14:23:09]   [INFO] Saving worlds
+[14:23:09]   [INFO] Saving chunks for 'world'
+[14:23:10]   [Server thread/INFO]: Stopping server
+[14:23:11]   [WARN] Failed to save players
+─────────────────────────────────────────────────
+[ Ask AI about this crash ]   [ Mute pattern ]
+```
+
+Exit 137 + signal SIGKILL + memory at limit = textbook OOM. The Ask AI
+button bundles the same context and asks a model.
+
+## Muting
+
+Some crashes are noise. The **Mute pattern** button lets you suppress
+future crashes that match — by exit code, signal, or a substring of the
+log tail. Muted crashes still record but don't fire UI notifications.
+
+Mutes are per-server and survive blueprint upgrades.
+
+## Storage
+
+Reports live in Postgres (`server_crashes` table) as metadata + the log
+tail inline. There's no per-crash log file on disk — if you need to
+keep a long retention of crash logs, export via the API.
+
+Default retention: 90 days. Configurable per-server.
+
+## Alerting
+
+A crash fires:
+
+- A notification in the panel for any user with `crashes.read` on the
+  server.
+- An email to the server's owner if **Notifications → Crash alerts** is
+  on (default: yes).
+- A panel-event WS frame for any open browser session — the dashboard
+  badge updates without reload.
+
+There's no Slack/Discord webhook out of the box. Polling
+`GET /servers/:id/crashes` and forwarding from your side is the
+recommended path until v2 ships native webhooks.
+
+## Why the log tail is short
+
+200 lines is enough to read what happened in 95% of crashes without
+filling Postgres rows or making the panel slow. If you want full logs,
+SSH the daemon host and read `/var/lib/docker/containers/<cid>/<cid>-json.log`.

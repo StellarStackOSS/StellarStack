@@ -23,7 +23,7 @@ const items = [
   },
   {
     q: "Is it free?",
-    a: "Yes — MIT licensed. Code lives at github.com/StellarStackOSS. We also offer a hosted version for people who don't want to run the panel themselves.",
+    a: "Yes — MIT licensed and free to self-host. We also offer a hosted version for people who don't want to run the panel themselves.",
   },
 ]
 

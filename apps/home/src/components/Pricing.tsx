@@ -25,13 +25,13 @@ const PLANS: Plan[] = [
     monthlyPrice: null,
     description:
       "MIT-licensed panel + daemon. Run on your own boxes, your own network, your own rules.",
-    cta: { label: "Read the docs", href: "https://github.com/StellarStackOSS" },
+    cta: { label: "Join the waitlist", href: "#waitlist" },
     features: [
       "Unlimited nodes & servers",
       "Every blueprint, every feature",
       "Browser-direct daemon WS",
       "SFTP, backups, schedules, audit log",
-      "Community support on GitHub",
+      "Community support",
     ],
   },
   {

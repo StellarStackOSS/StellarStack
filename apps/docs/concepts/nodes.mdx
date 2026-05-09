@@ -1,0 +1,94 @@
+---
+title: "Nodes"
+description: "The hosts that run game-server containers."
+icon: "microchip"
+---
+
+A **node** is a Linux machine running the StellarStack daemon. The panel
+treats nodes as opaque container runners: it tells them what to run,
+they run it. One node, one Docker socket, one daemon process.
+
+## What's in a node
+
+| Attribute             | Description                                                   |
+| --------------------- | ------------------------------------------------------------- |
+| Friendly name         | Human-readable (`mc-eu-1`).                                   |
+| FQDN + port           | What browsers and the API connect to.                         |
+| Region tag            | Free-form string; helps you see which servers are where.      |
+| Memory + disk caps    | Soft caps used during placement decisions.                    |
+| Daemon signing key    | Per-node HMAC; never leaves the panel + that node.            |
+| Allocation pools      | The IP + port ranges the panel can assign to servers.         |
+
+## Node placement
+
+When a user creates a server, the panel needs to pick a node. It can
+auto-pick (least-loaded among nodes that satisfy the blueprint's
+requirements) or accept an admin-provided node.
+
+Placement looks at:
+
+1. Free memory vs the server's request.
+2. Free disk vs the server's request.
+3. Available allocations matching the blueprint's port hints.
+4. Region tag, if the user has a preferred region.
+
+Nodes can be marked **maintenance** to drain new placements while
+leaving running servers alone.
+
+## Node ↔ panel link
+
+The daemon doesn't poll the panel and the panel doesn't poll the daemon.
+Two things flow:
+
+- **Browser → daemon WS** for console, stats, files. Authenticated by a
+  per-server JWT minted by the panel.
+- **Daemon → panel HTTPS** for status callbacks. Authenticated by the
+  per-node HMAC signing key.
+
+If the daemon-panel link breaks, browsers connected directly keep
+working. They just don't get updated server-state metadata until the
+link comes back.
+
+## Health
+
+The panel marks a node:
+
+- **online** — it received a callback in the last 30 seconds.
+- **degraded** — last callback 30–120s ago.
+- **offline** — last callback > 120s ago.
+
+Drained nodes show **maintenance** instead.
+
+## Capacity planning
+
+There's no hard rule for how many servers fit on a node — it's a
+function of the games. As a starting point:
+
+- **Minecraft Paper, 4 GB each:** 30 per node on a dedicated host with
+  64 GB RAM and 12 cores.
+- **Rust, 8 GB each:** ~15 per node, CPU-bound long before RAM.
+- **Lightweight (Valheim, Project Zomboid):** 50+ per node.
+
+The dashboard's per-node resource graphs are the right tool for sizing
+the next box.
+
+## Adding nodes
+
+See [Pair a node](/self-hosting/pair-node) for the pairing flow. Adding
+a node is non-destructive — existing servers stay where they are; only
+new placements consider the new node.
+
+## Removing nodes
+
+Drain it first (admin → node → maintenance), wait for the active server
+count to hit 0 (move servers to other nodes via **Transfer** if needed),
+then **Remove**. The panel deletes the row, the daemon stops calling
+back, and the daemon container can be torn down at your leisure.
+
+<Warning>
+  Removing a node in the panel does **not** delete `/var/lib/stellar` on
+  the host. If you re-pair the same machine later you may find old
+  containers and volumes — clean them up with `docker container prune`
+  and `rm -rf /var/lib/stellar/servers/<uuid>` only after you're sure
+  the data is gone from the panel side.
+</Warning>

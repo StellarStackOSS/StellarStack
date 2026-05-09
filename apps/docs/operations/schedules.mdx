@@ -1,0 +1,131 @@
+---
+title: "Schedules"
+description: "Cron-driven flows of actions and waits."
+icon: "calendar-clock"
+---
+
+Schedules are how StellarStack does "every night at 4am, take a
+backup". Each schedule has a cron expression and a **flow graph** — a
+visual editor of typed nodes the runner walks at firing time.
+
+## Flow graph
+
+A flow has three node kinds:
+
+| Kind       | What it does                                            |
+| ---------- | ------------------------------------------------------- |
+| `trigger`  | Always exactly one. The entry point. Kind-`cron`.       |
+| `action`   | Does something against the server.                      |
+| `wait`     | Blocks the runner until a condition is met.             |
+
+Action subtypes:
+
+- `power.start`, `power.stop`, `power.restart`, `power.kill`
+- `backup.create` — creates a backup row.
+- `console.send` — writes a single line to the container's stdin.
+
+Wait subtypes:
+
+- `state.online` — blocks until the server reports `running`.
+- `state.offline` — blocks until the server reports `offline`.
+- `backup.complete` — blocks until the most recently created backup
+  (in this run) leaves `pending`.
+- `delay.seconds` — sleeps for N seconds.
+
+## Building a flow
+
+Open **Server → Schedules → New** to launch the flow editor.
+
+```
+[Trigger: cron 0 4 * * *]
+            ↓
+    [Stop server]
+            ↓
+[Wait: until offline (timeout 120s)]
+            ↓
+   [Create backup]
+            ↓
+[Wait: until backup complete (timeout 1800s)]
+            ↓
+    [Start server]
+            ↓
+[Wait: until online (timeout 300s)]
+            ↓
+[Console: "say nightly backup complete"]
+```
+
+The left panel is a palette of action and wait types; clicking one
+appends it to the chain. Drag any node to reposition. Click a node to
+edit its payload (the console line, the wait timeout, etc.) in the
+right inspector.
+
+## Wait timeouts
+
+Every wait has a timeout (in seconds). When it elapses, the runner
+**continues** to the next node rather than failing the whole schedule.
+This is intentional — better to continue than to leave a server stuck.
+Defaults:
+
+| Wait                | Default timeout |
+| ------------------- | --------------- |
+| `state.offline`     | 120s            |
+| `state.online`      | 300s            |
+| `backup.complete`   | 1800s           |
+| `delay.seconds`     | n/a (exact)     |
+
+Adjust per-node in the inspector.
+
+## Cron syntax
+
+Standard 5-field cron, in **UTC**:
+
+```
+m h dom mon dow
+```
+
+Macros work: `@daily`, `@hourly`, `@weekly`, `@midnight`, `@yearly`.
+
+| Expression       | Means                                  |
+| ---------------- | -------------------------------------- |
+| `0 4 * * *`      | Every day at 04:00 UTC.                |
+| `*/15 * * * *`   | Every 15 minutes.                      |
+| `0 4 * * 0`      | Sundays at 04:00 UTC.                  |
+| `30 2 1 * *`     | First of every month at 02:30 UTC.     |
+
+The user's profile timezone is used to **display** times, but
+expressions are stored and evaluated in UTC.
+
+## Only when online
+
+A schedule with **Only when online** ticked skips firing if the server
+is offline. Useful for "every hour, run a console save command" — you
+don't want it spamming when the server is down for a different reason.
+
+## Execution semantics
+
+- One flow run per fire — not parallel runs of the same schedule.
+- The runner walks the graph from the trigger along outgoing edges. The
+  current editor only produces linear chains, but the model is a DAG so
+  branching is doable later.
+- A failing action node aborts the flow (no further nodes run).
+- Wait timeouts log a warning but continue.
+
+## Examples
+
+<AccordionGroup>
+  <Accordion title="Nightly backup">
+    Trigger `0 4 * * *` → Stop → Wait offline → Backup → Wait backup
+    → Start → Wait online → Console `say backup complete`.
+  </Accordion>
+  <Accordion title="Restart on Sundays without backup">
+    Trigger `0 5 * * 0` → Stop → Wait offline → Start → Wait online.
+  </Accordion>
+  <Accordion title="Hourly save while online">
+    Trigger `0 * * * *`, Only when online → Console `save-all` →
+    Wait 5s → Console `say save complete`.
+  </Accordion>
+  <Accordion title="Full backup off-site">
+    Trigger `0 3 * * *` → Backup (target: S3) → Wait backup complete →
+    Backup (target: local) → Wait backup complete.
+  </Accordion>
+</AccordionGroup>

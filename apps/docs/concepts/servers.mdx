@@ -1,0 +1,103 @@
+---
+title: "Servers"
+description: "The unit of work — what a 'server' is in StellarStack."
+icon: "server"
+---
+
+A **server** in StellarStack is a single game-server instance: one
+Minecraft world, one Rust map, one Palworld world. It's:
+
+- A row in the `servers` table.
+- One Docker container on a daemon host.
+- One persistent volume at `/var/lib/stellar/servers/{uuid}`.
+- Some number of allocations (IP + port pairs) reserved on its node.
+
+Servers are owned by a user, optionally shared with subusers, and run
+according to the rules of their **blueprint**.
+
+## Anatomy
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ server: minecraft-survival                                   │
+├──────────────────────────────────────────────────────────────┤
+│ blueprint:    minecraft-paper@1.21                           │
+│ node:         mc-eu-1                                         │
+│ memory:       4 GB                                            │
+│ cpu shares:   2                                               │
+│ disk:         20 GB                                           │
+│ allocations:  default 188.114.97.1:25565                      │
+│               extra   188.114.97.1:25566 (rcon)              │
+│ owner:        marques@example.com                             │
+│ subusers:     ben@example.com (console+files)                │
+│ state:        running                                         │
+│ install state: succeeded                                      │
+│                                                                │
+│ /var/lib/stellar/servers/{uuid}/                              │
+│   ├── world/                                                  │
+│   ├── plugins/                                                │
+│   ├── server.properties                                       │
+│   └── ...                                                     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## Lifecycle states
+
+The server's runtime state is one of four:
+
+| State      | What it means                                                 |
+| ---------- | ------------------------------------------------------------- |
+| `offline`  | Container not running.                                        |
+| `starting` | Container started; readiness probes pending.                  |
+| `running`  | Container alive; readiness probes satisfied.                  |
+| `stopping` | Graceful shutdown in flight.                                  |
+
+`installing` and `restoring` are tracked in **separate columns** on the
+same row, so a server can be `offline` *and* `installing` simultaneously.
+
+[Lifecycle](/concepts/lifecycle) covers transitions in detail.
+
+## Resource limits
+
+Limits are enforced by Docker (cgroups). The panel passes them as
+`--memory`, `--cpu-shares`, and `--blkio-weight` flags on container
+create.
+
+| Limit       | Soft / hard | Enforcement                     |
+| ----------- | ----------- | ------------------------------- |
+| Memory      | Hard        | OOM-kill at limit.             |
+| CPU         | Soft        | Shares-based; bursts allowed.  |
+| Disk size   | Soft        | Quota check on backup + write. |
+| I/O         | Soft        | `blkio` weight, not throttling.|
+
+We're explicit about *soft* vs *hard* because operators frequently
+expect "you have 4 GB" to mean OOM, and "you have 2 cores" to mean
+throttle. With cgroups defaults, only memory is hard. That matches Docker
+norms; if it surprises you, that's the gotcha.
+
+## Server splitting
+
+A "parent" server can have its resource pool carved into child
+**instances** — each with their own container, console, and file tree
+but sharing the parent's allocations and disk quota.
+
+Use cases:
+
+- A staging clone of a production world without buying more allocations.
+- A creative-mode mirror of a survival server.
+- An admin-only test environment glued to the same player base.
+
+Instances inherit the parent's blueprint and resource cap. The parent
+may not exceed its limit even if instances are idle.
+
+## Where the data lives
+
+| Resource       | Owner        | Path / table                                |
+| -------------- | ------------ | ------------------------------------------- |
+| Server row     | Postgres     | `servers`                                   |
+| Variables      | Postgres     | `server_variables` (JSONB blueprint vars)   |
+| Files          | Daemon disk  | `/var/lib/stellar/servers/{uuid}/`          |
+| Backups        | Daemon disk  | `/var/lib/stellar/backups/{uuid}/{name}.tar.zst` |
+| Backups (S3)   | S3           | configured per-server destination            |
+| Audit log      | Postgres     | `audit_log`                                  |
+| Crash reports  | Postgres + daemon | `server_crashes` (metadata) + log tail   |

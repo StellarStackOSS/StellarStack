@@ -1,0 +1,100 @@
+---
+title: "Authentication"
+description: "Bearer tokens, scopes, and how requests are authorised."
+icon: "lock"
+---
+
+All API requests authenticate with a Bearer token. There's no API-key
+header alternative — Bearer makes inspection in tools (curl,
+HTTPie, Postman) consistent and matches the WebAuthn ecosystem the rest
+of the auth flow lives in.
+
+## The header
+
+```http
+GET /api/servers HTTP/1.1
+Host: panel.example.com
+Authorization: Bearer ssk_live_abc123...
+```
+
+Without the header, you get `401 Unauthorized` with
+`code = auth.unauthorized`.
+
+## Token types
+
+Two token shapes ship today:
+
+| Shape           | Created via                        | Used for                                  |
+| --------------- | ---------------------------------- | ----------------------------------------- |
+| `ssk_live_*`    | **Account → API tokens**           | Programmatic access (scripts, CI, cron).  |
+| Session cookie  | Browser sign-in                    | The panel UI itself.                      |
+
+Both resolve to the same scope set — there's no "session-only" route
+that tokens can't hit (with the right scopes).
+
+## Scopes
+
+Tokens carry a list of scopes, e.g. `["servers.read", "console.write"]`.
+Each route declares the scopes it requires; the API checks at the start
+of every request.
+
+A token with insufficient scopes gets `403 Forbidden` with
+`code = permissions.denied`.
+
+See [Permissions](/multi-tenant/permissions) for the catalogue.
+
+## Per-server vs global tokens
+
+Token scopes can be:
+
+- **Global**: applies to every server the token's user owns or
+  subuser-accesses (e.g. `console.read` across all servers).
+- **Server-scoped**: limited to one server (`server:abc123:console.read`).
+
+Server-scoped tokens are recommended for narrow integrations. Global
+tokens are simpler but blast radius is larger.
+
+The token-create UI exposes both.
+
+## 2FA + tokens
+
+Token authentication doesn't require 2FA at use time — the 2FA check
+happens once at session creation, and the token is the result of that
+authenticated session. Treat tokens like passwords; they bypass your
+2FA on every request.
+
+## Daemon JWTs (mentioned for completeness)
+
+The browser uses **scoped JWTs** to talk to the daemon WebSocket. These
+are not API tokens — they're minted by the API (`POST
+/servers/:id/credentials`) for a specific purpose with a 10–60 minute
+lifetime. You typically don't deal with them directly; the panel
+handles the dance.
+
+For programmatic clients that want to stream a daemon socket, the same
+endpoint mints them on-demand:
+
+```http
+POST /api/servers/:id/credentials
+Authorization: Bearer ssk_live_...
+
+{ "purpose": "console" }
+```
+
+```json
+{
+  "token": "<jwt>",
+  "wsUrl": "wss://mc-eu-1.example.com:8443/api/servers/.../ws?token=<jwt>",
+  "expiresAt": "2026-05-09T12:34:56Z"
+}
+```
+
+## Errors
+
+| HTTP | `code`                  | Meaning                                          |
+| ---- | ----------------------- | ------------------------------------------------ |
+| 401  | `auth.unauthorized`     | Missing / malformed `Authorization` header.      |
+| 401  | `auth.token_invalid`    | Token doesn't exist or has been revoked.          |
+| 401  | `auth.token_expired`    | Token expired.                                    |
+| 403  | `permissions.denied`    | Token's scopes don't include what's needed.      |
+| 403  | `auth.environment_mismatch` | `ssk_test_*` against a `live` panel or vice versa. |

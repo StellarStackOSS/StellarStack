@@ -48,7 +48,7 @@ export const useCreateSchedule = (serverId: string) => {
 export const useUpdateSchedule = (serverId: string) => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (params: { scheduleId: string } & Partial<ScheduleInput>) =>
+    mutationFn: (params: { scheduleId: string } & ScheduleInput) =>
       apiFetch<{ schedule: ScheduleRow }>(
         `/servers/${serverId}/schedules/${params.scheduleId}`,
         {
@@ -58,7 +58,7 @@ export const useUpdateSchedule = (serverId: string) => {
             cron: params.cron,
             enabled: params.enabled,
             onlyWhenOnline: params.onlyWhenOnline,
-            tasks: params.tasks,
+            flow: params.flow,
           }),
         }
       ),
@@ -69,7 +69,7 @@ export const useUpdateSchedule = (serverId: string) => {
 }
 
 /**
- * Delete a schedule (cascades through `schedule_tasks`).
+ * Delete a schedule (cascades through `schedule_nodes` + `schedule_edges`).
  */
 export const useDeleteSchedule = (serverId: string) => {
   const queryClient = useQueryClient()

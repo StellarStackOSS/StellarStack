@@ -1,0 +1,89 @@
+---
+title: "Passkeys"
+description: "WebAuthn-based phishing-resistant sign-in."
+icon: "key-skeleton"
+---
+
+Passkeys are the modern alternative to passwords + TOTP. They're
+WebAuthn under the hood — a public-key pair generated on your device
+(or hardware key) and bound to the panel's domain. The private key
+never leaves your device.
+
+Practical effect: signing in is "tap your phone / press your YubiKey",
+no codes to type, and phishing pages can't steal your credential.
+
+## Enrolling a passkey
+
+**Account → Security → Add passkey**.
+
+Your browser prompts for the platform authenticator. Pick:
+
+- **This device** — Touch ID / Windows Hello / Android biometrics.
+- **A USB security key** — YubiKey, Titan, etc.
+- **A different device** — your phone via QR-based cross-device auth.
+
+Multiple passkeys per account is encouraged. Add one for your laptop,
+one for your phone, one as a hardware-key backup.
+
+## Signing in
+
+On the sign-in page, click **Sign in with passkey**. Your browser
+prompts for any passkey bound to the panel's domain. Pick one,
+authenticate, you're in.
+
+If you've enrolled passkeys, the panel:
+
+- Doesn't require a password.
+- Doesn't require TOTP.
+- Doesn't allow magic-link or email recovery into the same session.
+
+Passwords stay enabled as a fallback — you can disable them per-user
+in **Account → Security → Sign-in methods**.
+
+## What passkeys protect against
+
+- **Phishing.** A fake panel page can't ask your authenticator for a
+  signature bound to its domain — the cryptography refuses.
+- **Credential reuse.** Passkeys are per-site by construction.
+- **Replay.** Each authentication is a fresh challenge-response.
+
+## What passkeys *don't* protect against
+
+- Malware on the device that bypasses the authenticator API.
+- Physical compromise of an unlocked device — the same threat model as
+  any logged-in browser session.
+
+For very high-value admin accounts on shared machines, pair a hardware
+passkey (YubiKey) with a session timeout setting on **Admin → Settings**.
+
+## Recovery
+
+If you lose every device with a passkey enrolled:
+
+- If you also have password + TOTP enabled, sign in via that path and
+  enrol new passkeys.
+- If you have *only* passkeys and they're all lost, an admin must
+  reset the account and you re-enrol.
+
+Same as TOTP, there's no email-link recovery. That's the point.
+
+## Browser support
+
+Passkeys work in:
+
+- Safari 16+ (macOS Ventura, iOS 16).
+- Chrome 109+ (desktop + Android).
+- Firefox 122+ (desktop; sync requires Firefox account).
+- Edge 109+.
+
+Older browsers fall back to password + TOTP.
+
+## Multi-device sync
+
+Apple, Google, and Microsoft sync passkeys across your devices via iCloud
+Keychain, Google Password Manager, and Microsoft account respectively.
+1Password and Bitwarden also store passkeys.
+
+You don't need to enrol the same passkey on every device — synced
+passkeys appear automatically once you sign into the host's password
+manager.

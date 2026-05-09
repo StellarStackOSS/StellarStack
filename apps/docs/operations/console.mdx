@@ -1,0 +1,78 @@
+---
+title: "Console"
+description: "Live stdout/stderr + stdin to the running container."
+icon: "terminal"
+---
+
+The console is the ground truth for what your server is doing. It's a
+direct WebSocket from your browser to the daemon — every line of stdout
+and every keystroke you type travels point-to-point, no panel middleman.
+
+## Opening the console
+
+**Server → Console** is the default landing tab. On open the daemon:
+
+1. Authenticates the JWT in the connect URL.
+2. Sends the last `N` lines of buffered output (default 150).
+3. Streams new lines as they arrive.
+
+Disconnects are recoverable — refreshing reconnects with the same scope
+as long as your panel session is valid.
+
+## Sending commands
+
+The text input at the bottom writes a single line to the container's
+stdin. It's enabled while the server is `running`; otherwise it's
+greyed out.
+
+Common commands:
+
+| Game         | Useful console commands                          |
+| ------------ | ------------------------------------------------ |
+| Minecraft    | `say hello`, `op marques`, `whitelist add x`     |
+| Rust         | `serverinfo`, `kick "PlayerName"`, `say "msg"`   |
+| Palworld     | `Broadcast Hello`, `KickPlayer SteamID`          |
+| Valheim      | (most servers don't accept stdin commands)       |
+
+## Ask AI
+
+The **Ask AI** button (top-right of the console card) bundles the last
+100 console lines + a prompt and asks Claude/GPT what's going on. Useful
+for:
+
+- Decoding cryptic Minecraft mod stack traces.
+- Spotting plugin conflicts.
+- Translating Rust's "EAC kicked player" reasons.
+
+Privacy: the lines and your question go to the AI provider configured
+in [Configuration](/self-hosting/configuration). They're not stored on
+StellarStack's side beyond the active session.
+
+## Buffer size
+
+By default the daemon buffers 150 lines per server. Useful for:
+
+- Catching the last few lines before a crash.
+- Showing context on console reconnect.
+
+Operators can bump this in `/etc/stellar-daemon/config.toml`:
+
+```toml
+[console]
+buffer_lines = 500
+```
+
+Bigger buffers cost RAM. 150 is roughly 30 KB per server.
+
+## ANSI colors
+
+The daemon strips ANSI escape sequences before sending lines to the
+browser. Most game servers don't emit colors anyway; the few that do
+(Spigot debug, some mod loaders) just look noisier with the codes
+stripped away — Mintlify-style readability over fidelity.
+
+## Subuser access
+
+A subuser with the `console.read` scope can stream the console. Add
+`console.write` to also let them send commands. See
+[Permissions](/multi-tenant/permissions) for the full scope list.

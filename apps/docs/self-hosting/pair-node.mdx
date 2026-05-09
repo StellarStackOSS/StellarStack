@@ -1,0 +1,101 @@
+---
+title: "Pair a node"
+description: "Connect a freshly-installed daemon to the panel."
+icon: "link"
+---
+
+Pairing is a two-step handshake: the panel mints a one-time token, the
+daemon claims it, and from that point on the two share a per-node HMAC
+secret used to sign every callback.
+
+## On the panel
+
+1. **Admin → Nodes → New node**.
+2. Enter a friendly name (`mc-eu-1`, `rust-us-east-2`) — the player-facing
+   identifier.
+3. Pick the FQDN the daemon is reachable at (`mc-eu-1.example.com`) and
+   the public port (default `8443`).
+4. Click **Generate pairing token**. Copy the token immediately — it's
+   shown once and expires after 15 minutes.
+
+## On the daemon host
+
+Run `stellar-daemon configure` with the token:
+
+```bash
+sudo stellar-daemon configure <token>
+```
+
+The configure subcommand:
+
+1. Calls the panel's `/api/nodes/pair` endpoint with the token.
+2. Receives the per-node HMAC signing key.
+3. Writes `/etc/stellar-daemon/config.toml` with the node ID, panel URL,
+   and signing key.
+4. Restarts `stellar-daemon.service`.
+
+Within ~5 seconds the panel's node row should flip to **online**.
+
+## Verify the pairing
+
+```bash
+sudo stellar-daemon status
+```
+
+You should see:
+
+```
+node id        d4f8c1a8-...
+panel url      https://panel.example.com
+last callback  2026-05-09T12:34:56Z (ok)
+docker         /var/run/docker.sock (reachable)
+containers     0 stellar-managed
+```
+
+If `last callback` shows an error, [troubleshoot the daemon-panel link](#troubleshooting).
+
+## Adding allocations
+
+A node without allocations can't host servers. After pairing:
+
+1. **Admin → Nodes → mc-eu-1 → Allocations**.
+2. **Add allocation pool** — pick the public IP and a port range
+   (e.g. `25500-25599`).
+3. The panel pre-creates one allocation row per port.
+
+Game-server creation now offers any unused allocation from that pool.
+
+## Repairing or rotating
+
+To rotate the daemon's signing key (recommended yearly or after staff
+turnover):
+
+1. **Admin → Nodes → mc-eu-1 → Rotate key**.
+2. The panel mints a new pairing token in the same UI as initial pairing.
+3. Run `sudo stellar-daemon configure <new-token>` on the daemon.
+
+The old key is invalidated atomically once the daemon successfully claims
+the new one — no downtime.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Daemon can't reach panel">
+    Check `curl -v https://panel.example.com/api/health` from the daemon
+    host. If it fails, you have a network issue, not a StellarStack
+    issue. Common culprits: firewall blocking outbound 443, DNS not
+    resolving the panel hostname, panel TLS cert not trusted by the
+    daemon's system CA bundle.
+  </Accordion>
+  <Accordion title="Pairing token rejected">
+    Tokens expire after 15 minutes. Generate a fresh one. Also confirm
+    the panel and daemon clocks aren't more than 60s apart — the HMAC
+    handshake is timestamp-bound to prevent replay.
+  </Accordion>
+  <Accordion title="Node shows online but containers fail to start">
+    The daemon needs read+write on `/var/run/docker.sock`. Check the
+    `stellar` user is in the `docker` group (`id stellar`). Re-pair if
+    you re-installed Docker between sessions — the socket UID may have
+    changed.
+  </Accordion>
+</AccordionGroup>
