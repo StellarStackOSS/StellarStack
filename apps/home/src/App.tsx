@@ -202,10 +202,22 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
             <motion.div
               {...fadeUp(0.4)}
               role="status"
-              className="rounded-md border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80"
+              className="flex flex-col gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80"
             >
-              Check your inbox — we sent a confirmation link to{" "}
-              <span className="text-white">{email}</span>.
+              <span>
+                You're on the list as{" "}
+                <span className="text-white">
+                  {waitlist.submittedEmail ?? email}
+                </span>
+                . We'll be in touch.
+              </span>
+              <button
+                type="button"
+                onClick={waitlist.reset}
+                className="self-start text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
+              >
+                Use a different email →
+              </button>
             </motion.div>
           ) : (
             <motion.form
