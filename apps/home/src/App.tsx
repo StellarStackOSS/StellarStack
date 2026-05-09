@@ -2,6 +2,8 @@ import { motion } from "framer-motion"
 import type { MouseEvent } from "react"
 import { useEffect, useState } from "react"
 
+import { useWaitlist } from "@/hooks/useWaitlist"
+
 import { Changelog } from "@/components/Changelog"
 import { Faq } from "@/components/Faq"
 import { Features } from "@/components/Features"
@@ -158,69 +160,124 @@ const Header = ({ pastHero }: { pastHero: boolean }) => (
 // Hero
 // ---------------------------------------------------------------------------
 
-const Hero = ({ pastHero }: { pastHero: boolean }) => (
-  <section className="mx-auto flex w-[min(1200px,92vw)] flex-col gap-4 pt-12 md:pt-20">
-    <motion.div {...fadeUp(0.1)} className="self-start">
-      <a
-        href="#waitlist"
-        onClick={onAnchorClick}
-        className="inline-flex items-center gap-2 rounded-sm bg-[#282532] px-3 py-1 text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
-      >
-        Coming Q3 2026
-        <span aria-hidden>→</span>
-      </a>
-    </motion.div>
+const Hero = ({ pastHero }: { pastHero: boolean }) => {
+  const [email, setEmail] = useState("")
+  const waitlist = useWaitlist()
+  const submitting = waitlist.status === "submitting"
+  const succeeded = waitlist.status === "ok"
 
-    <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between md:gap-16">
-      <motion.h1
-        {...fadeUp(0.2)}
-        className="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl"
-      >
-        Open-source server hosting,
-        <br />
-        done correctly.
-      </motion.h1>
+  return (
+    <section className="mx-auto flex w-[min(1200px,92vw)] flex-col gap-4 pt-12 md:pt-20">
+      <motion.div {...fadeUp(0.1)} className="self-start">
+        <a
+          href="#waitlist"
+          onClick={onAnchorClick}
+          className="inline-flex items-center gap-2 rounded-sm bg-[#282532] px-3 py-1 text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
+        >
+          Coming Q3 2026
+          <span aria-hidden>→</span>
+        </a>
+      </motion.div>
 
-      <div className="flex max-w-md flex-col gap-4">
-        <motion.p
-          {...fadeUp(0.3)}
-          className="text-sm font-extralight leading-relaxed text-white/70 md:text-base"
+      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between md:gap-16">
+        <motion.h1
+          {...fadeUp(0.2)}
+          className="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl"
         >
-          Modern, open-source, AI-assisted. One UI for Minecraft, Rust,
-          Palworld, and anything else Docker can run.
-        </motion.p>
-        <motion.form
-          {...fadeUp(0.4)}
-          id="waitlist"
-          onSubmit={(e) => e.preventDefault()}
-          className="flex w-full items-center gap-2"
-        >
-          <input
-            type="email"
-            required
-            placeholder="Enter your email address"
-            className="h-10 w-full min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
-          />
-          {/* Slot reserves layout space; the actual button shares its
-              `waitlist-cta` layoutId with the header so framer-motion can
-              spring the morph between the two. */}
-          <div className="relative flex h-10 min-w-[7.75rem] shrink-0 items-center justify-center">
-            {!pastHero ? (
-              <motion.button
-                layoutId="waitlist-cta"
-                type="submit"
-                transition={ctaTransition}
-                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
-              >
-                Join waitlist
-              </motion.button>
-            ) : null}
-          </div>
-        </motion.form>
+          Open-source server hosting,
+          <br />
+          done correctly.
+        </motion.h1>
+
+        <div className="flex max-w-md flex-col gap-4">
+          <motion.p
+            {...fadeUp(0.3)}
+            className="text-sm font-extralight leading-relaxed text-white/70 md:text-base"
+          >
+            Modern, open-source, AI-assisted. One UI for Minecraft, Rust,
+            Palworld, and anything else Docker can run.
+          </motion.p>
+
+          {succeeded ? (
+            <motion.div
+              {...fadeUp(0.4)}
+              role="status"
+              className="rounded-md border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80"
+            >
+              Check your inbox — we sent a confirmation link to{" "}
+              <span className="text-white">{email}</span>.
+            </motion.div>
+          ) : (
+            <motion.form
+              {...fadeUp(0.4)}
+              id="waitlist"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void waitlist.submit(email)
+              }}
+              className="flex w-full flex-col gap-2"
+            >
+              <div className="flex w-full items-center gap-2">
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.currentTarget.value)}
+                  disabled={submitting}
+                  className="h-10 w-full min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none disabled:opacity-60"
+                />
+                {/* Slot reserves layout space; the actual button shares its
+                    `waitlist-cta` layoutId with the header so framer-motion
+                    can spring the morph between the two. */}
+                <div className="relative flex h-10 min-w-[7.75rem] shrink-0 items-center justify-center">
+                  {!pastHero ? (
+                    <motion.button
+                      layoutId="waitlist-cta"
+                      type="submit"
+                      disabled={submitting}
+                      transition={ctaTransition}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-70"
+                    >
+                      {submitting ? "Joining…" : "Join waitlist"}
+                    </motion.button>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Honeypot — visually hidden but reachable. Bots auto-fill
+                  every input; the API silently accepts and discards. */}
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={waitlist.honeypot}
+                onChange={(e) => waitlist.setHoneypot(e.currentTarget.value)}
+                className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                aria-hidden
+              />
+
+              {/* Cloudflare Turnstile invisible widget anchor. */}
+              <div
+                ref={waitlist.turnstileContainerRef}
+                className="absolute h-0 w-0 overflow-hidden"
+                aria-hidden
+              />
+
+              {waitlist.errorMessage !== null ? (
+                <p className="text-xs text-red-300" role="alert">
+                  {waitlist.errorMessage}
+                </p>
+              ) : null}
+            </motion.form>
+          )}
+        </div>
       </div>
-    </div>
-  </section>
-)
+    </section>
+  )
+}
 
 const HeroImage = () => (
   <motion.div
