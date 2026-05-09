@@ -259,13 +259,6 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
                 aria-hidden
               />
 
-              {/* Cloudflare Turnstile invisible widget anchor. */}
-              <div
-                ref={waitlist.turnstileContainerRef}
-                className="absolute h-0 w-0 overflow-hidden"
-                aria-hidden
-              />
-
               {waitlist.errorMessage !== null ? (
                 <p className="text-xs text-red-300" role="alert">
                   {waitlist.errorMessage}
