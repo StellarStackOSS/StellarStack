@@ -43,8 +43,8 @@ const formatTimestamp = (timestamp: number): string => {
 }
 
 const rowClass = (level: ConsoleLineLevel): string => {
-  if (level === "error") return "bg-primary/10 hover:bg-primary/15"
-  if (level === "warn") return "bg-primary/5 hover:bg-primary/10"
+  if (level === "error") return "bg-red-500/10 hover:bg-red-500/15"
+  if (level === "warn") return "bg-amber-500/10 hover:bg-amber-500/15"
   return "hover:bg-muted/50 dark:hover:bg-zinc-900/50"
 }
 
@@ -60,7 +60,8 @@ const formatClock = (epochMs: number): string => {
 }
 
 const textClass = (level: ConsoleLineLevel): string => {
-  if (level === "error" || level === "warn") return "text-primary"
+  if (level === "error") return "text-red-600 dark:text-red-300"
+  if (level === "warn") return "text-amber-700 dark:text-amber-300"
   return "text-foreground dark:text-zinc-300"
 }
 
@@ -224,7 +225,7 @@ export const Console = ({
       <div
         className={cn(
           "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border transition-colors",
-          "border-border bg-muted/40 shadow-sm dark:bg-[#0e0e0e] dark:shadow-lg dark:shadow-black/20",
+          "border-border bg-muted/40 shadow-sm dark:bg-[#130f0c] dark:shadow-lg dark:shadow-black/20",
           isOffline && "opacity-60",
           className
         )}
@@ -243,14 +244,14 @@ export const Console = ({
             <div
               className={cn(
                 "pointer-events-none absolute left-0 right-0 top-0 z-10 h-8 transition-opacity duration-300",
-                "bg-gradient-to-b from-background to-transparent dark:from-[#0f0f0f]",
+                "bg-gradient-to-b from-background to-transparent dark:from-[#130f0c]",
                 canScrollUp ? "opacity-100" : "opacity-0"
               )}
             />
             <div
               className={cn(
                 "pointer-events-none absolute left-0 right-0 bottom-0 z-10 h-8 transition-opacity duration-300",
-                "bg-gradient-to-t from-background to-transparent dark:from-[#0f0f0f]",
+                "bg-gradient-to-t from-background to-transparent dark:from-[#130f0c]",
                 !autoScroll ? "opacity-100" : "opacity-0"
               )}
             />
@@ -260,7 +261,7 @@ export const Console = ({
               onMouseLeave={handleTsLeave}
               className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-700 flex-1 min-h-0 overflow-x-hidden overflow-y-auto p-2 font-mono text-xs"
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 {display.map((line) => (
                   <div key={line.id} className={cn("group flex gap-3 rounded-sm px-1", rowClass(line.level))}>
                     <span

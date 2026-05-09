@@ -34,7 +34,7 @@ type DualSparklineProps = {
 const DOT_COLOR = "rgba(255, 255, 255, 0.15)"
 
 const tooltipContentStyle: React.CSSProperties = {
-  background: "#0e0e0e",
+  background: "#130f0c",
   border: "1px solid rgba(255, 255, 255, 0.08)",
   borderRadius: 6,
   padding: "4px 8px",

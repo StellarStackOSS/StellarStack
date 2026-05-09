@@ -96,7 +96,7 @@ export const InstallOverlay = ({
 
       <div
         ref={scrollRef}
-        className="border-border bg-[#0e0e0e] text-zinc-300 min-h-0 flex-1 overflow-auto rounded-lg border font-mono text-[11px] leading-relaxed"
+        className="border-border bg-[#130f0c] text-zinc-300 min-h-0 flex-1 overflow-auto rounded-lg border font-mono text-[11px] leading-relaxed"
       >
         {log.length === 0 ? (
           <div className="text-muted-foreground p-3 text-xs">

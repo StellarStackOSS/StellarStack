@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Send } from "lucide-react"
 
-import { CardTitle } from "@workspace/ui/components/card"
 import { Input } from "@workspace/ui/components/input"
 import { TextureButton } from "@workspace/ui/components/texture-button"
 
@@ -89,12 +88,15 @@ export const ConsoleAiPanel = ({
   const isEmpty = messages.length === 0
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-lg border border-border bg-card p-1 pt-2">
-      {/* Header — matches Console card-style header */}
-      <div className="shrink-0 flex items-center justify-between gap-2 px-2 pb-1">
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Title sits at the top of the page-styled card, matching the
+          main inset's titlebar height. */}
+      <div className="flex h-(--header-height) shrink-0 items-center justify-between gap-2 px-4 md:px-6">
         <div className="flex items-center gap-1.5">
-          <Icon name="ai" size={14} className="text-primary" />
-          <CardTitle>AI Assistant</CardTitle>
+          <Icon name="ai" size={14} className="text-muted-foreground" />
+          <span className="text-sm font-normal text-muted-foreground">
+            AI Assistant
+          </span>
         </div>
         {onClose !== undefined ? (
           <button
@@ -108,15 +110,15 @@ export const ConsoleAiPanel = ({
         ) : null}
       </div>
 
-      {/* Inner container — themed surface, terminal-dark in dark mode */}
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-muted/40 shadow-sm dark:bg-[#0e0e0e] dark:shadow-lg dark:shadow-black/20">
+      {/* Content area — same horizontal padding as the page main */}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1 pb-4 md:px-6 md:pb-6">
         {/* Messages / empty state */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {isEmpty ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8">
               <div className="flex flex-col items-center gap-2 text-center">
-                <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon name="ai" size={18} className="text-primary" />
+                <div className="flex size-10 items-center justify-center rounded-full bg-white/5">
+                  <Icon name="ai" size={18} className="text-foreground" />
                 </div>
                 <p className="text-sm font-medium text-foreground">
                   What would you like to know?
@@ -131,7 +133,7 @@ export const ConsoleAiPanel = ({
                     key={q}
                     type="button"
                     onClick={() => void sendQuestion(q)}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-left text-xs text-foreground transition-colors hover:bg-muted dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80"
+                    className="rounded-md border border-white/5 bg-white/[0.03] px-3 py-2 text-left text-xs text-foreground transition-colors hover:bg-white/[0.06]"
                   >
                     {q}
                   </button>
@@ -155,8 +157,8 @@ export const ConsoleAiPanel = ({
                     className={[
                       "max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap",
                       msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border bg-background text-foreground dark:bg-zinc-900/60",
+                        ? "bg-white text-zinc-900"
+                        : "border border-white/5 bg-white/[0.03] text-foreground",
                     ].join(" ")}
                   >
                     {msg.text}
@@ -165,7 +167,7 @@ export const ConsoleAiPanel = ({
               ))}
               {loading ? (
                 <div className="flex items-start">
-                  <div className="rounded-lg border border-border bg-background px-3 py-2 dark:bg-zinc-900/60">
+                  <div className="rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
                     <div className="flex gap-1">
                       <span className="size-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
                       <span className="size-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
@@ -183,7 +185,7 @@ export const ConsoleAiPanel = ({
         </div>
 
         {/* Input area — mirrors Console's input + send button */}
-        <form onSubmit={handleSubmit} className="h-fit border-t border-border p-2">
+        <form onSubmit={handleSubmit} className="h-fit pt-2">
           {!isEmpty ? (
             <div className="mb-2 flex flex-wrap gap-1">
               {SUGGESTED.slice(0, 3).map((q) => (
@@ -191,7 +193,7 @@ export const ConsoleAiPanel = ({
                   key={q}
                   type="button"
                   onClick={() => void sendQuestion(q)}
-                  className="rounded border border-border bg-background px-2 py-0.5 text-[0.6rem] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80"
+                  className="rounded border border-white/5 bg-white/[0.03] px-2 py-0.5 text-[0.6rem] text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
                 >
                   {q}
                 </button>

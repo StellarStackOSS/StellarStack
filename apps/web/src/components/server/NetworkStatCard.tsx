@@ -31,8 +31,8 @@ const computeSpeeds = (history: StatsSample[]): { rx: number; tx: number }[] => 
   return out
 }
 
-const rxColor = "#22c55e"
-const txColor = "#3b82f6"
+const rxColor = "#ffffff"
+const txColor = "#ffffff"
 
 export const NetworkStatCard = ({
   latest,

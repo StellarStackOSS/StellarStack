@@ -84,7 +84,7 @@ export const ConsoleTimestampTooltip = ({ timestamp, position, logTimestamp }: P
     <div
       className={cn(
         "animate-in fade-in-0 zoom-in-95 pointer-events-none fixed z-50 min-w-[280px] rounded-lg border p-3 shadow-2xl shadow-black/50 backdrop-blur-md duration-100",
-        "border-zinc-200/10 bg-[#0f0f0f]/80"
+        "border-zinc-200/10 bg-[#130f0c]/80"
       )}
       style={{ top: position.top, left: position.left }}
     >

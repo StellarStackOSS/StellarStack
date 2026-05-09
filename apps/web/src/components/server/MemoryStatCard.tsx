@@ -9,12 +9,7 @@ import { Sparkline } from "@workspace/ui/components/sparkline"
 
 import type { StatsSample } from "@/hooks/useServerStats.types"
 
-const usageColor = (pct: number): string => {
-  if (pct === 0) return "#71717a"
-  if (pct > 75) return "#ef4444"
-  if (pct > 50) return "#f59e0b"
-  return "#3b82f6"
-}
+const usageColor = (_pct: number): string => "#ffffff"
 
 const formatBytes = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`

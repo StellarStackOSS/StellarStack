@@ -31,8 +31,8 @@ const computeSpeeds = (history: StatsSample[]): { read: number; write: number }[
   return out
 }
 
-const readColor = "#a855f7"
-const writeColor = "#ec4899"
+const readColor = "#ffffff"
+const writeColor = "#ffffff"
 
 export const DiskStatCard = ({
   latest,

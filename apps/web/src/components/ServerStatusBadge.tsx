@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AnimatePresence, motion } from "framer-motion"
+import { LoaderIcon } from "lucide-react"
 
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
-import { DotmSquare3 } from "@/components/DotmSquare3"
 import { Icon, type IconName } from "@/components/Icon"
 
 type StatusVisual = {
-  icon: IconName | "dotmatrix"
+  icon: IconName | "spinner"
   spin: boolean
   text: string
   border: string
@@ -26,7 +26,7 @@ const visuals: Record<ServerLifecycleState, StatusVisual> = {
     labelKey: "status_badge.running",
   },
   starting: {
-    icon: "dotmatrix",
+    icon: "spinner",
     spin: true,
     text: "text-amber-400",
     border: "border-amber-500/25",
@@ -34,7 +34,7 @@ const visuals: Record<ServerLifecycleState, StatusVisual> = {
     labelKey: "status_badge.starting",
   },
   stopping: {
-    icon: "dotmatrix",
+    icon: "spinner",
     spin: true,
     text: "text-amber-400",
     border: "border-amber-500/25",
@@ -89,7 +89,7 @@ export const ServerStatusBadge = ({
     <motion.span
       layout
       transition={{ type: "spring", stiffness: 420, damping: 36, mass: 0.6 }}
-      className={`inline-flex items-center gap-1.5 rounded-full border ${v.border} ${v.bg} ${v.text} px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wider`}
+      className={`inline-flex h-6 items-center gap-1.5 rounded-md ${v.bg} ${v.text} px-2 text-[10.5px] font-medium uppercase tracking-wider`}
     >
       <AnimatePresence mode="popLayout" initial={false}>
         {renderIcon ? (
@@ -107,14 +107,8 @@ export const ServerStatusBadge = ({
             transition={{ duration: 0.2 }}
             className="flex shrink-0 items-center overflow-hidden"
           >
-            {v.icon === "dotmatrix" ? (
-              <DotmSquare3
-                size={14}
-                dotSize={2}
-                speed={1.6}
-                animated
-                aria-hidden
-              />
+            {v.icon === "spinner" ? (
+              <LoaderIcon className="size-3.5 animate-spin" aria-hidden />
             ) : (
               <Icon name={v.icon} className="size-3.5" />
             )}

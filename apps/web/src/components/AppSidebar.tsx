@@ -87,7 +87,7 @@ export const AppSidebar = ({
               <img
                 src="/logo.png"
                 alt=""
-                className="size-7 shrink-0 rounded-md"
+                className="size-5 shrink-0"
               />
             )}
             <div className="flex min-w-0 flex-1 flex-col leading-tight group-data-[collapsible=icon]:hidden">

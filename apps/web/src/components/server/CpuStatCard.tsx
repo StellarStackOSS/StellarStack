@@ -9,12 +9,7 @@ import { Sparkline } from "@workspace/ui/components/sparkline"
 
 import type { StatsSample } from "@/hooks/useServerStats.types"
 
-const usageColor = (pctOfLimit: number): string => {
-  if (pctOfLimit === 0) return "#71717a"
-  if (pctOfLimit > 75) return "#ef4444"
-  if (pctOfLimit > 50) return "#f59e0b"
-  return "#22c55e"
-}
+const usageColor = (_pctOfLimit: number): string => "#ffffff"
 
 export const CpuStatCard = ({
   latest,

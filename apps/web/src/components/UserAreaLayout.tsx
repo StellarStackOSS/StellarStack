@@ -76,17 +76,15 @@ export const UserAreaLayout = () => {
     >
       <AppSidebar variant="inset" brandLabel="StellarStack" nav={{ items }} />
       <SidebarInset className="overflow-hidden border border-border">
-        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-border px-4">
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 px-4 md:px-6">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
-          <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
-          <Icon name={current.icon} className="size-4 shrink-0 text-muted-foreground" />
-          <span className="hidden text-sm font-medium text-foreground sm:inline">
+          <span className="hidden text-sm font-normal text-muted-foreground sm:inline">
             {current.title}
           </span>
         </header>
 
         <div className="relative flex min-h-0 flex-1 flex-col">
-          <main className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 md:p-6">
+          <main className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-4 pt-1 pb-4 md:px-6 md:pb-6">
             <PageTransition key={location.pathname}>
               <Outlet />
             </PageTransition>

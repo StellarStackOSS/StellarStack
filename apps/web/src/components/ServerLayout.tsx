@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react"
 import { useEffect, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import { Outlet, useLocation, useParams } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 
@@ -24,6 +25,8 @@ import {
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { ConsoleAiPanel } from "@/components/ConsoleAiPanel"
+import { ConsoleAiSheet } from "@/components/ConsoleAiSheet"
 import { InstallOverlay } from "@/components/InstallOverlay"
 import { ServerStatusBadge } from "@/components/ServerStatusBadge"
 import { AppSidebar } from "@/components/AppSidebar"
@@ -78,6 +81,18 @@ export const ServerLayout = () => {
 
   const [optimistic, setOptimistic] = useState<ServerLifecycleState | null>(null)
   const [killConfirmOpen, setKillConfirmOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === "undefined"
+      ? true
+      : window.matchMedia("(min-width: 768px)").matches
+  )
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)")
+    const update = () => setIsDesktop(mql.matches)
+    mql.addEventListener("change", update)
+    return () => mql.removeEventListener("change", update)
+  }, [])
 
   // The daemon's first `status` frame supersedes our optimistic guess.
   useEffect(() => {
@@ -203,6 +218,16 @@ export const ServerLayout = () => {
       }
       className="h-svh"
     >
+      <ServerLayoutContext.Provider
+        value={{
+          server,
+          status,
+          wsState: consoleHook.state,
+          console: consoleHook,
+          aiOpen,
+          setAiOpen,
+        }}
+      >
       <AppSidebar
         variant="inset"
         brandLabel={server.name}
@@ -211,21 +236,16 @@ export const ServerLayout = () => {
         nav={navSections}
       />
       <SidebarInset className="overflow-hidden border border-border">
-        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-border px-4">
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 px-4 md:px-6">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
-          <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
-          <Icon
-            name={currentRoute.icon}
-            className="size-4 shrink-0 text-muted-foreground"
-          />
-          <span className="hidden text-sm font-medium text-foreground sm:inline">
+          <span className="hidden text-sm font-normal text-muted-foreground sm:inline">
             {currentRoute.title}
           </span>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <ServerStatusBadge status={status} />
 
-            <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
+            <Separator orientation="vertical" className="hidden h-4 md:block" />
 
             {!wsConnected && (
               <span className="text-destructive hidden text-xs md:inline">
@@ -311,30 +331,55 @@ export const ServerLayout = () => {
           </div>
         </header>
 
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          <main className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 md:p-6">
-            <ServerLayoutContext.Provider
-              value={{
-                server,
-                status,
-                wsState: consoleHook.state,
-                console: consoleHook,
-              }}
-            >
-              <PageTransition key={location.pathname}>
-                <Outlet />
-              </PageTransition>
-              <EulaModal />
-            </ServerLayoutContext.Provider>
-          </main>
-          {server.installState !== "succeeded" ? (
-            <InstallOverlay
-              serverId={server.id}
-              installState={server.installState}
-            />
-          ) : null}
-        </div>
+        <main className="@container/main flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-4 pt-1 pb-4 md:px-6 md:pb-6">
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+          <EulaModal />
+        </main>
+        {server.installState !== "succeeded" ? (
+          <InstallOverlay
+            serverId={server.id}
+            installState={server.installState}
+          />
+        ) : null}
       </SidebarInset>
+
+      <AnimatePresence initial={false}>
+        {isDesktop && aiOpen && (
+          <motion.aside
+            key="ai-panel"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 388, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="shrink-0 overflow-hidden"
+          >
+            {/* Mirrors SidebarInset's surface treatment so the AI panel
+                reads as a twin of the main inset: rounded card, same
+                bg. The 8px gap on the left comes from the inset's
+                mr-2; the right edge sits flush against the viewport
+                like the sidebar does on the left. */}
+            <div className="bg-background border-border h-full w-[380px] overflow-hidden rounded-xl border shadow-sm md:my-2 md:mr-2">
+              <ConsoleAiPanel
+                serverId={server.id}
+                lines={consoleHook.lines}
+                onClose={() => setAiOpen(false)}
+              />
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {!isDesktop && (
+        <ConsoleAiSheet
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          serverId={server.id}
+          lines={consoleHook.lines}
+        />
+      )}
+      </ServerLayoutContext.Provider>
 
       <ConfirmDialog
         open={killConfirmOpen}

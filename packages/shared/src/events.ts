@@ -13,8 +13,6 @@ export const lifecycleStateSchema = z.enum([
   "stopping",
 ])
 
-export const lifecycleStates = lifecycleStateSchema.options
-
 /**
  * Reason metadata for a state transition. `code` is a translation key in
  * the `servers.lifecycle.*` namespace; `params` are interpolation values.

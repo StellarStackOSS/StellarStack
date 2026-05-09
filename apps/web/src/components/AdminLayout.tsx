@@ -81,12 +81,12 @@ export const AdminLayout = () => {
         nav={{ items, label: "Manage", layoutId: "admin-nav-pill" }}
       />
       <SidebarInset>
-        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 border-b px-4">
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) items-center gap-2 px-4 md:px-6">
           <SidebarTrigger className="-ml-1" />
           <span className="text-sm font-medium">Admin</span>
         </header>
         <div className="flex flex-1 flex-col">
-          <main className="@container/main mx-auto w-full max-w-5xl flex-1 p-6">
+          <main className="@container/main mx-auto w-full max-w-5xl flex-1 px-6 pb-6">
             <PageTransition key={location.pathname}>
               <Outlet />
             </PageTransition>

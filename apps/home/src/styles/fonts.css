@@ -1,12 +1,56 @@
-/* Override the shared @workspace/ui token so every Tailwind `font-sans`
-   class on the marketing site renders Geist instead of Space Grotesk.
-   The body rule in globals.css already sets the document default to
-   Geist Variable, but Tailwind utilities point at the --font-sans
-   custom property — so we need to pin that here too. */
+/* Self-hosted Lay Grotesk. Files live in apps/home/public/fonts/ and
+   are referenced by absolute path so Vite serves them directly. */
+
+@font-face {
+  font-family: "Lay Grotesk";
+  src: url("/fonts/LayGrotesk-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lay Grotesk";
+  src: url("/fonts/LayGrotesk-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lay Grotesk";
+  src: url("/fonts/LayGrotesk-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lay Grotesk";
+  src: url("/fonts/LayGrotesk-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lay Grotesk";
+  src: url("/fonts/LayGrotesk-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Pin --font-sans so Tailwind utilities pick up Lay Grotesk. */
 :root,
 html,
 body {
-  --font-sans: "Geist Variable", "Geist", ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Lay Grotesk", "Geist Variable", "Geist", ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-family: var(--font-sans);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }

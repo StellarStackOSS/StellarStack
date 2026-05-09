@@ -45,7 +45,7 @@ export const NavMain = ({
               {item.isActive === true && (
                 <motion.div
                   layoutId={layoutId}
-                  className="absolute inset-0 rounded-md bg-zinc-700 group-data-[collapsible=icon]:hidden dark:bg-zinc-700/80"
+                  className="absolute inset-0 rounded-md bg-white/70 group-data-[collapsible=icon]:hidden"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
@@ -57,7 +57,7 @@ export const NavMain = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute inset-0 rounded-md bg-muted/60 dark:bg-zinc-800/60 group-data-[collapsible=icon]:hidden"
+                    className="absolute inset-0 rounded-md bg-white/10 group-data-[collapsible=icon]:hidden"
                   />
                 )}
               </AnimatePresence>
@@ -65,7 +65,7 @@ export const NavMain = ({
                 asChild
                 isActive={item.isActive ?? false}
                 tooltip={item.title}
-                className="relative z-10 text-xs text-muted-foreground hover:bg-transparent hover:text-foreground data-[active=true]:bg-transparent data-[active=true]:text-white"
+                className="relative z-10 text-xs text-muted-foreground hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground data-[active=true]:bg-transparent data-[active=true]:text-zinc-900"
               >
                 <Link
                   to={item.to}
@@ -75,10 +75,10 @@ export const NavMain = ({
                   <DuoIcon
                     name={item.icon}
                     className={`size-4 shrink-0 transition-colors ${
-                      item.isActive ? "text-primary" : ""
+                      item.isActive ? "text-zinc-900" : ""
                     }`}
                   />
-                  <span className="ml-1 tracking-wider uppercase">
+                  <span className="ml-1 tracking-wider uppercase group-data-[collapsible=icon]:hidden">
                     {item.title}
                   </span>
                 </Link>

@@ -18,4 +18,7 @@ export type ServerLayoutContextValue = {
   wsState: ConsoleConnectionState
   /** The full console hook result; child pages pull lines, stats, sendCommand etc. from here. */
   console: UseConsoleResult
+  /** Whether the AI side panel is open at the layout level. */
+  aiOpen: boolean
+  setAiOpen: (open: boolean) => void
 }

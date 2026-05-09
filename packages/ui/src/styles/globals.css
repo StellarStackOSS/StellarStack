@@ -69,8 +69,8 @@
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: #ff4d06;
-    --primary-foreground: #ffffff;
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
@@ -89,8 +89,8 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: #ff4d06;
-    --sidebar-primary-foreground: #ffffff;
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
@@ -98,20 +98,20 @@
 }
 
 .dark {
-    /* page/content background: #0e0e0e */
-    --background: #0e0e0e;
+    /* page/content background: #130f0c (warm dark) */
+    --background: #130f0c;
     /* primary text: zinc-100 */
     --foreground: oklch(0.961 0.001 286);
-    /* card: #171717 */
-    --card: #171717;
+    /* card: matches sidebar/app shell so cards read as raised surfaces */
+    --card: #201c19;
     --card-foreground: oklch(0.961 0.001 286);
-    /* popover: matches the CardInner surface (#0e0e0e) so popovers
-       read as a continuation of card content. */
-    --popover: #0e0e0e;
+    /* popover: matches the page surface so popovers read as a
+       continuation of card content. */
+    --popover: #130f0c;
     --popover-foreground: oklch(0.961 0.001 286);
-    /* brand orange (#ff4d06) — same in both modes */
-    --primary: #ff4d06;
-    --primary-foreground: #ffffff;
+    /* primary: near-white in dark mode, near-black in light mode (set in :root) */
+    --primary: oklch(0.985 0 0);
+    --primary-foreground: oklch(0.15 0 0);
     /* secondary: zinc-800 */
     --secondary: oklch(0.22 0.002 286);
     --secondary-foreground: oklch(0.961 0.001 286);
@@ -132,12 +132,11 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.22 0 0);
-    /* sidebar outer wrapper: matches card / page (#171717) so the
-       whole shell is one tonal surface. */
-    --sidebar: #171717;
+    /* sidebar outer wrapper: warm dark shell. */
+    --sidebar: #201c19;
     --sidebar-foreground: oklch(0.961 0.001 286);
-    --sidebar-primary: #ff4d06;
-    --sidebar-primary-foreground: #ffffff;
+    --sidebar-primary: oklch(0.985 0 0);
+    --sidebar-primary-foreground: oklch(0.15 0 0);
     --sidebar-accent: oklch(0.22 0.008 274.3);
     --sidebar-accent-foreground: oklch(0.961 0.001 286);
     --sidebar-border: oklch(1 0 0 / 5%);
