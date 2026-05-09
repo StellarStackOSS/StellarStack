@@ -15,9 +15,9 @@ import (
 // reconcile-on-startup pass that aligns them with actual Docker state.
 // One Manager per daemon process.
 type Manager struct {
-	docker        *docker.Client
-	panel         *panel.Client
-	historyLines  int
+	docker       *docker.Client
+	panel        *panel.Client
+	historyLines int
 
 	mu      sync.RWMutex
 	servers map[string]*Server
@@ -53,6 +53,21 @@ func (m *Manager) Get(uuid string) *Server {
 	return s
 }
 
+// Forget removes a server from the in-memory map. Used after the
+// container has been removed (e.g. on server delete from the panel) so
+// future calls don't operate on a stale entry. Best-effort: returns
+// silently if the uuid is not registered.
+func (m *Manager) Forget(uuid string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.servers, uuid)
+}
+
+// DockerClient exposes the manager's underlying Docker handle so other
+// packages (e.g. the database-host router) can run container ops
+// without owning a separate connection.
+func (m *Manager) DockerClient() *docker.Client { return m.docker }
+
 // All returns a snapshot slice of every registered server.
 func (m *Manager) All() []*Server {
 	m.mu.RLock()
@@ -77,7 +92,7 @@ func (m *Manager) Reconcile(ctx context.Context) {
 	}
 	for _, c := range containers {
 		uuid := strings.TrimPrefix(c.Name, "stellar-")
-		if uuid == "" || strings.HasPrefix(uuid, "install-") {
+		if uuid == "" || strings.HasPrefix(uuid, "install-") || strings.HasPrefix(uuid, "db-") {
 			continue
 		}
 		s := m.Get(uuid)

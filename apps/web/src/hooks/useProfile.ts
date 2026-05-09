@@ -6,6 +6,7 @@ import { authClient } from "@/lib/AuthClient"
 type UpdateProfileRequest = {
   name?: string
   preferredLocale?: string
+  timezone?: string
   image?: string | null
 }
 

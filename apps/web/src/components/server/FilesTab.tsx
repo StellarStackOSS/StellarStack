@@ -13,7 +13,7 @@ import { useServerLayout } from "@/components/ServerLayoutContext"
 export const FilesTab = () => {
   const { server } = useServerLayout()
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <Card size="sm" className="w-full">
         <CardHeader>
           <CardTitle>Files</CardTitle>

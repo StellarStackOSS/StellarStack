@@ -8,16 +8,10 @@ export const DashboardPage = () => {
   const serversQuery = useServers()
 
   return (
-    <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-base font-semibold">{t("dashboard.title")}</h1>
-        <p className="text-muted-foreground text-xs">{t("dashboard.description")}</p>
-      </header>
-      <ServerList
-        servers={serversQuery.data?.servers ?? []}
-        loading={serversQuery.isLoading}
-        emptyMessage={t("dashboard.empty")}
-      />
-    </div>
+    <ServerList
+      servers={serversQuery.data?.servers ?? []}
+      loading={serversQuery.isLoading}
+      emptyMessage={t("dashboard.empty")}
+    />
   )
 }

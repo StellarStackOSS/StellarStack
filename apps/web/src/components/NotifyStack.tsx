@@ -1,11 +1,4 @@
 import { useEffect, useState } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Alert02Icon,
-  CheckmarkCircle02Icon,
-  InformationCircleIcon,
-  MultiplicationSignCircleIcon,
-} from "@hugeicons/core-free-icons"
 
 import {
   Alert,
@@ -14,31 +7,14 @@ import {
 } from "@workspace/ui/components/alert"
 
 import { DotmSquare3 } from "@/components/DotmSquare3"
+import { Icon } from "@/components/Icon"
 import { notify } from "@/lib/notify"
 import type { NotifyItem, NotifyKind } from "@/lib/notify.types"
 
 const icons: Record<NotifyKind, React.ReactNode> = {
-  success: (
-    <HugeiconsIcon
-      icon={CheckmarkCircle02Icon}
-      strokeWidth={2}
-      className="text-emerald-500"
-    />
-  ),
-  error: (
-    <HugeiconsIcon
-      icon={MultiplicationSignCircleIcon}
-      strokeWidth={2}
-      className="text-destructive"
-    />
-  ),
-  info: (
-    <HugeiconsIcon
-      icon={InformationCircleIcon}
-      strokeWidth={2}
-      className="text-blue-500"
-    />
-  ),
+  success: <Icon name="checkmark-circle" className="text-emerald-500" />,
+  error: <Icon name="multiplication-circle" className="text-destructive" />,
+  info: <Icon name="info" className="text-blue-500" />,
   loading: <DotmSquare3 size={14} dotSize={2} speed={1.6} animated />,
 }
 

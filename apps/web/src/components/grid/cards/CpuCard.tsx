@@ -37,7 +37,7 @@ export const CpuCard = ({
       <StatCardContent className="justify-end gap-2">
         {pct !== null ? (
           <span
-            className="font-mono text-3xl font-light leading-none text-zinc-100"
+            className="font-mono text-3xl font-light leading-none text-foreground"
             style={{ color }}
           >
             {pct}

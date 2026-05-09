@@ -9,6 +9,7 @@ const envSchema = z.object({
   API_BASE_URL: z.string().url(),
   DAEMON_HMAC_SKEW_SECONDS: z.coerce.number().int().positive().default(60),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  ANTHROPIC_API_KEY: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

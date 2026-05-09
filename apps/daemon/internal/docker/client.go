@@ -834,6 +834,93 @@ func (c *Client) ListContainersFiltered(ctx context.Context, namePrefix string) 
 	return out, nil
 }
 
+// ExecResult captures the outcome of a `docker exec` round trip.
+type ExecResult struct {
+	ExitCode int
+	Stdout   string
+	Stderr   string
+}
+
+// Exec runs a command inside a running container and returns combined
+// stdout/stderr plus the exit code. Used by the database-host
+// provisioning path to invoke `psql`/`mysql`/`mongosh` against the
+// engine super-user. The command runs synchronously; callers should
+// pass a context with a sensible timeout.
+func (c *Client) Exec(ctx context.Context, name string, cmd []string) (*ExecResult, error) {
+	createBody := map[string]any{
+		"AttachStdout": true,
+		"AttachStderr": true,
+		"Tty":          false,
+		"Cmd":          cmd,
+	}
+	resp, err := c.doJSON(ctx, http.MethodPost, "/containers/"+name+"/exec", createBody)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		defer resp.Body.Close()
+		return nil, errorFromResponse(resp, "exec create")
+	}
+	var created struct{ Id string }
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		resp.Body.Close()
+		return nil, err
+	}
+	resp.Body.Close()
+
+	startBody := map[string]any{"Detach": false, "Tty": false}
+	startResp, err := c.doJSON(ctx, http.MethodPost, "/exec/"+created.Id+"/start", startBody)
+	if err != nil {
+		return nil, err
+	}
+	defer startResp.Body.Close()
+	if startResp.StatusCode/100 != 2 {
+		return nil, errorFromResponse(startResp, "exec start")
+	}
+
+	var stdout, stderr bytes.Buffer
+	header := make([]byte, 8)
+	for {
+		if _, err := io.ReadFull(startResp.Body, header); err != nil {
+			break
+		}
+		size := int(uint32(header[4])<<24 | uint32(header[5])<<16 | uint32(header[6])<<8 | uint32(header[7]))
+		if size <= 0 {
+			continue
+		}
+		payload := make([]byte, size)
+		if _, err := io.ReadFull(startResp.Body, payload); err != nil {
+			break
+		}
+		switch header[0] {
+		case 2:
+			stderr.Write(payload)
+		default:
+			stdout.Write(payload)
+		}
+	}
+
+	// Inspect the exec for the exit code.
+	inspectResp, err := c.do(ctx, http.MethodGet, "/exec/"+created.Id+"/json", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer inspectResp.Body.Close()
+	var info struct {
+		ExitCode int `json:"ExitCode"`
+		Running  bool
+	}
+	if err := json.NewDecoder(inspectResp.Body).Decode(&info); err != nil {
+		return nil, err
+	}
+
+	return &ExecResult{
+		ExitCode: info.ExitCode,
+		Stdout:   stdout.String(),
+		Stderr:   stderr.String(),
+	}, nil
+}
+
 // errPipeClosed is returned by AttachWriter when the underlying conn has
 // been closed. Used so callers can distinguish from normal write errors.
 var errPipeClosed = errors.New("attach pipe closed")

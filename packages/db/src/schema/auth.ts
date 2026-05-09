@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm"
 import {
   boolean,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -22,7 +23,9 @@ export const usersTable = pgTable("users", {
   name: text("name").notNull(),
   image: text("image"),
   preferredLocale: text("preferred_locale").notNull().default("en"),
+  timezone: text("timezone").notNull().default("UTC"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
   role: text("role"),
   banned: boolean("banned"),
   banReason: text("ban_reason"),
@@ -103,6 +106,41 @@ export const verificationsTable = pgTable("verifications", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
+
+/** TOTP secrets + backup codes for the two-factor plugin. */
+export const twoFactorTable = pgTable("two_factor", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  secret: text("secret").notNull(),
+  backupCodes: text("backup_codes").notNull(),
+  verified: boolean("verified").notNull().default(true),
+})
+
+/** WebAuthn passkey credentials for the passkey plugin. */
+export const passkeyTable = pgTable("passkey", {
+  id: text("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()::text`),
+  name: text("name"),
+  publicKey: text("public_key").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  credentialID: text("credential_id").notNull(),
+  counter: integer("counter").notNull(),
+  deviceType: text("device_type").notNull(),
+  backedUp: boolean("backed_up").notNull(),
+  transports: text("transports"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  aaguid: text("aaguid"),
 })
 
 export type UserRow = typeof usersTable.$inferSelect
@@ -110,3 +148,5 @@ export type UserInsert = typeof usersTable.$inferInsert
 export type SessionRow = typeof sessionsTable.$inferSelect
 export type AccountRow = typeof accountsTable.$inferSelect
 export type VerificationRow = typeof verificationsTable.$inferSelect
+export type TwoFactorRow = typeof twoFactorTable.$inferSelect
+export type PasskeyRow = typeof passkeyTable.$inferSelect

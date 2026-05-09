@@ -30,6 +30,7 @@
     "./blueprint": "./src/blueprint.ts",
     "./blueprint.types": "./src/blueprint.types.ts",
     "./error-codes": "./src/error-codes.generated.ts",
+    "./databases": "./src/databases.ts",
     "./locales/*": "./locales/*"
   }
 }

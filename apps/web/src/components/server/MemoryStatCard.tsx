@@ -48,7 +48,7 @@ export const MemoryStatCard = ({
       </CardHeader>
       <CardInner className="flex h-16 items-center">
         <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-snug text-zinc-100">
+          <div className="font-mono text-lg font-medium leading-snug text-foreground">
             {latest !== null ? formatBytes(latest.memoryBytes) : "—"}
           </div>
         </div>

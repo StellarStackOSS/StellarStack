@@ -1,11 +1,8 @@
 import type { CSSProperties, ReactNode } from "react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ArrowDown01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons"
+import { DuoIcon } from "@/components/DuoIcon"
+
 
 import {
   CommandDialog,
@@ -88,7 +85,7 @@ export const AppSidebar = ({
               </span>
             ) : (
               <img
-                src="/icon.png"
+                src="/logo.png"
                 alt=""
                 className="size-7 shrink-0 rounded-md"
               />
@@ -103,10 +100,6 @@ export const AppSidebar = ({
                 </span>
               ) : null}
             </div>
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              className="text-muted-foreground size-3.5 shrink-0 group-data-[collapsible=icon]:hidden"
-            />
           </Link>
         </div>
 
@@ -115,11 +108,11 @@ export const AppSidebar = ({
         <button
           type="button"
           onClick={() => setCmdOpen(true)}
-          className="group/search flex h-8 items-center gap-2 rounded-md border border-white/8 bg-background/60 px-2 text-xs text-zinc-500 transition-colors hover:border-white/15 hover:text-zinc-300 group-data-[collapsible=icon]:hidden"
+          className="group/search flex h-8 items-center gap-2 rounded-md border border-border bg-background/60 px-2 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground group-data-[collapsible=icon]:hidden"
         >
-          <HugeiconsIcon icon={Search01Icon} className="size-3.5 shrink-0" />
+          <DuoIcon name="search" className="size-3.5 shrink-0" />
           <span className="flex-1 text-left">Search</span>
-          <kbd className="rounded border border-white/10 bg-zinc-900/60 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+          <kbd className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
         </button>
@@ -131,7 +124,7 @@ export const AppSidebar = ({
             key={section.label ?? `section-${i}`}
             items={section.items}
             label={section.label}
-            layoutId={section.layoutId ?? `nav-pill-${i}`}
+            layoutId={section.layoutId ?? "nav-pill"}
           />
         ))}
       </SidebarContent>
@@ -168,7 +161,7 @@ export const AppSidebar = ({
                     } as never)
                   }}
                 >
-                  <HugeiconsIcon icon={item.icon} className="size-4" />
+                  <DuoIcon name={item.icon} className="size-4" />
                   <span>{item.title}</span>
                 </CommandItem>
               ))}

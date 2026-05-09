@@ -29,6 +29,8 @@ export type ConsoleProps = {
   className?: string
   isOffline?: boolean
   showSendButton?: boolean
+  /** Optional slot rendered in the header toolbar — use for custom buttons (e.g. AI). */
+  headerActions?: React.ReactNode
 }
 
 const formatTimestamp = (timestamp: number): string => {
@@ -41,8 +43,9 @@ const formatTimestamp = (timestamp: number): string => {
 }
 
 const rowClass = (level: ConsoleLineLevel): string => {
-  if (level === "warn" || level === "error") return "bg-red-500/10 hover:bg-red-500/15"
-  return "hover:bg-zinc-900/50"
+  if (level === "error") return "bg-primary/10 hover:bg-primary/15"
+  if (level === "warn") return "bg-primary/5 hover:bg-primary/10"
+  return "hover:bg-muted/50 dark:hover:bg-zinc-900/50"
 }
 
 // formatClock renders an epoch-ms timestamp as `HH:MM:SS` in the
@@ -57,8 +60,8 @@ const formatClock = (epochMs: number): string => {
 }
 
 const textClass = (level: ConsoleLineLevel): string => {
-  if (level === "warn" || level === "error") return "text-red-300"
-  return "text-zinc-300"
+  if (level === "error" || level === "warn") return "text-primary"
+  return "text-foreground dark:text-zinc-300"
 }
 
 const parseLinks = (text: string): React.ReactNode => {
@@ -91,6 +94,7 @@ export const Console = ({
   className,
   isOffline = false,
   showSendButton = false,
+  headerActions,
 }: ConsoleProps) => {
   const [input, setInput] = useState("")
   const [history, setHistory] = useState<string[]>([])
@@ -194,14 +198,14 @@ export const Console = ({
   const display = lines.slice(-maxLines)
 
   return (
-    <div className={cn("flex flex-col rounded-lg border border-white/5 bg-card p-1 pt-2", wrapperClassName)}>
+    <div className={cn("flex flex-col rounded-lg border border-border bg-card p-1 pt-2", wrapperClassName)}>
       {/* Card-style header: title on the left, line counter (and the
           Scroll-to-bottom affordance when off-bottom) on the right.
           The inner top strip + border are gone; the fade-overlay at
           the top of the scroll region still anchors the upper edge. */}
       <div className="shrink-0 flex items-center justify-between gap-2 px-2 pb-1">
         <CardTitle>Console</CardTitle>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           {!autoScroll && (
             <button
               onClick={() => {
@@ -213,14 +217,14 @@ export const Console = ({
               Scroll to bottom
             </button>
           )}
-          <span className="text-zinc-600">{display.length} lines</span>
+          {headerActions}
         </div>
       </div>
 
       <div
         className={cn(
           "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border transition-colors",
-          "border-zinc-200/10 bg-[#0e0e0e] shadow-lg shadow-black/20",
+          "border-border bg-muted/40 shadow-sm dark:bg-[#0e0e0e] dark:shadow-lg dark:shadow-black/20",
           isOffline && "opacity-60",
           className
         )}
@@ -230,8 +234,8 @@ export const Console = ({
         <ConsoleScrollContext.Provider value={scrollSignal}>
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             {isOffline && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
-                <span className="text-xs uppercase tracking-wider text-zinc-500">
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-foreground/10">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
                   Server is offline
                 </span>
               </div>
@@ -239,8 +243,15 @@ export const Console = ({
             <div
               className={cn(
                 "pointer-events-none absolute left-0 right-0 top-0 z-10 h-8 transition-opacity duration-300",
-                "bg-gradient-to-b from-[#0f0f0f] to-transparent",
-                autoScroll && canScrollUp ? "opacity-100" : "opacity-0"
+                "bg-gradient-to-b from-background to-transparent dark:from-[#0f0f0f]",
+                canScrollUp ? "opacity-100" : "opacity-0"
+              )}
+            />
+            <div
+              className={cn(
+                "pointer-events-none absolute left-0 right-0 bottom-0 z-10 h-8 transition-opacity duration-300",
+                "bg-gradient-to-t from-background to-transparent dark:from-[#0f0f0f]",
+                !autoScroll ? "opacity-100" : "opacity-0"
               )}
             />
             <div
@@ -253,7 +264,7 @@ export const Console = ({
                 {display.map((line) => (
                   <div key={line.id} className={cn("group flex gap-3 rounded-sm px-1", rowClass(line.level))}>
                     <span
-                      className="w-[90px] shrink-0 cursor-default whitespace-nowrap py-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
+                      className="w-[90px] shrink-0 cursor-default whitespace-nowrap py-0.5 text-muted-foreground/70 transition-colors hover:text-muted-foreground"
                       onMouseEnter={(e) => handleTsEnter(line.timestamp, line.displayTimestamp, e)}
                       onMouseMove={(e) => handleTsMove(line.timestamp, line.displayTimestamp, e)}
                       onMouseLeave={handleTsLeave}
@@ -274,7 +285,7 @@ export const Console = ({
           </div>
         </ConsoleScrollContext.Provider>
 
-        <form onSubmit={handleSubmit} className="h-fit border-t border-zinc-200/10 p-2">
+        <form onSubmit={handleSubmit} className="h-fit border-t border-border p-2">
           <div className="flex items-center gap-1">
             <div className="w-full">
               <Input

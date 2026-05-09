@@ -1,6 +1,7 @@
 /**
- * Dark gradient card used by all stat tiles on the server overview grid.
- * Replicates the v1 layered-border texture aesthetic.
+ * Stat tile used on the server overview grid. Falls back to a flat
+ * themed surface in light mode and keeps the dark-mode gradient + inner
+ * highlight pattern that defines the v1 aesthetic.
  */
 export const StatCard = ({
   children,
@@ -12,16 +13,16 @@ export const StatCard = ({
   <div
     className={[
       "relative flex h-full flex-col overflow-hidden rounded-xl",
-      "bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d]",
-      "border border-white/[0.07]",
-      "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
+      "bg-card dark:bg-gradient-to-b dark:from-[#1a1a1a] dark:to-[#0d0d0d]",
+      "border border-border",
+      "dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
       className ?? "",
     ]
       .filter(Boolean)
       .join(" ")}
   >
-    {/* inner top-edge highlight */}
-    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    {/* inner top-edge highlight (dark mode only) */}
+    <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-px bg-gradient-to-r from-transparent via-white/10 to-transparent dark:block" />
     {children}
   </div>
 )
@@ -54,7 +55,7 @@ export const StatCardTitle = ({
 }) => (
   <span
     className={[
-      "text-[0.65rem] font-medium uppercase tracking-widest text-zinc-500",
+      "text-muted-foreground text-[0.65rem] font-medium uppercase tracking-widest",
       className ?? "",
     ]
       .filter(Boolean)
@@ -89,7 +90,7 @@ export const StatCardFooter = ({
 }) => (
   <div
     className={[
-      "flex items-center border-t border-white/[0.05] px-4 py-2 text-xs text-zinc-500",
+      "text-muted-foreground flex items-center border-t border-border px-4 py-2 text-xs",
       className ?? "",
     ]
       .filter(Boolean)

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons"
+
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -48,8 +48,8 @@ export const UserCombobox = ({ value, onChange }: Props) => {
               ? `${selected.name} — ${selected.email}`
               : t("admin_servers.field.owner_placeholder")}
           </span>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
+          <Icon
+            name="arrow-down"
             size={12}
             className={cn("ml-2 shrink-0 opacity-50 transition-transform", open && "rotate-180")}
           />
@@ -82,8 +82,8 @@ export const UserCombobox = ({ value, onChange }: Props) => {
                     <span className="truncate text-muted-foreground leading-tight">{u.email}</span>
                   </div>
                   {value === u.id && (
-                    <HugeiconsIcon
-                      icon={CheckmarkCircle01Icon}
+                    <Icon
+                      name="checkmark-circle"
                       size={13}
                       className="shrink-0 text-primary"
                     />

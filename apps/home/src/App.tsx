@@ -1,25 +1,15 @@
-import { CallToAction } from "@/sections/CallToAction"
-import { Faq } from "@/sections/Faq"
-import { Features } from "@/sections/Features"
-import { Hero } from "@/sections/Hero"
-import { HowItWorks } from "@/sections/HowItWorks"
-import { SiteFooter } from "@/sections/SiteFooter"
-import { SiteNav } from "@/components/SiteNav"
-import { StackStrip } from "@/sections/StackStrip"
-
-export const App = () => {
-  return (
-    <div className="dark min-h-screen bg-black text-white">
-      <SiteNav />
-      <main className="mx-auto w-full max-w-7xl px-4 md:px-6">
-        <Hero />
-        <StackStrip />
-        <HowItWorks />
-        <Features />
-        <Faq />
-        <CallToAction />
-      </main>
-      <SiteFooter />
+export const App = () => (
+  <div className="dark flex min-h-svh flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
+    <img
+      src="/logo.png"
+      alt="StellarStack"
+      className="size-16 rounded-2xl shadow-xl"
+    />
+    <div className="flex flex-col items-center gap-1">
+      <h1 className="text-base font-semibold">StellarStack</h1>
+      <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+        Coming soon · Q4 2026
+      </p>
     </div>
-  )
-}
+  </div>
+)

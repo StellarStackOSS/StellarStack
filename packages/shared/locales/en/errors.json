@@ -1,15 +1,12 @@
 {
   "validation.failed": "One or more fields are invalid.",
-
   "auth.login.invalid_credentials": "Invalid email or password.",
   "auth.login.email_unverified": "Please verify your email before signing in.",
   "auth.signup.email_taken": "An account with that email already exists.",
   "auth.signup.disabled": "New registrations are currently disabled.",
   "auth.session.expired": "Your session has expired. Please sign in again.",
   "auth.session.invalid": "Your session is no longer valid.",
-
   "permissions.denied": "You don't have permission to perform this action ({statement}).",
-
   "users.not_found": "User not found.",
   "nodes.not_found": "Node not found.",
   "nodes.pair.token_invalid": "The pairing token is invalid.",
@@ -17,18 +14,15 @@
   "nodes.pair.token_already_claimed": "This pairing token has already been used.",
   "nodes.unreachable": "Could not reach the node's daemon.",
   "nodes.has_servers": "Cannot delete a node that still has servers assigned to it.",
-
   "blueprints.not_found": "Blueprint not found.",
   "blueprints.parse.unknown_field": "Unknown field in blueprint: {field}.",
   "blueprints.parse.schema_version_unsupported": "Unsupported blueprint schema version: {version}.",
   "blueprints.parse.invalid_json": "JSON parse error: the editor content is not valid JSON.",
-
   "servers.not_found": "Server not found.",
   "crashes.not_found": "Crash report not found.",
   "instances.nested_not_allowed": "This server is itself an instance and cannot be split further.",
   "instances.pool_exhausted": "Not enough {resource} available in the parent server's pool.",
-
-  "servers.create.allocation_unavailable":"Allocation {allocation} is no longer available.",
+  "servers.create.allocation_unavailable": "Allocation {allocation} is no longer available.",
   "servers.create.node_at_capacity": "Node {node} doesn't have enough resources (needs {requested}, has {available}).",
   "servers.create.no_free_allocation": "No free allocations are available on the selected node.",
   "servers.startup.invalid_docker_image": "That image is not available for this blueprint. Valid values: {values}.",
@@ -42,31 +36,38 @@
   "servers.install.running_script": "Running install script…",
   "servers.install.completed": "Install complete.",
   "servers.install.failed": "Install failed: {reason}.",
-
   "files.not_found": "File or directory not found.",
   "files.path_outside_jail": "Path is outside the server's directory.",
   "files.decompress_failed": "Couldn't extract that archive — only .zip, .tar, .tar.gz, .tgz and .gz are supported.",
   "files.too_large": "File exceeds the maximum allowed size ({maxBytes} bytes).",
   "files.read_only": "This path is read-only.",
-
   "schedules.not_found": "Schedule not found.",
   "schedules.cron_invalid": "Cron expression is invalid: {cron}.",
-
   "backups.not_found": "Backup not found.",
   "backups.locked": "This backup is locked and can't be deleted.",
   "backups.s3_credentials_missing": "S3 credentials are not configured for this server.",
   "backups.upload_failed": "Failed to upload backup to remote storage.",
-
   "transfers.not_found": "Transfer not found.",
   "transfers.same_node": "Source and target nodes are the same.",
   "transfers.allocation_unavailable": "Target allocation is not available.",
   "transfers.push_failed": "Failed to transfer server files to target node.",
   "transfers.target_unreachable": "Target node could not be reached.",
   "transfers.token_invalid": "Transfer token is invalid or expired.",
-
   "rate_limit.exceeded": "Too many requests. Please slow down.",
   "internal.unexpected": "An unexpected error occurred.",
   "blueprints.invalid_image": "The selected Docker image is not valid for this blueprint.",
   "servers.cannot_remove_primary_allocation": "Cannot remove the primary allocation. Set a different allocation as primary first.",
-  "servers.allocations.limit_reached": "Allocation limit of {limit} reached. Remove an existing allocation first."
+  "servers.allocations.limit_reached": "Allocation limit of {limit} reached. Remove an existing allocation first.",
+  "ai.not_configured": "AI assistant is not configured on this panel.",
+  "ai.upstream_error": "AI service returned an error. Please try again.",
+  "databases.unknown_type": "Unknown database type.",
+  "databases.no_free_allocation": "No free allocations on the selected node.",
+  "databases.provision_failed": "Failed to provision the database container.",
+  "databases.host_not_found": "Database host not found.",
+  "databases.host_has_databases": "Detach all databases before removing this host.",
+  "databases.not_found": "Database not found.",
+  "databases.host_not_running": "Database host is not running.",
+  "nodes.not_paired": "This node is not paired with a daemon yet.",
+  "backups.already_running": "A backup is already running on this server. Wait for it to finish.",
+  "backups.limit_reached": "You have reached the backup limit ({limit}) for this server."
 }

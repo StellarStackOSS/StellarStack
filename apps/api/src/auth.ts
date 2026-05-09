@@ -1,31 +1,25 @@
+import { passkey } from "@better-auth/passkey"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { admin } from "better-auth/plugins"
+import { admin, twoFactor } from "better-auth/plugins"
 import { count, eq } from "drizzle-orm"
 
 import type { Db } from "@workspace/db/client.types"
 import {
   accountsTable,
+  passkeyTable,
   sessionsTable,
+  twoFactorTable,
   usersTable,
   verificationsTable,
 } from "@workspace/db/schema/auth"
 
 import type { Env } from "@/env"
 
-/**
- * Configure better-auth with the Drizzle adapter and the StellarStack-
- * specific user fields. We don't use better-auth's `jwt()` plugin — the
- * daemon-facing JWTs are minted with per-node HMAC keys, which doesn't
- * fit the global-key, user-identity model that plugin assumes.
- *
- * The schema map below is keyed by the table names better-auth's
- * drizzle adapter looks up internally (`users`, `sessions`, `accounts`,
- * `verifications` with `usePlural: true`); our table values are named
- * `usersTable` etc., so we re-export them under the keys the adapter
- * expects.
- */
 export const buildAuth = (params: { db: Db; env: Env }) => {
+  const appOrigin = new URL(params.env.APP_BASE_URL).origin
+  const rpID = new URL(params.env.APP_BASE_URL).hostname
+
   return betterAuth({
     database: drizzleAdapter(params.db, {
       provider: "pg",
@@ -35,6 +29,8 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
         sessions: sessionsTable,
         accounts: accountsTable,
         verifications: verificationsTable,
+        twoFactors: twoFactorTable,
+        passkeys: passkeyTable,
       },
     }),
     secret: params.env.BETTER_AUTH_SECRET,
@@ -44,6 +40,7 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
     user: {
       additionalFields: {
         preferredLocale: { type: "string", required: false },
+        timezone: { type: "string", required: false },
         isAdmin: { type: "boolean", required: false },
       },
     },
@@ -69,7 +66,11 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
       crossSubDomainCookies: { enabled: false },
       database: { generateId: false },
     },
-    plugins: [admin()],
+    plugins: [
+      admin(),
+      twoFactor({ issuer: "StellarStack" }),
+      passkey({ rpID, rpName: "StellarStack", origin: appOrigin }),
+    ],
   })
 }
 

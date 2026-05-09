@@ -60,11 +60,17 @@ export const buildBackupsRoute = (params: { auth: Auth; db: Db }) => {
           .limit(1)
       )[0]
       const existing = await db
-        .select({ id: backupsTable.id })
+        .select({ id: backupsTable.id, state: backupsTable.state })
         .from(backupsTable)
         .where(eq(backupsTable.serverId, serverId))
+      // Reject if a backup is already in flight on this server. The
+      // daemon serialises tar+upload per server, so concurrent creates
+      // would race on the same temp dir and produce corrupt archives.
+      if (existing.some((r) => r.state === "pending")) {
+        throw new ApiException("backups.already_running", { status: 409 })
+      }
       if (server !== undefined && existing.length >= server.limit) {
-        throw new ApiException("internal.unexpected", {
+        throw new ApiException("backups.limit_reached", {
           status: 409,
           params: { limit: server.limit },
         })

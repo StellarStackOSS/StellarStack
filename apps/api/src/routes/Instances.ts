@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import type { Db } from "@workspace/db/client.types"
 import { blueprintsTable } from "@workspace/db/schema/blueprints"
-import { nodeAllocationsTable } from "@workspace/db/schema/nodes"
+import { nodeAllocationsTable, nodesTable } from "@workspace/db/schema/nodes"
 import {
   serverAllocationsTable,
   serverSubusersTable,
@@ -15,6 +15,7 @@ import { ApiException, apiValidationError } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
 import { writeAudit } from "@/lib/Audit"
+import { callDaemon } from "@/lib/DaemonHttp"
 import type { InstallRunner } from "@/lib/InstallRunner"
 import {
   buildRequireSession,
@@ -181,6 +182,67 @@ export const buildInstancesRoute = (params: {
         metadata: { parentId: parent.id, name: inserted.name },
       })
       return c.json({ instance: inserted })
+    })
+    .delete("/:parentId/instances/:instanceId", async (c) => {
+      const parentId = c.req.param("parentId")
+      const instanceId = c.req.param("instanceId")
+      const user = c.get("user")
+      const parent = await loadOwnedServer(db, user, parentId)
+      // Owner-or-admin only; subusers can read but not delete instances.
+      if (user.isAdmin !== true && parent.ownerId !== user.id) {
+        throw new ApiException("permissions.denied", { status: 403 })
+      }
+      const instance = (
+        await db
+          .select()
+          .from(serversTable)
+          .where(
+            and(
+              eq(serversTable.id, instanceId),
+              eq(serversTable.parentId, parentId)
+            )
+          )
+          .limit(1)
+      )[0]
+      if (instance === undefined) {
+        throw new ApiException("servers.not_found", { status: 404 })
+      }
+      const node = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, instance.nodeId))
+          .limit(1)
+      )[0]
+      if (node !== undefined && node.daemonPublicKey !== null) {
+        try {
+          await callDaemon({
+            baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}`,
+            nodeId: node.id,
+            signingKeyHex: node.daemonPublicKey,
+            method: "DELETE",
+            path: `/api/servers/${instanceId}`,
+          })
+        } catch (err) {
+          console.warn(`instance ${instanceId}: daemon delete failed`, err)
+        }
+      }
+      await db.transaction(async (tx) => {
+        await tx
+          .update(nodeAllocationsTable)
+          .set({ serverId: null })
+          .where(eq(nodeAllocationsTable.serverId, instanceId))
+        await tx.delete(serversTable).where(eq(serversTable.id, instanceId))
+      })
+      void writeAudit({
+        db,
+        actorId: user.id,
+        action: "instances.deleted",
+        targetType: "server",
+        targetId: instanceId,
+        metadata: { parentId, name: instance.name },
+      })
+      return c.json({ ok: true })
     })
 }
 

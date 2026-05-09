@@ -2,12 +2,16 @@
 // Run `pnpm --filter @workspace/shared codegen:errors` to regenerate.
 
 export type ErrorCode =
+  | "ai.not_configured"
+  | "ai.upstream_error"
   | "auth.login.email_unverified"
   | "auth.login.invalid_credentials"
   | "auth.session.expired"
   | "auth.session.invalid"
   | "auth.signup.disabled"
   | "auth.signup.email_taken"
+  | "backups.already_running"
+  | "backups.limit_reached"
   | "backups.locked"
   | "backups.not_found"
   | "backups.s3_credentials_missing"
@@ -18,6 +22,13 @@ export type ErrorCode =
   | "blueprints.parse.schema_version_unsupported"
   | "blueprints.parse.unknown_field"
   | "crashes.not_found"
+  | "databases.host_has_databases"
+  | "databases.host_not_found"
+  | "databases.host_not_running"
+  | "databases.no_free_allocation"
+  | "databases.not_found"
+  | "databases.provision_failed"
+  | "databases.unknown_type"
   | "files.decompress_failed"
   | "files.not_found"
   | "files.path_outside_jail"
@@ -28,6 +39,7 @@ export type ErrorCode =
   | "internal.unexpected"
   | "nodes.has_servers"
   | "nodes.not_found"
+  | "nodes.not_paired"
   | "nodes.pair.token_already_claimed"
   | "nodes.pair.token_expired"
   | "nodes.pair.token_invalid"
@@ -75,12 +87,16 @@ export type ErrorCode =
   | "validation.string.uuid"
 
 export const errorCodes = [
+  "ai.not_configured",
+  "ai.upstream_error",
   "auth.login.email_unverified",
   "auth.login.invalid_credentials",
   "auth.session.expired",
   "auth.session.invalid",
   "auth.signup.disabled",
   "auth.signup.email_taken",
+  "backups.already_running",
+  "backups.limit_reached",
   "backups.locked",
   "backups.not_found",
   "backups.s3_credentials_missing",
@@ -91,6 +107,13 @@ export const errorCodes = [
   "blueprints.parse.schema_version_unsupported",
   "blueprints.parse.unknown_field",
   "crashes.not_found",
+  "databases.host_has_databases",
+  "databases.host_not_found",
+  "databases.host_not_running",
+  "databases.no_free_allocation",
+  "databases.not_found",
+  "databases.provision_failed",
+  "databases.unknown_type",
   "files.decompress_failed",
   "files.not_found",
   "files.path_outside_jail",
@@ -101,6 +124,7 @@ export const errorCodes = [
   "internal.unexpected",
   "nodes.has_servers",
   "nodes.not_found",
+  "nodes.not_paired",
   "nodes.pair.token_already_claimed",
   "nodes.pair.token_expired",
   "nodes.pair.token_invalid",

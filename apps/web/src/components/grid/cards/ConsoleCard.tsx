@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
+import { ConsoleAiSheet } from "@/components/ConsoleAiSheet"
+import { Icon } from "@/components/Icon"
 import type { ConsoleLine, ConsoleConnectionState } from "@/hooks/useConsole.types"
 
 const LOG_COLORS: Record<string, string> = {
@@ -30,10 +30,12 @@ export const ConsoleCard = ({
   lines,
   onSend,
   state,
+  serverId,
 }: {
   lines: ConsoleLine[]
   onSend: (cmd: string) => void
   state: ConsoleConnectionState
+  serverId: string
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -42,6 +44,7 @@ export const ConsoleCard = ({
   const [cmdHistory, setCmdHistory] = useState<string[]>([])
   const [histIdx, setHistIdx] = useState(-1)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [aiOpen, setAiOpen] = useState(false)
   const isConnected = state === "open"
 
   useEffect(() => {
@@ -100,16 +103,27 @@ export const ConsoleCard = ({
         <span className="text-[0.65rem] font-medium uppercase tracking-widest text-zinc-500">
           Console
         </span>
-        <div className="flex items-center gap-1.5">
-          <span
-            className={[
-              "size-1.5 rounded-full",
-              isConnected ? "bg-emerald-500" : "bg-red-500 animate-pulse",
-            ].join(" ")}
-          />
-          <span className="text-[0.6rem] text-zinc-600">
-            {isConnected ? "connected" : "disconnected"}
-          </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setAiOpen(true) }}
+            title="AI Assistant"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.6rem] text-zinc-500 hover:bg-white/5 hover:text-primary transition-colors"
+          >
+            <Icon name="ai" size={12} />
+            <span>AI</span>
+          </button>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={[
+                "size-1.5 rounded-full",
+                isConnected ? "bg-emerald-500" : "bg-red-500 animate-pulse",
+              ].join(" ")}
+            />
+            <span className="text-[0.6rem] text-zinc-600">
+              {isConnected ? "connected" : "disconnected"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -169,9 +183,16 @@ export const ConsoleCard = ({
           onClick={handleSend}
           className="shrink-0 text-zinc-600 hover:text-zinc-300 disabled:opacity-30"
         >
-          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+          <Icon name="arrow-right" className="size-4" />
         </button>
       </div>
+
+      <ConsoleAiSheet
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        serverId={serverId}
+        lines={lines}
+      />
     </div>
   )
 }

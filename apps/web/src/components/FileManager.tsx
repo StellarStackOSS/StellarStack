@@ -15,26 +15,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import Editor from "@monaco-editor/react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  Delete02Icon,
-  DownloadIcon,
-  Drag01Icon,
-  File01Icon,
-  FileAddIcon,
-  FileUploadIcon,
-  FolderIcon,
-  FolderAddIcon,
-  FolderUploadIcon,
-  HashtagIcon,
-  MoreHorizontalIcon,
-  PackageIcon,
-  PencilEdit01Icon,
-  Search01Icon,
-  TextWrapIcon,
-} from "@hugeicons/core-free-icons"
+
+import { DuoIcon } from "@/components/DuoIcon"
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -46,6 +29,13 @@ import {
 } from "@workspace/ui/components/card"
 import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Input } from "@workspace/ui/components/input"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@workspace/ui/components/context-menu"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +71,7 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { FileMoveDialog } from "@/components/FileMoveDialog"
 import { NewFileDialog } from "@/components/NewFileDialog"
+import { RenameDialog } from "@/components/RenameDialog"
 import type { FileEntry, UploadFileEntry } from "@/hooks/useFiles.types"
 import type { FileManagerProps } from "@/components/FileManager.types"
 import { notify } from "@/lib/notify"
@@ -185,17 +176,81 @@ const pathSegments = (path: string): { label: string; path: string }[] => {
   return segments
 }
 
-type RowActionsProps = {
-  entry: FileEntry
-  currentDir: string
-  onNavigate: (entry: FileEntry) => void
-  onEdit: (entry: FileEntry) => void
+type RowActionHandlers = {
   onDelete: (path: string) => void
   onDownload: (path: string) => Promise<void>
   onRename: (entry: FileEntry) => Promise<void>
   onMove: (entry: FileEntry) => void
   onCompress: (entry: FileEntry) => Promise<void>
   onDecompress: (entry: FileEntry) => Promise<void>
+}
+
+type RowActionsProps = RowActionHandlers & {
+  entry: FileEntry
+  currentDir: string
+  onNavigate: (entry: FileEntry) => void
+  onEdit: (entry: FileEntry) => void
+}
+
+type MenuComponents = {
+  Item: React.ComponentType<{
+    onClick?: () => void
+    className?: string
+    children: React.ReactNode
+  }>
+  Separator: React.ComponentType<Record<string, never>>
+}
+
+const renderRowActionItems = (
+  entry: FileEntry,
+  handlers: RowActionHandlers,
+  m: MenuComponents,
+  t: (k: string) => string
+) => (
+  <>
+    <m.Item onClick={() => void handlers.onRename(entry)}>
+      <Icon name="pencil" className="mr-2 size-3.5" />
+      {t("files.action.rename")}
+    </m.Item>
+    <m.Item onClick={() => handlers.onMove(entry)}>
+      <Icon name="drag" className="mr-2 size-3.5" />
+      {t("files.action.move")}
+    </m.Item>
+    <m.Item onClick={() => void handlers.onDownload(entry.path)}>
+      <Icon name="download" className="mr-2 size-3.5" />
+      {t("files.action.download")}
+    </m.Item>
+    {entry.isDir ? (
+      <m.Item onClick={() => void handlers.onCompress(entry)}>
+        <Icon name="package" className="mr-2 size-3.5" />
+        {t("files.action.compress")}
+      </m.Item>
+    ) : null}
+    {!entry.isDir && isArchive(entry.name) ? (
+      <m.Item onClick={() => void handlers.onDecompress(entry)}>
+        <Icon name="package" className="mr-2 size-3.5" />
+        {t("files.action.decompress")}
+      </m.Item>
+    ) : null}
+    <m.Separator />
+    <m.Item
+      className="text-destructive focus:text-destructive"
+      onClick={() => void handlers.onDelete(entry.path)}
+    >
+      <Icon name="delete" className="mr-2 size-3.5" />
+      {t("files.action.delete")}
+    </m.Item>
+  </>
+)
+
+const dropdownComponents: MenuComponents = {
+  Item: DropdownMenuItem,
+  Separator: DropdownMenuSeparator,
+}
+
+const contextComponents: MenuComponents = {
+  Item: ContextMenuItem,
+  Separator: ContextMenuSeparator,
 }
 
 const RowActions = ({
@@ -208,6 +263,14 @@ const RowActions = ({
   onDecompress,
 }: RowActionsProps) => {
   const { t } = useTranslation()
+  const handlers: RowActionHandlers = {
+    onDelete,
+    onDownload,
+    onRename,
+    onMove,
+    onCompress,
+    onDecompress,
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -216,42 +279,11 @@ const RowActions = ({
           size="icon"
           className="size-7 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100"
         >
-          <HugeiconsIcon icon={MoreHorizontalIcon} className="size-3.5" />
+          <Icon name="more-horizontal" className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        <DropdownMenuItem onClick={() => void onRename(entry)}>
-          <HugeiconsIcon icon={PencilEdit01Icon} className="mr-2 size-3.5" />
-          {t("files.action.rename")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onMove(entry)}>
-          <HugeiconsIcon icon={Drag01Icon} className="mr-2 size-3.5" />
-          {t("files.action.move")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => void onDownload(entry.path)}>
-          <HugeiconsIcon icon={DownloadIcon} className="mr-2 size-3.5" />
-          {t("files.action.download")}
-        </DropdownMenuItem>
-        {entry.isDir ? (
-          <DropdownMenuItem onClick={() => void onCompress(entry)}>
-            <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
-            {t("files.action.compress")}
-          </DropdownMenuItem>
-        ) : null}
-        {!entry.isDir && isArchive(entry.name) ? (
-          <DropdownMenuItem onClick={() => void onDecompress(entry)}>
-            <HugeiconsIcon icon={PackageIcon} className="mr-2 size-3.5" />
-            {t("files.action.decompress")}
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => void onDelete(entry.path)}
-        >
-          <HugeiconsIcon icon={Delete02Icon} className="mr-2 size-3.5" />
-          {t("files.action.delete")}
-        </DropdownMenuItem>
+        {renderRowActionItems(entry, handlers, dropdownComponents, t)}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -273,6 +305,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   ])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null)
+  const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null)
   const [newFileOpen, setNewFileOpen] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string
@@ -528,20 +561,26 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   }
 
   const handleRename = async (entry: FileEntry) => {
-    const newName = window.prompt("New name:", entry.name)
-    if (newName === null || newName.trim().length === 0) return
-    const dir = entry.path.includes("/")
-      ? entry.path.slice(0, entry.path.lastIndexOf("/"))
+    setRenameTarget(entry)
+  }
+
+  const handleRenameConfirm = async (newName: string) => {
+    if (renameTarget === null) return
+    const dir = renameTarget.path.includes("/")
+      ? renameTarget.path.slice(0, renameTarget.path.lastIndexOf("/"))
       : ""
-    const newPath = dir ? `${dir}/${newName.trim()}` : `/${newName.trim()}`
+    const newPath = dir ? `${dir}/${newName}` : `/${newName}`
     try {
-      await renameFile.mutateAsync({ from: entry.path, to: newPath })
+      await renameFile.mutateAsync({ from: renameTarget.path, to: newPath })
     } catch (err) {
       if (err instanceof ApiFetchError) {
-        notify.error(translateApiError(t, err.body.error))
-      } else {
-        notify.error(t("internal.unexpected", { ns: "errors" }))
+        const message = translateApiError(t, err.body.error)
+        notify.error(message)
+        throw new Error(message)
       }
+      const message = t("internal.unexpected", { ns: "errors" })
+      notify.error(message)
+      throw new Error(message)
     }
   }
 
@@ -624,9 +663,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
           >
             {t("files.col.name")}
             {column.getIsSorted() === "asc" ? (
-              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+              <Icon name="arrow-up" className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
-              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+              <Icon name="arrow-down" className="size-3" />
             ) : null}
           </button>
         ),
@@ -638,11 +677,11 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
               className="flex items-center gap-2 text-left hover:underline"
               onClick={() => handleEdit(entry)}
             >
-              <HugeiconsIcon
-                icon={entry.isDir ? FolderIcon : File01Icon}
+              <DuoIcon
+                name={entry.isDir ? "folder" : "file"}
                 className={`size-4 shrink-0 ${
                   entry.isDir
-                    ? "text-chart-2"
+                    ? "text-primary"
                     : "text-muted-foreground"
                 }`}
               />
@@ -665,9 +704,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
           >
             {t("files.col.size")}
             {column.getIsSorted() === "asc" ? (
-              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+              <Icon name="arrow-up" className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
-              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+              <Icon name="arrow-down" className="size-3" />
             ) : null}
           </button>
         ),
@@ -702,9 +741,9 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
           >
             {t("files.col.modified")}
             {column.getIsSorted() === "asc" ? (
-              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+              <Icon name="arrow-up" className="size-3" />
             ) : column.getIsSorted() === "desc" ? (
-              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" />
+              <Icon name="arrow-down" className="size-3" />
             ) : null}
           </button>
         ),
@@ -762,12 +801,12 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
   const segments = pathSegments(path)
 
   return (
-    <Card className="w-full">
+    <Card className="flex min-h-0 w-full flex-1 flex-col">
       <CardHeader>
         <CardTitle>{t("files.heading", { defaultValue: "File manager" })}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <CardInner className="flex flex-col gap-0 overflow-hidden p-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col">
+        <CardInner className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         {/* Breadcrumb */}
@@ -797,8 +836,8 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <div className="relative">
-            <HugeiconsIcon
-              icon={Search01Icon}
+            <Icon
+              name="search"
               className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none"
             />
             <Input
@@ -810,7 +849,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
           </div>
 
           <Button size="xs" variant="outline" onClick={handleMkdir}>
-            <HugeiconsIcon icon={FolderAddIcon} className="mr-1 size-3" />
+            <Icon name="folder-add" className="mr-1 size-3" />
             {t("files.new_folder")}
           </Button>
           <Button
@@ -818,7 +857,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             variant="outline"
             onClick={() => setNewFileOpen(true)}
           >
-            <HugeiconsIcon icon={FileAddIcon} className="mr-1 size-3" />
+            <Icon name="file-add" className="mr-1 size-3" />
             {t("files.new_file")}
           </Button>
           <Button
@@ -827,7 +866,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadFiles.isPending}
           >
-            <HugeiconsIcon icon={FileUploadIcon} className="mr-1 size-3" />
+            <Icon name="file-upload" className="mr-1 size-3" />
             {uploadFiles.isPending ? t("files.uploading") : t("files.upload_files")}
           </Button>
           <Button
@@ -836,7 +875,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             onClick={() => folderInputRef.current?.click()}
             disabled={uploadFiles.isPending}
           >
-            <HugeiconsIcon icon={FolderUploadIcon} className="mr-1 size-3" />
+            <Icon name="folder-upload" className="mr-1 size-3" />
             {uploadFiles.isPending ? t("files.uploading") : t("files.upload_folder")}
           </Button>
           <Button size="xs" variant="outline" onClick={handleSftp}>
@@ -856,7 +895,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             variant="outline"
             onClick={() => void handleCompressSelected()}
           >
-            <HugeiconsIcon icon={PackageIcon} className="mr-1 size-3" />
+            <Icon name="package" className="mr-1 size-3" />
             {t("files.bulk.compress")}
           </Button>
           <Button
@@ -864,7 +903,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             variant="destructive"
             onClick={() => void handleDeleteSelected()}
           >
-            <HugeiconsIcon icon={Delete02Icon} className="mr-1 size-3" />
+            <Icon name="delete" className="mr-1 size-3" />
             {t("files.bulk.delete")}
           </Button>
           <button
@@ -894,7 +933,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
       />
 
       {/* Table */}
-      <div className="overflow-auto min-h-64 max-h-[calc(100vh-var(--header-height)-16rem)]">
+      <div className="min-h-0 flex-1 overflow-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -938,19 +977,38 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
             ) : (
               table.getPaginationRowModel().rows.map((row) => (
                 <Fragment key={row.id}>
-                  <TableRow
-                    data-state={row.getIsSelected() ? "selected" : undefined}
-                    className="group/row text-xs"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-1.5">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <TableRow
+                        data-state={row.getIsSelected() ? "selected" : undefined}
+                        className="group/row text-xs"
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="py-1.5">
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      {renderRowActionItems(
+                        row.original,
+                        {
+                          onDelete: handleDelete,
+                          onDownload: handleDownload,
+                          onRename: handleRename,
+                          onMove: setMoveTarget,
+                          onCompress: handleCompress,
+                          onDecompress: handleDecompress,
+                        },
+                        contextComponents,
+                        t
+                      )}
+                    </ContextMenuContent>
+                  </ContextMenu>
                   <AnimatePresence initial={false}>
                     {selected === row.original.path ? (
                       <TableRow key="editor-row">
@@ -1033,7 +1091,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
                                           : "text-muted-foreground hover:text-foreground",
                                       ].join(" ")}
                                     >
-                                      <HugeiconsIcon icon={HashtagIcon} className="size-3" />
+                                      <Icon name="hashtag" className="size-3" />
                                       {t("files.editor.toggle_lines")}
                                     </button>
                                     <button
@@ -1047,7 +1105,7 @@ export const FileManager = ({ serverId }: FileManagerProps) => {
                                           : "text-muted-foreground hover:text-foreground",
                                       ].join(" ")}
                                     >
-                                      <HugeiconsIcon icon={TextWrapIcon} className="size-3" />
+                                      <Icon name="text-wrap" className="size-3" />
                                       {t("files.editor.toggle_wrap")}
                                     </button>
                                     <button
@@ -1177,6 +1235,13 @@ Expires:  ${sftp.data.expiresAt}`}</pre>
         open={moveTarget !== null}
         onOpenChange={(open) => { if (!open) setMoveTarget(null) }}
         onMove={handleMoveConfirm}
+      />
+
+      <RenameDialog
+        open={renameTarget !== null}
+        currentName={renameTarget?.name ?? ""}
+        onOpenChange={(open) => { if (!open) setRenameTarget(null) }}
+        onRename={handleRenameConfirm}
       />
         </CardInner>
       </CardContent>

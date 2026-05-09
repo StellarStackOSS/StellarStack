@@ -1,19 +1,14 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AnimatePresence, motion } from "framer-motion"
-import { HugeiconsIcon } from "@hugeicons/react"
-import type { HugeiconsIconElement } from "@hugeicons/react"
-import {
-  CheckmarkCircle02Icon,
-  PowerSocket01Icon,
-} from "@hugeicons/core-free-icons"
 
 import type { ServerLifecycleState } from "@workspace/shared/events.types"
 
 import { DotmSquare3 } from "@/components/DotmSquare3"
+import { Icon, type IconName } from "@/components/Icon"
 
 type StatusVisual = {
-  icon: HugeiconsIconElement | "dotmatrix"
+  icon: IconName | "dotmatrix"
   spin: boolean
   text: string
   border: string
@@ -23,7 +18,7 @@ type StatusVisual = {
 
 const visuals: Record<ServerLifecycleState, StatusVisual> = {
   running: {
-    icon: CheckmarkCircle02Icon,
+    icon: "checkmark-circle",
     spin: false,
     text: "text-emerald-400",
     border: "border-emerald-500/25",
@@ -47,7 +42,7 @@ const visuals: Record<ServerLifecycleState, StatusVisual> = {
     labelKey: "status_badge.stopping",
   },
   offline: {
-    icon: PowerSocket01Icon,
+    icon: "power-socket",
     spin: false,
     text: "text-zinc-500",
     border: "border-zinc-700/40",
@@ -121,7 +116,7 @@ export const ServerStatusBadge = ({
                 aria-hidden
               />
             ) : (
-              <HugeiconsIcon icon={v.icon} className="size-3.5" />
+              <Icon name={v.icon} className="size-3.5" />
             )}
           </motion.span>
         ) : null}

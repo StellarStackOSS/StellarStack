@@ -31,6 +31,9 @@ import {
   buildNodesRoute,
   buildPairingExchangeRoute,
 } from "@/routes/Nodes"
+import { buildAdminDatabaseHostsRoute } from "@/routes/AdminDatabaseHosts"
+import { buildConsoleAiRoute } from "@/routes/ConsoleAi"
+import { buildDatabasesRoute } from "@/routes/Databases"
 import { buildRemoteRoute } from "@/routes/Remote"
 import { buildServersRoute } from "@/routes/Servers"
 
@@ -85,6 +88,10 @@ app.route(
 )
 app.route("/api/admin/users", buildAdminUsersRoute({ auth, db }))
 app.route("/api/admin/blueprints", buildBlueprintsRoute({ auth, db }))
+app.route(
+  "/api/admin/database-hosts",
+  buildAdminDatabaseHostsRoute({ auth, db, env })
+)
 app.route("/api/servers", buildBackupsRoute({ auth, db }))
 app.route("/api/servers", buildServerAllocationsRoute({ auth, db }))
 app.route("/api/servers", buildSubusersRoute({ auth, db }))
@@ -93,6 +100,8 @@ app.route("/api/servers", buildCrashesRoute({ auth, db }))
 app.route("/api/servers", buildSchedulesRoute({ auth, db }))
 app.route("/api/servers", buildTransfersRoute({ auth, db }))
 app.route("/api/servers", buildInstancesRoute({ auth, db, installRunner }))
+app.route("/api/servers", buildConsoleAiRoute({ auth, db, env }))
+app.route("/api/servers", buildDatabasesRoute({ auth, db, env }))
 app.route("/api/remote", buildRemoteRoute({ db, env, statusCache }))
 app.route("/api/nodes/pair", buildPairingExchangeRoute({ db }))
 

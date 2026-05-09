@@ -47,6 +47,11 @@ func (r *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
 	// Browser-facing WS. Path: /api/servers/:uuid/ws
 	mux.HandleFunc("/api/servers/", r.routeServerSubpath)
+	// Database-host lifecycle (HMAC-signed by API). Paths:
+	//   POST   /api/databases/:uuid       — create + start
+	//   DELETE /api/databases/:uuid       — remove
+	//   POST   /api/databases/:uuid/exec  — run command in container
+	mux.HandleFunc("/api/databases/", r.routeDatabases)
 	// Remote (API → daemon) control. Path: /api/remote/...
 	mux.HandleFunc("/api/remote/", r.routeRemote)
 	// Health probe.
@@ -94,6 +99,13 @@ func (r *Router) routeServerSubpath(w http.ResponseWriter, req *http.Request) {
 	}
 	uuid := parts[2]
 	switch {
+	case len(parts) == 3 && req.Method == http.MethodDelete:
+		// API-initiated container delete. Verified with daemon HMAC.
+		if !r.verifyDaemonHMAC(req) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		r.handleDelete(w, req, uuid)
 	case len(parts) == 4 && parts[3] == "ws":
 		r.handleWS(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "files":

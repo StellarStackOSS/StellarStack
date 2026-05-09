@@ -1,12 +1,7 @@
 import type { CSSProperties } from "react"
 import { Link, Outlet, useLocation } from "@tanstack/react-router"
-import {
-  AuditIcon,
-  CubeIcon,
-  ServerStack02Icon,
-  ServerStackIcon,
-  UserMultipleIcon,
-} from "@hugeicons/core-free-icons"
+
+import { PageTransition } from "@/components/PageTransition"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -33,15 +28,17 @@ export const AdminLayout = () => {
   const { data: session, isPending } = useSession()
   const location = useLocation()
   const items: NavItem[] = [
-    { title: "Nodes", icon: ServerStackIcon, to: "/admin/nodes",
+    { title: "Nodes", icon: "server", to: "/admin/nodes",
       isActive: location.pathname.startsWith("/admin/nodes") },
-    { title: "Servers", icon: ServerStack02Icon, to: "/admin/servers",
+    { title: "Servers", icon: "server-stack", to: "/admin/servers",
       isActive: location.pathname.startsWith("/admin/servers") },
-    { title: "Blueprints", icon: CubeIcon, to: "/admin/blueprints",
+    { title: "Blueprints", icon: "cube", to: "/admin/blueprints",
       isActive: location.pathname.startsWith("/admin/blueprints") },
-    { title: "Users", icon: UserMultipleIcon, to: "/admin/users",
+    { title: "Databases", icon: "hard-drive", to: "/admin/database-hosts",
+      isActive: location.pathname.startsWith("/admin/database-hosts") },
+    { title: "Users", icon: "user-multiple", to: "/admin/users",
       isActive: location.pathname.startsWith("/admin/users") },
-    { title: "Audit Log", icon: AuditIcon, to: "/admin/audit",
+    { title: "Audit Log", icon: "audit", to: "/admin/audit",
       isActive: location.pathname.startsWith("/admin/audit") },
   ]
 
@@ -90,7 +87,9 @@ export const AdminLayout = () => {
         </header>
         <div className="flex flex-1 flex-col">
           <main className="@container/main mx-auto w-full max-w-5xl flex-1 p-6">
-            <Outlet />
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
           </main>
         </div>
       </SidebarInset>

@@ -17,6 +17,7 @@ import type { DaemonJwtScope } from "@workspace/shared/jwt.types"
 import type { Auth } from "@/auth"
 import type { Env } from "@/env"
 import { writeAudit } from "@/lib/Audit"
+import { callDaemon } from "@/lib/DaemonHttp"
 import type { InstallRunner } from "@/lib/InstallRunner"
 import type { StatusCache } from "@/lib/StatusCache"
 import { mintDaemonToken } from "@/lib/Tokens"
@@ -507,6 +508,31 @@ export const buildServersRoute = (params: {
       const access = await loadServerAccess(db, user, id)
       if (access.role !== "owner" && access.role !== "admin") {
         throw new ApiException("permissions.denied", { status: 403 })
+      }
+      // Best-effort: ask the daemon to remove the container before we
+      // drop the row. The daemon leaves the data dir on disk; cleanup is
+      // the host operator's responsibility (volumes/snapshots/retention).
+      const node = (
+        await db
+          .select()
+          .from(nodesTable)
+          .where(eq(nodesTable.id, access.server.nodeId))
+          .limit(1)
+      )[0]
+      if (node !== undefined && node.daemonPublicKey !== null) {
+        try {
+          await callDaemon({
+            baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}`,
+            nodeId: node.id,
+            signingKeyHex: node.daemonPublicKey,
+            method: "DELETE",
+            path: `/api/servers/${id}`,
+          })
+        } catch (err) {
+          // Container may already be gone, daemon offline, etc. We still
+          // want the DB delete to succeed so the panel doesn't get stuck.
+          console.warn(`server ${id}: daemon delete failed`, err)
+        }
       }
       await db.transaction(async (tx) => {
         await tx

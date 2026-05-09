@@ -2,22 +2,9 @@ import type { CSSProperties } from "react"
 import { useEffect, useState } from "react"
 import { Outlet, useLocation, useParams } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
-import { HugeiconsIcon } from "@hugeicons/react"
-import type { HugeiconsIconElement } from "@hugeicons/react"
-import {
-  Alert02Icon,
-  Calendar03Icon,
-  ComputerTerminal02Icon,
-  DashboardSquare02Icon,
-  EthernetPortIcon,
-  FolderLibraryIcon,
-  HardDriveIcon,
-  Layers01Icon,
-  ListViewIcon,
-  MoreHorizontalIcon,
-  Settings02Icon,
-  UserMultipleIcon,
-} from "@hugeicons/core-free-icons"
+
+import { Icon, type IconName } from "@/components/Icon"
+import { PageTransition } from "@/components/PageTransition"
 
 import { Button } from "@workspace/ui/components/button"
 import { ButtonGroup } from "@workspace/ui/components/button-group"
@@ -55,20 +42,22 @@ const statusTextColor: Record<ServerLifecycleState, string> = {
   stopping: "text-amber-400",
 }
 
-type RouteEntry = { title: string; icon: HugeiconsIconElement }
+type RouteEntry = { title: string; icon: IconName }
 
 const routeMap: Record<string, RouteEntry> = {
-  "": { title: "Overview", icon: DashboardSquare02Icon },
-  "/": { title: "Overview", icon: DashboardSquare02Icon },
-  "/files": { title: "Files", icon: FolderLibraryIcon },
-  "/backups": { title: "Backups", icon: HardDriveIcon },
-  "/schedules": { title: "Schedules", icon: Calendar03Icon },
-  "/users": { title: "Users", icon: UserMultipleIcon },
-  "/network": { title: "Network", icon: EthernetPortIcon },
-  "/startup": { title: "Startup", icon: ComputerTerminal02Icon },
-  "/activity": { title: "Activity", icon: ListViewIcon },
-  "/crashes": { title: "Crashes", icon: Alert02Icon },
-  "/settings": { title: "Settings", icon: Settings02Icon },
+  "": { title: "Overview", icon: "grid-layout" },
+  "/": { title: "Overview", icon: "grid-layout" },
+  "/files": { title: "Files", icon: "folder-library" },
+  "/backups": { title: "Backups", icon: "hard-drive" },
+  "/schedules": { title: "Schedules", icon: "calendar-plus" },
+  "/instances": { title: "Instances", icon: "clone-dashed-3" },
+  "/users": { title: "Users", icon: "user-multiple" },
+  "/network": { title: "Network", icon: "ethernet" },
+  "/databases": { title: "Databases", icon: "hard-drive" },
+  "/startup": { title: "Startup", icon: "square-terminal" },
+  "/activity": { title: "Activity", icon: "note-3" },
+  "/crashes": { title: "Crashes", icon: "triangle-warning" },
+  "/settings": { title: "Settings", icon: "settings" },
 }
 
 /**
@@ -132,13 +121,13 @@ export const ServerLayout = () => {
     {
       label: t("sidebar.section.overview", { defaultValue: "Overview" }),
       items: [
-        { title: t("sidebar.overview"), icon: DashboardSquare02Icon,
+        { title: t("sidebar.overview"), icon: "grid-layout",
           to: "/servers/$id", params: { id: server.id },
           isActive: sub === "" || sub === "/" },
-        { title: t("sidebar.activity"), icon: ListViewIcon,
+        { title: t("sidebar.activity"), icon: "note-3",
           to: "/servers/$id/activity", params: { id: server.id },
           isActive: sub === "/activity" },
-        { title: t("sidebar.crashes", { defaultValue: "Crashes" }), icon: Alert02Icon,
+        { title: t("sidebar.crashes", { defaultValue: "Crashes" }), icon: "triangle-warning",
           to: "/servers/$id/crashes", params: { id: server.id },
           isActive: sub === "/crashes" },
       ] as NavItem[],
@@ -146,16 +135,16 @@ export const ServerLayout = () => {
     {
       label: t("sidebar.section.management", { defaultValue: "Management" }),
       items: [
-        { title: t("sidebar.files"), icon: FolderLibraryIcon,
+        { title: t("sidebar.files"), icon: "folder-library",
           to: "/servers/$id/files", params: { id: server.id },
           isActive: sub === "/files" },
-        { title: t("sidebar.backups"), icon: HardDriveIcon,
+        { title: t("sidebar.backups"), icon: "hard-drive",
           to: "/servers/$id/backups", params: { id: server.id },
           isActive: sub === "/backups" },
-        { title: t("sidebar.schedules"), icon: Calendar03Icon,
+        { title: t("sidebar.schedules"), icon: "calendar-plus",
           to: "/servers/$id/schedules", params: { id: server.id },
           isActive: sub === "/schedules" },
-        { title: t("sidebar.instances"), icon: Layers01Icon,
+        { title: t("sidebar.instances"), icon: "clone-dashed-3",
           to: "/servers/$id/instances", params: { id: server.id },
           isActive: sub === "/instances" },
       ] as NavItem[],
@@ -163,20 +152,39 @@ export const ServerLayout = () => {
     {
       label: t("sidebar.section.config", { defaultValue: "Configuration" }),
       items: [
-        { title: t("sidebar.startup"), icon: ComputerTerminal02Icon,
+        { title: t("sidebar.startup"), icon: "square-terminal",
           to: "/servers/$id/startup", params: { id: server.id },
           isActive: sub === "/startup" },
-        { title: t("sidebar.network"), icon: EthernetPortIcon,
+        { title: t("sidebar.network"), icon: "ethernet",
           to: "/servers/$id/network", params: { id: server.id },
           isActive: sub === "/network" },
-        { title: t("sidebar.users"), icon: UserMultipleIcon,
+        { title: t("sidebar.databases", { defaultValue: "Databases" }),
+          icon: "hard-drive",
+          to: "/servers/$id/databases", params: { id: server.id },
+          isActive: sub === "/databases" },
+        { title: t("sidebar.users"), icon: "user-multiple",
           to: "/servers/$id/users", params: { id: server.id },
           isActive: sub === "/users" },
-        { title: t("sidebar.settings"), icon: Settings02Icon,
+        { title: t("sidebar.settings"), icon: "settings",
           to: "/servers/$id/settings", params: { id: server.id },
           isActive: sub === "/settings" },
       ] as NavItem[],
     },
+    ...(session?.user?.isAdmin === true
+      ? [{
+          label: t("sidebar.section.admin", { defaultValue: "Admin" }),
+          items: [
+            {
+              title: t("sidebar.admin_view", { defaultValue: "View as admin" }),
+              icon: "shield-user",
+              to: "/admin/servers/$id",
+              params: { id: server.id },
+              search: { tab: "overview" },
+              isActive: false,
+            },
+          ] as NavItem[],
+        }]
+      : []),
   ]
   const wsConnected = consoleHook.state === "open"
   const canStart = status === "offline"
@@ -202,15 +210,15 @@ export const ServerLayout = () => {
         brandHref="/dashboard"
         nav={navSections}
       />
-      <SidebarInset className="overflow-hidden border border-white/10">
-        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-white/5 px-4">
-          <SidebarTrigger className="-ml-1 text-zinc-500 hover:text-zinc-200" />
+      <SidebarInset className="overflow-hidden border border-border">
+        <header className="bg-background sticky top-0 z-10 flex h-(--header-height) shrink-0 items-center gap-2.5 border-b border-border px-4">
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
           <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
-          <HugeiconsIcon
-            icon={currentRoute.icon}
-            className="size-4 shrink-0 text-zinc-500"
+          <Icon
+            name={currentRoute.icon}
+            className="size-4 shrink-0 text-muted-foreground"
           />
-          <span className="hidden text-sm font-medium text-zinc-200 sm:inline">
+          <span className="hidden text-sm font-medium text-foreground sm:inline">
             {currentRoute.title}
           </span>
 
@@ -231,6 +239,7 @@ export const ServerLayout = () => {
                 variant="default"
                 disabled={!wsConnected || powerBusy || !canStart}
                 onClick={() => handlePower("start")}
+                className="bg-white text-zinc-900 hover:bg-zinc-200 disabled:bg-white"
               >
                 {t("actions.start")}
               </Button>
@@ -266,13 +275,14 @@ export const ServerLayout = () => {
                 variant="default"
                 disabled={!wsConnected || powerBusy || !canStart}
                 onClick={() => handlePower("start")}
+                className="bg-white text-zinc-900 hover:bg-zinc-200 disabled:bg-white"
               >
                 {t("actions.start")}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="ghost" className="size-8 p-0">
-                    <HugeiconsIcon icon={MoreHorizontalIcon} className="size-4" />
+                    <Icon name="more-horizontal" className="size-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -311,7 +321,9 @@ export const ServerLayout = () => {
                 console: consoleHook,
               }}
             >
-              <Outlet />
+              <PageTransition key={location.pathname}>
+                <Outlet />
+              </PageTransition>
               <EulaModal />
             </ServerLayoutContext.Provider>
           </main>

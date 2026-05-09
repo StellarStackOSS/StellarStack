@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
+  CardAction,
   CardDescription,
   CardHeader,
   CardInner,
@@ -35,17 +36,20 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
+import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { ResourceStepper } from "@/components/ResourceStepper"
 import { useServerLayout } from "@/components/ServerLayoutContext"
 import { useAllocations } from "@/hooks/useAllocations"
 import { useBlueprints } from "@/hooks/useBlueprints"
 import {
   useCreateServerInstance,
+  useDeleteServerInstance,
   useServerInstances,
   useServerPool,
 } from "@/hooks/useServerInstances"
 import { ApiFetchError } from "@/lib/ApiFetch"
 import { translateApiError } from "@/lib/TranslateError"
+import { notify } from "@/lib/notify"
 
 export const InstancesTab = () => {
   const { t } = useTranslation()
@@ -54,7 +58,9 @@ export const InstancesTab = () => {
 
   const instancesQuery = useServerInstances(server.id)
   const poolQuery = useServerPool(server.id)
+  const deleteInstance = useDeleteServerInstance(server.id)
   const [open, setOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const instances = instancesQuery.data?.instances ?? []
   const pool = poolQuery.data ?? null
@@ -85,33 +91,31 @@ export const InstancesTab = () => {
     <div className="flex flex-col gap-4">
       <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>{t("instances.title")}</CardTitle>
-              <CardDescription>
-                {t("instances.description")}
-              </CardDescription>
-            </div>
+          <CardTitle>{t("instances.title")}</CardTitle>
+          <CardDescription>
+            {t("instances.description")}
+          </CardDescription>
+          <CardAction>
             <Button size="sm" onClick={() => setOpen(true)}>
               {t("instances.create")}
             </Button>
-          </div>
+          </CardAction>
         </CardHeader>
         <CardInner className="p-3">
           <PoolBars pool={pool} />
         </CardInner>
       </Card>
 
-      <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-xl p-0">
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-medium">
-            {t("instances.list_heading")}
-          </span>
-          <span className="text-muted-foreground text-xs">
-            {instances.length}
-          </span>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("instances.list_heading")}</CardTitle>
+          <CardAction>
+            <span className="text-muted-foreground text-xs">
+              {instances.length}
+            </span>
+          </CardAction>
+        </CardHeader>
+        <CardInner className="overflow-hidden p-0">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -169,21 +173,30 @@ export const InstancesTab = () => {
                       {row.status}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        to="/servers/$id"
-                        params={{ id: row.id }}
-                      >
-                        <Button size="xs" variant="outline">
-                          {t("instances.open")}
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to="/servers/$id"
+                          params={{ id: row.id }}
+                        >
+                          <Button size="xs" variant="outline">
+                            {t("instances.open")}
+                          </Button>
+                        </Link>
+                        <Button
+                          size="xs"
+                          variant="destructive"
+                          onClick={() => setDeleteTarget({ id: row.id, name: row.name })}
+                        >
+                          {t("actions.delete", { defaultValue: "Delete" })}
                         </Button>
-                      </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </div>
+        </CardInner>
       </Card>
 
       {pool !== null ? (
@@ -195,6 +208,24 @@ export const InstancesTab = () => {
           pool={pool}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null) }}
+        title={t("instances.delete_title", { defaultValue: "Delete instance" })}
+        description={t("instances.delete_description", {
+          name: deleteTarget?.name ?? "",
+          defaultValue: `Delete "${deleteTarget?.name}"? The container will be removed. Data on disk is not deleted.`,
+        })}
+        confirmLabel={t("actions.delete", { defaultValue: "Delete" })}
+        variant="destructive"
+        onConfirm={async () => {
+          if (deleteTarget === null) return
+          await deleteInstance.mutateAsync(deleteTarget.id)
+          notify.success(t("instances.deleted", { defaultValue: "Instance deleted" }))
+          setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }

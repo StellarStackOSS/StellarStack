@@ -20,6 +20,7 @@ import {
 } from "@workspace/shared/errors"
 
 import type { Auth } from "@/auth"
+import { callDaemon } from "@/lib/DaemonHttp"
 import type { InstallRunner } from "@/lib/InstallRunner"
 import type { StatusCache } from "@/lib/StatusCache"
 import { buildRequireAdmin } from "@/middleware/RequireAdmin"
@@ -367,6 +368,35 @@ export const buildAdminServersRoute = (params: {
     })
     .delete("/:id", async (c) => {
       const id = c.req.param("id")
+      const server = (
+        await db
+          .select({ nodeId: serversTable.nodeId })
+          .from(serversTable)
+          .where(eq(serversTable.id, id))
+          .limit(1)
+      )[0]
+      if (server !== undefined) {
+        const node = (
+          await db
+            .select()
+            .from(nodesTable)
+            .where(eq(nodesTable.id, server.nodeId))
+            .limit(1)
+        )[0]
+        if (node !== undefined && node.daemonPublicKey !== null) {
+          try {
+            await callDaemon({
+              baseUrl: `${node.scheme}://${node.fqdn}:${node.daemonPort}`,
+              nodeId: node.id,
+              signingKeyHex: node.daemonPublicKey,
+              method: "DELETE",
+              path: `/api/servers/${id}`,
+            })
+          } catch (err) {
+            console.warn(`server ${id}: daemon delete failed`, err)
+          }
+        }
+      }
       await db.transaction(async (tx) => {
         await tx
           .update(nodeAllocationsTable)

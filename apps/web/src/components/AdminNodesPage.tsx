@@ -10,8 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -591,7 +590,7 @@ export const AdminNodesPage = () => {
       </header>
 
       <div className="relative max-w-sm">
-        <HugeiconsIcon icon={Search01Icon} size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Icon name="search" size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder={t("audit.search_placeholder")}
           value={globalFilter}

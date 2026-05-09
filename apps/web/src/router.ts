@@ -8,7 +8,10 @@ import { Route as loginRoute } from "@/routes/Login"
 import { Route as registerRoute } from "@/routes/Register"
 import { Route as userAreaRoute } from "@/routes/UserArea"
 import { Route as dashboardRoute } from "@/routes/Dashboard"
-import { Route as profileRoute } from "@/routes/Profile"
+import { Route as accountRoute } from "@/routes/Account"
+import { Route as accountIndexRoute } from "@/routes/AccountIndex"
+import { Route as accountNotificationsRoute } from "@/routes/AccountNotifications"
+import { Route as accountConnectionsRoute } from "@/routes/AccountConnections"
 import { Route as newServerRoute } from "@/routes/NewServer"
 import { Route as adminRoute } from "@/routes/Admin"
 import { Route as adminIndexRoute } from "@/routes/AdminIndex"
@@ -16,6 +19,7 @@ import { Route as adminNodesRoute } from "@/routes/AdminNodes"
 import { Route as adminNewNodeRoute } from "@/routes/AdminNewNode"
 import { Route as adminNodeRoute } from "@/routes/AdminNode"
 import { Route as adminBlueprintsRoute } from "@/routes/AdminBlueprints"
+import { Route as adminDatabaseHostsRoute } from "@/routes/AdminDatabaseHosts"
 import { Route as adminNewBlueprintRoute } from "@/routes/AdminNewBlueprint"
 import { Route as adminAuditRoute } from "@/routes/AdminAudit"
 import { Route as adminUsersRoute } from "@/routes/AdminUsers"
@@ -35,10 +39,17 @@ import { Route as serverActivityRoute } from "@/routes/ServerActivity"
 import { Route as serverCrashesRoute } from "@/routes/ServerCrashes"
 import { Route as serverTransferRoute } from "@/routes/ServerTransfer"
 import { Route as serverInstancesRoute } from "@/routes/ServerInstances"
+import { Route as serverDatabasesRoute } from "@/routes/ServerDatabases"
+
+const accountTree = accountRoute.addChildren([
+  accountIndexRoute,
+  accountNotificationsRoute,
+  accountConnectionsRoute,
+])
 
 const userAreaTree = userAreaRoute.addChildren([
   dashboardRoute,
-  profileRoute,
+  accountTree,
   newServerRoute,
 ])
 
@@ -49,6 +60,7 @@ const adminTree = adminRoute.addChildren([
   adminNodeRoute,
   adminBlueprintsRoute,
   adminNewBlueprintRoute,
+  adminDatabaseHostsRoute,
   adminUsersRoute,
   adminServersRoute,
   adminNewServerRoute,
@@ -69,6 +81,7 @@ const serverTree = serverRoute.addChildren([
   serverSettingsRoute,
   serverTransferRoute,
   serverInstancesRoute,
+  serverDatabasesRoute,
 ])
 
 const routeTree = rootRoute.addChildren([

@@ -52,7 +52,11 @@ export const OverviewTab = () => {
     if (status !== "running") return null
     if (stats.latest?.startedAt !== undefined) {
       const parsed = Date.parse(stats.latest.startedAt)
-      if (!isNaN(parsed)) return now - parsed
+      // Clamp to 0 — clock skew between daemon and browser can put
+      // `startedAt` a few hundred ms in the future right after start,
+      // which would otherwise render as "-1s" until the wall clocks
+      // converge.
+      if (!isNaN(parsed)) return Math.max(0, now - parsed)
     }
     return null
   }, [status, stats.latest?.startedAt, now])
@@ -71,7 +75,7 @@ export const OverviewTab = () => {
             <CardTitle>Server Name</CardTitle>
           </CardHeader>
           <CardInner className="flex min-h-16 items-center px-4 py-4">
-            <span className="text-lg font-medium text-zinc-100">{server.name}</span>
+            <span className="text-lg font-medium text-foreground">{server.name}</span>
           </CardInner>
         </Card>
 
@@ -80,7 +84,7 @@ export const OverviewTab = () => {
             <CardTitle>Address</CardTitle>
           </CardHeader>
           <CardInner className="flex min-h-16 items-center px-4 py-4">
-            <span className="font-mono text-lg font-medium text-zinc-100">
+            <span className="font-mono text-lg font-medium text-foreground">
               {address}
             </span>
           </CardInner>
@@ -91,7 +95,7 @@ export const OverviewTab = () => {
             <CardTitle>Uptime</CardTitle>
           </CardHeader>
           <CardInner className="flex min-h-16 items-center px-4 py-4">
-            <span className="font-mono text-lg font-medium tabular-nums text-zinc-100">
+            <span className="font-mono text-lg font-medium tabular-nums text-foreground">
               {uptime !== null ? formatUptime(uptime) : "—"}
             </span>
           </CardInner>
@@ -99,7 +103,7 @@ export const OverviewTab = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <CpuStatCard latest={stats.latest} history={stats.history} />
+        <CpuStatCard latest={stats.latest} history={stats.history} limitPercent={server.cpuLimitPercent} />
         <MemoryStatCard latest={stats.latest} history={stats.history} />
         <DiskStatCard latest={stats.latest} history={stats.history} />
         <NetworkStatCard latest={stats.latest} history={stats.history} />
@@ -110,6 +114,7 @@ export const OverviewTab = () => {
           state={console.state}
           lines={console.lines}
           onSend={console.sendCommand}
+          serverId={server.id}
         />
       </div>
     </div>

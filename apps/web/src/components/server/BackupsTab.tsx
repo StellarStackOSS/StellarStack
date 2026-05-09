@@ -15,7 +15,23 @@ import {
   CardInner,
   CardTitle,
 } from "@workspace/ui/components/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
 import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
 import {
   Table,
   TableBody,
@@ -37,6 +53,7 @@ import {
 } from "@/hooks/useBackups"
 import type { BackupRow } from "@/hooks/useBackups.types"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { Icon } from "@/components/Icon"
 import { RestoreBackupDialog } from "@/components/RestoreBackupDialog"
 import { useServerLayout } from "@/components/ServerLayoutContext"
 
@@ -65,11 +82,14 @@ export const BackupsTab = () => {
   const downloadBackup = useDownloadBackup(server.id)
 
   const [name, setName] = useState("")
+  const [createOpen, setCreateOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [confirmRestore, setConfirmRestore] = useState<BackupRow | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<BackupRow | null>(null)
 
   const rows = backups.data?.backups ?? []
+  const isRunning = rows.some((r) => r.state === "pending")
+  const atLimit = rows.length >= server.backupLimit
 
   const handleTake = async () => {
     setErrorMessage(null)
@@ -78,6 +98,7 @@ export const BackupsTab = () => {
     try {
       await createBackup.mutateAsync({ name: trimmed })
       setName("")
+      setCreateOpen(false)
     } catch (err) {
       if (err instanceof ApiFetchError) {
         setErrorMessage(translateApiError(t, err.body.error))
@@ -140,53 +161,55 @@ export const BackupsTab = () => {
       {
         id: "actions",
         header: "",
-        cell: ({ row }) => (
-          <div className="flex justify-end gap-2">
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={row.original.state === "pending" || lockBackup.isPending}
-              onClick={() =>
-                lockBackup.mutate({ backupId: row.original.id, locked: !row.original.locked })
-              }
-            >
-              {row.original.locked ? t("backups.unlock") : t("backups.lock")}
-            </Button>
-            {row.original.state === "ready" && row.original.storage === "local" ? (
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => void downloadBackup(row.original.name)}
-              >
-                {t("backups.download")}
-              </Button>
-            ) : null}
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={
-                row.original.state !== "ready" ||
-                restoreBackup.isPending ||
-                false
-              }
-              onClick={() => setConfirmRestore(row.original)}
-            >
-              {t("backups.restore")}
-            </Button>
-            <Button
-              size="xs"
-              variant="destructive"
-              disabled={
-                row.original.locked ||
-                row.original.state === "pending" ||
-                deleteBackup.isPending
-              }
-              onClick={() => setConfirmDelete(row.original)}
-            >
-              {t("backups.delete")}
-            </Button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const r = row.original
+          const canDownload = r.state === "ready" && r.storage === "local"
+          const canRestore = r.state === "ready" && !restoreBackup.isPending
+          const canDelete =
+            !r.locked && r.state !== "pending" && !deleteBackup.isPending
+          const canToggleLock = r.state !== "pending" && !lockBackup.isPending
+          return (
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon-sm" variant="ghost" className="size-7">
+                    <Icon name="more-horizontal" className="size-3.5" />
+                    <span className="sr-only">Actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[10rem]">
+                  <DropdownMenuItem
+                    disabled={!canToggleLock}
+                    onClick={() =>
+                      lockBackup.mutate({ backupId: r.id, locked: !r.locked })
+                    }
+                  >
+                    {r.locked ? t("backups.unlock") : t("backups.lock")}
+                  </DropdownMenuItem>
+                  {canDownload ? (
+                    <DropdownMenuItem onClick={() => void downloadBackup(r.name)}>
+                      {t("backups.download")}
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem
+                    disabled={!canRestore}
+                    onClick={() => setConfirmRestore(r)}
+                  >
+                    {t("backups.restore")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={!canDelete}
+                    onClick={() => setConfirmDelete(r)}
+                  >
+                    {t("backups.delete")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        },
       },
     ],
     [t, lockBackup, downloadBackup, restoreBackup.isPending, deleteBackup.isPending, server.status]
@@ -211,47 +234,27 @@ export const BackupsTab = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            {t("backups.take_heading")}{" "}
-            <span className="text-muted-foreground text-xs font-normal">
-              ({rows.length}/{server.backupLimit})
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardInner className="p-3 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("backups.name_placeholder")}
-              className="flex-1 min-w-[16rem] text-xs"
-            />
-            <Button
-              size="sm"
-              onClick={() => void handleTake()}
-              disabled={createBackup.isPending || rows.length >= server.backupLimit}
-            >
-              {t("backups.take_local")}
-            </Button>
-          </div>
-          {errorMessage !== null ? (
-            <p className="text-destructive text-xs" role="alert">
-              {errorMessage}
-            </p>
-          ) : null}
-          </CardInner>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>{t("backups.archives_heading")}</CardTitle>
           <CardAction>
-            <span className="text-muted-foreground text-xs">
-              {t(
-                rows.length === 1 ? "backups.count_one" : "backups.count_other",
-                { count: rows.length }
-              )}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-xs">
+                {rows.length}/{server.backupLimit}
+              </span>
+              <Button
+                size="sm"
+                onClick={() => { setErrorMessage(null); setCreateOpen(true) }}
+                disabled={atLimit || isRunning}
+                title={
+                  isRunning
+                    ? t("backups.already_running", {
+                        defaultValue: "A backup is already running",
+                      })
+                    : undefined
+                }
+              >
+                {t("backups.create", { defaultValue: "Create" })}
+              </Button>
+            </div>
           </CardAction>
         </CardHeader>
         <CardInner className="p-3">
@@ -321,6 +324,55 @@ export const BackupsTab = () => {
           }
         }}
       />
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(v) => {
+          setCreateOpen(v)
+          if (!v) { setName(""); setErrorMessage(null) }
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {t("backups.take_heading", { defaultValue: "Take a backup" })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("backups.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">
+              {t("backups.name_label", { defaultValue: "Name (optional)" })}
+            </Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("backups.name_placeholder")}
+              autoFocus
+            />
+          </div>
+          {errorMessage !== null ? (
+            <p className="text-destructive text-xs" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(false)}>
+              {t("actions.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              size="sm"
+              disabled={createBackup.isPending}
+              onClick={() => void handleTake()}
+            >
+              {createBackup.isPending
+                ? t("backups.creating", { defaultValue: "Creating…" })
+                : t("backups.create", { defaultValue: "Create" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

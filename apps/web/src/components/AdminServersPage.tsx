@@ -10,11 +10,18 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon, ArrowUp01Icon, Search01Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/Icon"
 
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
@@ -262,8 +269,8 @@ const SortableHeader = ({
     >
       {label}
       {active ? (
-        <HugeiconsIcon
-          icon={desc ? ArrowDown01Icon : ArrowUp01Icon}
+        <Icon
+          name={desc ? "arrow-down" : "arrow-up"}
           size={12}
           className="shrink-0"
         />
@@ -452,20 +459,21 @@ export const AdminServersPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-base font-semibold">{t("admin_servers.title")}</h1>
-          <p className="text-muted-foreground text-xs">{t("admin_servers.description")}</p>
-        </div>
-        <Button size="sm" asChild>
-          <Link to="/admin/create-server">{t("admin_servers.create")}</Link>
-        </Button>
-      </header>
-
-      <div className="flex items-center gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin_servers.title")}</CardTitle>
+          <CardDescription>{t("admin_servers.description")}</CardDescription>
+          <CardAction>
+            <Button size="sm" asChild>
+              <Link to="/admin/create-server">{t("admin_servers.create")}</Link>
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardInner className="flex flex-col gap-3 p-3">
+          <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
-          <HugeiconsIcon
-            icon={Search01Icon}
+          <Icon
+            name="search"
             size={14}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           />
@@ -521,7 +529,7 @@ export const AdminServersPage = () => {
         )}
       </div>
 
-      <div className="rounded-md border">
+          <div className="overflow-hidden rounded-md border border-border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -572,7 +580,9 @@ export const AdminServersPage = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+          </div>
+        </CardInner>
+      </Card>
     </div>
   )
 }

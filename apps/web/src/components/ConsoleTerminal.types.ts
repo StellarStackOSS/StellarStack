@@ -11,4 +11,5 @@ export type ConsoleTerminalProps = {
   lines: ConsoleLine[]
   onSend: (command: string) => void
   canWrite?: boolean
+  serverId?: string
 }

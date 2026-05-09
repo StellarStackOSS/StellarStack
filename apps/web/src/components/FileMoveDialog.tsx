@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ArrowUp01Icon,
-  FolderIcon,
-  FolderOpenIcon,
-} from "@hugeicons/core-free-icons"
+
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -125,7 +121,7 @@ export const FileMoveDialog = ({
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => handleBrowseTo(parentOf(browsePath))}
                 >
-                  <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" />
+                  <Icon name="arrow-up" className="size-3" />
                   {t("file_move.up")}
                 </button>
               ) : null}
@@ -164,12 +160,8 @@ export const FileMoveDialog = ({
                             .filter(Boolean)
                             .join(" ")}
                         >
-                          <HugeiconsIcon
-                            icon={
-                              destInput === folder.path
-                                ? FolderOpenIcon
-                                : FolderIcon
-                            }
+                          <Icon
+                            name={destInput === folder.path ? "folder-open" : "folder"}
                             className="size-3.5 text-chart-2 shrink-0"
                           />
                           {folder.name}

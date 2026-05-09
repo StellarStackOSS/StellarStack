@@ -41,3 +41,19 @@ export const useCreateServerInstance = (parentId: string) => {
     },
   })
 }
+
+export const useDeleteServerInstance = (parentId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (instanceId: string) =>
+      apiFetch<{ ok: true }>(
+        `/servers/${parentId}/instances/${instanceId}`,
+        { method: "DELETE" }
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: listKey(parentId) })
+      void queryClient.invalidateQueries({ queryKey: poolKey(parentId) })
+      void queryClient.invalidateQueries({ queryKey: ["servers"] })
+    },
+  })
+}

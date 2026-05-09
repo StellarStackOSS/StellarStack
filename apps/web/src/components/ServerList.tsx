@@ -1,19 +1,28 @@
 import { Link } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
-import { ChevronRight } from "lucide-react"
 
-import type { ServerLifecycleState } from "@workspace/shared/events.types"
-import { TextureBadge } from "@workspace/ui/components/texture-badge"
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 
+import { ServerStatusBadge } from "@/components/ServerStatusBadge"
 import type { ServerListProps } from "@/components/ServerList.types"
 
-const statusVariant = (
-  s: ServerLifecycleState
-): "success" | "warning" | "destructive" | "secondary" => {
-  if (s === "running") return "success"
-  if (s === "starting" || s === "stopping") return "warning"
-  return "secondary"
+const GAME_COVERS = ["/games/minecraft-1.jpg", "/games/minecraft-2.jpg"]
+
+const hashSeed = (s: string): number => {
+  let h = 0
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h)
 }
+
+const gameImageUrl = (seed: string): string =>
+  GAME_COVERS[hashSeed(seed) % GAME_COVERS.length] ?? GAME_COVERS[0]!
 
 export const ServerList = ({
   servers,
@@ -23,50 +32,54 @@ export const ServerList = ({
   const { t } = useTranslation()
 
   if (loading) {
-    return <p className="text-xs text-zinc-500">{t("server_list.loading")}</p>
+    return (
+      <p className="text-muted-foreground text-xs">{t("server_list.loading")}</p>
+    )
   }
   if (servers.length === 0) {
     return (
-      <p className="text-xs text-zinc-500">
+      <p className="text-muted-foreground text-xs">
         {emptyMessage ?? t("server_list.empty")}
       </p>
     )
   }
   return (
-    <ul className="flex flex-col gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {servers.map((server) => (
-        <li key={server.id}>
-          <Link
-            to="/servers/$id"
-            params={{ id: server.id }}
-            className="group relative flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200/10 bg-[#0e0e0e] px-6 py-5 shadow-lg shadow-black/20 transition-all duration-300 select-none hover:scale-[1.005] hover:border-zinc-200/20"
-          >
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium uppercase tracking-wider text-zinc-100">
-                  {server.name}
+        <Link
+          key={server.id}
+          to="/servers/$id"
+          params={{ id: server.id }}
+          className="group block transition-transform duration-200 hover:scale-[1.005]"
+        >
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="truncate text-sm">{server.name}</CardTitle>
+              <CardDescription className="truncate">
+                {server.memoryLimitMb} MB · {server.cpuLimitPercent}% CPU ·{" "}
+                {server.diskLimitMb} MB
+              </CardDescription>
+              <CardAction>
+                <ServerStatusBadge status={server.status} />
+              </CardAction>
+            </CardHeader>
+            <CardInner className="relative aspect-[4/1] overflow-hidden">
+              <img
+                src={gameImageUrl(server.blueprintId)}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 size-full object-cover opacity-90 transition-opacity group-hover:opacity-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              {server.parentId !== null ? (
+                <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-wider text-white backdrop-blur">
+                  {t("instances.parent_badge", { defaultValue: "Instance" })}
                 </span>
-                <TextureBadge variant={statusVariant(server.status)}>
-                  {t(`lifecycle.${server.status}`, { ns: "common" })}
-                </TextureBadge>
-                {server.parentId !== null ? (
-                  <TextureBadge variant="secondary">
-                    {t("instances.parent_badge")}
-                  </TextureBadge>
-                ) : null}
-              </div>
-              <div className="mt-1.5 flex items-center gap-3 text-xs text-zinc-500">
-                <span>{server.memoryLimitMb} MB RAM</span>
-                <span>·</span>
-                <span>{server.cpuLimitPercent}% CPU</span>
-                <span>·</span>
-                <span>{server.diskLimitMb} MB Disk</span>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-zinc-600 transition-colors group-hover:text-zinc-400" />
-          </Link>
-        </li>
+              ) : null}
+            </CardInner>
+          </Card>
+        </Link>
       ))}
-    </ul>
+    </div>
   )
 }

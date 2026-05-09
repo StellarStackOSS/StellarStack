@@ -52,7 +52,7 @@ export const NetworkStatCard = ({
       </CardHeader>
       <CardInner className="flex h-16 items-center">
         <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-none text-zinc-100">
+          <div className="font-mono text-lg font-medium leading-none text-foreground">
             {latest !== null && lastSpeed !== undefined
               ? `↓ ${formatSpeed(lastSpeed.rx)}`
               : "—"}

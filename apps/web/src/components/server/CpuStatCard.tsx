@@ -9,22 +9,29 @@ import { Sparkline } from "@workspace/ui/components/sparkline"
 
 import type { StatsSample } from "@/hooks/useServerStats.types"
 
-const usageColor = (pct: number): string => {
-  if (pct === 0) return "#71717a"
-  if (pct > 75) return "#ef4444"
-  if (pct > 50) return "#f59e0b"
+const usageColor = (pctOfLimit: number): string => {
+  if (pctOfLimit === 0) return "#71717a"
+  if (pctOfLimit > 75) return "#ef4444"
+  if (pctOfLimit > 50) return "#f59e0b"
   return "#22c55e"
 }
 
 export const CpuStatCard = ({
   latest,
   history,
+  limitPercent,
 }: {
   latest: StatsSample | null
   history: StatsSample[]
+  /** Configured CPU cap, e.g. 200 for "two cores worth". */
+  limitPercent: number
 }) => {
   const pct = latest !== null ? latest.cpuFraction * 100 : null
-  const color = usageColor(pct ?? 0)
+  // Threshold is relative to the server's configured cap, not absolute —
+  // a 100% reading on a 200% allocation is only half-utilised.
+  const pctOfLimit =
+    pct !== null && limitPercent > 0 ? (pct / limitPercent) * 100 : 0
+  const color = usageColor(pctOfLimit)
   const data = history.map((s) => s.cpuFraction * 100)
 
   return (
@@ -34,7 +41,7 @@ export const CpuStatCard = ({
       </CardHeader>
       <CardInner className="flex h-16 items-center">
         <div className="flex-1 px-3">
-          <div className="font-mono text-lg font-medium leading-none text-zinc-100">
+          <div className="font-mono text-lg font-medium leading-none text-foreground">
             {pct !== null ? (
               <AnimatedNumber value={pct} decimals={1} suffix="%" />
             ) : (

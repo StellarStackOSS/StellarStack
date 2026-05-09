@@ -12,6 +12,7 @@ import { buildRequireSession, type AuthVariables } from "@/middleware/RequireSes
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   preferredLocale: z.string().min(2).max(10).optional(),
+  timezone: z.string().min(1).max(64).optional(),
   image: z.string().url().nullable().optional(),
 })
 

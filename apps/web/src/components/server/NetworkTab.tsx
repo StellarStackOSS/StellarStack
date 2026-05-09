@@ -10,6 +10,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
+  CardAction,
   CardDescription,
   CardHeader,
   CardInner,
@@ -139,26 +140,23 @@ export const NetworkTab = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>{t("network.allocations_heading")}</CardTitle>
-              <CardDescription>
-                {t("network.limit_info", {
-                  count: allocations.length,
-                  max: allocationLimit,
-                })}
-              </CardDescription>
-            </div>
+          <CardTitle>{t("network.allocations_heading")}</CardTitle>
+          <CardDescription>
+            {t("network.limit_info", {
+              count: allocations.length,
+              max: allocationLimit,
+            })}
+          </CardDescription>
+          <CardAction>
             <Button
               size="sm"
-              variant="outline"
               disabled={atLimit || assignRandom.isPending}
               title={atLimit ? t("network.limit_reached") : undefined}
               onClick={() => assignRandom.mutate()}
             >
-              {t("network.assign_random")}
+              {t("network.assign", { defaultValue: "Assign" })}
             </Button>
-          </div>
+          </CardAction>
         </CardHeader>
         <CardInner className="p-3">
           {errorMessage !== null ? (

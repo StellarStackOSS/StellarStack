@@ -10,10 +10,17 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import {
   Dialog,
   DialogContent,
@@ -348,27 +355,31 @@ export const AdminBlueprintsPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="text-base font-semibold">{t("blueprints.title")}</h1>
-          <p className="text-muted-foreground text-xs">{t("blueprints.description")}</p>
-        </div>
-        <Button size="sm" asChild>
-          <Link to="/admin/create-blueprint">{t("blueprints.new_button")}</Link>
-        </Button>
-      </header>
-
-      <div className="relative max-w-sm">
-        <HugeiconsIcon icon={Search01Icon} size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder={t("audit.search_placeholder")}
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="pl-8 text-sm h-8"
-        />
-      </div>
-
-      <div className="rounded-md border">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("blueprints.title")}</CardTitle>
+          <CardDescription>{t("blueprints.description")}</CardDescription>
+          <CardAction>
+            <Button size="sm" asChild>
+              <Link to="/admin/create-blueprint">{t("blueprints.new_button")}</Link>
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardInner className="flex flex-col gap-3 p-3">
+          <div className="relative max-w-sm">
+            <Icon
+              name="search"
+              size={14}
+              className="text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2"
+            />
+            <Input
+              placeholder={t("audit.search_placeholder")}
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          <div className="overflow-hidden rounded-md border border-border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -407,7 +418,9 @@ export const AdminBlueprintsPage = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+          </div>
+        </CardInner>
+      </Card>
 
       {editorRow !== null && (
         <BlueprintEditorSheet

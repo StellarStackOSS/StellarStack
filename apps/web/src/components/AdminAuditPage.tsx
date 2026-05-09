@@ -9,10 +9,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon, ArrowUp01Icon, Search01Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/Icon"
 
 import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardInner,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import { Input } from "@workspace/ui/components/input"
 import {
   Sheet,
@@ -119,8 +125,8 @@ const SortableHeader = ({
     >
       {label}
       {active && (
-        <HugeiconsIcon
-          icon={desc ? ArrowDown01Icon : ArrowUp01Icon}
+        <Icon
+          name={desc ? "arrow-down" : "arrow-up"}
           size={12}
           className="shrink-0"
         />
@@ -259,35 +265,40 @@ export const AdminAuditPage = () => {
         <p className="text-muted-foreground text-xs">{t("audit.description")}</p>
       </header>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            placeholder={t("audit.search_placeholder")}
-            value={globalFilter}
-            onChange={(e) => {
-              setGlobalFilter(e.target.value)
-              setOffset(0)
-            }}
-            className="pl-8 text-sm h-8"
-          />
-        </div>
-        <Input
-          placeholder={t("audit.action_filter_placeholder")}
-          value={actionFilter}
-          onChange={(e) => {
-            setActionFilter(e.target.value)
-            setOffset(0)
-          }}
-          className="max-w-48 text-sm h-8 font-mono"
-        />
-      </div>
-
-      <div className="rounded-md border">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("audit.title")}</CardTitle>
+          <CardDescription>{t("audit.description")}</CardDescription>
+        </CardHeader>
+        <CardInner className="flex flex-col gap-3 p-3">
+          <div className="flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Icon
+                name="search"
+                size={14}
+                className="text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2"
+              />
+              <Input
+                placeholder={t("audit.search_placeholder")}
+                value={globalFilter}
+                onChange={(e) => {
+                  setGlobalFilter(e.target.value)
+                  setOffset(0)
+                }}
+                className="h-8 pl-8 text-sm"
+              />
+            </div>
+            <Input
+              placeholder={t("audit.action_filter_placeholder")}
+              value={actionFilter}
+              onChange={(e) => {
+                setActionFilter(e.target.value)
+                setOffset(0)
+              }}
+              className="h-8 max-w-48 font-mono text-sm"
+            />
+          </div>
+          <div className="overflow-hidden rounded-md border border-border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -342,29 +353,33 @@ export const AdminAuditPage = () => {
             )}
           </TableBody>
         </Table>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={offset === 0}
-          onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-        >
-          {t("audit.prev")}
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          {t("audit.pagination", { from: offset + 1, to: offset + entries.length })}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={entries.length < PAGE_SIZE}
-          onClick={() => setOffset(offset + PAGE_SIZE)}
-        >
-          {t("audit.next")}
-        </Button>
-      </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+            >
+              {t("audit.prev")}
+            </Button>
+            <span className="text-muted-foreground text-sm">
+              {t("audit.pagination", {
+                from: offset + 1,
+                to: offset + entries.length,
+              })}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={entries.length < PAGE_SIZE}
+              onClick={() => setOffset(offset + PAGE_SIZE)}
+            >
+              {t("audit.next")}
+            </Button>
+          </div>
+        </CardInner>
+      </Card>
 
       <DetailSheet
         entry={selectedEntry}
