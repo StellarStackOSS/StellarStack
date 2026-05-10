@@ -42,15 +42,15 @@ export class ApiProcess {
           PORT: String(env.apiPort),
           DATABASE_URL: POSTGRES_URL,
 
-          // Single-user desktop install — stub out the integrations the
-          // API expects to be configured for the hosted product.
-          REDIS_URL: "memory://", // see RedisShim wiring in api/main.ts
-          SESSION_SECRET: "stellar-desktop-session-secret-change-me",
-          DAEMON_SIGNING_SECRET: "stellar-desktop-daemon-secret-change-me",
-          PANEL_URL: `http://localhost:${String(env.apiPort)}`,
+          // Single-user desktop install — match the env shape that
+          // apps/api/src/env.ts expects, but stub out remote services.
+          // `memory://` triggers the in-process MemoryRedis shim so we
+          // skip running a Redis container.
+          REDIS_URL: "memory://",
+          BETTER_AUTH_SECRET: "stellar-desktop-auth-secret-change-me-please",
           APP_BASE_URL: `http://localhost:${String(env.apiPort)}`,
-          SMTP_HOST: "",
-          SMTP_FROM: "noreply@localhost",
+          API_BASE_URL: `http://localhost:${String(env.apiPort)}`,
+          LOG_LEVEL: env.isDev ? "debug" : "info",
           STELLAR_DESKTOP: "1",
         },
       }

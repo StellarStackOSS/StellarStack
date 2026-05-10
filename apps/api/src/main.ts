@@ -1,6 +1,8 @@
 import { serve } from "@hono/node-server"
 import IORedis from "ioredis"
 import { Hono } from "hono"
+import { isMemoryRedisUrl, MemoryRedis } from "@/lib/MemoryRedis"
+import type { RedisLike } from "@/lib/StatusCache"
 import { cors } from "hono/cors"
 import pino from "pino"
 
@@ -47,7 +49,22 @@ const logger = pino({
 })
 
 const db = createDb({ url: env.DATABASE_URL })
-const redis = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null })
+
+// Pick a Redis client based on REDIS_URL. The desktop app sets
+// `memory://` so it doesn't need to run a Redis container alongside the
+// already-required Postgres one. Real deploys keep using ioredis.
+//
+// `as unknown as RedisLike` because ioredis's `.set` has a fistful of
+// overloads that don't structurally match RedisLike, even though both
+// libraries handle the (key, value, "EX", ttl) call identically at
+// runtime. RedisLike is the contract StatusCache needs; both clients
+// honour it.
+const redis: RedisLike = isMemoryRedisUrl(env.REDIS_URL)
+  ? new MemoryRedis()
+  : (new IORedis(env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+    }) as unknown as RedisLike)
+
 const auth = buildAuth({ db, env })
 const statusCache = new StatusCache(redis)
 const installRunner = new InstallRunner(db)
