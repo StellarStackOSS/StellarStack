@@ -1,0 +1,53 @@
+appId: dev.stellarstack.desktop
+productName: StellarStack
+copyright: Copyright © StellarStack Inc.
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - package.json
+  - "!**/*.map"
+
+# Files copied into Electron's `resources/` dir at install time. The main
+# process reads them via `process.resourcesPath` (see src/main/env.ts).
+extraResources:
+  # The built `apps/web` bundle. Run `pnpm --filter web build` first.
+  - from: ../web/dist
+    to: panel
+    filter: ["**/*"]
+  # The Go daemon binary. Build it for the target OS/arch ahead of time:
+  #   GOOS=darwin GOARCH=arm64 go build -o stellar-daemon ./apps/daemon/cmd/stellar-daemon
+  # Drop the result into `apps/desktop/build/` named per-platform.
+  - from: build/stellar-daemon${ext}
+    to: stellar-daemon${ext}
+    filter: ["**/*"]
+  # The esbuilt API + a copy of the node_modules it depends on at runtime.
+  # Built by `pnpm bundle:api` (runs as part of build:tsc).
+  - from: build/api
+    to: api
+    filter: ["**/*"]
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # Code-signing identity needs to be set via env (CSC_LINK / CSC_KEY_PASSWORD)
+  # for distributable builds. Local dev builds work unsigned.
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: StellarStack-${version}-setup-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Utility

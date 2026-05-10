@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>StellarStack</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #120F0C;
+        --card: #201c19;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f5f5f5;
+        --muted: #a1a1aa;
+        --accent: #A397E8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        line-height: 1.55;
+      }
+      main {
+        width: 100%;
+        max-width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .eyebrow {
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-size: 11px;
+        font-weight: 500;
+        margin: 0;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      p {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        background: var(--muted);
+      }
+      .dot.ok { background: #22c55e; }
+      .dot.warn { background: #f97316; }
+      .dot.err { background: #ef4444; }
+      .dot.pending {
+        background: var(--accent);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+      .card-text { display: flex; flex-direction: column; gap: 2px; }
+      .card-title { font-size: 13px; font-weight: 500; color: var(--text); }
+      .card-sub { font-size: 11.5px; color: var(--muted); }
+      .actions { display: flex; flex-direction: column; gap: 8px; }
+      button {
+        appearance: none;
+        border: 0;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.15s, opacity 0.15s;
+      }
+      button.primary {
+        background: #fff;
+        color: #18181b;
+      }
+      button.primary:hover { background: #e5e5e5; }
+      button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+      button.ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      button.ghost:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .logo span { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="logo">
+        <span>StellarStack</span>
+      </div>
+
+      <header>
+        <p class="eyebrow">Setup</p>
+        <h1 id="title">Checking your machine</h1>
+        <p id="subtitle">Looking for Docker — needed to run game-server containers locally.</p>
+      </header>
+
+      <div class="card" id="docker-card">
+        <span class="dot pending" id="docker-dot"></span>
+        <div class="card-text">
+          <span class="card-title" id="docker-title">Docker</span>
+          <span class="card-sub" id="docker-sub">Checking…</span>
+        </div>
+      </div>
+
+      <div class="actions" id="actions">
+        <button class="primary" id="primary-btn" disabled>Continue</button>
+        <button class="ghost" id="recheck-btn" hidden>Recheck</button>
+      </div>
+    </main>
+
+    <script>
+      const dot = document.getElementById("docker-dot");
+      const title = document.getElementById("docker-title");
+      const sub = document.getElementById("docker-sub");
+      const headerTitle = document.getElementById("title");
+      const headerSub = document.getElementById("subtitle");
+      const primary = document.getElementById("primary-btn");
+      const recheck = document.getElementById("recheck-btn");
+
+      let state = "checking";
+
+      const render = (status) => {
+        if (status.kind === "ok") {
+          state = "ok";
+          dot.className = "dot ok";
+          title.textContent = "Docker " + status.version;
+          sub.textContent = "Running and reachable.";
+          headerTitle.textContent = "Setting things up";
+          headerSub.textContent = "Preparing the local database — this can take a moment on first launch.";
+          primary.textContent = "Continuing…";
+          primary.disabled = true;
+          recheck.hidden = true;
+          // Listen for progress updates from the main process and run
+          // the postgres bootstrap. On success, hand off to the panel.
+          const off = window.stellar.bootstrap.onStatus((msg) => {
+            sub.textContent = msg;
+          });
+          window.stellar.bootstrap
+            .ensurePostgres()
+            .then(() => {
+              off();
+              dot.className = "dot ok";
+              title.textContent = "Ready";
+              sub.textContent = "Database started. Opening the panel…";
+              return window.stellar.panel.launch();
+            })
+            .catch((err) => {
+              off();
+              dot.className = "dot err";
+              title.textContent = "Couldn't start the database";
+              sub.textContent = String(err && err.message ? err.message : err);
+              headerTitle.textContent = "Something went wrong";
+              headerSub.textContent = "Make sure Docker is running, then click Retry.";
+              primary.textContent = "Retry";
+              primary.disabled = false;
+              primary.onclick = check;
+            });
+        } else if (status.kind === "not-running") {
+          state = "not-running";
+          dot.className = "dot warn";
+          title.textContent = "Docker installed";
+          sub.textContent = "But the daemon isn't running. Start Docker Desktop, then click Recheck.";
+          headerTitle.textContent = "Almost there";
+          headerSub.textContent = "Docker is installed but isn't running yet.";
+          primary.textContent = "Recheck";
+          primary.disabled = false;
+          primary.onclick = check;
+          recheck.hidden = true;
+        } else {
+          state = "missing";
+          dot.className = "dot err";
+          title.textContent = "Docker not found";
+          sub.textContent = "Install Docker Desktop, then come back.";
+          headerTitle.textContent = "Install Docker first";
+          headerSub.textContent = "StellarStack runs game servers in containers, so we need Docker on your machine.";
+          primary.textContent = "Open install page";
+          primary.disabled = false;
+          primary.onclick = () => window.stellar.docker.openInstallPage();
+          recheck.hidden = false;
+          recheck.onclick = check;
+        }
+      };
+
+      const check = async () => {
+        primary.disabled = true;
+        recheck.hidden = true;
+        dot.className = "dot pending";
+        title.textContent = "Docker";
+        sub.textContent = "Checking…";
+        const status = await window.stellar.docker.check();
+        render(status);
+      };
+
+      check();
+    </script>
+  </body>
+</html>

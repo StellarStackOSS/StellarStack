@@ -1,0 +1,38 @@
+import path from "node:path"
+
+import { app } from "electron"
+
+// Where bundled binaries (daemon + api) live in a packaged build vs. dev.
+// In dev we expect them to be available on $PATH or already running.
+const isDev = !app.isPackaged
+
+export const env = {
+  isDev,
+
+  /** Where the panel UI is served from. In dev, the apps/web Vite server
+   *  on :3000. In prod, served from the packaged static bundle via the
+   *  `stellar://` custom protocol registered in main/index.ts. */
+  panelUrl: isDev ? "http://localhost:3000" : "stellar://panel/index.html",
+
+  /** Filesystem path to the bundled `apps/web/dist` in a packaged build. */
+  panelDistPath: path.join(process.resourcesPath, "panel"),
+
+  /** Filesystem path to the bundled daemon binary (Go). */
+  daemonBinaryPath: path.join(
+    process.resourcesPath,
+    process.platform === "win32" ? "stellar-daemon.exe" : "stellar-daemon"
+  ),
+
+  /** Filesystem path to the bundled API entrypoint (Node bundle, esbuilt
+   *  from `apps/api`). The desktop app spawns this as a sidecar so the
+   *  main process keeps a clean event loop for window management. */
+  apiEntrypoint: path.join(process.resourcesPath, "api", "main.cjs"),
+
+  /** Local port the API binds to. The panel UI talks to it here. */
+  apiPort: 18080,
+
+  /** Per-OS data dir for the daemon's local files (server bind-mounts,
+   *  daemon config). The Postgres data lives in a Docker volume managed
+   *  by `postgres.ts`, not in this directory. */
+  dataDir: app.getPath("userData"),
+} as const

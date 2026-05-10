@@ -1,0 +1,5 @@
+dist/
+release/
+build/stellar-daemon
+build/stellar-daemon.exe
+node_modules/

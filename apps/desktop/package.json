@@ -1,0 +1,26 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && electron .",
+    "bundle:api": "node scripts/bundle-api.mjs",
+    "build:tsc": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && pnpm bundle:api",
+    "build:win": "pnpm build:tsc && electron-builder --win",
+    "build:mac": "pnpm build:tsc && electron-builder --mac",
+    "build:linux": "pnpm build:tsc && electron-builder --linux",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.7.2"
+  }
+}
