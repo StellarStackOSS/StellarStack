@@ -1,6 +1,6 @@
 ---
 title: Introducing StellarStack V2
-description: A complete rewrite of the daemon, a brand new schedule editor, hosted hardware in five regions, and a panel that's finally fast on mobile.
+description: A complete rewrite of the daemon, a brand new schedule editor, and a panel that's finally fast on mobile. Free to self-host today; hosted later.
 date: 2026-05-10
 author: Marques
 tags: announcement
@@ -37,13 +37,13 @@ The bit you don't see, but feel. The daemon — the agent that runs on every nod
 
 That last point matters more than it sounds. Typing in a Minecraft console is single-RTT now. SFTP uploads of a 4 GB world don't hit the panel at all. Multi-region nodes have local-feeling latency for the people connected to them.
 
-# Cloud + Hardware
+# Self-host first
 
-For everyone who wanted us to *just run it* — we now do.
+StellarStack V2 is **free to self-host today** — the panel and the daemon are MIT-licensed, you own the boxes, you own the data.
 
-Cloud + Hardware is fully managed StellarStack on bare-metal we own and rack ourselves. London, Frankfurt, Amsterdam, Miami, Beauharnois. AMD EPYC 4245P → Ryzen 7950X (high-clock, chosen for game-server tick rate, not VPS density), 128 GB DDR5, NVMe SSD, 10 Gbit uplink, L3–L7 DDoS protection as standard.
+That's where all our energy is right now. We want the self-host experience to feel finished — installer, blueprints, backups, schedules, audit log, all of it — before we even think about charging anyone for hosting.
 
-Pricing is on the [pricing](#pricing) section of the homepage. The panel itself stays MIT — Cloud + Hardware just means we run the boxes for you.
+So to be straight: **we are not hosting servers right now.** A managed Cloud option (and a fully-managed Cloud + Hardware tier in five regions, with EPYC / 7950X bare-metal, 128 GB DDR5, NVMe SSD, 10 Gbit uplink, L3–L7 DDoS) is on the [pricing](#pricing) section as the roadmap, but it's not open. When it is, we'll email the waitlist first.
 
 # A panel that works on your phone
 
@@ -59,7 +59,7 @@ A lot. The [public roadmap](#/roadmap) is the source of truth, but the headline 
 - **Plugin marketplace** — community-curated blueprints, plugins, and config bundles.
 - **Crash fingerprinting** — hash + anonymise stack traces, cross-reference fixes that worked for other operators.
 
-We'll write more here as those land. In the meantime, [join the waitlist](#waitlist) — we'll email you when V2 opens for hosted signups.
+We'll write more here as those land. In the meantime, grab the panel + daemon and run it yourself — and [join the waitlist](#waitlist) so we can email you the day hosted signups open.
 
 — Marques
 
