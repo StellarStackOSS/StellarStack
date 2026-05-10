@@ -29,6 +29,10 @@ extraResources:
   - from: build/api
     to: api
     filter: ["**/*"]
+  # Drizzle SQL migrations the API auto-applies on first boot.
+  - from: build/migrations
+    to: migrations
+    filter: ["**/*"]
 
 mac:
   category: public.app-category.developer-tools

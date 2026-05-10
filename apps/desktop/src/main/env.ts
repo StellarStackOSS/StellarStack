@@ -35,4 +35,13 @@ export const env = {
    *  daemon config). The Postgres data lives in a Docker volume managed
    *  by `postgres.ts`, not in this directory. */
   dataDir: app.getPath("userData"),
+
+  /** Path the daemon's TOML config is written to before spawn. */
+  daemonConfigPath: path.join(app.getPath("userData"), "daemon.toml"),
+
+  /** Where the bundled `packages/db/drizzle/` folder lives in a packaged
+   *  build. The API auto-applies migrations from here on boot. */
+  migrationsPath: isDev
+    ? path.resolve(process.cwd(), "..", "..", "packages", "db", "drizzle")
+    : path.join(process.resourcesPath, "migrations"),
 } as const

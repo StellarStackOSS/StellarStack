@@ -43,6 +43,16 @@ await build({
   logLevel: "info",
 })
 
+// Copy the drizzle migrations folder. The API auto-migrates on boot in
+// desktop mode and reads SQL from this path (env STELLAR_AUTO_MIGRATE_PATH).
+// electron-builder ships this as `resources/migrations/`.
+const migrationsSrc = join(repoRoot, "packages", "db", "drizzle")
+const migrationsDest = resolve(desktopRoot, "build", "migrations")
+rmSync(migrationsDest, { recursive: true, force: true })
+mkdirSync(migrationsDest, { recursive: true })
+cpSync(migrationsSrc, migrationsDest, { recursive: true })
+console.log(`copied migrations from ${migrationsSrc}`)
+
 // Copy the unbundled-but-required packages alongside main.cjs. electron-
 // builder will then ship `resources/api/` containing main.cjs +
 // node_modules/ to the user's machine.

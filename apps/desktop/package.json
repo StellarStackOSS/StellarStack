@@ -13,9 +13,6 @@
     "build:linux": "pnpm build:tsc && electron-builder --linux",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "electron-store": "^10.0.1"
-  },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "electron": "^33.2.1",

@@ -10,6 +10,14 @@ const envSchema = z.object({
   DAEMON_HMAC_SKEW_SECONDS: z.coerce.number().int().positive().default(60),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   ANTHROPIC_API_KEY: z.string().optional(),
+  // Desktop-only. When set, the API runs Drizzle migrations from this
+  // folder on boot. Hosted deploys leave this empty and run migrations
+  // out-of-band via `pnpm db:migrate`.
+  STELLAR_AUTO_MIGRATE_PATH: z.string().optional(),
+  // Desktop-only. Single-node HMAC key the desktop app generated for
+  // its bundled daemon. The /setup route inserts the local node row
+  // with this as `daemonPublicKey`.
+  STELLAR_DESKTOP_DAEMON_KEY: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

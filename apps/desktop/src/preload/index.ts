@@ -31,6 +31,14 @@ const api = {
   panel: {
     launch: () => ipcRenderer.invoke("panel:launch") as Promise<void>,
   },
+  onboarding: {
+    complete: (input: {
+      displayName: string
+      email: string
+      password: string
+    }) =>
+      ipcRenderer.invoke("onboarding:complete", input) as Promise<void>,
+  },
 } as const
 
 contextBridge.exposeInMainWorld("stellar", api)

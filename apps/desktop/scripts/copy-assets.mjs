@@ -12,6 +12,7 @@ const root = join(here, "..")
 
 const copies = [
   { from: "src/bootstrap", to: "dist/bootstrap" },
+  { from: "src/onboarding", to: "dist/onboarding" },
 ]
 
 for (const { from, to } of copies) {

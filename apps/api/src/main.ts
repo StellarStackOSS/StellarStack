@@ -13,6 +13,7 @@ import { buildAuth } from "@/auth"
 import { loadEnv } from "@/env"
 import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
+import { maybeAutoMigrate } from "@/lib/Migrate"
 import { Scheduler } from "@/lib/Scheduler"
 import { StatusCache } from "@/lib/StatusCache"
 import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
@@ -38,6 +39,7 @@ import { buildConsoleAiRoute } from "@/routes/ConsoleAi"
 import { buildDatabasesRoute } from "@/routes/Databases"
 import { buildRemoteRoute } from "@/routes/Remote"
 import { buildServersRoute } from "@/routes/Servers"
+import { buildSetupRoute } from "@/routes/Setup"
 
 const env = loadEnv()
 const logger = pino({
@@ -64,6 +66,14 @@ const redis: RedisLike = isMemoryRedisUrl(env.REDIS_URL)
   : (new IORedis(env.REDIS_URL, {
       maxRetriesPerRequest: null,
     }) as unknown as RedisLike)
+
+// Run pending migrations before anything else touches the schema. No-op
+// in hosted mode (`STELLAR_AUTO_MIGRATE_PATH` is unset there).
+await maybeAutoMigrate({
+  db,
+  migrationsFolder: env.STELLAR_AUTO_MIGRATE_PATH,
+  log: logger,
+})
 
 const auth = buildAuth({ db, env })
 const statusCache = new StatusCache(redis)
@@ -92,6 +102,7 @@ app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
   auth.handler(c.req.raw)
 )
 
+app.route("/api/setup", buildSetupRoute({ auth, db, env }))
 app.route("/api/me", buildMeRoute(auth, db))
 app.route(
   "/api/servers",

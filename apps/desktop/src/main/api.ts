@@ -19,7 +19,7 @@ type ApiChild = ChildProcessByStdio<null, Readable, Readable>
 export class ApiProcess {
   private child: ApiChild | null = null
 
-  public start(): void {
+  public start(params: { daemonKey: string; authSecret: string }): void {
     if (this.child !== null) return
     const entry = env.apiEntrypoint
     if (!env.isDev && !fs.existsSync(entry)) {
@@ -47,10 +47,16 @@ export class ApiProcess {
           // `memory://` triggers the in-process MemoryRedis shim so we
           // skip running a Redis container.
           REDIS_URL: "memory://",
-          BETTER_AUTH_SECRET: "stellar-desktop-auth-secret-change-me-please",
+          BETTER_AUTH_SECRET: params.authSecret,
           APP_BASE_URL: `http://localhost:${String(env.apiPort)}`,
           API_BASE_URL: `http://localhost:${String(env.apiPort)}`,
           LOG_LEVEL: env.isDev ? "debug" : "info",
+
+          // Run migrations on boot from the bundled drizzle folder.
+          STELLAR_AUTO_MIGRATE_PATH: env.migrationsPath,
+          // Same HMAC the daemon's TOML config has — `/setup` writes it
+          // onto the local node row when the user completes onboarding.
+          STELLAR_DESKTOP_DAEMON_KEY: params.daemonKey,
           STELLAR_DESKTOP: "1",
         },
       }
