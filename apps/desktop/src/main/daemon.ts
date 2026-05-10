@@ -60,8 +60,13 @@ export class DaemonProcess {
   }): void {
     if (this.child !== null) return
     const binary = env.daemonBinaryPath
-    if (!env.isDev && !fs.existsSync(binary)) {
-      console.error(`[daemon] binary missing at ${binary}`)
+    if (!fs.existsSync(binary)) {
+      console.error(
+        `[daemon] binary missing at ${binary}. ` +
+          (env.isDev
+            ? "Run `go build -o build/stellar-daemon ../../apps/daemon/cmd/stellar-daemon` first."
+            : "Reinstall the app.")
+      )
       return
     }
     writeDaemonConfig(params)

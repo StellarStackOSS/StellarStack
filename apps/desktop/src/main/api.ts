@@ -26,8 +26,13 @@ export class ApiProcess {
   }): void {
     if (this.child !== null) return
     const entry = env.apiEntrypoint
-    if (!env.isDev && !fs.existsSync(entry)) {
-      console.error(`[api] entrypoint missing at ${entry}`)
+    if (!fs.existsSync(entry)) {
+      console.error(
+        `[api] entrypoint missing at ${entry}. ` +
+          (env.isDev
+            ? "Run `pnpm bundle:api` first."
+            : "Reinstall the app.")
+      )
       return
     }
     const child = spawn(

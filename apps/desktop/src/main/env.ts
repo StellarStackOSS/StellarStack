@@ -17,16 +17,27 @@ export const env = {
   /** Filesystem path to the bundled `apps/web/dist` in a packaged build. */
   panelDistPath: path.join(process.resourcesPath, "panel"),
 
-  /** Filesystem path to the bundled daemon binary (Go). */
-  daemonBinaryPath: path.join(
-    process.resourcesPath,
-    process.platform === "win32" ? "stellar-daemon.exe" : "stellar-daemon"
-  ),
+  /** Filesystem path to the bundled daemon binary (Go). In dev we read
+   *  it from `apps/desktop/build/` (the developer copies or builds it
+   *  there before `pnpm dev`); in prod electron-builder lays it down
+   *  inside the app's `resources/` dir. */
+  daemonBinaryPath: isDev
+    ? path.resolve(
+        process.cwd(),
+        "build",
+        process.platform === "win32" ? "stellar-daemon.exe" : "stellar-daemon"
+      )
+    : path.join(
+        process.resourcesPath,
+        process.platform === "win32" ? "stellar-daemon.exe" : "stellar-daemon"
+      ),
 
   /** Filesystem path to the bundled API entrypoint (Node bundle, esbuilt
    *  from `apps/api`). The desktop app spawns this as a sidecar so the
    *  main process keeps a clean event loop for window management. */
-  apiEntrypoint: path.join(process.resourcesPath, "api", "main.mjs"),
+  apiEntrypoint: isDev
+    ? path.resolve(process.cwd(), "build", "api", "main.mjs")
+    : path.join(process.resourcesPath, "api", "main.mjs"),
 
   /** Local port the API binds to. The panel UI talks to it here. */
   apiPort: 18080,
