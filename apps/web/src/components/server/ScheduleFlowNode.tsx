@@ -1,16 +1,4 @@
 import { Handle, type NodeProps, Position } from "@xyflow/react"
-import {
-  Clock,
-  Hourglass,
-  MessageSquare,
-  Play,
-  RotateCw,
-  Save,
-  Skull,
-  Square,
-  Zap,
-  type LucideIcon,
-} from "lucide-react"
 
 import {
   type ScheduleNodeKind,
@@ -25,66 +13,20 @@ export type ScheduleFlowNodeData = {
   isSelected: boolean
 }
 
+const KIND_DOT: Record<ScheduleNodeKind, string> = {
+  trigger: "bg-foreground",
+  action: "bg-chart-1",
+  wait: "bg-chart-3",
+}
+
 const KIND_LABEL: Record<ScheduleNodeKind, string> = {
   trigger: "Trigger",
   action: "Action",
   wait: "Wait",
 }
 
-const SUBTYPE_ICON: Record<ScheduleNodeSubtype, LucideIcon> = {
-  cron: Zap,
-  "power.start": Play,
-  "power.stop": Square,
-  "power.restart": RotateCw,
-  "power.kill": Skull,
-  "backup.create": Save,
-  "console.send": MessageSquare,
-  "state.offline": Hourglass,
-  "state.online": Hourglass,
-  "backup.complete": Hourglass,
-  "delay.seconds": Clock,
-}
-
-type KindStyle = {
-  surface: string
-  border: string
-  borderSelected: string
-  ring: string
-  title: string
-  icon: string
-  eyebrow: string
-}
-
-const KIND_STYLE: Record<ScheduleNodeKind, KindStyle> = {
-  trigger: {
-    surface: "bg-[#A397E8]/8",
-    border: "border-[#A397E8]/30",
-    borderSelected: "border-[#A397E8]/70",
-    ring: "ring-[#A397E8]/25",
-    title: "text-[#A397E8]",
-    icon: "text-[#A397E8]",
-    eyebrow: "text-[#A397E8]/70",
-  },
-  action: {
-    surface: "bg-pink-400/6",
-    border: "border-pink-400/25",
-    borderSelected: "border-pink-300/70",
-    ring: "ring-pink-400/20",
-    title: "text-pink-300",
-    icon: "text-pink-300",
-    eyebrow: "text-pink-300/70",
-  },
-  wait: {
-    surface: "bg-emerald-400/6",
-    border: "border-emerald-400/25",
-    borderSelected: "border-emerald-300/70",
-    ring: "ring-emerald-400/20",
-    title: "text-emerald-300",
-    icon: "text-emerald-300",
-    eyebrow: "text-emerald-300/70",
-  },
-}
-
+// Render a one-line summary of the payload to give a glance-y read of what
+// the node will do without opening the inspector.
 const summarisePayload = (
   subtype: ScheduleNodeSubtype,
   payload: Record<string, unknown>
@@ -109,53 +51,30 @@ const summarisePayload = (
     const t = Number(payload["timeoutSeconds"] ?? 0)
     return Number.isFinite(t) && t > 0 ? `timeout ${t}s` : null
   }
-  if (subtype === "cron") {
-    return "When the cron fires"
-  }
   return null
 }
 
 export const ScheduleFlowNode = ({
   data,
-}: NodeProps<{
-  id: string
-  type: "schedule"
-  data: ScheduleFlowNodeData
-  position: { x: number; y: number }
-}>) => {
+}: NodeProps<{ id: string; type: "schedule"; data: ScheduleFlowNodeData; position: { x: number; y: number } }>) => {
   const descriptor = findNodeDescriptor(data.subtype)
   const summary = summarisePayload(data.subtype, data.payload)
-  const style = KIND_STYLE[data.kind]
-  const Icon = SUBTYPE_ICON[data.subtype] ?? Zap
-
   return (
     <div
-      className={`relative flex min-w-[220px] flex-col gap-1 rounded-lg border px-3 py-2 text-xs shadow-lg shadow-black/40 backdrop-blur-sm transition-all ${
-        style.surface
-      } ${
+      className={`flex min-w-[220px] flex-col gap-1 rounded-md border bg-[#201c19] px-3 py-2 text-xs shadow-lg shadow-black/40 transition-colors ${
         data.isSelected
-          ? `${style.borderSelected} ring-2 ${style.ring}`
-          : style.border
+          ? "border-white/40 ring-1 ring-white/20"
+          : "border-white/15"
       }`}
     >
-      {data.kind === "trigger" ? (
-        <span
-          className={`absolute right-2 top-2 rounded-sm bg-[#A397E8]/15 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider ${style.title}`}
-        >
-          IF
-        </span>
-      ) : null}
-
-      <div
-        className={`text-[9px] font-semibold uppercase tracking-wider ${style.eyebrow}`}
-      >
-        {KIND_LABEL[data.kind]}
-      </div>
       <div className="flex items-center gap-2">
-        <Icon className={`size-3.5 shrink-0 ${style.icon}`} />
-        <span className={`text-sm font-semibold ${style.title}`}>
-          {descriptor?.label ?? data.subtype}
+        <span className={`size-1.5 shrink-0 rounded-full ${KIND_DOT[data.kind]}`} />
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {KIND_LABEL[data.kind]}
         </span>
+      </div>
+      <div className="text-sm font-medium text-foreground">
+        {descriptor?.label ?? data.subtype}
       </div>
       {summary !== null ? (
         <div className="truncate font-mono text-[10.5px] text-muted-foreground">
@@ -163,17 +82,22 @@ export const ScheduleFlowNode = ({
         </div>
       ) : null}
 
+      {/* Linear chain — non-trigger nodes accept incoming edges, all but the
+          tail emit one outgoing edge. xyflow requires the handles to be
+          declared even when we render edges programmatically. */}
       {data.kind !== "trigger" ? (
         <Handle
           type="target"
           position={Position.Top}
-          className="!size-2 !border-white/20 !bg-[#201c19]"
+          isConnectable={false}
+          style={{ background: "transparent", border: "none" }}
         />
       ) : null}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!size-2 !border-white/20 !bg-[#201c19]"
+        isConnectable={false}
+        style={{ background: "transparent", border: "none" }}
       />
     </div>
   )
