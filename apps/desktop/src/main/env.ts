@@ -26,10 +26,17 @@ export const env = {
   /** Filesystem path to the bundled API entrypoint (Node bundle, esbuilt
    *  from `apps/api`). The desktop app spawns this as a sidecar so the
    *  main process keeps a clean event loop for window management. */
-  apiEntrypoint: path.join(process.resourcesPath, "api", "main.cjs"),
+  apiEntrypoint: path.join(process.resourcesPath, "api", "main.mjs"),
 
   /** Local port the API binds to. The panel UI talks to it here. */
   apiPort: 18080,
+
+  /** Local port the daemon binds for browser ↔ daemon WebSockets +
+   *  API → daemon HTTP. Matches `nodes.daemon_port` written by /setup. */
+  daemonPort: 18081,
+
+  /** Local port the daemon's embedded SFTP server binds. */
+  sftpPort: 12022,
 
   /** Per-OS data dir for the daemon's local files (server bind-mounts,
    *  daemon config). The Postgres data lives in a Docker volume managed

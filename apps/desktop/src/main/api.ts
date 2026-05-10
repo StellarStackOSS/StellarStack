@@ -19,7 +19,11 @@ type ApiChild = ChildProcessByStdio<null, Readable, Readable>
 export class ApiProcess {
   private child: ApiChild | null = null
 
-  public start(params: { daemonKey: string; authSecret: string }): void {
+  public start(params: {
+    daemonKey: string
+    daemonNodeId: string
+    authSecret: string
+  }): void {
     if (this.child !== null) return
     const entry = env.apiEntrypoint
     if (!env.isDev && !fs.existsSync(entry)) {
@@ -54,9 +58,12 @@ export class ApiProcess {
 
           // Run migrations on boot from the bundled drizzle folder.
           STELLAR_AUTO_MIGRATE_PATH: env.migrationsPath,
-          // Same HMAC the daemon's TOML config has — `/setup` writes it
-          // onto the local node row when the user completes onboarding.
+          // Pre-shared values the API uses to seed the local node row
+          // matching the daemon's TOML config.
           STELLAR_DESKTOP_DAEMON_KEY: params.daemonKey,
+          STELLAR_DESKTOP_DAEMON_NODE_ID: params.daemonNodeId,
+          STELLAR_DESKTOP_DAEMON_PORT: String(env.daemonPort),
+          STELLAR_DESKTOP_SFTP_PORT: String(env.sftpPort),
           STELLAR_DESKTOP: "1",
         },
       }

@@ -18,6 +18,9 @@ const envSchema = z.object({
   // its bundled daemon. The /setup route inserts the local node row
   // with this as `daemonPublicKey`.
   STELLAR_DESKTOP_DAEMON_KEY: z.string().optional(),
+  STELLAR_DESKTOP_DAEMON_NODE_ID: z.string().uuid().optional(),
+  STELLAR_DESKTOP_DAEMON_PORT: z.coerce.number().int().positive().optional(),
+  STELLAR_DESKTOP_SFTP_PORT: z.coerce.number().int().positive().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

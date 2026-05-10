@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto"
+import { randomBytes, randomUUID } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -10,12 +10,25 @@ import { app } from "electron"
 // box the user can `chmod 600` the file if they care.
 
 type Secrets = {
+  /** 32-byte hex HMAC the API and daemon both sign callbacks with. */
   daemonHmacKey: string
+  /** UUID for the local node row. The daemon refuses to start without
+   *  one; we mint it client-side so the API and daemon agree from the
+   *  first launch. */
+  daemonNodeId: string
+  /** Better-auth's session signing secret. Regenerating it would
+   *  invalidate every signed-in session, so we persist it across
+   *  launches and only rotate it when the secrets file is wiped. */
+  authSecret: string
+  /** True once the user has completed the onboarding form. The API's
+   *  /setup response is the source of truth; this is just a hint. */
   setupCompleted: boolean
 }
 
 const DEFAULT: Secrets = {
   daemonHmacKey: "",
+  daemonNodeId: "",
+  authSecret: "",
   setupCompleted: false,
 }
 
@@ -53,6 +66,31 @@ export const getOrCreateDaemonKey = (): string => {
   const key = randomBytes(32).toString("hex")
   write({ ...secrets, daemonHmacKey: key })
   return key
+}
+
+/**
+ * Returns the local node UUID, minting + persisting one on first call.
+ */
+export const getOrCreateDaemonNodeId = (): string => {
+  const secrets = read()
+  if (secrets.daemonNodeId !== "") return secrets.daemonNodeId
+  const id = randomUUID()
+  write({ ...secrets, daemonNodeId: id })
+  return id
+}
+
+/**
+ * Returns the better-auth session signing secret, generating + persisting
+ * one on first call. Persisting matters because rotating it would
+ * invalidate every signed-in session (i.e. the user would be logged out
+ * every time they relaunch the app).
+ */
+export const getOrCreateAuthSecret = (): string => {
+  const secrets = read()
+  if (secrets.authSecret !== "") return secrets.authSecret
+  const value = randomBytes(32).toString("hex")
+  write({ ...secrets, authSecret: value })
+  return value
 }
 
 export const isSetupCompleted = (): boolean => read().setupCompleted

@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto"
 import path from "node:path"
 
 import {
@@ -16,7 +15,9 @@ import { checkDocker, dockerInstallUrl } from "./docker"
 import { env } from "./env"
 import { ensurePostgresRunning } from "./postgres"
 import {
+  getOrCreateAuthSecret,
   getOrCreateDaemonKey,
+  getOrCreateDaemonNodeId,
   isSetupCompleted,
   markSetupCompleted,
 } from "./secrets"
@@ -35,14 +36,12 @@ if (!gotLock) {
 }
 
 // Per-install secrets. Generated on first ever launch and persisted to
-// `electron-store`; the same values are reused across every subsequent
-// launch so the API + daemon agree on signing.
+// `stellar-secrets.json`; the same values are reused across every
+// subsequent launch so the API + daemon agree on signing and the
+// user's session survives a relaunch.
 const daemonKey = getOrCreateDaemonKey()
-const authSecret = (() => {
-  // BETTER_AUTH_SECRET ≥ 16 chars; 32 random bytes hex is plenty.
-  // Stored on the same store-backed file as the daemon key.
-  return randomBytes(32).toString("hex")
-})()
+const daemonNodeId = getOrCreateDaemonNodeId()
+const authSecret = getOrCreateAuthSecret()
 
 const api = new ApiProcess()
 const daemon = new DaemonProcess()
@@ -121,14 +120,18 @@ const createMainWindow = (): BrowserWindow => {
 let apiStarted = false
 const startApiOnce = () => {
   if (apiStarted) return
-  api.start({ daemonKey, authSecret })
+  api.start({ daemonKey, daemonNodeId, authSecret })
   apiStarted = true
 }
 
 let daemonStarted = false
 const startDaemonOnce = () => {
   if (daemonStarted) return
-  daemon.start({ hmacKey: daemonKey })
+  daemon.start({
+    hmacKey: daemonKey,
+    nodeId: daemonNodeId,
+    apiBaseUrl: apiOrigin,
+  })
   daemonStarted = true
 }
 
