@@ -4,7 +4,7 @@ import type { ApiError } from "@workspace/shared/errors.types"
  * Configuration for `createApiClient`.
  */
 export type ApiClientOptions = {
-  /** Absolute base URL of the api service, e.g. `https://api.stellarstack.dev`. */
+  /** Absolute base URL of the api service, e.g. `https://api.stellarstack.app`. */
   baseUrl: string
   /** Bearer token attached to every request. Refreshed by the caller. */
   getToken?: () => string | null

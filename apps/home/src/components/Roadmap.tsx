@@ -52,12 +52,12 @@ const LANES: Lane[] = [
         body: "Polishing the one-line installer, hardening the daemon's reconnect path, locking the v1 API surface.",
       },
       {
-        title: "Hosted SaaS",
-        body: "Multi-tenant panel, custom subdomains, billing via Stripe, managed Postgres + S3.",
-      },
-      {
         title: "2FA + passkeys",
         body: "TOTP and WebAuthn with backup codes. Already in the panel — sweeping the edges.",
+      },
+      {
+        title: "Auto-update",
+        body: "One-click panel + daemon upgrades from the admin UI, signed releases via GitHub.",
       },
     ],
   },

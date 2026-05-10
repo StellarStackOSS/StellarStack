@@ -1,6 +1,6 @@
 ---
 title: Introducing StellarStack V2
-description: A complete rewrite of the daemon, a brand new schedule editor, and a panel that's finally fast on mobile. Free to self-host today; hosted later.
+description: A complete rewrite of the daemon, a brand new schedule editor, and a panel that's finally fast on mobile. MIT-licensed, free to self-host, in early access.
 date: 2026-05-10
 author: Marques
 tags: announcement
@@ -37,19 +37,17 @@ The bit you don't see, but feel. The daemon — the agent that runs on every nod
 
 That last point matters more than it sounds. Typing in a Minecraft console is single-RTT now. SFTP uploads of a 4 GB world don't hit the panel at all. Multi-region nodes have local-feeling latency for the people connected to them.
 
-# Self-host first
+# Open-source, no strings
 
-StellarStack V2 is **free to self-host today** — the panel and the daemon are MIT-licensed, you own the boxes, you own the data.
+StellarStack is **MIT-licensed and free to self-host**. The panel and the daemon are everything you need — there's nothing to pay for, no plans, no upsell. You own the boxes, you own the data.
 
-That's where all our energy is right now. We want the self-host experience to feel finished — installer, blueprints, backups, schedules, audit log, all of it — before we even think about charging anyone for hosting.
-
-So to be straight: **we are not hosting servers right now.** A managed Cloud option (and a fully-managed Cloud + Hardware tier in five regions, with EPYC / 7950X bare-metal, 128 GB DDR5, NVMe SSD, 10 Gbit uplink, L3–L7 DDoS) is on the [pricing](#pricing) section as the roadmap, but it's not open. When it is, we'll email the waitlist first.
+This is very early access — bits are still being polished, releases are landing every week, and there will be rough edges. That's the trade-off; in exchange you get a panel that's evolving fast and listens to the people running it.
 
 # A panel that works on your phone
 
 Half of the requests we got last quarter were "please fix mobile". Done. The whole panel — console, file manager, schedules, backups — now works from a phone browser without zooming or scrolling sideways.
 
-The marketing site got the same pass: hamburger nav, full layout reflow, the waitlist form is a single tap away from any page.
+The marketing site got the same pass: hamburger nav, full layout reflow.
 
 # What's next
 
@@ -59,8 +57,6 @@ A lot. The [public roadmap](#/roadmap) is the source of truth, but the headline 
 - **Plugin marketplace** — community-curated blueprints, plugins, and config bundles.
 - **Crash fingerprinting** — hash + anonymise stack traces, cross-reference fixes that worked for other operators.
 
-We'll write more here as those land. In the meantime, grab the panel + daemon and run it yourself — and [join the waitlist](#waitlist) so we can email you the day hosted signups open.
+We'll write more here as those land. In the meantime, grab the panel + daemon, run it yourself, and [subscribe](#waitlist) if you want an email when something interesting ships.
 
 — Marques
-
-

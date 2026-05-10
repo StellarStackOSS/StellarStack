@@ -10,7 +10,6 @@ import { Faq } from "@/components/Faq"
 import { Features } from "@/components/Features"
 import { HowItWorks } from "@/components/HowItWorks"
 import { Privacy, Terms } from "@/components/Legal"
-import { Pricing } from "@/components/Pricing"
 import { Roadmap } from "@/components/Roadmap"
 import { SiteFooter } from "@/components/SiteFooter"
 import { StackStrip } from "@/components/StackStrip"
@@ -96,7 +95,6 @@ const useHashRoute = () => {
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
-  { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
   { label: "Blog", href: "#/blog" },
   { label: "Roadmap", href: "#/roadmap" },
@@ -165,7 +163,7 @@ const Header = ({ pastHero }: { pastHero: boolean }) => {
               transition={ctaTransition}
               className="rounded-md bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
             >
-              Join waitlist
+              Get updates
             </motion.a>
           ) : null}
         </div>
@@ -231,7 +229,7 @@ const Header = ({ pastHero }: { pastHero: boolean }) => {
                 }}
                 className="mt-2 inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
               >
-                Join waitlist
+                Get updates
               </a>
             </div>
           </motion.div>
@@ -258,7 +256,8 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
           href="#/blog/welcome"
           className="inline-flex items-center gap-2 rounded-sm bg-[#282532] px-3 py-1 text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
         >
-          V2 Released
+          <span className="inline-block size-1.5 animate-pulse rounded-full bg-[#A397E8]" />
+          Early access — live
           <span aria-hidden>→</span>
         </a>
       </motion.div>
@@ -278,9 +277,13 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
             {...fadeUp(0.3)}
             className="text-sm font-extralight leading-relaxed text-white/70 md:text-base"
           >
-            Modern, open-source, AI-assisted — and free to self-host. One UI
-            for Minecraft, Rust, Palworld, and anything else Docker can run.
-            Hosted option coming later.
+            Modern, open-source, AI-assisted — and free to self-host. One
+            UI for Minecraft, Rust, Palworld, and anything else Docker can
+            run.
+            <span className="text-white/90">
+              {" "}
+              Very early access — expect rough edges.
+            </span>
           </motion.p>
 
           {succeeded ? (
@@ -290,11 +293,11 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
               className="flex flex-col gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80"
             >
               <span>
-                You're on the list as{" "}
+                Subscribed as{" "}
                 <span className="text-white">
                   {waitlist.submittedEmail ?? email}
                 </span>
-                . We'll be in touch.
+                . We'll email you when there's something worth sharing.
               </span>
               <button
                 type="button"
@@ -337,7 +340,7 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
                       transition={ctaTransition}
                       className="inline-flex h-10 w-full items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-70"
                     >
-                      {submitting ? "Joining…" : "Join waitlist"}
+                      {submitting ? "Subscribing…" : "Get updates"}
                     </motion.button>
                   ) : null}
                 </div>
@@ -420,7 +423,6 @@ export const App = () => {
           <StackStrip />
           <HowItWorks />
           <Features />
-          <Pricing />
           <Faq />
         </>
       )}

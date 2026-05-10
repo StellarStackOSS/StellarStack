@@ -23,11 +23,11 @@ const items = [
   },
   {
     q: "Is it free?",
-    a: "Yes — MIT licensed and free to self-host. The panel + daemon are everything you need; we charge for nothing.",
+    a: "Yes — MIT licensed and free to self-host. The panel + daemon are everything you need; there's nothing to pay for, no plans, no upsell.",
   },
   {
-    q: "Do you host servers for me?",
-    a: "Not yet. Right now we're focused on shipping the best self-host experience we can — that's where all our energy goes. A managed Cloud option (and fully-managed Cloud + Hardware) is on the roadmap; join the waitlist and we'll email you the day it opens.",
+    q: "Is it ready to use?",
+    a: "It's released and runnable in early access. Plenty of the headline features work (multi-node, blueprints, console, files, schedules, backups). It's still under active development, so expect rough edges and frequent releases — track the roadmap and changelog for what's landing.",
   },
 ]
 

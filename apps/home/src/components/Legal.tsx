@@ -52,84 +52,75 @@ const Section = ({
 )
 
 // ---------------------------------------------------------------------------
-// Privacy policy
+// Privacy — covers only the marketing site (stellarstack.app). The
+// open-source panel + daemon are self-hosted by you and never call home.
 // ---------------------------------------------------------------------------
 
 export const Privacy = () => (
-  <LegalShell
-    eyebrow="Legal"
-    title="Privacy Policy"
-    lastUpdated="May 2026"
-  >
+  <LegalShell eyebrow="Legal" title="Privacy Policy" lastUpdated="May 2026">
     <Section title="Who we are">
       <p>
-        StellarStack Inc. ("we", "us") operates the StellarStack open-source
-        game-server panel and the hosted version available at
-        stellarstack.dev. This policy covers what we collect when you use
-        either, why we collect it, and what we do with it.
+        StellarStack is an open-source game-server control panel. This
+        policy covers the marketing site at stellarstack.app — what we
+        collect when you visit it and subscribe to release updates.
+      </p>
+      <p>
+        The panel + daemon software you download and self-host is governed
+        by the MIT license and doesn't send anything back to us — no
+        telemetry, no phone-home, no analytics. Once it's on your boxes,
+        we have no visibility into it.
       </p>
     </Section>
 
-    <Section title="What we collect">
-      <p>
-        For the open-source self-hosted version we collect nothing — the
-        panel and daemon run on your machines and never call home.
-      </p>
-      <p>For the hosted version we collect:</p>
+    <Section title="What the marketing site collects">
       <ul className="ml-5 list-disc space-y-2">
-        <li>Your account email and display name.</li>
-        <li>The IP address of the request when you sign in.</li>
         <li>
-          Server metadata — names, blueprint IDs, allocations, resource
-          usage. We don't read your game world data, your file manager
-          contents, or your console output unless you explicitly send a
-          crash report or use the Ask AI feature.
+          Your email address, if you subscribe to release updates via the
+          form on the homepage. That's the only field we ask for.
         </li>
         <li>
-          Stripe payment metadata (last four digits, country) — full card
-          details never touch our servers.
+          A hashed form of the IP address you submitted from, used purely
+          for rate-limiting + abuse detection on the signup endpoint. The
+          raw IP isn't stored.
         </li>
       </ul>
     </Section>
 
     <Section title="How we use it">
-      <ul className="ml-5 list-disc space-y-2">
-        <li>To run your account and authenticate sessions.</li>
-        <li>To bill paid plans through Stripe.</li>
-        <li>
-          To send transactional email (sign-up, password reset, billing
-          receipts). We don't send marketing emails.
-        </li>
-        <li>To investigate abuse and respond to support requests.</li>
-      </ul>
-    </Section>
-
-    <Section title="AI features">
       <p>
-        When you click "Ask AI" the relevant console lines and your
-        question are sent to Anthropic's Claude API. Anthropic doesn't use
-        the data to train their models. We don't store the prompt or the
-        response beyond your active session.
+        Email addresses are used to send occasional release announcements
+        — when something interesting ships. We don't sell, share, or
+        rent them.
+      </p>
+      <p>
+        You can unsubscribe any time by clicking the link in any email we
+        send, or by emailing{" "}
+        <a
+          href="mailto:privacy@stellarstack.app"
+          className="text-white underline"
+        >
+          privacy@stellarstack.app
+        </a>
+        .
       </p>
     </Section>
 
     <Section title="Where data lives">
       <p>
-        Hosted-version data lives in EU-based Postgres (managed by Railway)
-        and S3-compatible storage (managed by Backblaze B2). Backups are
-        encrypted at rest.
+        Email addresses live in a Postgres instance in the EU. Transactional
+        email is sent via Resend.
       </p>
     </Section>
 
     <Section title="Your rights">
       <p>
-        You can export your data, delete your account, and request a copy
-        of everything we hold on you at any time. Email{" "}
+        You can request a copy of everything we hold on you, or ask for
+        deletion, at any time. Email{" "}
         <a
-          href="mailto:privacy@stellarstack.dev"
+          href="mailto:privacy@stellarstack.app"
           className="text-white underline"
         >
-          privacy@stellarstack.dev
+          privacy@stellarstack.app
         </a>{" "}
         and we'll respond within five business days.
       </p>
@@ -139,10 +130,10 @@ export const Privacy = () => (
       <p>
         Questions? Email{" "}
         <a
-          href="mailto:privacy@stellarstack.dev"
+          href="mailto:privacy@stellarstack.app"
           className="text-white underline"
         >
-          privacy@stellarstack.dev
+          privacy@stellarstack.app
         </a>
         .
       </p>
@@ -151,76 +142,53 @@ export const Privacy = () => (
 )
 
 // ---------------------------------------------------------------------------
-// Terms of service
+// Terms — also marketing-site only. The MIT license covers your use of
+// the software; this page covers the website itself.
 // ---------------------------------------------------------------------------
 
 export const Terms = () => (
-  <LegalShell
-    eyebrow="Legal"
-    title="Terms of Service"
-    lastUpdated="May 2026"
-  >
-    <Section title="Acceptance">
+  <LegalShell eyebrow="Legal" title="Terms of Use" lastUpdated="May 2026">
+    <Section title="The software">
       <p>
-        By creating a StellarStack account or running the hosted version
-        you agree to these terms. If you don't agree, don't use the
-        service. The open-source self-hosted version is governed by the
-        MIT license, not these terms.
+        The StellarStack panel + daemon are released under the MIT license.
+        That license is the agreement; these terms don't add anything on
+        top of it for the software itself.
       </p>
     </Section>
 
-    <Section title="Acceptable use">
-      <p>You agree not to use StellarStack to:</p>
+    <Section title="This website">
+      <p>
+        By using stellarstack.app you agree not to use it to:
+      </p>
       <ul className="ml-5 list-disc space-y-2">
-        <li>Host content that violates the law in your jurisdiction.</li>
-        <li>Send spam, run cryptocurrency miners, or perform DDoS attacks.</li>
+        <li>Submit junk or someone else's email to the signup form.</li>
         <li>
-          Reverse-engineer the hosted infrastructure or attempt to access
-          other tenants' data.
+          Scrape the site at a rate that interferes with normal use, or
+          probe its infrastructure for vulnerabilities outside a good-faith
+          security report.
         </li>
         <li>
-          Resell the hosted product as a white-label service without a
-          partnership agreement.
+          Misrepresent your identity to obtain or attempt to obtain access
+          to anything that isn't public.
         </li>
       </ul>
-      <p>
-        We reserve the right to suspend accounts that violate these rules.
-        We'll always tell you why and give you a chance to export your data.
-      </p>
     </Section>
 
-    <Section title="Plans and billing">
+    <Section title="No warranty">
       <p>
-        Paid plans are billed monthly or annually through Stripe. You can
-        cancel any time — your plan stays active until the end of the
-        current billing period. We don't offer refunds for partial periods
-        but we do offer pro-rated credits when we screw something up.
-      </p>
-    </Section>
-
-    <Section title="Service availability">
-      <p>
-        We aim for 99.9% uptime on the hosted panel. The hosted panel is
-        the part we control — your game servers run on hardware you bring,
-        and that's outside our SLA. If we miss our uptime target we'll
-        credit your next invoice without you having to ask.
-      </p>
-    </Section>
-
-    <Section title="Liability">
-      <p>
-        StellarStack is provided "as is". We're a small team building a
-        useful tool — we're not liable for lost game saves, missed
-        tournaments, or content posted on servers you host. Back up your
-        worlds; we'll do our part on the panel side.
+        StellarStack is provided "as is" — both the website and the
+        open-source software. We're a small team building a useful tool;
+        if something breaks, file an issue, but we can't be held liable
+        for lost game worlds, missed events, or anything else downstream.
+        Back up your data.
       </p>
     </Section>
 
     <Section title="Changes">
       <p>
-        We may update these terms occasionally. Material changes will be
-        announced via email and on the changelog page at least 30 days
-        before they take effect.
+        We may update these terms occasionally. The "Last updated" date
+        above moves whenever we do. Material changes will be announced via
+        the changelog.
       </p>
     </Section>
 
@@ -228,10 +196,10 @@ export const Terms = () => (
       <p>
         Questions? Email{" "}
         <a
-          href="mailto:legal@stellarstack.dev"
+          href="mailto:legal@stellarstack.app"
           className="text-white underline"
         >
-          legal@stellarstack.dev
+          legal@stellarstack.app
         </a>
         .
       </p>
