@@ -23,7 +23,11 @@ const items = [
   },
   {
     q: "Is it free?",
-    a: "Yes — MIT licensed and free to self-host. We also offer a hosted version for people who don't want to run the panel themselves.",
+    a: "Yes — MIT licensed and free to self-host. The panel + daemon are everything you need; we charge for nothing.",
+  },
+  {
+    q: "Do you host servers for me?",
+    a: "Not yet. Right now we're focused on shipping the best self-host experience we can — that's where all our energy goes. A managed Cloud option (and fully-managed Cloud + Hardware) is on the roadmap; join the waitlist and we'll email you the day it opens.",
   },
 ]
 

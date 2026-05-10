@@ -110,47 +110,45 @@ export const Roadmap = () => (
           Where StellarStack is heading.
         </h1>
         <p className="max-w-2xl text-sm font-extralight leading-relaxed text-zinc-400 md:text-base">
-          Public Kanban of what's shipped, what's in flight, and what's next.
-          Scroll horizontally on small viewports — order within each lane is
-          intent, not a hard sequence.
+          Public kanban of what's shipped, what's in flight, and what's
+          next. Order within each lane is intent, not a hard sequence.
         </p>
       </header>
     </Reveal>
 
-    {/* Kanban — 4 lanes, horizontal scroll on small viewports, full grid on desktop */}
-    <div className="mt-12 -mx-4 overflow-x-auto px-4 pb-2 md:mx-0 md:overflow-visible md:px-0">
-      <div className="grid auto-cols-[min(85vw,320px)] grid-flow-col gap-4 md:auto-cols-fr md:grid-cols-4">
-        {LANES.map((lane, laneIndex) => (
-          <Reveal key={lane.status} delay={laneIndex * 0.05}>
-            <section className="flex h-full flex-col gap-3 rounded-2xl border border-white/8 bg-[#201c19] p-3">
-              <header className="flex items-center justify-between gap-3 px-2 pt-2">
-                <h2 className="text-xs font-medium uppercase tracking-wider text-zinc-300">
-                  {STATUS_LABEL[lane.status]}
-                </h2>
-                <span className="rounded-sm bg-[#282532] px-2 py-0.5 text-[10px] font-medium text-[#A397E8]">
-                  {lane.items.length}
-                </span>
-              </header>
+    {/* Lanes — stacked on mobile (no horizontal scroll, easier to skim
+        on a thumb), four equal columns on desktop. */}
+    <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-4">
+      {LANES.map((lane, laneIndex) => (
+        <Reveal key={lane.status} delay={laneIndex * 0.05}>
+          <section className="flex h-full flex-col gap-3 rounded-2xl border border-white/8 bg-[#201c19] p-3">
+            <header className="flex items-center justify-between gap-3 px-2 pt-2">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-zinc-300">
+                {STATUS_LABEL[lane.status]}
+              </h2>
+              <span className="rounded-sm bg-[#282532] px-2 py-0.5 text-[10px] font-medium text-[#A397E8]">
+                {lane.items.length}
+              </span>
+            </header>
 
-              <RevealStagger className="flex flex-col gap-2" delay={0.04}>
-                {lane.items.map((item) => (
-                  <RevealItem
-                    key={item.title}
-                    className="flex flex-col gap-1.5 rounded-md border border-white/5 bg-[#120F0C] p-3 transition-colors hover:border-white/10"
-                  >
-                    <h3 className="text-sm font-medium leading-snug">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs font-extralight leading-relaxed text-zinc-400">
-                      {item.body}
-                    </p>
-                  </RevealItem>
-                ))}
-              </RevealStagger>
-            </section>
-          </Reveal>
-        ))}
-      </div>
+            <RevealStagger className="flex flex-col gap-2" delay={0.04}>
+              {lane.items.map((item) => (
+                <RevealItem
+                  key={item.title}
+                  className="flex flex-col gap-1.5 rounded-md border border-white/5 bg-[#120F0C] p-3 transition-colors hover:border-white/10"
+                >
+                  <h3 className="text-sm font-medium leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs font-extralight leading-relaxed text-zinc-400">
+                    {item.body}
+                  </p>
+                </RevealItem>
+              ))}
+            </RevealStagger>
+          </section>
+        </Reveal>
+      ))}
     </div>
   </main>
 )

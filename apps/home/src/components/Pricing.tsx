@@ -17,6 +17,9 @@ type Plan = {
   cta: { label: string; href: string }
   features: string[]
   highlight?: boolean
+  /** Plans we haven't opened yet — rendered greyed-out with a "Coming
+   *  later" badge so the roadmap is visible without overpromising. */
+  comingLater?: boolean
 }
 
 const PLANS: Plan[] = [
@@ -24,7 +27,7 @@ const PLANS: Plan[] = [
     name: "Self-host",
     monthlyPrice: null,
     description:
-      "MIT-licensed panel + daemon. Run on your own boxes, your own network, your own rules.",
+      "MIT-licensed panel + daemon. Run on your own boxes, your own network, your own rules. This is what we're building right now.",
     cta: { label: "Join the waitlist", href: "#waitlist" },
     features: [
       "Unlimited nodes & servers",
@@ -33,6 +36,7 @@ const PLANS: Plan[] = [
       "SFTP, backups, schedules, audit log",
       "Community support",
     ],
+    highlight: true,
   },
   {
     name: "Cloud",
@@ -48,7 +52,7 @@ const PLANS: Plan[] = [
       "Bring your own nodes (any provider)",
       "Email support, < 24h response",
     ],
-    highlight: true,
+    comingLater: true,
   },
   {
     name: "Cloud + Hardware",
@@ -56,7 +60,7 @@ const PLANS: Plan[] = [
     unit: "/ server / month",
     description:
       "Fully managed. We run the panel and the nodes — you just create servers and invite friends.",
-    cta: { label: "Talk to us", href: "mailto:hello@stellarstack.dev" },
+    cta: { label: "Join the waitlist", href: "#waitlist" },
     features: [
       "Everything in Cloud",
       "Managed bare-metal in EU & US",
@@ -64,6 +68,7 @@ const PLANS: Plan[] = [
       "Hourly world snapshots included",
       "Priority support",
     ],
+    comingLater: true,
   },
 ]
 
@@ -169,50 +174,63 @@ const PlanCard = ({
 }: {
   plan: Plan
   billing: Billing
-}) => (
-  <div className="flex h-full flex-col gap-6 rounded-2xl border border-white/8 bg-[#201c19] p-7 transition-colors hover:border-white/15">
-    <header className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xl font-semibold tracking-tight text-white">
-          {plan.name}
-        </h3>
-        {plan.highlight === true ? (
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#A397E8]">
-            Most popular
-          </span>
-        ) : null}
-      </div>
-      <div className="flex h-14 items-baseline">
-        <PriceBlock plan={plan} billing={billing} />
-      </div>
-      <p className="h-[5.25rem] overflow-hidden text-sm font-extralight leading-relaxed text-zinc-400">
-        {plan.description}
-      </p>
-    </header>
-
-    <div className="border-t border-white/5" />
-
-    <ul className="flex flex-col gap-2.5">
-      {plan.features.map((f) => (
-        <li
-          key={f}
-          className="flex items-start gap-2.5 text-sm font-extralight text-zinc-300"
-        >
-          <CheckIcon />
-          <span>{f}</span>
-        </li>
-      ))}
-    </ul>
-
-    <a
-      href={plan.cta.href}
-      className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#A397E8]"
+}) => {
+  const dimmed = plan.comingLater === true
+  return (
+    <div
+      className={`flex h-full flex-col gap-6 rounded-2xl border bg-[#201c19] p-7 transition-colors ${
+        dimmed
+          ? "border-white/5 opacity-70 hover:border-white/10"
+          : "border-white/8 hover:border-white/15"
+      }`}
     >
-      {plan.cta.label}
-      <span aria-hidden>→</span>
-    </a>
-  </div>
-)
+      <header className="flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xl font-semibold tracking-tight text-white">
+            {plan.name}
+          </h3>
+          {plan.comingLater === true ? (
+            <span className="rounded-sm bg-[#282532] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#A397E8]">
+              Coming later
+            </span>
+          ) : plan.highlight === true ? (
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#A397E8]">
+              Available now
+            </span>
+          ) : null}
+        </div>
+        <div className="flex h-14 items-baseline">
+          <PriceBlock plan={plan} billing={billing} />
+        </div>
+        <p className="h-[5.25rem] overflow-hidden text-sm font-extralight leading-relaxed text-zinc-400">
+          {plan.description}
+        </p>
+      </header>
+
+      <div className="border-t border-white/5" />
+
+      <ul className="flex flex-col gap-2.5">
+        {plan.features.map((f) => (
+          <li
+            key={f}
+            className="flex items-start gap-2.5 text-sm font-extralight text-zinc-300"
+          >
+            <CheckIcon />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <a
+        href={plan.cta.href}
+        className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#A397E8]"
+      >
+        {dimmed ? "Notify me" : plan.cta.label}
+        <span aria-hidden>→</span>
+      </a>
+    </div>
+  )
+}
 
 export const Pricing = () => {
   const [billing, setBilling] = useState<Billing>("monthly")
@@ -229,12 +247,13 @@ export const Pricing = () => {
               Pricing
             </p>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-              Free forever if you self-host. Reasonable if you don't.
+              Open-source first. Hosted later.
             </h2>
             <p className="text-sm font-extralight text-zinc-400">
-              The panel and daemon are MIT, full-stop. Cloud plans exist so
-              you don't have to babysit a Postgres or hunt for a node — pick
-              whichever line matches your patience.
+              Right now we're focused on shipping a great self-host
+              experience — the panel and daemon are MIT, full-stop. The Cloud
+              plans below are the roadmap, not the pitch; we'll open them
+              when the self-host story is rock-solid.
             </p>
           </div>
           <BillingToggle billing={billing} onChange={setBilling} />
@@ -259,11 +278,11 @@ export const Pricing = () => {
 const Infrastructure = () => (
   <Reveal delay={0.05}>
     <p className="max-w-3xl text-xs font-extralight leading-relaxed text-zinc-500">
-      Cloud + Hardware runs out of London (UK), Frankfurt (Germany), Amsterdam
-      (Netherlands), Miami (Florida) and Beauharnois (Canada). Hardware ranges
-      from AMD EPYC 4245P to Ryzen 7950X depending on location, with 128 GB
-      DDR5, NVMe SSD storage, 10 Gbit uplink and L3–L7 DDoS protection as
-      standard.
+      When Cloud + Hardware launches, it will run out of London (UK),
+      Frankfurt (Germany), Amsterdam (Netherlands), Miami (Florida) and
+      Beauharnois (Canada). Hardware will range from AMD EPYC 4245P to
+      Ryzen 7950X depending on location, with 128 GB DDR5, NVMe SSD storage,
+      10 Gbit uplink and L3–L7 DDoS protection as standard.
     </p>
   </Reveal>
 )

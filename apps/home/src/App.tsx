@@ -1,9 +1,10 @@
-import { motion } from "framer-motion"
-import type { MouseEvent } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import type { MouseEvent, ReactNode } from "react"
 import { useEffect, useState } from "react"
 
 import { useWaitlist } from "@/hooks/useWaitlist"
 
+import { BlogList, BlogPostView } from "@/components/Blog"
 import { Changelog } from "@/components/Changelog"
 import { Faq } from "@/components/Faq"
 import { Features } from "@/components/Features"
@@ -95,10 +96,9 @@ const useHashRoute = () => {
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
+  { label: "Blog", href: "#/blog" },
   { label: "Roadmap", href: "#/roadmap" },
   { label: "Changelog", href: "#/changelog" },
 ]
@@ -110,51 +110,136 @@ const ctaTransition = {
   mass: 0.9,
 }
 
-const Header = ({ pastHero }: { pastHero: boolean }) => (
-  <motion.header
-    initial={{ opacity: 0, y: -8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, ease }}
-    className="sticky top-0 z-50 bg-[#120F0C]/70 backdrop-blur"
-  >
-    <nav className="mx-auto flex h-16 w-[min(1200px,92vw)] items-center justify-between">
-      <a href="#/" className="flex items-center gap-2">
-        <img src="/logo.png" alt="" className="size-5 shrink-0" />
-        <span className="text-sm font-semibold tracking-tight">
-          StellarStack
-        </span>
-      </a>
-      <div className="hidden items-center gap-7 text-xs text-zinc-400 md:flex">
-        {NAV_LINKS.map((l) => (
-          <a
-            key={l.href}
-            href={l.href}
-            onClick={onAnchorClick}
-            className="transition-colors hover:text-white"
+const Header = ({ pastHero }: { pastHero: boolean }) => {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close the drawer when the route changes (a nav-link click) and lock
+  // body scroll while it's open so the page underneath doesn't slide.
+  useEffect(() => {
+    if (!menuOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [menuOpen])
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease }}
+      className="sticky top-0 z-50 bg-[#120F0C]/70 backdrop-blur"
+    >
+      <nav className="mx-auto flex h-16 w-[min(1200px,92vw)] items-center justify-between">
+        <a href="#/" className="flex items-center gap-2">
+          <img src="/logo.png" alt="" className="size-5 shrink-0" />
+          <span className="text-sm font-semibold tracking-tight">
+            StellarStack
+          </span>
+        </a>
+        <div className="hidden items-center gap-7 text-xs text-zinc-400 md:flex">
+          {NAV_LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={onAnchorClick}
+              className="transition-colors hover:text-white"
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+        {/* CTA slot — shared `waitlist-cta` layoutId with the hero
+            submit button so the morph from hero → header springs both on
+            desktop and mobile. */}
+        <div className="ml-auto flex h-9 items-center justify-end md:ml-0 md:min-w-[7.5rem]">
+          {pastHero ? (
+            <motion.a
+              layoutId="waitlist-cta"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
+              transition={ctaTransition}
+              className="rounded-md bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
+            >
+              Join waitlist
+            </motion.a>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+          className="ml-2 inline-flex size-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-200 transition-colors hover:bg-white/10 md:hidden"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            className="size-4"
+            aria-hidden
           >
-            {l.label}
-          </a>
-        ))}
-      </div>
-      <div className="flex h-9 min-w-[7.5rem] items-center justify-end">
-        {pastHero ? (
-          <motion.a
-            layoutId="waitlist-cta"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              window.scrollTo({ top: 0, behavior: "smooth" })
-            }}
-            transition={ctaTransition}
-            className="rounded-md bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
+            {menuOpen ? (
+              <path d="M6 6l12 12M6 18L18 6" />
+            ) : (
+              <>
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+              </>
+            )}
+          </svg>
+        </button>
+      </nav>
+
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            key="mobile-menu"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease }}
+            className="absolute inset-x-0 top-16 border-t border-white/5 bg-[#120F0C]/95 backdrop-blur md:hidden"
           >
-            Join waitlist
-          </motion.a>
+            <div className="mx-auto flex w-[min(1200px,92vw)] flex-col gap-1 py-4">
+              {NAV_LINKS.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={(e) => {
+                    onAnchorClick(e)
+                    setMenuOpen(false)
+                  }}
+                  className="rounded-md px-3 py-2.5 text-sm text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  {l.label}
+                </a>
+              ))}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setMenuOpen(false)
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }}
+                className="mt-2 inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
+              >
+                Join waitlist
+              </a>
+            </div>
+          </motion.div>
         ) : null}
-      </div>
-    </nav>
-  </motion.header>
-)
+      </AnimatePresence>
+    </motion.header>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Hero
@@ -170,11 +255,10 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
     <section className="mx-auto flex w-[min(1200px,92vw)] flex-col gap-4 pt-12 md:pt-20">
       <motion.div {...fadeUp(0.1)} className="self-start">
         <a
-          href="#waitlist"
-          onClick={onAnchorClick}
+          href="#/blog/welcome"
           className="inline-flex items-center gap-2 rounded-sm bg-[#282532] px-3 py-1 text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
         >
-          Coming Q3 2026
+          V2 Released
           <span aria-hidden>→</span>
         </a>
       </motion.div>
@@ -194,8 +278,9 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
             {...fadeUp(0.3)}
             className="text-sm font-extralight leading-relaxed text-white/70 md:text-base"
           >
-            Modern, open-source, AI-assisted. One UI for Minecraft, Rust,
-            Palworld, and anything else Docker can run.
+            Modern, open-source, AI-assisted — and free to self-host. One UI
+            for Minecraft, Rust, Palworld, and anything else Docker can run.
+            Hosted option coming later.
           </motion.p>
 
           {succeeded ? (
@@ -306,30 +391,28 @@ const HeroImage = () => (
 export const App = () => {
   const hash = useHashRoute()
   const pastHero = useScrolledPastHero()
-  const subpage =
-    hash === "#/changelog"
-      ? "changelog"
-      : hash === "#/roadmap"
-        ? "roadmap"
-        : hash === "#/privacy"
-          ? "privacy"
-          : hash === "#/terms"
-            ? "terms"
-            : null
+
+  // Resolve full-page hash routes. Returns the React node to render in the
+  // main slot, or null to render the landing-page sections.
+  const resolveSubpage = (): ReactNode | null => {
+    if (hash === "#/changelog") return <Changelog />
+    if (hash === "#/roadmap") return <Roadmap />
+    if (hash === "#/privacy") return <Privacy />
+    if (hash === "#/terms") return <Terms />
+    if (hash === "#/blog" || hash === "#/blog/") return <BlogList />
+    if (hash.startsWith("#/blog/")) {
+      const slug = hash.slice("#/blog/".length).replace(/\/$/, "")
+      return <BlogPostView slug={slug} />
+    }
+    return null
+  }
+  const subpage = resolveSubpage()
 
   return (
     <div className="dark min-h-screen bg-[#120F0C] text-white">
       <Header pastHero={subpage !== null || pastHero} />
       {subpage !== null ? (
-        subpage === "changelog" ? (
-          <Changelog />
-        ) : subpage === "roadmap" ? (
-          <Roadmap />
-        ) : subpage === "privacy" ? (
-          <Privacy />
-        ) : (
-          <Terms />
-        )
+        subpage
       ) : (
         <>
           <Hero pastHero={pastHero} />

@@ -22,10 +22,9 @@ const linkGroups = [
   {
     heading: "Product",
     links: [
-      { label: "How it works", href: "#how-it-works" },
-      { label: "Features", href: "#features" },
       { label: "Pricing", href: "#pricing" },
       { label: "FAQ", href: "#faq" },
+      { label: "Blog", href: "#/blog" },
       { label: "Changelog", href: "#/changelog" },
       { label: "Roadmap", href: "#/roadmap" },
     ],

@@ -286,7 +286,10 @@ const EditorInner = ({ initialFlow, onChange }: EditorProps) => {
           proOptions={{ hideAttribution: true }}
         >
           <Background gap={16} size={1} />
-          <Controls showInteractive={false} />
+          <Controls
+            showInteractive={false}
+            className="overflow-hidden rounded-md !border !border-white/10 !bg-[#201c19] !shadow-lg [&_button]:!border-white/8 [&_button]:!bg-[#201c19] [&_button]:!text-zinc-300 [&_button:hover]:!bg-white/10 [&_svg]:!fill-current"
+          />
         </ReactFlow>
       </div>
 
