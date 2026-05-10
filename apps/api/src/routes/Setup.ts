@@ -11,6 +11,7 @@ import {
 
 import type { Auth } from "@/auth"
 import type { Env } from "@/env"
+import { seedDefaultBlueprintsIfEmpty } from "@/lib/DefaultBlueprints"
 
 const setupBody = z.object({
   email: z.string().email(),
@@ -94,6 +95,10 @@ export const buildSetupRoute = (params: {
           daemonPort: env.STELLAR_DESKTOP_DAEMON_PORT ?? 18081,
           sftpPort: env.STELLAR_DESKTOP_SFTP_PORT ?? 12022,
         })
+        // Drop a Minecraft Paper blueprint into an empty catalog so the
+        // user has something to install without first hitting the admin
+        // catalog import flow.
+        await seedDefaultBlueprintsIfEmpty(db)
       }
 
       // Forward better-auth's Set-Cookie headers so the browser picks up

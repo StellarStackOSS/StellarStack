@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && electron .",
     "bundle:api": "node scripts/bundle-api.mjs",
-    "build:tsc": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && pnpm bundle:api",
+    "bundle:web": "node scripts/bundle-web.mjs",
+    "build:tsc": "tsc -p tsconfig.json && node scripts/copy-assets.mjs && pnpm bundle:api && pnpm bundle:web",
     "build:win": "pnpm build:tsc && electron-builder --win",
     "build:mac": "pnpm build:tsc && electron-builder --mac",
     "build:linux": "pnpm build:tsc && electron-builder --linux",

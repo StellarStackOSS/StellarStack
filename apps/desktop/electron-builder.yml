@@ -14,8 +14,11 @@ files:
 # Files copied into Electron's `resources/` dir at install time. The main
 # process reads them via `process.resourcesPath` (see src/main/env.ts).
 extraResources:
-  # The built `apps/web` bundle. Run `pnpm --filter web build` first.
-  - from: ../web/dist
+  # The built panel UI, configured to talk to the local API at
+  # http://localhost:18080. Built by `pnpm bundle:web` (runs as part of
+  # `build:tsc`) — distinct from `apps/web/dist`, which is built for
+  # the hosted product with no API URL pinning.
+  - from: build/web
     to: panel
     filter: ["**/*"]
   # The Go daemon binary. Build it for the target OS/arch ahead of time:
