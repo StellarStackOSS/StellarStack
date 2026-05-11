@@ -28,10 +28,14 @@ const env = {
 }
 
 console.log("building panel with VITE_API_URL=" + env.VITE_API_URL)
+// `shell: true` so we resolve pnpm.cmd via PATHEXT on Windows. Without
+// it, spawnSync looks for a literal "pnpm" binary which doesn't exist
+// on win32 (only pnpm.cmd / pnpm.ps1).
 const result = spawnSync("pnpm", ["--filter", "web", "build"], {
   cwd: repoRoot,
   stdio: "inherit",
   env,
+  shell: true,
 })
 if (result.status !== 0) {
   console.error("panel build failed")
