@@ -48,6 +48,7 @@ extraResources:
 publish: null
 
 mac:
+  icon: icons/icon.icns
   category: public.app-category.developer-tools
   target:
     - target: dmg
@@ -66,12 +67,14 @@ mac:
 afterSign: scripts/afterSign.cjs
 
 win:
+  icon: icons/icon.png
   target:
     - target: nsis
       arch: [x64, arm64]
   artifactName: StellarStack-win-${arch}.${ext}
 
 linux:
+  icon: icons/icon.png
   target:
     - target: AppImage
       arch: [x64, arm64]
