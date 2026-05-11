@@ -26,7 +26,7 @@
 
   "dashboard.title": "Your servers",
   "dashboard.description": "Manage and monitor your provisioned servers.",
-  "dashboard.empty": "No servers yet. Click \"New server\" in the sidebar to provision one.",
+  "dashboard.empty": "No servers yet.",
 
   "profile.title": "Profile",
   "profile.description": "Manage your account information and security settings.",
