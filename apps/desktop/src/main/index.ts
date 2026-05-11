@@ -394,9 +394,13 @@ ipcMain.handle(
     // session token. Without this the panel would land on its sign-in
     // screen even though we just created the user.
     const rawCookies = res.headers.getSetCookie?.() ?? []
+    console.log(`[onboarding] forwarding ${String(rawCookies.length)} cookies from /api/setup`)
     for (const raw of rawCookies) {
+      console.log(`[onboarding] applying cookie: ${raw}`)
       await applyCookie(raw)
     }
+    const stored = await session.defaultSession.cookies.get({ url: apiOrigin })
+    console.log(`[onboarding] cookies in jar for ${apiOrigin}:`, stored.map((c) => c.name))
     markSetupCompleted()
     await launchPanel()
   }
@@ -425,6 +429,11 @@ const applyCookie = async (raw: string): Promise<void> => {
     if (k === undefined || k === "") continue
     flags[k.toLowerCase()] = rest.length > 0 ? rest.join("=") : true
   }
+  // Force SameSite=None equivalent ("no_restriction") so the cookie is
+  // included on cross-origin fetches from stellar://panel → localhost
+  // :18080. Better-auth emits Lax by default which Chromium drops on
+  // cross-site subresource requests, leaving /auth/get-session as 401.
+  // secure:false is fine because the URL is plain http (localhost).
   await session.defaultSession.cookies.set({
     url: apiOrigin,
     name,
@@ -432,10 +441,7 @@ const applyCookie = async (raw: string): Promise<void> => {
     path: typeof flags["path"] === "string" ? flags["path"] : "/",
     httpOnly: flags["httponly"] === true,
     secure: false,
-    sameSite:
-      flags["samesite"] === "Lax" || flags["samesite"] === "lax"
-        ? "lax"
-        : "no_restriction",
+    sameSite: "no_restriction",
   })
 }
 

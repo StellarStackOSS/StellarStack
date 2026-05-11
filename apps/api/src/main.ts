@@ -117,9 +117,31 @@ app.post("/auth/sign-up/email", (c) =>
   c.json({ message: "Self-registration is disabled" }, 404)
 )
 
-app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
-  auth.handler(c.req.raw)
-)
+app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", async (c) => {
+  const res = await auth.handler(c.req.raw)
+  // In desktop mode, rewrite SameSite=Lax → SameSite=None so cookies
+  // survive cross-origin fetches from stellar://panel back to
+  // http://localhost:18080. Browsers drop Lax cookies on cross-site
+  // subresource requests, which leaves the panel signed-out
+  // immediately after sign-in. Secure flag is removed because the
+  // URL is plain http://localhost.
+  if (process.env["STELLAR_DESKTOP"] !== "1") return res
+  const cookies = res.headers.getSetCookie?.() ?? []
+  if (cookies.length === 0) return res
+  const next = new Headers(res.headers)
+  next.delete("set-cookie")
+  for (const raw of cookies) {
+    let rewritten = raw.replace(/;\s*SameSite=[^;]*/gi, "")
+    rewritten = rewritten.replace(/;\s*Secure(?=;|$)/gi, "")
+    rewritten += "; SameSite=None"
+    next.append("set-cookie", rewritten)
+  }
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: next,
+  })
+})
 
 app.route("/api/setup", buildSetupRoute({ auth, db, env }))
 app.route("/api/me", buildMeRoute(auth, db))
