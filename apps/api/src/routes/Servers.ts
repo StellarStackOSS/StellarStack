@@ -599,13 +599,17 @@ export const buildServersRoute = (params: {
         scope: granted,
         ttlSeconds: 600,
       })
+      const isDesktopFiles = process.env["STELLAR_DESKTOP"] === "1"
+      const filesHttpBase = isDesktopFiles
+        ? `${node.scheme}://${node.fqdn}:${String(node.daemonPort)}`
+        : `${env.APP_BASE_URL}/daemon`
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
         // baseUrl is the per-server root; the hook concatenates "/files",
         // "/files/content", etc. The daemon recognises those path
         // suffixes and maps (path+method) → op internally.
-        baseUrl: `${env.APP_BASE_URL}/daemon/api/servers/${access.server.id}`,
+        baseUrl: `${filesHttpBase}/api/servers/${access.server.id}`,
       })
     })
     .post("/:id/sftp-credentials", async (c) => {
@@ -703,6 +707,15 @@ export const buildServersRoute = (params: {
       })
       const browserBase = env.APP_BASE_URL.replace(/\/$/, "")
       const wsBase = browserBase.replace(/^http/, "ws")
+      // In desktop mode, the panel connects directly to the local
+      // daemon — no Caddy / API proxy in front. Use the node row's
+      // recorded daemon address instead of the panel's /daemon/* path.
+      const isDesktop = process.env["STELLAR_DESKTOP"] === "1"
+      const daemonScheme = node.scheme
+      const daemonHttpBase = isDesktop
+        ? `${daemonScheme}://${node.fqdn}:${String(node.daemonPort)}`
+        : `${browserBase}/daemon`
+      const daemonWsBase = daemonHttpBase.replace(/^http/, "ws")
       const sftp =
         parsed.data.purpose === "sftp"
           ? {
@@ -714,8 +727,12 @@ export const buildServersRoute = (params: {
       return c.json({
         token: minted.token,
         expiresAt: minted.expiresAt.toISOString(),
-        wsUrl: `${wsBase}/daemon/api/servers/${access.server.id}/ws`,
-        httpBaseUrl: `${browserBase}/daemon`,
+        wsUrl: isDesktop
+          ? `${daemonWsBase}/api/servers/${access.server.id}/ws`
+          : `${wsBase}/daemon/api/servers/${access.server.id}/ws`,
+        httpBaseUrl: isDesktop
+          ? daemonHttpBase
+          : `${browserBase}/daemon`,
         scopes: granted,
         sftp,
       })

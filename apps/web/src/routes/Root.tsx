@@ -1,6 +1,8 @@
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router"
 import type { QueryClient } from "@tanstack/react-query"
 
+import { BootSplash } from "@/components/BootSplash"
+import { DesktopTitleBar } from "@/components/DesktopTitleBar"
 import { PageTitle } from "@/components/PageTitle"
 
 /**
@@ -22,6 +24,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
     <>
       <PageTitle />
+      <DesktopTitleBar />
+      <BootSplash />
       <Outlet />
     </>
   ),

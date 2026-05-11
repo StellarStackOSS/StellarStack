@@ -209,7 +209,11 @@ func (s *Server) scanLineForReady(line string) {
 // natural session log, mirroring the upstream daemon's `stellarstack@<name>~ Server
 // marked as ...` format.
 func (s *Server) publishHeader(msg string) {
-	line := "stellarstack@" + s.uuid[:8] + "~ " + msg
+	short := s.uuid
+	if len(short) > 8 {
+		short = short[:8]
+	}
+	line := "stellarstack@" + short + "~ " + msg
 	s.history.push(line)
 	frame, _ := json.Marshal(map[string]any{
 		"event": "console output",

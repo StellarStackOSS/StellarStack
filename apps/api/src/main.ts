@@ -11,6 +11,7 @@ import { ApiException } from "@workspace/shared/errors"
 
 import { buildAuth } from "@/auth"
 import { loadEnv } from "@/env"
+import { seedDefaultBlueprintsIfEmpty } from "@/lib/DefaultBlueprints"
 import { errorToResponse } from "@/lib/Errors"
 import { InstallRunner } from "@/lib/InstallRunner"
 import { maybeAutoMigrate } from "@/lib/Migrate"
@@ -81,10 +82,18 @@ const installRunner = new InstallRunner(db)
 const scheduler = new Scheduler(db, statusCache)
 scheduler.start()
 
+if (process.env["STELLAR_DESKTOP"] === "1") {
+  await seedDefaultBlueprintsIfEmpty(db)
+}
+
 const app = new Hono<{ Variables: ApiVariables }>()
 
+const corsOrigins = [env.APP_BASE_URL]
+if (process.env["STELLAR_DESKTOP"] === "1") {
+  corsOrigins.push("http://localhost:5173")
+}
 app.use("*", cors({
-  origin: [env.APP_BASE_URL],
+  origin: corsOrigins,
   credentials: true,
   allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
   exposeHeaders: ["X-Request-Id"],

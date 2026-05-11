@@ -1,3 +1,6 @@
+import fs from "node:fs"
+import path from "node:path"
+
 import { count, eq, sql } from "drizzle-orm"
 
 import type { Db } from "@workspace/db/client.types"
@@ -105,9 +108,74 @@ export const MINECRAFT_PAPER: Blueprint = {
  * `blueprints` table already has any rows — operators who manually
  * imported their own catalog don't get duplicates.
  */
+const walkBlueprintFiles = (dir: string): string[] => {
+  const out: string[] = []
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      out.push(...walkBlueprintFiles(full))
+    } else if (entry.isFile() && entry.name.endsWith(".blueprint.json")) {
+      out.push(full)
+    }
+  }
+  return out
+}
+
+const loadBlueprintsFromDisk = (dir: string): Blueprint[] => {
+  if (!fs.existsSync(dir)) return []
+  const files = walkBlueprintFiles(dir)
+  const blueprints: Blueprint[] = []
+  for (const file of files) {
+    try {
+      const raw = fs.readFileSync(file, "utf8")
+      const parsed = JSON.parse(raw) as unknown
+      blueprints.push(parsed as Blueprint)
+    } catch (err) {
+      console.error(`[blueprints] failed to load ${file}:`, err)
+    }
+  }
+  return blueprints
+}
+
 export const seedDefaultBlueprintsIfEmpty = async (db: Db): Promise<void> => {
+  const dir = process.env["STELLAR_BLUEPRINTS_PATH"]
+  const fromDisk = dir !== undefined ? loadBlueprintsFromDisk(dir) : []
+
+  // Desktop mode always upserts the bundled catalog so new releases
+  // pick up additions/edits. Upsert matches by display name, so any
+  // user-authored blueprints with unique names are left alone.
+  if (process.env["STELLAR_DESKTOP"] === "1" && fromDisk.length > 0) {
+    for (const blueprint of fromDisk) {
+      try {
+        await upsertBlueprint(db, blueprint)
+      } catch (err) {
+        const displayName =
+          typeof blueprint.name === "string"
+            ? blueprint.name
+            : blueprint.name?.key ?? "<unknown>"
+        console.error(`[blueprints] failed to seed ${displayName}:`, err)
+      }
+    }
+    return
+  }
+
   const [row] = await db.select({ value: count() }).from(blueprintsTable)
   if ((row?.value ?? 0) > 0) return
+  if (fromDisk.length > 0) {
+    for (const blueprint of fromDisk) {
+      try {
+        await upsertBlueprint(db, blueprint)
+      } catch (err) {
+        const displayName =
+          typeof blueprint.name === "string"
+            ? blueprint.name
+            : blueprint.name?.key ?? "<unknown>"
+        console.error(`[blueprints] failed to seed ${displayName}:`, err)
+      }
+    }
+    return
+  }
   await upsertBlueprint(db, MINECRAFT_PAPER)
 }
 

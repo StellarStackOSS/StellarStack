@@ -29,6 +29,10 @@ const items = [
     q: "Is it ready to use?",
     a: "It's released and runnable in early access. Plenty of the headline features work (multi-node, blueprints, console, files, schedules, backups). It's still under active development, so expect rough edges and frequent releases — track the roadmap and changelog for what's landing.",
   },
+  {
+    q: "Can you set it up for me?",
+    a: "Yes — if you'd rather not deploy it yourself, drop me an email and we'll work out what your boxes need. There's a link in the Setup help section above.",
+  },
 ]
 
 export const Faq = () => (

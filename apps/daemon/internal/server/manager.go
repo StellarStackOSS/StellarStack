@@ -95,6 +95,11 @@ func (m *Manager) Reconcile(ctx context.Context) {
 		if uuid == "" || strings.HasPrefix(uuid, "install-") || strings.HasPrefix(uuid, "db-") {
 			continue
 		}
+		// Infra containers managed by the desktop app share the
+		// "stellar-" prefix but are not game servers.
+		if uuid == "redis" || uuid == "postgres" {
+			continue
+		}
 		s := m.Get(uuid)
 		next := environment.StateOffline
 		if c.Running {

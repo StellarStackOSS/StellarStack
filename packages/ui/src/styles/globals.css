@@ -174,3 +174,13 @@
 [data-page-transition] > * > *:nth-child(7) { animation-delay: 240ms; }
 [data-page-transition] > * > *:nth-child(8) { animation-delay: 280ms; }
 [data-page-transition] > * > *:nth-child(n+9) { animation-delay: 320ms; }
+
+/* Desktop (Electron) mode: traffic lights overlay the top-left 36px of
+   the window. Push the sidebar header and any top page header down so
+   nothing sits underneath the lights. */
+html[data-desktop="true"] [data-slot="sidebar-header"] {
+  padding-top: 1.5rem;
+}
+html[data-desktop="true"] [data-slot="sidebar-inset"] {
+  margin-top: var(--desktop-titlebar-h, 36px);
+}

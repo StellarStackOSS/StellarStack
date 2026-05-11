@@ -36,7 +36,10 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
     secret: params.env.BETTER_AUTH_SECRET,
     baseURL: params.env.API_BASE_URL,
     basePath: "/auth",
-    trustedOrigins: [params.env.APP_BASE_URL],
+    trustedOrigins:
+      process.env["STELLAR_DESKTOP"] === "1"
+        ? [params.env.APP_BASE_URL, "http://localhost:5173"]
+        : [params.env.APP_BASE_URL],
     user: {
       additionalFields: {
         preferredLocale: { type: "string", required: false },
