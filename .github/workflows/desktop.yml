@@ -104,12 +104,12 @@ jobs:
         with:
           name: stellarstack-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
-            apps/desktop/dist/*.dmg
-            apps/desktop/dist/*.exe
-            apps/desktop/dist/*.AppImage
-            apps/desktop/dist/*.zip
-            apps/desktop/dist/*.blockmap
-            apps/desktop/dist/latest*.yml
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.zip
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest*.yml
           if-no-files-found: warn
 
       - name: Attach to GitHub release
@@ -118,7 +118,7 @@ jobs:
         with:
           fail_on_unmatched_files: false
           files: |
-            apps/desktop/dist/*.dmg
-            apps/desktop/dist/*.exe
-            apps/desktop/dist/*.AppImage
-            apps/desktop/dist/latest*.yml
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/latest*.yml
