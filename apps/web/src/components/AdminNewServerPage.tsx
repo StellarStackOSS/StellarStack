@@ -15,7 +15,9 @@ import { Label } from "@workspace/ui/components/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
@@ -196,11 +198,28 @@ export const AdminNewServerPage = () => {
                   <SelectValue placeholder={t("admin_servers.field.blueprint_placeholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {blueprints.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {typeof b.name === "string" ? b.name : `[${(b.name as { key: string }).key}]`}
-                    </SelectItem>
-                  ))}
+                  {(() => {
+                    const groups = new Map<string, typeof blueprints>()
+                    for (const b of blueprints) {
+                      const key = b.category ?? "Uncategorized"
+                      const arr = groups.get(key) ?? []
+                      arr.push(b)
+                      groups.set(key, arr)
+                    }
+                    const sortedKeys = [...groups.keys()].sort()
+                    return sortedKeys.map((cat) => (
+                      <SelectGroup key={cat}>
+                        <SelectLabel>{cat}</SelectLabel>
+                        {(groups.get(cat) ?? []).map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {typeof b.name === "string"
+                              ? b.name
+                              : `[${(b.name as { key: string }).key}]`}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))
+                  })()}
                 </SelectContent>
               </Select>
             </Field>

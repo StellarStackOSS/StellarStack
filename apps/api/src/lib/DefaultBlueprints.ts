@@ -122,15 +122,33 @@ const walkBlueprintFiles = (dir: string): string[] => {
   return out
 }
 
-const loadBlueprintsFromDisk = (dir: string): Blueprint[] => {
+type LoadedBlueprint = { blueprint: Blueprint; category: string | null }
+
+// Derive a category from the file's path relative to the catalog root.
+// e.g. "minecraft/java/paper/paper.blueprint.json" → "minecraft/java".
+// We keep the first two path segments (game/family); the leaf
+// directory is the blueprint name and gets dropped.
+const deriveCategory = (relative: string): string | null => {
+  const segments = relative.split(path.sep)
+  segments.pop() // remove file name
+  if (segments.length === 0) return null
+  if (segments.length === 1) return segments[0] ?? null
+  return segments.slice(0, 2).join("/")
+}
+
+const loadBlueprintsFromDisk = (dir: string): LoadedBlueprint[] => {
   if (!fs.existsSync(dir)) return []
   const files = walkBlueprintFiles(dir)
-  const blueprints: Blueprint[] = []
+  const blueprints: LoadedBlueprint[] = []
   for (const file of files) {
     try {
       const raw = fs.readFileSync(file, "utf8")
       const parsed = JSON.parse(raw) as unknown
-      blueprints.push(parsed as Blueprint)
+      const relative = path.relative(dir, file)
+      blueprints.push({
+        blueprint: parsed as Blueprint,
+        category: deriveCategory(relative),
+      })
     } catch (err) {
       console.error(`[blueprints] failed to load ${file}:`, err)
     }
@@ -145,43 +163,36 @@ export const seedDefaultBlueprintsIfEmpty = async (db: Db): Promise<void> => {
   // Desktop mode always upserts the bundled catalog so new releases
   // pick up additions/edits. Upsert matches by display name, so any
   // user-authored blueprints with unique names are left alone.
-  if (process.env["STELLAR_DESKTOP"] === "1" && fromDisk.length > 0) {
-    for (const blueprint of fromDisk) {
-      try {
-        await upsertBlueprint(db, blueprint)
-      } catch (err) {
-        const displayName =
-          typeof blueprint.name === "string"
-            ? blueprint.name
-            : blueprint.name?.key ?? "<unknown>"
-        console.error(`[blueprints] failed to seed ${displayName}:`, err)
-      }
+  const seedOne = async (entry: LoadedBlueprint): Promise<void> => {
+    try {
+      await upsertBlueprint(db, entry.blueprint, entry.category)
+    } catch (err) {
+      const displayName =
+        typeof entry.blueprint.name === "string"
+          ? entry.blueprint.name
+          : entry.blueprint.name?.key ?? "<unknown>"
+      console.error(`[blueprints] failed to seed ${displayName}:`, err)
     }
+  }
+
+  if (process.env["STELLAR_DESKTOP"] === "1" && fromDisk.length > 0) {
+    for (const entry of fromDisk) await seedOne(entry)
     return
   }
 
   const [row] = await db.select({ value: count() }).from(blueprintsTable)
   if ((row?.value ?? 0) > 0) return
   if (fromDisk.length > 0) {
-    for (const blueprint of fromDisk) {
-      try {
-        await upsertBlueprint(db, blueprint)
-      } catch (err) {
-        const displayName =
-          typeof blueprint.name === "string"
-            ? blueprint.name
-            : blueprint.name?.key ?? "<unknown>"
-        console.error(`[blueprints] failed to seed ${displayName}:`, err)
-      }
-    }
+    for (const entry of fromDisk) await seedOne(entry)
     return
   }
-  await upsertBlueprint(db, MINECRAFT_PAPER)
+  await upsertBlueprint(db, MINECRAFT_PAPER, null)
 }
 
 const upsertBlueprint = async (
   db: Db,
-  blueprint: Blueprint
+  blueprint: Blueprint,
+  category: string | null
 ): Promise<string> => {
   const validated = blueprintSchema.parse(blueprint)
   const displayName =
@@ -196,6 +207,7 @@ const upsertBlueprint = async (
 
   const values = {
     schemaVersion: String(validated.schemaVersion),
+    category,
     name: validated.name,
     description: validated.description ?? null,
     author: validated.author ?? null,

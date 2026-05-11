@@ -113,6 +113,13 @@
       "when": 1778440000000,
       "tag": "0015_schedule_flow",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1778512000000,
+      "tag": "0016_blueprint_category",
+      "breakpoints": true
     }
   ]
 }

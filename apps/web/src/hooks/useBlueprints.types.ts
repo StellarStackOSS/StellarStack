@@ -7,6 +7,7 @@ import type { Blueprint } from "@workspace/shared/blueprint.types"
 export type BlueprintListRow = Omit<Blueprint, "schemaVersion" | "install"> & {
   id: string
   schemaVersion: string
+  category: string | null
   installImage: string
   installEntrypoint: string
   installScript: string

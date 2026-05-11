@@ -18,6 +18,7 @@ export const blueprintsTable = pgTable("blueprints", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   schemaVersion: text("schema_version").notNull().default("1"),
+  category: text("category"),
   name: jsonb("name").$type<BlueprintLocalizableText>().notNull(),
   description: jsonb("description").$type<BlueprintLocalizableText>(),
   author: text("author"),
