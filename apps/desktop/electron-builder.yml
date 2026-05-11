@@ -42,6 +42,11 @@ extraResources:
     to: blueprints
     filter: ["**/*"]
 
+# Don't try to compute channel info / auto-update YAML — we don't ship
+# updates through electron-builder's publisher; releases go to GitHub
+# directly via the workflow.
+publish: null
+
 mac:
   category: public.app-category.developer-tools
   target:
