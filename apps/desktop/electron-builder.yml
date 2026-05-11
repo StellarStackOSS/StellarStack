@@ -52,11 +52,18 @@ mac:
   target:
     - target: dmg
       arch: [arm64, x64]
-  hardenedRuntime: true
+  # No Apple Developer ID available — skip electron-builder's signing
+  # flow entirely and ad-hoc-sign in `afterSign` so the .app at least
+  # has a consistent signature chain. Without ad-hoc sign, macOS shows
+  # "StellarStack is damaged" on first launch from a downloaded DMG
+  # because the bundled Electron Framework has Apple's signature but
+  # the outer .app doesn't, and Gatekeeper's quarantine check rejects.
+  identity: null
+  hardenedRuntime: false
   gatekeeperAssess: false
   artifactName: StellarStack-mac-${arch}.${ext}
-  # Code-signing identity needs to be set via env (CSC_LINK / CSC_KEY_PASSWORD)
-  # for distributable builds. Local dev builds work unsigned.
+
+afterSign: scripts/afterSign.cjs
 
 win:
   target:

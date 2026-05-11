@@ -131,6 +131,19 @@ export const Downloads = () => (
             password. Then it drops you straight into the panel.
           </li>
           <li>
+            <span className="font-medium text-white">macOS first launch:</span>{" "}
+            the build is unsigned (no Apple Developer ID). Drag the app to
+            Applications, then <em>right-click → Open</em> the first time
+            and click "Open" on the dialog. After that it launches
+            normally.
+          </li>
+          <li>
+            <span className="font-medium text-white">Windows SmartScreen:</span>{" "}
+            click "More info" → "Run anyway" if Windows flags the
+            installer as unrecognised. Same root cause as macOS — we
+            don't pay for an EV cert yet.
+          </li>
+          <li>
             <span className="font-medium text-white">Prefer to self-host?</span>{" "}
             The desktop client is the same code as the server build, just
             bundled. If you want to run on a Linux box behind a reverse
