@@ -109,6 +109,14 @@ app.onError((err, c) => {
   return errorToResponse(c, err)
 })
 
+// Block self-registration at the HTTP layer. Server-side
+// `auth.api.signUpEmail` (used by /api/setup) bypasses this because it
+// doesn't go through the HTTP handler. New accounts only ever get
+// created via the desktop onboarding flow or the admin invite path.
+app.post("/auth/sign-up/email", (c) =>
+  c.json({ message: "Self-registration is disabled" }, 404)
+)
+
 app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", (c) =>
   auth.handler(c.req.raw)
 )

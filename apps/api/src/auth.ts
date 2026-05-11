@@ -47,12 +47,11 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
         isAdmin: { type: "boolean", required: false },
       },
     },
-    // disableSignUp blocks the /auth/sign-up/email HTTP endpoint so users
-    // can't self-register. New accounts only get minted via:
-    //   - desktop onboarding → /api/setup (server-side auth.api.signUpEmail
-    //     bypasses the HTTP-level disable)
-    //   - admin "invite user" flow in the panel (also server-side)
-    emailAndPassword: { enabled: true, autoSignIn: true, disableSignUp: true },
+    // Self-registration is blocked at the HTTP layer (see middleware in
+    // apps/api/src/main.ts that 404s POST /auth/sign-up/email). We can't
+    // use better-auth's disableSignUp flag because that also blocks the
+    // server-side auth.api.signUpEmail call we use in /api/setup.
+    emailAndPassword: { enabled: true, autoSignIn: true },
     databaseHooks: {
       user: {
         create: {
