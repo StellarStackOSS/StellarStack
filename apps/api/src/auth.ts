@@ -38,7 +38,7 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
     basePath: "/auth",
     trustedOrigins:
       process.env["STELLAR_DESKTOP"] === "1"
-        ? [params.env.APP_BASE_URL, "http://localhost:5173"]
+        ? [params.env.APP_BASE_URL, "http://localhost:5173", "stellar://panel"]
         : [params.env.APP_BASE_URL],
     user: {
       additionalFields: {

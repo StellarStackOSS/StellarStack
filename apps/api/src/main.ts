@@ -90,7 +90,9 @@ const app = new Hono<{ Variables: ApiVariables }>()
 
 const corsOrigins = [env.APP_BASE_URL]
 if (process.env["STELLAR_DESKTOP"] === "1") {
-  corsOrigins.push("http://localhost:5173")
+  // Dev: panel served by Vite at :5173. Packaged: panel served from
+  // stellar://panel/... via the Electron custom protocol.
+  corsOrigins.push("http://localhost:5173", "stellar://panel")
 }
 app.use("*", cors({
   origin: corsOrigins,

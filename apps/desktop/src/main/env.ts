@@ -12,7 +12,7 @@ export const env = {
   /** Where the panel UI is served from. In dev, the apps/web Vite server
    *  on :3000. In prod, served from the packaged static bundle via the
    *  `stellar://` custom protocol registered in main/index.ts. */
-  panelUrl: isDev ? "http://localhost:5173" : "stellar://panel/index.html",
+  panelUrl: isDev ? "http://localhost:5173" : "stellar://panel/",
 
   /** Filesystem path to the bundled `apps/web/dist` in a packaged build. */
   panelDistPath: path.join(process.resourcesPath, "panel"),
