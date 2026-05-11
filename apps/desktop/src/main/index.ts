@@ -429,18 +429,17 @@ const applyCookie = async (raw: string): Promise<void> => {
     if (k === undefined || k === "") continue
     flags[k.toLowerCase()] = rest.length > 0 ? rest.join("=") : true
   }
-  // Force SameSite=None equivalent ("no_restriction") so the cookie is
-  // included on cross-origin fetches from stellar://panel → localhost
-  // :18080. Better-auth emits Lax by default which Chromium drops on
-  // cross-site subresource requests, leaving /auth/get-session as 401.
-  // secure:false is fine because the URL is plain http (localhost).
+  // Force SameSite=None + Secure so the cookie is included on
+  // cross-origin fetches from stellar://panel → localhost:18080.
+  // Chromium drops SameSite=None cookies that aren't also Secure;
+  // localhost is a secure origin so Secure works on http://.
   await session.defaultSession.cookies.set({
     url: apiOrigin,
     name,
     value,
     path: typeof flags["path"] === "string" ? flags["path"] : "/",
     httpOnly: flags["httponly"] === true,
-    secure: false,
+    secure: true,
     sameSite: "no_restriction",
   })
 }

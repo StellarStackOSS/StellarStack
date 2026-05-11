@@ -132,7 +132,10 @@ app.on(["GET", "POST", "PUT", "DELETE"], "/auth/*", async (c) => {
   next.delete("set-cookie")
   for (const raw of cookies) {
     let rewritten = raw.replace(/;\s*SameSite=[^;]*/gi, "")
-    rewritten = rewritten.replace(/;\s*Secure(?=;|$)/gi, "")
+    // Chromium requires SameSite=None to be paired with Secure or it
+    // silently drops the cookie. Localhost is treated as a secure
+    // origin for cookie purposes, so Secure works fine on http://.
+    if (!/;\s*Secure(?=;|$)/i.test(rewritten)) rewritten += "; Secure"
     rewritten += "; SameSite=None"
     next.append("set-cookie", rewritten)
   }
