@@ -1,13 +1,31 @@
+import fs from "node:fs"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import {
   BrowserWindow,
   app,
   ipcMain,
+  net,
   protocol,
   shell,
   session,
 } from "electron"
+
+// Electron requires custom schemes to be registered as privileged BEFORE
+// app.whenReady fires. We register `stellar://` as standard + secure +
+// supports-fetch so the panel's ESM imports + `fetch` resolve correctly.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "stellar",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+])
 
 import { ApiProcess } from "./api"
 import { DaemonProcess } from "./daemon"
@@ -64,11 +82,25 @@ const apiOrigin = `http://localhost:${String(env.apiPort)}`
 // ---------------------------------------------------------------------------
 
 const registerPanelProtocol = () => {
-  protocol.registerFileProtocol("stellar", (request, callback) => {
-    const url = request.url.replace(/^stellar:\/\/panel\//, "")
-    callback({
-      path: path.join(env.panelDistPath, url === "" ? "index.html" : url),
-    })
+  protocol.handle("stellar", async (request) => {
+    const url = new URL(request.url)
+    // stellar://panel/index.html → "index.html"; stellar://panel/ → "index.html"
+    let relative = url.pathname.replace(/^\//, "")
+    if (relative === "" || relative.endsWith("/")) relative += "index.html"
+    const filePath = path.join(env.panelDistPath, relative)
+    // Block path traversal outside the panel dist root.
+    const resolved = path.resolve(filePath)
+    const root = path.resolve(env.panelDistPath)
+    if (!resolved.startsWith(root)) {
+      return new Response("Forbidden", { status: 403 })
+    }
+    if (!fs.existsSync(resolved)) {
+      // SPA fallback for client-side routes — serve index.html so the
+      // hash router can take over instead of returning 404.
+      const fallback = path.join(root, "index.html")
+      return net.fetch(pathToFileURL(fallback).toString())
+    }
+    return net.fetch(pathToFileURL(resolved).toString())
   })
 }
 
