@@ -1,3 +1,4 @@
+import { MetalFx } from "metal-fx"
 import { useEffect, useState } from "react"
 
 const STORAGE_KEY = "stellar.boot.splash.seen"
@@ -47,17 +48,22 @@ export const BootSplash = () => {
         pointerEvents: fading ? "none" : "auto",
       }}
     >
-      <div
-        aria-hidden
-        className="select-none text-center font-semibold tracking-tighter text-white/[0.04]"
-        style={{
-          fontSize: "clamp(40px, 16vw, 240px)",
-          lineHeight: 0.85,
-          animation: "bootSplashRise 1400ms cubic-bezier(0.22, 1, 0.36, 1) both",
-        }}
-      >
-        StellarStack
-      </div>
+      <MetalFx preset="chromatic" strength={1.4} variant="button" theme="dark">
+        <div
+          aria-hidden
+          className="select-none text-center font-semibold tracking-tighter"
+          style={{
+            fontSize: "clamp(40px, 16vw, 240px)",
+            lineHeight: 0.85,
+            padding: "0.05em 0.12em",
+            animation:
+              "bootSplashRise 1400ms cubic-bezier(0.22, 1, 0.36, 1) both",
+            color: "rgba(255,255,255,0.06)",
+          }}
+        >
+          StellarStack
+        </div>
+      </MetalFx>
       <style>{`
         @keyframes bootSplashRise {
           from { opacity: 0; transform: translateY(24px) scale(0.985); }
