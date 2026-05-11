@@ -67,7 +67,7 @@ mac:
 afterSign: scripts/afterSign.cjs
 
 win:
-  icon: icons/icon.png
+  icon: icons/icon.ico
   target:
     - target: nsis
       arch: [x64, arm64]
