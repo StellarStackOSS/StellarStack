@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
@@ -232,12 +232,6 @@ export const LoginPage = () => {
               </Button>
             </form>
 
-            <p className="text-muted-foreground mt-4 text-center text-xs">
-              Don&apos;t have an account?{" "}
-              <Link to="/register" className="text-foreground underline">
-                Sign up
-              </Link>
-            </p>
           </div>
         ) : (
           <div className="border-border bg-card rounded-xl border p-6 shadow-sm">

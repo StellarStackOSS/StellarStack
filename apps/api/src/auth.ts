@@ -47,7 +47,12 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
         isAdmin: { type: "boolean", required: false },
       },
     },
-    emailAndPassword: { enabled: true, autoSignIn: true },
+    // disableSignUp blocks the /auth/sign-up/email HTTP endpoint so users
+    // can't self-register. New accounts only get minted via:
+    //   - desktop onboarding → /api/setup (server-side auth.api.signUpEmail
+    //     bypasses the HTTP-level disable)
+    //   - admin "invite user" flow in the panel (also server-side)
+    emailAndPassword: { enabled: true, autoSignIn: true, disableSignUp: true },
     databaseHooks: {
       user: {
         create: {

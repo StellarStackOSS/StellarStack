@@ -5,7 +5,6 @@ import type { QueryClient } from "@tanstack/react-query"
 import { Route as rootRoute } from "@/routes/Root"
 import { Route as indexRoute } from "@/routes/Index"
 import { Route as loginRoute } from "@/routes/Login"
-import { Route as registerRoute } from "@/routes/Register"
 import { Route as userAreaRoute } from "@/routes/UserArea"
 import { Route as dashboardRoute } from "@/routes/Dashboard"
 import { Route as accountRoute } from "@/routes/Account"
@@ -87,7 +86,6 @@ const serverTree = serverRoute.addChildren([
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
-  registerRoute,
   userAreaTree,
   adminTree,
   serverTree,
