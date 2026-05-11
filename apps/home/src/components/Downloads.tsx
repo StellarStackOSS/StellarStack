@@ -73,7 +73,9 @@ export const Downloads = () => (
         <p className="max-w-2xl text-sm text-zinc-400 md:text-base">
           The full panel, API, and daemon in a single installer. Bundles
           Postgres + Redis as managed containers — no compose files, no
-          reverse proxy. MIT-licensed, free.
+          reverse proxy. MIT-licensed, free. Currently in active
+          development — installers will be available here once the
+          first stable release is out.
         </p>
       </Reveal>
 
@@ -89,22 +91,22 @@ export const Downloads = () => (
             <ul className="mt-5 flex flex-col gap-3">
               {platform.builds.map((build) => (
                 <li key={build.arch}>
-                  <a
-                    href={build.href}
-                    className="group flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-sm transition-colors hover:border-white/15 hover:bg-white/[0.06]"
+                  <div
+                    aria-disabled
+                    className="flex cursor-not-allowed items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3 text-sm opacity-70"
                   >
                     <span className="flex flex-col">
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-white/80">
                         {build.label}
                       </span>
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-zinc-600">
                         {build.arch}
                       </span>
                     </span>
-                    <span className="text-xs font-medium text-zinc-400 group-hover:text-white">
-                      Download
+                    <span className="text-xs font-medium text-zinc-500">
+                      Coming soon
                     </span>
-                  </a>
+                  </div>
                 </li>
               ))}
             </ul>
