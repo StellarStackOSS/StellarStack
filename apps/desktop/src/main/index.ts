@@ -112,6 +112,28 @@ const baseWebPreferences = {
   preload: path.join(__dirname, "../preload/index.js"),
   contextIsolation: true,
   nodeIntegration: false,
+  devTools: true,
+}
+
+// Register a global Cmd/Ctrl+Shift+I shortcut to toggle devtools on
+// whichever Electron window is focused. Useful for production builds
+// where there's no menu bar with a "View → Toggle Developer Tools"
+// entry. Wired up below in app.whenReady.
+const installDevtoolsShortcut = () => {
+  const toggle = () => {
+    const focused = BrowserWindow.getFocusedWindow()
+    if (focused === null) return
+    if (focused.webContents.isDevToolsOpened()) {
+      focused.webContents.closeDevTools()
+    } else {
+      focused.webContents.openDevTools({ mode: "detach" })
+    }
+  }
+  // Lazy-require to avoid pulling globalShortcut into the wider module
+  // graph at module-evaluation time (it needs app to be ready).
+  const { globalShortcut } = require("electron") as typeof import("electron")
+  globalShortcut.register("CommandOrControl+Shift+I", toggle)
+  globalShortcut.register("CommandOrControl+Alt+I", toggle)
 }
 
 const createSmallWindow = (
@@ -461,6 +483,7 @@ const tryHeadlessBootAndLaunchPanel = async (): Promise<boolean> => {
 
 app.whenReady().then(async () => {
   if (!env.isDev) registerPanelProtocol()
+  installDevtoolsShortcut()
   // Start Vite in parallel with the bootstrap check in dev so the panel
   // window can open immediately once it's ready.
   void startWebDevServer().catch((err: unknown) => {
