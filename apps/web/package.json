@@ -25,6 +25,7 @@
     "@workspace/ui": "workspace:*",
     "@xyflow/react": "^12.10.2",
     "better-auth": "^1.4.5",
+    "dither-avatar": "^1.0.0",
     "framer-motion": "^12.38.0",
     "geist": "^1.7.0",
     "i18next": "^23.16.8",
