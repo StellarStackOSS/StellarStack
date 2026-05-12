@@ -3,12 +3,17 @@
 #
 #   curl -fsSL https://stellarstack.io/install.sh | bash
 #
-# Three modes:
-#   - full    : panel + api + daemon + Postgres + Redis + Caddy on one box
-#   - panel   : panel + api + Postgres + Redis (pair daemons separately)
-#   - daemon  : just the Go daemon, paired against an existing panel
+# Install modes:
+#   - full      : panel + api + daemon + Postgres + Redis + Caddy on one box
+#   - panel     : panel + api + Postgres + Redis (pair daemons separately)
+#   - daemon    : just the Go daemon, paired against an existing panel
 #
-# Re-runnable: detects existing installs and offers upgrade / reconfigure.
+# Maintenance subcommands:
+#   - update    : pull newest images / daemon binary, run migrations,
+#                 restart — leaves Caddyfile, docker-compose.yml, and
+#                 daemon TOML untouched.
+#   - reset     : wipe configs + data, leave the host clean.
+#   - uninstall : guided removal.
 
 set -euo pipefail
 
@@ -399,6 +404,73 @@ reset_all() {
 }
 
 # ---------------------------------------------------------------------------
+# Update — re-pull images / re-download daemon binary without touching
+# any of the operator's existing configs (Caddyfile, docker-compose.yml,
+# daemon TOML). Auto-detects which mode is installed:
+#   - /etc/stellarstack/docker-compose.yml present → compose-stack update
+#   - /usr/local/bin/stellar-daemon present → daemon binary update
+# Both run if both are present (full-on-this-host install).
+# ---------------------------------------------------------------------------
+
+update_compose_stack() {
+  local config_dir="$DEFAULT_CONFIG_DIR"
+  log "Pulling newest images…"
+  ( cd "$config_dir" && docker compose pull ) \
+    || fail "docker compose pull failed in $config_dir"
+
+  log "Running migrations…"
+  ( cd "$config_dir" && docker compose run --rm api node ./scripts/migrate.js ) \
+    || fail "Migrations failed; api container is paused. Inspect with 'docker compose logs api'."
+
+  log "Restarting stack…"
+  ( cd "$config_dir" && docker compose up -d --remove-orphans ) \
+    || fail "docker compose up -d failed in $config_dir"
+
+  ok "Stack updated"
+}
+
+update_daemon_binary() {
+  log "Fetching latest stellar-daemon…"
+  local arch
+  case "$(uname -m)" in
+    x86_64|amd64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *) fail "Unsupported architecture: $(uname -m)" ;;
+  esac
+  local url="https://github.com/${DAEMON_REPO}/releases/latest/download/stellar-daemon-linux-${arch}"
+  curl -fsSL "$url" -o /usr/local/bin/stellar-daemon.new \
+    || fail "Couldn't download stellar-daemon from $url"
+  chmod 0755 /usr/local/bin/stellar-daemon.new
+  mv /usr/local/bin/stellar-daemon.new /usr/local/bin/stellar-daemon
+  ok "Replaced /usr/local/bin/stellar-daemon"
+
+  if systemctl list-unit-files stellar-daemon.service >/dev/null 2>&1; then
+    log "Restarting stellar-daemon.service…"
+    systemctl restart stellar-daemon
+    ok "stellar-daemon restarted"
+  else
+    warn "stellar-daemon.service not registered — restart the daemon manually."
+  fi
+}
+
+update_existing() {
+  title "StellarStack — updater"
+  local did_anything=0
+  if [[ -f "$DEFAULT_CONFIG_DIR/docker-compose.yml" ]]; then
+    update_compose_stack
+    did_anything=1
+  fi
+  if [[ -x /usr/local/bin/stellar-daemon ]]; then
+    update_daemon_binary
+    did_anything=1
+  fi
+  if [[ $did_anything -eq 0 ]]; then
+    fail "No existing install found. Run 'install.sh full|panel|daemon' first."
+  fi
+  title "Update complete."
+}
+
+# ---------------------------------------------------------------------------
 # Main.
 # ---------------------------------------------------------------------------
 
@@ -420,6 +492,11 @@ main() {
 
   if [[ "${1:-}" == "reset" ]]; then
     reset_all "${2:-}"
+    exit 0
+  fi
+
+  if [[ "${1:-}" == "update" ]]; then
+    update_existing
     exit 0
   fi
 
