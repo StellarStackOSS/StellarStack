@@ -1,6 +1,10 @@
 name: Desktop client
 
 on:
+  # release-please creates the release first; we attach binaries to it.
+  release:
+    types: [published]
+  # Manual tag push (without release-please) still works.
   push:
     tags: ["v*.*.*"]
   workflow_dispatch:
