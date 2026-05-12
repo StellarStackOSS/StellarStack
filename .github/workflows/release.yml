@@ -1,11 +1,12 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  # Build + push :edge / :latest images on every commit to main.
   push:
     branches: [main]
-    tags: ["v*.*.*"]
+  # Build versioned tags + attach daemon binaries on release.
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
