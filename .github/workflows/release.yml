@@ -64,12 +64,12 @@ jobs:
           short="${GITHUB_SHA::7}"
           base="${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}"
           tags=()
+          # :latest only moves on tagged releases. :edge tracks main.
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/}"
             tags+=("${base}:${version}")
             tags+=("${base}:latest")
           elif [[ "$GITHUB_REF" == refs/heads/main ]]; then
-            tags+=("${base}:latest")
             tags+=("${base}:edge")
           fi
           tags+=("${base}:${short}")
