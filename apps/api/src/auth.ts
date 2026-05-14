@@ -36,10 +36,16 @@ export const buildAuth = (params: { db: Db; env: Env }) => {
     secret: params.env.BETTER_AUTH_SECRET,
     baseURL: params.env.API_BASE_URL,
     basePath: "/auth",
-    trustedOrigins:
-      process.env["STELLAR_DESKTOP"] === "1"
-        ? [params.env.APP_BASE_URL, "http://localhost:5173", "stellar://panel"]
-        : [params.env.APP_BASE_URL],
+    trustedOrigins: (() => {
+      const origins = [params.env.APP_BASE_URL]
+      // Native clients (iOS / future Android) send Origin matching the
+      // API's own base URL — accept that explicitly.
+      origins.push(params.env.API_BASE_URL)
+      if (process.env["STELLAR_DESKTOP"] === "1") {
+        origins.push("http://localhost:5173", "stellar://panel")
+      }
+      return origins
+    })(),
     user: {
       additionalFields: {
         preferredLocale: { type: "string", required: false },
