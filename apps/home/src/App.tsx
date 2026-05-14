@@ -292,7 +292,7 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
           className="inline-flex items-center gap-2 rounded-sm bg-[#282532] px-3 py-1 text-xs font-medium text-[#A397E8] transition-opacity hover:opacity-80"
         >
           <span className="inline-block size-1.5 animate-pulse rounded-full bg-[#A397E8]" />
-          Desktop client · coming soon
+          Desktop now available
           <span aria-hidden>→</span>
         </a>
       </motion.div>
