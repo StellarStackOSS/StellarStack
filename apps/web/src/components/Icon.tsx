@@ -118,6 +118,7 @@ export type IconName =
   | "pencil"
   | "play"
   | "power-socket"
+  | "puzzle-piece"
   | "refresh"
   | "running"
   | "search"
@@ -185,6 +186,7 @@ const map: Record<IconName, TablerIcon> = {
   pencil: IconPencil,
   play: IconPlayerPlay,
   "power-socket": IconPlug,
+  "puzzle-piece": IconPuzzle,
   refresh: IconRefresh,
   running: IconActivity,
   search: IconSearch,
