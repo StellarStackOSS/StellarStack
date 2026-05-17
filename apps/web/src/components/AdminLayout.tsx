@@ -40,6 +40,8 @@ export const AdminLayout = () => {
       isActive: location.pathname.startsWith("/admin/users") },
     { title: "Audit Log", icon: "audit", to: "/admin/audit",
       isActive: location.pathname.startsWith("/admin/audit") },
+    { title: "Extensions", icon: "puzzle-piece", to: "/admin/extensions",
+      isActive: location.pathname.startsWith("/admin/extensions") },
   ]
 
   if (isPending) {

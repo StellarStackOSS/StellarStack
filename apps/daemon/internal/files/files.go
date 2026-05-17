@@ -36,6 +36,14 @@ type Entry struct {
 	Mode    string `json:"mode"`
 }
 
+// AbsPath exposes the resolved on-disk path for callers that need to
+// write directly (e.g. the file-download handler streaming a remote
+// URL straight to disk via os.Create). Goes through the same sandbox
+// check as every other method on this manager.
+func (m *Manager) AbsPath(serverID, rel string) (string, error) {
+	return m.resolve(serverID, rel)
+}
+
 // resolve returns the absolute filesystem path for a server-relative
 // path, refusing any input that escapes the server root.
 func (m *Manager) resolve(serverID, rel string) (string, error) {

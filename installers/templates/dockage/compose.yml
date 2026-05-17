@@ -1,0 +1,161 @@
+# StellarStack — single-file Docker Compose for Dockge / Portainer / Komodo /
+# any web compose UI. Paste this into the "New Stack" editor, edit the four
+# blocks marked TODO, and deploy.
+#
+# Five services:
+#   - postgres      Stores users, servers, schedules, audit log, etc.
+#   - redis         Live status cache + scheduler queue.
+#   - api           Hono API + better-auth.
+#   - panel         The React UI (Vite build served by nginx).
+#   - daemon        Per-host Docker controller; pairs with the panel.
+#
+# Game servers run as sibling containers on this host's Docker daemon,
+# managed by `daemon` via the mounted Docker socket.
+#
+# Persistent data lives in `./data/...` relative to the compose file by
+# default. Change to absolute paths (e.g. /mnt/tank/apps/stellarstack/...)
+# if you want a specific dataset/disk.
+
+volumes:
+  # Shared between the bootstrap init container and the daemon. The
+  # init mints the daemon's config.toml here, the daemon mounts it at
+  # /etc/stellar-daemon/config.toml and reads it on start.
+  stellar-daemon-config:
+
+services:
+  # ─────────────────────────────────────────────────────────────────────
+  # One-shot init container — mints a node UUID + signing key, inserts
+  # the node row into Postgres, writes the daemon's config.toml. Replaces
+  # the manual "Admin → Nodes → Pair daemon" step. Idempotent: re-runs
+  # on every redeploy and updates the node's listen address if you
+  # change DAEMON_LISTEN_HOST.
+  bootstrap:
+    image: ghcr.io/stellarstackoss/bootstrap:latest
+    container_name: stellar-bootstrap
+    depends_on:
+      postgres: { condition: service_healthy }
+      api:      { condition: service_started }
+    restart: "no"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: change-me-to-something-strong
+      POSTGRES_DB: stellarstack
+      PANEL_API_BASE_URL: http://api:3000
+      # FQDN or IP the API uses to reach the daemon. In a single-host
+      # compose deploy this is the daemon's service name (`daemon`).
+      # Set to your host's LAN IP if you split the daemon onto a
+      # different machine later.
+      DAEMON_LISTEN_HOST: daemon
+      DAEMON_LISTEN_PORT: "8443"
+      SFTP_LISTEN_PORT: "2022"
+      NODE_MEMORY_TOTAL_MB: "16384"
+      NODE_DISK_TOTAL_MB: "102400"
+    volumes:
+      - stellar-daemon-config:/shared
+
+  # ─────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: stellar-postgres
+    restart: unless-stopped
+    environment:
+      # TODO 1/4 — pick a strong DB password and mirror it in `api` below.
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: change-me-to-something-strong
+      POSTGRES_DB: stellarstack
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stellar -d stellarstack"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ─────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: stellar-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ─────────────────────────────────────────────────────────────────────
+  api:
+    image: ghcr.io/stellarstackoss/api:latest
+    container_name: stellar-api
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Mirror of the Postgres credentials above.
+      DATABASE_URL: postgresql://stellar:change-me-to-something-strong@postgres:5432/stellarstack
+      REDIS_URL: redis://redis:6379
+      # TODO 2/4 — generate a 64-char hex string. On macOS / Linux:
+      #   openssl rand -hex 32
+      BETTER_AUTH_SECRET: replace-with-64-hex-chars-from-openssl-rand
+      # TODO 3/4 — the public URL where users will reach the panel. Used
+      # by better-auth's CSRF check and link generation. Can be:
+      #   - http://your-host-ip:30100          (direct, LAN-only)
+      #   - https://panel.example.com          (behind your own reverse proxy)
+      APP_BASE_URL: http://stellarstack.local:30100
+      API_BASE_URL: http://stellarstack.local:30100
+    expose:
+      - "3000"
+
+  # ─────────────────────────────────────────────────────────────────────
+  panel:
+    image: ghcr.io/stellarstackoss/panel:latest
+    container_name: stellar-panel
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Same URLs as APP_BASE_URL / API_BASE_URL above; the SPA fetches
+      # the API at this path and opens WebSockets at the matching ws://
+      # origin. Must end without a trailing slash.
+      VITE_API_URL: http://stellarstack.local:30100/api
+      VITE_WS_URL:  ws://stellarstack.local:30100
+    ports:
+      - "30100:5173"
+
+  # ─────────────────────────────────────────────────────────────────────
+  daemon:
+    image: ghcr.io/stellarstackoss/daemon:latest
+    container_name: stellar-daemon
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      # Bootstrap must finish (mint config.toml + insert node row)
+      # before the daemon starts.
+      bootstrap: { condition: service_completed_successfully }
+    volumes:
+      # Bootstrap's config.toml lives here; daemon reads it on start.
+      - stellar-daemon-config:/etc/stellar-daemon
+      # The daemon's persisted state (server registry, attach buffers).
+      - ./data/daemon:/var/lib/stellarstack
+      # Per-server bind-mount root. Daemon writes <server-uuid>/ folders
+      # here; game containers it spawns mount them read-write.
+      - ./data/servers:/var/lib/stellarstack/servers
+      # The whole point — control Docker on this host.
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      # Common game ports. Add more as you create allocations in the
+      # panel — each allocation needs a matching "host:container/proto"
+      # line here, then redeploy the stack.
+      - "25565:25565/tcp"      # Minecraft Java
+      - "19132:19132/udp"      # Minecraft Bedrock
+      - "27015:27015/udp"      # Source-engine games (CS, TF2, etc.)
+      - "7777:7777/udp"        # Terraria / ARK

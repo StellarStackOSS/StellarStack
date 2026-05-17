@@ -29,6 +29,7 @@ export type ErrorCode =
   | "databases.not_found"
   | "databases.provision_failed"
   | "databases.unknown_type"
+  | "extensions.curseforge_not_configured"
   | "files.decompress_failed"
   | "files.not_found"
   | "files.path_outside_jail"
@@ -37,6 +38,9 @@ export type ErrorCode =
   | "instances.nested_not_allowed"
   | "instances.pool_exhausted"
   | "internal.unexpected"
+  | "mods.daemon_install_failed"
+  | "mods.no_files"
+  | "mods.not_found"
   | "nodes.has_servers"
   | "nodes.not_found"
   | "nodes.not_paired"
@@ -75,6 +79,8 @@ export type ErrorCode =
   | "validation.enum"
   | "validation.failed"
   | "validation.invalid"
+  | "validation.invalid_body"
+  | "validation.invalid_query"
   | "validation.invalid_type"
   | "validation.number.max"
   | "validation.number.min"
@@ -114,6 +120,7 @@ export const errorCodes = [
   "databases.not_found",
   "databases.provision_failed",
   "databases.unknown_type",
+  "extensions.curseforge_not_configured",
   "files.decompress_failed",
   "files.not_found",
   "files.path_outside_jail",
@@ -122,6 +129,9 @@ export const errorCodes = [
   "instances.nested_not_allowed",
   "instances.pool_exhausted",
   "internal.unexpected",
+  "mods.daemon_install_failed",
+  "mods.no_files",
+  "mods.not_found",
   "nodes.has_servers",
   "nodes.not_found",
   "nodes.not_paired",
@@ -160,6 +170,8 @@ export const errorCodes = [
   "validation.enum",
   "validation.failed",
   "validation.invalid",
+  "validation.invalid_body",
+  "validation.invalid_query",
   "validation.invalid_type",
   "validation.number.max",
   "validation.number.min",

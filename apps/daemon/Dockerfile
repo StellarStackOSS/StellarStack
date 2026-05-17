@@ -37,10 +37,12 @@ FROM alpine:3.20 AS runtime
 RUN apk add --no-cache ca-certificates tini
 
 COPY --from=build /out/stellar-daemon /usr/local/bin/stellar-daemon
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Sensible default; the compose file overrides it via --data-dir.
 ENV DATA_DIR=/var/lib/stellarstack
 
 EXPOSE 8443
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/stellar-daemon"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["start", "--data-dir", "/var/lib/stellarstack"]

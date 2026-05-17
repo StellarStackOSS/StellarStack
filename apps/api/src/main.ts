@@ -21,8 +21,10 @@ import { requestIdMiddleware, type ApiVariables } from "@/middleware/RequestId"
 import { buildActivityRoute } from "@/routes/Activity"
 import { buildCrashesRoute } from "@/routes/Crashes"
 import { buildAdminAuditRoute } from "@/routes/AdminAudit"
+import { buildAdminExtensionsRoute } from "@/routes/AdminExtensions"
 import { buildAdminServersRoute } from "@/routes/AdminServers"
 import { buildAdminUsersRoute } from "@/routes/AdminUsers"
+import { buildModsRoute } from "@/routes/Mods"
 import { buildServerAllocationsRoute } from "@/routes/Allocations"
 import { buildBackupsRoute } from "@/routes/Backups"
 import { buildBlueprintsRoute } from "@/routes/Blueprints"
@@ -163,6 +165,14 @@ app.route("/api/admin/blueprints", buildBlueprintsRoute({ auth, db }))
 app.route(
   "/api/admin/database-hosts",
   buildAdminDatabaseHostsRoute({ auth, db, env })
+)
+app.route(
+  "/api/admin/extensions",
+  buildAdminExtensionsRoute({ auth, db, betterAuthSecret: env.BETTER_AUTH_SECRET })
+)
+app.route(
+  "/api/servers",
+  buildModsRoute({ auth, db, betterAuthSecret: env.BETTER_AUTH_SECRET })
 )
 app.route("/api/servers", buildBackupsRoute({ auth, db }))
 app.route("/api/servers", buildServerAllocationsRoute({ auth, db }))

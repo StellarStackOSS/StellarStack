@@ -1,0 +1,116 @@
+# StellarStack — TrueNAS SCALE Custom App template.
+#
+# Quick start (full stack on one TrueNAS box):
+#   1. Create a dataset for StellarStack data, e.g. `tank/apps/stellarstack`.
+#   2. Set the dataset ACL: User 568, Group 568, full perms.
+#   3. TrueNAS UI → Apps → Discover Apps → ⋮ → "Install via YAML".
+#   4. Paste this file, then update the two TODO blocks:
+#        - Replace every "/mnt/tank/apps/stellarstack" with your dataset path.
+#        - Replace the placeholders in the "x-secrets" block at the top.
+#   5. Save. After it boots, open http://<truenas-ip>:30100 and complete the
+#      first-time setup.
+#   6. (Optional) Once you've signed in: Admin → Nodes → "Pair daemon" → copy
+#      the pairing token. Edit this app, set PAIRING_TOKEN, redeploy. The
+#      daemon will pair itself the first time it starts.
+#
+# Re-deploying the app preserves the volumes — Postgres data, panel state,
+# and the daemon's config.toml all survive restarts.
+
+# TODO: edit these and copy the values down into each service that uses them.
+# TrueNAS Custom Apps don't support YAML anchors at install time, so the
+# duplication is intentional.
+x-secrets:
+  POSTGRES_PASSWORD: "changeme-postgres"
+  BETTER_AUTH_SECRET: "changeme-32-bytes-of-random-hex-please"
+  PANEL_HOST: "stellarstack.local"      # the hostname users will type
+  # If you pair the daemon below, paste the token from "Admin → Nodes" here.
+  PAIRING_TOKEN: ""
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      POSTGRES_USER: "stellar"
+      POSTGRES_PASSWORD: "changeme-postgres"
+      POSTGRES_DB: "stellarstack"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - /mnt/tank/apps/stellarstack/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stellar -d stellarstack"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    user: "568:568"
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - /mnt/tank/apps/stellarstack/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: ghcr.io/stellarstackoss/api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      NODE_ENV: "production"
+      PORT: "3000"
+      DATABASE_URL: "postgresql://stellar:changeme-postgres@postgres:5432/stellarstack"
+      REDIS_URL: "redis://redis:6379"
+      BETTER_AUTH_SECRET: "changeme-32-bytes-of-random-hex-please"
+      APP_BASE_URL: "http://stellarstack.local:30100"
+      API_BASE_URL: "http://stellarstack.local:30100"
+    expose:
+      - "3000"
+
+  panel:
+    image: ghcr.io/stellarstackoss/panel:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Panel-side config inlined at build time; the runtime env vars
+      # below are picked up by Caddy / the static-file server fronting
+      # the SPA so it knows where the API lives.
+      VITE_API_URL: "http://stellarstack.local:30100/api"
+      VITE_WS_URL:  "ws://stellarstack.local:30100"
+    ports:
+      - "30100:5173"
+
+  daemon:
+    image: ghcr.io/stellarstackoss/daemon:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # If non-empty, the entrypoint runs `stellar-daemon configure` on
+      # first start, exchanges the token for a signing key, writes
+      # config.toml, then `exec`s into the daemon.
+      PAIRING_TOKEN: ""
+      PANEL_URL: "http://api:3000"
+    volumes:
+      # Daemon's config.toml + persisted state.
+      - /mnt/tank/apps/stellarstack/daemon:/var/lib/stellarstack
+      # The whole point of the daemon: control Docker on this host. The
+      # daemon image's user must be in the `docker` group OR run as root
+      # for this socket mount to work. Default image uses root.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Game-server bind mounts. Daemon writes per-server folders here.
+      - /mnt/tank/apps/stellarstack/servers:/var/lib/stellarstack/servers
+    # Game-server traffic. Add per-game allocations from Admin →
+    # Allocations after the daemon pairs; advertise the matching ports
+    # here and they'll be reachable on the host.
+    ports:
+      - "25565:25565/tcp"      # Minecraft Java default
+      - "19132:19132/udp"      # Minecraft Bedrock default

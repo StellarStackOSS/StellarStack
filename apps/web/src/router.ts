@@ -21,6 +21,7 @@ import { Route as adminBlueprintsRoute } from "@/routes/AdminBlueprints"
 import { Route as adminDatabaseHostsRoute } from "@/routes/AdminDatabaseHosts"
 import { Route as adminNewBlueprintRoute } from "@/routes/AdminNewBlueprint"
 import { Route as adminAuditRoute } from "@/routes/AdminAudit"
+import { Route as adminExtensionsRoute } from "@/routes/AdminExtensions"
 import { Route as adminUsersRoute } from "@/routes/AdminUsers"
 import { Route as adminServersRoute } from "@/routes/AdminServers"
 import { Route as adminNewServerRoute } from "@/routes/AdminNewServer"
@@ -39,6 +40,7 @@ import { Route as serverCrashesRoute } from "@/routes/ServerCrashes"
 import { Route as serverTransferRoute } from "@/routes/ServerTransfer"
 import { Route as serverInstancesRoute } from "@/routes/ServerInstances"
 import { Route as serverDatabasesRoute } from "@/routes/ServerDatabases"
+import { Route as serverModsRoute } from "@/routes/ServerMods"
 
 const accountTree = accountRoute.addChildren([
   accountIndexRoute,
@@ -65,6 +67,7 @@ const adminTree = adminRoute.addChildren([
   adminNewServerRoute,
   adminServerRoute,
   adminAuditRoute,
+  adminExtensionsRoute,
 ])
 
 const serverTree = serverRoute.addChildren([
@@ -81,6 +84,7 @@ const serverTree = serverRoute.addChildren([
   serverTransferRoute,
   serverInstancesRoute,
   serverDatabasesRoute,
+  serverModsRoute,
 ])
 
 const routeTree = rootRoute.addChildren([

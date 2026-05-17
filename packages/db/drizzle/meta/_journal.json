@@ -120,6 +120,13 @@
       "when": 1778512000000,
       "tag": "0016_blueprint_category",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778760000000,
+      "tag": "0017_app_settings",
+      "breakpoints": true
     }
   ]
 }

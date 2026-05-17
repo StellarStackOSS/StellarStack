@@ -7,6 +7,7 @@ import { useWaitlist } from "@/hooks/useWaitlist"
 import { BlogList, BlogPostView } from "@/components/Blog"
 import { Changelog } from "@/components/Changelog"
 import { Downloads } from "@/components/Downloads"
+import { TrueNAS } from "@/components/TrueNAS"
 import { Faq } from "@/components/Faq"
 import { Features } from "@/components/Features"
 import { HowItWorks } from "@/components/HowItWorks"
@@ -435,6 +436,7 @@ export const App = () => {
   const resolveSubpage = (): ReactNode | null => {
     if (hash === "#/changelog") return <Changelog />
     if (hash === "#/downloads") return <Downloads />
+    if (hash === "#/install/truenas") return <TrueNAS />
     if (hash === "#/roadmap") return <Roadmap />
     if (hash === "#/privacy") return <Privacy />
     if (hash === "#/terms") return <Terms />

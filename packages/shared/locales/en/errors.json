@@ -69,5 +69,11 @@
   "databases.host_not_running": "Database host is not running.",
   "nodes.not_paired": "This node is not paired with a daemon yet.",
   "backups.already_running": "A backup is already running on this server. Wait for it to finish.",
-  "backups.limit_reached": "You have reached the backup limit ({limit}) for this server."
+  "backups.limit_reached": "You have reached the backup limit ({limit}) for this server.",
+  "validation.invalid_body": "Request body is invalid.",
+  "validation.invalid_query": "Request query is invalid.",
+  "extensions.curseforge_not_configured": "CurseForge integration is disabled. An admin must add an API key in Admin → Extensions.",
+  "mods.no_files": "This release has no downloadable files.",
+  "mods.daemon_install_failed": "The daemon couldn't download the file: {detail}.",
+  "mods.not_found": "Mod not found."
 }

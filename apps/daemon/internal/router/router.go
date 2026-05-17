@@ -108,6 +108,16 @@ func (r *Router) routeServerSubpath(w http.ResponseWriter, req *http.Request) {
 		r.handleDelete(w, req, uuid)
 	case len(parts) == 4 && parts[3] == "ws":
 		r.handleWS(w, req, uuid)
+	case len(parts) == 5 && parts[3] == "files" && parts[4] == "download" && req.Method == http.MethodPost:
+		// API-initiated URL download (mods, resourcepacks, etc). HMAC
+		// auth — the browser never invokes this directly; the panel
+		// resolves the public download URL on its side then asks us
+		// to fetch.
+		if !r.verifyDaemonHMAC(req) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		r.handleFileDownload(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "files":
 		r.handleFiles(w, req, uuid)
 	case len(parts) >= 4 && parts[3] == "backups":

@@ -42,6 +42,8 @@
     "./schema/install": "./src/schema/install.ts",
     "./schema/jobs": "./src/schema/jobs.ts",
     "./schema/crashes": "./src/schema/crashes.ts",
-    "./schema/databases": "./src/schema/databases.ts"
+    "./schema/databases": "./src/schema/databases.ts",
+    "./schema/settings": "./src/schema/settings.ts",
+    "./schema/mods": "./src/schema/mods.ts"
   }
 }
