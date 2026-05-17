@@ -3,9 +3,9 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@workspace/ui/components/button"
+import { Checkbox } from "@workspace/ui/components/checkbox"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
-import { Switch } from "@workspace/ui/components/switch"
 
 import { apiFetch } from "@/lib/ApiFetch"
 
@@ -98,13 +98,15 @@ const ModrinthCard = (props: {
             shaders from modrinth.com.
           </p>
         </div>
-        <Switch
+        <Checkbox
           checked={enabled}
           onCheckedChange={(v) => {
-            setEnabled(v)
-            props.onSave(v)
+            const next = v === true
+            setEnabled(next)
+            props.onSave(next)
           }}
           disabled={props.saving}
+          className="size-5"
         />
       </div>
     </section>
