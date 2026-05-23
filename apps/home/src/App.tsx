@@ -408,12 +408,37 @@ const Hero = ({ pastHero }: { pastHero: boolean }) => {
   )
 }
 
+const ProductHuntBadge = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, ease, delay: 0.55 }}
+    className="mx-auto mt-12 flex w-[min(1200px,92vw)] justify-center md:mt-16"
+  >
+    <a
+      href="https://www.producthunt.com/products/stellarstack-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-stellarstack-2"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="StellarStack on Product Hunt"
+      className="transition-opacity hover:opacity-80"
+    >
+      <img
+        src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1153728&theme=dark&t=1779500809974"
+        alt="StellarStack - Open-source server hosting, done correctly | Product Hunt"
+        width={250}
+        height={54}
+        className="h-[54px] w-auto"
+      />
+    </a>
+  </motion.div>
+)
+
 const HeroImage = () => (
   <motion.div
     initial={{ opacity: 0, y: 60 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.9, ease, delay: 0.5 }}
-    className="mx-auto mt-16 flex w-[min(1200px,92vw)] justify-center md:mt-20"
+    className="mx-auto mt-12 flex w-[min(1200px,92vw)] justify-center md:mt-16"
   >
     <img
       src="/hero.jpeg"
@@ -457,6 +482,7 @@ export const App = () => {
       ) : (
         <>
           <Hero pastHero={pastHero} />
+          <ProductHuntBadge />
           <HeroImage />
           <StackStrip />
           <HowItWorks />

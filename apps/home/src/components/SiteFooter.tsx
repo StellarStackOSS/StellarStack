@@ -32,6 +32,7 @@ const linkGroups = [
     heading: "Open source",
     links: [
       { label: "Open Collective", href: "https://opencollective.com/stellarstackoss" },
+      { label: "Product Hunt", href: "https://www.producthunt.com/products/stellarstack-2" },
     ],
   },
   {
